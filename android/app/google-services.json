@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "245258508001",
+    "project_id": "agrolinkbd-9d09f",
+    "storage_bucket": "agrolinkbd-9d09f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:245258508001:android:ddc0654ca6007fb6ebc9a0",
+        "android_client_info": {
+          "package_name": "com.agrolinkbd.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAmKkrTyCqPh50oqerMSx3ZzuhHyRUONtg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
