@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:get/get.dart';
+import 'disease_result_screen.dart';
 
 class DiseaseDetectionScreen extends StatefulWidget {
   const DiseaseDetectionScreen({super.key});
@@ -11,6 +14,8 @@ class DiseaseDetectionScreen extends StatefulWidget {
 class _DiseaseDetectionScreenState extends State<DiseaseDetectionScreen> {
   CameraController? _controller;
   bool _isCameraInitialized = false;
+  final ImagePicker _picker = ImagePicker();
+  FlashMode _flashMode = FlashMode.off;
 
   @override
   void initState() {
@@ -166,9 +171,7 @@ class _DiseaseDetectionScreenState extends State<DiseaseDetectionScreen> {
                   if (_controller != null && _isCameraInitialized) {
                     try {
                       final XFile image = await _controller!.takePicture();
-                      // TODO: Process image for disease detection
-                      debugPrint('Image captured: ${image.path}');
-                      _showResultDialog();
+                      Get.to(() => DiseaseResultScreen(imagePath: image.path));
                     } catch (e) {
                       debugPrint('Error taking picture: $e');
                     }
@@ -200,8 +203,14 @@ class _DiseaseDetectionScreenState extends State<DiseaseDetectionScreen> {
               icon: const Icon(Icons.photo_library,
                   color: Colors.white, size: 32),
               onPressed: () async {
-                // Handle gallery selection
-                debugPrint('Gallery button tapped');
+                try {
+                  final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+                  if (image != null) {
+                    Get.to(() => DiseaseResultScreen(imagePath: image.path));
+                  }
+                } catch (e) {
+                  debugPrint('Error picking from gallery: $e');
+                }
               },
             ),
           ),
@@ -211,10 +220,18 @@ class _DiseaseDetectionScreenState extends State<DiseaseDetectionScreen> {
             bottom: 20,
             right: 30,
             child: IconButton(
-              icon: const Icon(Icons.flash_on, color: Colors.white, size: 32),
+              icon: Icon(
+                _flashMode == FlashMode.off ? Icons.flash_off : Icons.flash_on,
+                color: Colors.white,
+                size: 32,
+              ),
               onPressed: () async {
-                // Handle flash toggle
-                debugPrint('Flash button tapped');
+                if (_controller != null && _isCameraInitialized) {
+                  setState(() {
+                    _flashMode = _flashMode == FlashMode.off ? FlashMode.torch : FlashMode.off;
+                  });
+                  await _controller!.setFlashMode(_flashMode);
+                }
               },
             ),
           ),
@@ -223,35 +240,5 @@ class _DiseaseDetectionScreenState extends State<DiseaseDetectionScreen> {
     );
   }
 
-  void _showResultDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('রোগ সনাক্তকরণ'),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.check_circle, color: Colors.green, size: 64),
-            SizedBox(height: 16),
-            Text(
-              'ছবি সফলভাবে ক্যাপচার হয়েছে!',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'AI বিশ্লেষণ করছে...',
-              style: TextStyle(color: Colors.grey),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('ঠিক আছে'),
-          ),
-        ],
-      ),
-    );
-  }
+
 }

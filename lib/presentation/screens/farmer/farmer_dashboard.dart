@@ -1,10 +1,12 @@
-import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:get/get.dart';
 import 'package:agrolinkbd/core/providers/user_provider.dart';
-/// Farmer Role Dashboard
-/// Displays farm overview, stats, recent activity, and quick actions
+import 'package:agrolinkbd/presentation/screens/disease/disease_detection_screen.dart';
+import 'package:agrolinkbd/presentation/screens/farmer/add_product_screen.dart';
+
 class FarmerDashboard extends StatefulWidget {
   const FarmerDashboard({super.key});
 
@@ -12,10 +14,17 @@ class FarmerDashboard extends StatefulWidget {
   State<FarmerDashboard> createState() => _FarmerDashboardState();
 }
 
-class _FarmerDashboardState extends State<FarmerDashboard>
-    with SingleTickerProviderStateMixin {
+class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+  late ScrollController _tickerScrollController;
+
+  // Mock Tasks State
+  final List<Map<String, dynamic>> _tasks = [
+    {'title': 'ধান ক্ষেতে সার প্রয়োগ করা', 'completed': false},
+    {'title': 'টমেটো গাছে কীটনাশক স্প্রে করা', 'completed': false},
+    {'title': 'পুকুরের মাছের খাবার দেওয়া', 'completed': true},
+  ];
 
   @override
   void initState() {
@@ -29,287 +38,537 @@ class _FarmerDashboardState extends State<FarmerDashboard>
       CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
     );
 
+    _tickerScrollController = ScrollController();
     _animationController.forward();
+    
+    // Auto scroll ticker
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startAutoScroll();
+    });
+  }
+
+  void _startAutoScroll() async {
+    while (mounted) {
+      if (_tickerScrollController.hasClients) {
+        double maxExtent = _tickerScrollController.position.maxScrollExtent;
+        await _tickerScrollController.animateTo(
+          maxExtent,
+          duration: Duration(seconds: (maxExtent / 20).round()),
+          curve: Curves.linear,
+        );
+        if (mounted && _tickerScrollController.hasClients) {
+          _tickerScrollController.jumpTo(0);
+        }
+      } else {
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
+    }
   }
 
   @override
   void dispose() {
     _animationController.dispose();
+    _tickerScrollController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    // Nature inspired color palette
+    const Color emeraldGreen = Color(0xFF2E7D32);
+    const Color earthyBrown = Color(0xFF795548);
+    const Color cleanWhite = Color(0xFFFFFFFF);
+    const Color lightBackground = Color(0xFFF5F7FA);
+
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          image: const DecorationImage(
-            image: NetworkImage('https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=1000&auto=format&fit=crop'),
-            fit: BoxFit.cover,
-            colorFilter: ColorFilter.mode(Colors.black12, BlendMode.darken),
+      backgroundColor: lightBackground,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(70),
+        child: Container(
+          padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+          decoration: BoxDecoration(
+            color: cleanWhite,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-        ),
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 50, 16, 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Top Row: Menu & Profile
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.menu, color: Colors.black87, size: 30),
-                            onPressed: () {
-                              ScaffoldState? rootScaffold = context.findRootAncestorStateOfType<ScaffoldState>();
-                              rootScaffold?.openDrawer();
-                            },
-                          ),
-                          Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 2),
-                              boxShadow: [
-                                BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 8),
-                              ],
-                            ),
-                            child: const CircleAvatar(
-                              radius: 20,
-                              backgroundImage: NetworkImage('https://randomuser.me/api/portraits/men/44.jpg'),
-                            ),
-                          ),
-                        ],
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: emeraldGreen, width: 2),
                       ),
-                      const SizedBox(height: 20),
-                      // Welcome Text
-                      Center(
-                        child: Consumer<UserProvider>(
-                          builder: (context, userProvider, _) {
-                            final userName = userProvider.currentUser?.name ?? 'কৃষক';
-                            return Column(
-                              children: [
-                                Text(
-                                  'স্বাগতম, কৃষক $userName! 👨‍🌾',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
-                                    shadows: const [Shadow(color: Colors.white, blurRadius: 10)],
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'আপনার AgroLinkBD খামার পোর্টাল - সামগ্রিক চিত্র',
-                              style: GoogleFonts.poppins(
+                      child: const CircleAvatar(
+                        radius: 20,
+                        backgroundImage: NetworkImage('https://randomuser.me/api/portraits/men/44.jpg'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Consumer<UserProvider>(
+                      builder: (context, userProvider, _) {
+                        final userName = userProvider.currentUser?.name ?? 'কৃষক';
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'শুভ সকাল,',
+                              style: GoogleFonts.hindSiliguri(
                                 fontSize: 13,
-                                color: Colors.black87,
-                                fontWeight: FontWeight.w600,
+                                color: Colors.grey.shade600,
                               ),
-                              textAlign: TextAlign.center,
+                            ),
+                            Text(
+                              userName,
+                              style: GoogleFonts.hindSiliguri(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
                             ),
                           ],
                         );
                       },
                     ),
-                  ),
-                      const SizedBox(height: 120), // Space to show the background field
-                      
-                      // Row 1: Balance & Orders
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(child: _balanceCard()),
-                          const SizedBox(width: 12),
-                          Expanded(child: _ordersCard()),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      
-                      // Row 2: Sales & Satisfaction
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(child: _salesCard()),
-                          const SizedBox(width: 12),
-                          Expanded(child: _satisfactionCard()),
-                        ],
-                      ),
-                      const SizedBox(height: 30),
-                    ],
-                  ),
+                  ],
                 ),
-              ),
-            ],
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: emeraldGreen.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: emeraldGreen.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.account_balance_wallet, size: 16, color: emeraldGreen),
+                          const SizedBox(width: 4),
+                          Text(
+                            '৳ ১২,৫০০',
+                            style: GoogleFonts.hindSiliguri(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: emeraldGreen,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        const Icon(Icons.notifications_outlined, color: Colors.black87, size: 28),
+                        Positioned(
+                          right: -2,
+                          top: -2,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Text(
+                              '3',
+                              style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildGlassCard({required Widget child}) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          height: 260, // Fixed height for perfect alignment
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.85),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withOpacity(0.5)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                spreadRadius: 1,
-              ),
-            ],
-          ),
-          child: child,
-        ),
-      ),
-    );
-  }
-
-  Widget _balanceCard() {
-    return _buildGlassCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
+      body: FadeTransition(
+        opacity: _fadeAnimation,
+        child: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('আপনার বর্তমান\nব্যালেন্স', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
-                    const SizedBox(height: 8),
-                    Text('৳ ১২,৫০০', style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87)),
+                    // 1. Weather Alert Card
+                    _buildWeatherAlertCard(),
+                    const SizedBox(height: 24),
+                    
+                    // 2. Quick Actions Grid
+                    Text(
+                      'জরুরী সেবাসমূহ',
+                      style: GoogleFonts.hindSiliguri(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildQuickActionsGrid(emeraldGreen, earthyBrown),
+                    const SizedBox(height: 24),
+
+                    // 3. Today's Tasks
+                    Text(
+                      'আজকের কাজ (Daily Tasks)',
+                      style: GoogleFonts.hindSiliguri(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildTasksChecklist(emeraldGreen),
+                    const SizedBox(height: 24),
+
+                    // 4. Market Price Ticker
+                    Text(
+                      'লাইভ বাজার দর',
+                      style: GoogleFonts.hindSiliguri(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildMarketPriceTicker(),
+                    const SizedBox(height: 80), // Bottom padding
                   ],
                 ),
               ),
-              const Icon(Icons.account_balance_wallet, color: Colors.brown, size: 36),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWeatherAlertCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF4FC3F7), Color(0xFF0288D1)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0288D1).withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'আজকের আবহাওয়া',
+                style: GoogleFonts.hindSiliguri(
+                  fontSize: 14,
+                  color: Colors.white.withOpacity(0.9),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '২৮°C',
+                style: GoogleFonts.poppins(
+                  fontSize: 36,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.orangeAccent.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.warning_amber_rounded, size: 14, color: Colors.white),
+                    const SizedBox(width: 4),
+                    Text(
+                      'আজ বৃষ্টির সম্ভাবনা আছে',
+                      style: GoogleFonts.hindSiliguri(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              )
             ],
           ),
-          const SizedBox(height: 16),
-          const Divider(height: 1),
-          const SizedBox(height: 12),
-          _buildListRow('🍅', 'টমেটো বিক্রি', '৳৩,০০০'),
-          const SizedBox(height: 8),
-          _buildListRow('🍚', 'চাল বিক্রি', '৳৯,৫০০'),
-          const SizedBox(height: 8),
-          _buildListRow('🌾', 'সার ক্রয়', '৳-২,০০০'),
+          const Icon(Icons.cloudy_snowing, size: 80, color: Colors.white),
         ],
       ),
     );
   }
 
-  Widget _buildListRow(String emoji, String title, String amount) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildQuickActionsGrid(Color emeraldGreen, Color earthyBrown) {
+    return GridView.count(
+      physics: const NeverScrollableScrollPhysics(),
+      shrinkWrap: true,
+      crossAxisCount: 2,
+      mainAxisSpacing: 16,
+      crossAxisSpacing: 16,
+      childAspectRatio: 1.2,
       children: [
-        Row(
-          children: [
-            Text(emoji, style: const TextStyle(fontSize: 14)),
-            const SizedBox(width: 8),
-            Text(title, style: GoogleFonts.poppins(fontSize: 12, color: Colors.black87)),
-          ],
+        _ActionCard(
+          title: 'ফসল বিক্রি',
+          icon: Icons.eco,
+          color: emeraldGreen,
+          onTap: () => Get.to(() => const AddProductScreen()),
         ),
-        Text(amount, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87)),
+        _ActionCard(
+          title: 'এআই প্ল্যান্ট ডাক্তার',
+          icon: Icons.camera_alt,
+          color: Colors.teal.shade700,
+          onTap: () => Get.to(() => const DiseaseDetectionScreen()),
+        ),
+        _ActionCard(
+          title: 'বিশেষজ্ঞ পরামর্শ',
+          icon: Icons.support_agent,
+          color: Colors.indigo.shade600,
+          onTap: () => Get.snackbar('বিশেষজ্ঞ পরামর্শ', 'শীঘ্রই যুক্ত করা হবে!'),
+        ),
+        _ActionCard(
+          title: 'পরিবহন (Transport)',
+          icon: Icons.local_shipping,
+          color: earthyBrown,
+          onTap: () => Get.snackbar('পরিবহন সেবা', 'ট্রাক বুকিং শীঘ্রই আসছে!'),
+        ),
       ],
     );
   }
 
-  Widget _ordersCard() {
-    return _buildGlassCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('প্রক্রিয়াধীন\nঅর্ডারসমূহ', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
-          const Spacer(),
-          Center(
-            child: Icon(Icons.local_shipping, size: 50, color: Colors.orange.shade700),
+  Widget _buildTasksChecklist(Color emeraldGreen) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-          const Spacer(),
-          Text('8', style: GoogleFonts.poppins(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.black87)),
-          const SizedBox(height: 4),
-          Text('ডেলিভারির জন্য প্রস্তুত: ৫টি\nপ্যাকিং করা হচ্ছে: ৩টি', style: GoogleFonts.poppins(fontSize: 11, color: Colors.black87)),
         ],
+      ),
+      child: Column(
+        children: _tasks.asMap().entries.map((entry) {
+          int index = entry.key;
+          Map<String, dynamic> task = entry.value;
+          return Column(
+            children: [
+              CheckboxListTile(
+                value: task['completed'],
+                activeColor: emeraldGreen,
+                checkboxShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                title: AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 300),
+                  style: GoogleFonts.hindSiliguri(
+                    fontSize: 16,
+                    color: task['completed'] ? Colors.grey : Colors.black87,
+                    decoration: task['completed'] ? TextDecoration.lineThrough : TextDecoration.none,
+                  ),
+                  child: Text(task['title']),
+                ),
+                onChanged: (bool? val) {
+                  setState(() {
+                    _tasks[index]['completed'] = val ?? false;
+                  });
+                },
+              ),
+              if (index < _tasks.length - 1)
+                Divider(height: 1, color: Colors.grey.shade200, indent: 16, endIndent: 16),
+            ],
+          );
+        }).toList(),
       ),
     );
   }
 
-  Widget _salesCard() {
-    return _buildGlassCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: Colors.green.shade100, borderRadius: BorderRadius.circular(8)),
-            child: const Icon(Icons.trending_up, color: Colors.green),
-          ),
-          const Spacer(),
-          Text('সাম্প্রতিক বিক্রি', style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.black87)),
-          const SizedBox(height: 12),
-          Text('৳ ৪৫,০০০', style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87)),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('এই মাসের মোট বিক্রি', style: GoogleFonts.poppins(fontSize: 10, color: Colors.black87)),
-              Text('২৪টি পণ্য', style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black87)),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _buildMarketPriceTicker() {
+    final List<Map<String, dynamic>> prices = [
+      {'crop': 'বোরো ধান', 'price': '৳১২০০/মণ', 'trend': 'up', 'color': Colors.green},
+      {'crop': 'আলু', 'price': '৳৩৫/কেজি', 'trend': 'down', 'color': Colors.red},
+      {'crop': 'পেঁয়াজ', 'price': '৳৯০/কেজি', 'trend': 'up', 'color': Colors.green},
+      {'crop': 'টমেটো', 'price': '৳৩০/কেজি', 'trend': 'down', 'color': Colors.red},
+      {'crop': 'রসুন', 'price': '৳১৮০/কেজি', 'trend': 'up', 'color': Colors.green},
+    ];
 
-  Widget _satisfactionCard() {
-    return _buildGlassCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(child: Text('গ্রাহক সন্তুষ্টি', style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.black87))),
-              const CircleAvatar(radius: 18, backgroundImage: NetworkImage('https://randomuser.me/api/portraits/men/32.jpg')),
-            ],
-          ),
-          const Spacer(),
-          Row(
-            children: [
-              Text('4.8', style: GoogleFonts.poppins(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.black87)),
-              const SizedBox(width: 4),
-              Row(children: List.generate(5, (index) => const Icon(Icons.star, color: Colors.amber, size: 14))),
-            ],
-          ),
-          Text('২৫ জন গ্রাহক মতামত দিয়েছেন', style: GoogleFonts.poppins(fontSize: 10, color: Colors.black87)),
-          const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(8)),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('• সেরা মান!', style: GoogleFonts.poppins(fontSize: 11, color: Colors.black87)),
-                const SizedBox(height: 2),
-                Text('• সময়মতো ডেলিভারি!', style: GoogleFonts.poppins(fontSize: 11, color: Colors.black87)),
+    return SizedBox(
+      height: 80,
+      child: ListView.builder(
+        controller: _tickerScrollController,
+        scrollDirection: Axis.horizontal,
+        itemCount: 20, // Looping items artificially
+        itemBuilder: (context, i) {
+          final item = prices[i % prices.length];
+          final isUp = item['trend'] == 'up';
+          return Container(
+            width: 140,
+            margin: const EdgeInsets.only(right: 12),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
               ],
             ),
-          )
-        ],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  item['crop']!,
+                  style: GoogleFonts.hindSiliguri(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      item['price']!,
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                    Icon(
+                      isUp ? Icons.arrow_upward : Icons.arrow_downward,
+                      color: item['color'] as Color,
+                      size: 16,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ActionCard extends StatefulWidget {
+  final String title;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ActionCard({
+    required this.title,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  State<_ActionCard> createState() => _ActionCardState();
+}
+
+class _ActionCardState extends State<_ActionCard> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 100),
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(_controller);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => _controller.forward(),
+      onTapUp: (_) {
+        _controller.reverse();
+        widget.onTap();
+      },
+      onTapCancel: () => _controller.reverse(),
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: widget.color.withOpacity(0.15),
+                blurRadius: 15,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: widget.color.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(widget.icon, size: 36, color: widget.color),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                widget.title,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.hindSiliguri(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

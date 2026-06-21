@@ -32,8 +32,17 @@ import 'core/providers/role_content_provider.dart';
 import 'core/config/firebase_options.dart';
 import 'ultimate_automatic_setup.dart';
 
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  try {
+    await dotenv.load(fileName: ".env");
+    debugPrint('✅ dotenv loaded successfully');
+  } catch (e) {
+    debugPrint('❌ Failed to load .env file: $e');
+  }
 
   // Initialize Firebase with proper options
   try {
