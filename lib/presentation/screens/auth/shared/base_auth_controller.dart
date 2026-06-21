@@ -40,6 +40,9 @@ abstract class BaseAuthController {
       await authService.registerWithEmail(
         email: email,
         password: password,
+        name: name,
+        phone: phone,
+        userType: userType.toString(),
       );
       return true;
     } catch (e) {

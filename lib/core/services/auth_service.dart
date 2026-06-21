@@ -33,6 +33,9 @@ class AuthService {
   Future<UserCredential> registerWithEmail({
     required String email,
     required String password,
+    String? name,
+    String? phone,
+    String? userType,
   }) async {
     try {
       debugPrint('📝 Starting registration for email: $email');
@@ -47,14 +50,19 @@ class AuthService {
       // Create user profile document immediately
       if (credential.user != null) {
         try {
-          await _firestore.collection('users').doc(credential.user!.uid).set({
+          final Map<String, dynamic> data = {
             'id': credential.user!.uid,
             'email': email,
             'createdAt': FieldValue.serverTimestamp(),
             'emailVerified': false,
             'isPremium': false,
             'isActive': true,
-          }, SetOptions(merge: true));
+          };
+          if (name != null) data['name'] = name;
+          if (phone != null) data['phone'] = phone;
+          if (userType != null) data['userType'] = userType;
+
+          await _firestore.collection('users').doc(credential.user!.uid).set(data, SetOptions(merge: true));
           debugPrint('✅ User profile created in Firestore');
         } catch (e) {
           debugPrint('⚠️ Warning - could not create profile: $e');

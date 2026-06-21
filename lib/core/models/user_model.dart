@@ -30,6 +30,7 @@ class UserModel {
   // Service Provider specific
   final List<String>? machineryTypes;
   final double? hourlyRate;
+  final int? yearsOfExperience;
 
   // Driver specific
   final String? vehicleType;
@@ -64,6 +65,7 @@ class UserModel {
     this.cropTypes,
     this.machineryTypes,
     this.hourlyRate,
+    this.yearsOfExperience,
     this.vehicleType,
     this.vehicleNumber,
     this.loadCapacity,
@@ -96,6 +98,7 @@ class UserModel {
       'cropTypes': cropTypes,
       'machineryTypes': machineryTypes,
       'hourlyRate': hourlyRate,
+      'yearsOfExperience': yearsOfExperience,
       'vehicleType': vehicleType,
       'vehicleNumber': vehicleNumber,
       'loadCapacity': loadCapacity,
@@ -174,6 +177,7 @@ class UserModel {
           ? List<String>.from(json['machineryTypes'])
           : null,
       hourlyRate: json['hourlyRate']?.toDouble(),
+      yearsOfExperience: json['yearsOfExperience'] is int ? json['yearsOfExperience'] : (json['yearsOfExperience'] != null ? int.tryParse(json['yearsOfExperience'].toString()) : null),
       vehicleType: json['vehicleType'],
       vehicleNumber: json['vehicleNumber'],
       loadCapacity: json['loadCapacity']?.toDouble(),
@@ -206,6 +210,7 @@ class UserModel {
     List<String>? cropTypes,
     List<String>? machineryTypes,
     double? hourlyRate,
+    int? yearsOfExperience,
     String? vehicleType,
     String? vehicleNumber,
     double? loadCapacity,
@@ -236,6 +241,7 @@ class UserModel {
       cropTypes: cropTypes ?? this.cropTypes,
       machineryTypes: machineryTypes ?? this.machineryTypes,
       hourlyRate: hourlyRate ?? this.hourlyRate,
+      yearsOfExperience: yearsOfExperience ?? this.yearsOfExperience,
       vehicleType: vehicleType ?? this.vehicleType,
       vehicleNumber: vehicleNumber ?? this.vehicleNumber,
       loadCapacity: loadCapacity ?? this.loadCapacity,

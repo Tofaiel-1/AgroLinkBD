@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:agrolinkbd/core/models/service_provider_models.dart';
+import 'package:agrolinkbd/core/services/service_management_service.dart';
+import 'package:agrolinkbd/core/models/service_model.dart';
 
 /// State notifier for Service Provider's product catalog
 class ServiceProductNotifier extends StateNotifier<List<ServiceProduct>> {
@@ -297,6 +299,14 @@ class ServiceOrderNotifier extends StateNotifier<List<ServiceOrder>> {
 final serviceProductProvider =
     StateNotifierProvider<ServiceProductNotifier, List<ServiceProduct>>((ref) {
   return ServiceProductNotifier();
+});
+
+final serviceManagementProvider = Provider<ServiceManagementService>((ref) {
+  return ServiceManagementService();
+});
+
+final providerServicesStreamProvider = StreamProvider<List<ServiceModel>>((ref) {
+  return ref.watch(serviceManagementProvider).getProviderServices();
 });
 
 final serviceOrderProvider =

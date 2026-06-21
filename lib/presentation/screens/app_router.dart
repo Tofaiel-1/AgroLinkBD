@@ -160,22 +160,10 @@ class _AppRouterState extends State<AppRouter> {
                   // Try to load user from Firestore
                   await userProvider.loadUser(userId);
 
-                  // If user doesn't exist yet, create basic profile
-                  if (userProvider.currentUser == null) {
-                    final newUser = UserModel(
-                      id: userId,
-                      name: email
-                          .split('@')[0], // Use email prefix as default name
-                      email: email,
-                      phone: '',
-                      userType: UserType.farmer,
-                      status: UserStatus.active,
-                      createdAt: DateTime.now(),
-                    );
-                    await userProvider.updateUser(newUser);
-                    debugPrint('✅ New user profile created for: $userId');
-                  } else {
+                  if (userProvider.currentUser != null) {
                     debugPrint('✅ User profile loaded: $userId');
+                  } else {
+                    debugPrint('⏳ User profile not found yet, waiting for registration to complete: $userId');
                   }
 
                   _loadedUserIds.add(userId);
@@ -185,28 +173,9 @@ class _AppRouterState extends State<AppRouter> {
                   debugPrint('❌ Error loading user profile: $e');
                   _lastError = e.toString();
 
-                  // On error, create minimal user so app can continue
-                  if (mounted) {
-                    try {
-                      final newUser = UserModel(
-                        id: userId,
-                        name: email.split('@')[0],
-                        email: email,
-                        phone: '',
-                        userType: UserType.farmer,
-                        status: UserStatus.active,
-                        createdAt: DateTime.now(),
-                      );
-                      await userProvider.updateUser(newUser);
-                      _loadedUserIds.add(userId);
-                      debugPrint(
-                          '⚠️ Created fallback user profile due to error');
-                    } catch (fallbackError) {
-                      debugPrint(
-                          '❌ Fallback profile creation also failed: $fallbackError');
-                      _lastError = 'প্রোফাইল লোড করতে ব্যর্থ';
-                    }
-                  }
+                  // On error, just log and wait
+                  debugPrint('⚠️ Waiting due to error');
+                  _lastError = 'প্রোফাইল লোড করতে ব্যর্থ';
                   _loadingUserIds.remove(userId);
                 }
               });

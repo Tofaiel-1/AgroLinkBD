@@ -93,6 +93,7 @@ class ServiceProviderAuthController extends BaseAuthController {
           createdAt: DateTime.now(),
           machineryTypes:
               servicesOffered.split(',').map((e) => e.trim()).toList(),
+          yearsOfExperience: int.tryParse(yearsOfExperience),
           hourlyRate: 0.0,
         );
         await authService.createOrUpdateUser(user);
@@ -102,6 +103,10 @@ class ServiceProviderAuthController extends BaseAuthController {
       return result;
     } catch (e) {
       isLoading.value = false;
+      Get.snackbar('ত্রুটি ❌', e.toString(),
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red.shade100,
+          colorText: Colors.red.shade900);
       rethrow;
     }
   }

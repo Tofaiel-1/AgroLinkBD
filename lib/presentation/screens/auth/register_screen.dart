@@ -73,6 +73,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final credential = await _authService.registerWithEmail(
         email: _emailController.text.trim(),
         password: _passwordController.text,
+        name: _nameController.text.trim(),
+        phone: _phoneController.text.isEmpty ? null : '+88${_phoneController.text.trim()}',
+        userType: _selectedUserType.toString(),
       );
 
       String userId = credential.user!.uid;
@@ -148,11 +151,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       // Load user in provider
       debugPrint('📝 Loading user in provider...');
-      await Provider.of<UserProvider>(
-        context,
-        listen: false,
-      ).loadUser(userId);
-      debugPrint('✅ User loaded in provider');
+      if (mounted) {
+        await Provider.of<UserProvider>(
+          context,
+          listen: false,
+        ).loadUser(userId);
+        debugPrint('✅ User loaded in provider');
+      }
 
       Get.snackbar(
         'Registration Success! ✅',

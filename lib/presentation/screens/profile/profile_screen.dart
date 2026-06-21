@@ -65,7 +65,7 @@ class ProfileScreen extends StatelessWidget {
                   const SizedBox(height: 16),
                   Obx(() => Text(
                         userController.userName.isEmpty
-                            ? 'মোঃ রহিম উদ্দিন'
+                            ? 'নতুন ইউজার'
                             : userController.userName,
                         style: const TextStyle(
                           color: Colors.white,

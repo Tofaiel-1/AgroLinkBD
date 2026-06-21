@@ -1,7 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
+import 'package:provider/provider.dart';
+import 'package:agrolinkbd/core/providers/user_provider.dart';
 /// Farmer Role Dashboard
 /// Displays farm overview, stats, recent activity, and quick actions
 class FarmerDashboard extends StatefulWidget {
@@ -87,21 +88,24 @@ class _FarmerDashboardState extends State<FarmerDashboard>
                       const SizedBox(height: 20),
                       // Welcome Text
                       Center(
-                        child: Column(
-                          children: [
-                            Text(
-                              'স্বাগতম, কৃষক আব্দুর রহমান! 👨‍🌾',
-                              style: GoogleFonts.poppins(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                                shadows: const [Shadow(color: Colors.white, blurRadius: 10)],
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'আপনার AgroLinkBD খামার পোর্টাল - সামগ্রিক চিত্র',
+                        child: Consumer<UserProvider>(
+                          builder: (context, userProvider, _) {
+                            final userName = userProvider.currentUser?.name ?? 'কৃষক';
+                            return Column(
+                              children: [
+                                Text(
+                                  'স্বাগতম, কৃষক $userName! 👨‍🌾',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                    shadows: const [Shadow(color: Colors.white, blurRadius: 10)],
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'আপনার AgroLinkBD খামার পোর্টাল - সামগ্রিক চিত্র',
                               style: GoogleFonts.poppins(
                                 fontSize: 13,
                                 color: Colors.black87,
@@ -110,8 +114,10 @@ class _FarmerDashboardState extends State<FarmerDashboard>
                               textAlign: TextAlign.center,
                             ),
                           ],
-                        ),
-                      ),
+                        );
+                      },
+                    ),
+                  ),
                       const SizedBox(height: 120), // Space to show the background field
                       
                       // Row 1: Balance & Orders
