@@ -6,9 +6,18 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'package:get/get.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_riverpod/flutter_riverpod.dart'
+    hide ChangeNotifierProvider;
+import 'package:agrolinkbd/presentation/screens/dashboard/buyer_dashboard_screen.dart';
+import 'package:agrolinkbd/presentation/buyer/screens/browse_products_screen.dart';
+import 'package:agrolinkbd/presentation/buyer/screens/cart_screen.dart';
+import 'package:agrolinkbd/presentation/buyer/screens/checkout_screen.dart';
+import 'package:agrolinkbd/presentation/buyer/screens/buyer_orders_screen.dart';
+import 'package:agrolinkbd/presentation/buyer/screens/wishlist_screen.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/location_service.dart';
 import 'presentation/screens/app_router.dart';
+import 'presentation/screens/auth/auth_routing_controller.dart';
 import 'presentation/screens/admin/admin_login_screen.dart';
 import 'presentation/screens/admin/admin_dashboard.dart';
 import 'core/theme/app_theme.dart';
@@ -19,8 +28,8 @@ import 'core/providers/auction_provider.dart';
 import 'core/providers/machinery_provider.dart';
 import 'core/providers/transport_provider.dart';
 import 'core/providers/cart_provider.dart';
+import 'core/providers/role_content_provider.dart';
 import 'core/config/firebase_options.dart';
-import 'core/controllers/user_controller.dart';
 import 'ultimate_automatic_setup.dart';
 
 void main() async {
@@ -65,14 +74,6 @@ void main() async {
     debugPrint('⚠️ Service initialization warning: $e');
   }
 
-  // Register GetX Controllers
-  try {
-    Get.put(UserController());
-    debugPrint('✅ UserController registered with GetX');
-  } catch (e) {
-    debugPrint('⚠️ UserController registration warning: $e');
-  }
-
   runApp(const AgroLinkBDApp());
 }
 
@@ -89,84 +90,92 @@ Future<void> _initializeAdminIfNeeded() async {
 class AgroLinkBDApp extends StatelessWidget {
   const AgroLinkBDApp({super.key});
 
-  // Firebase will be added later
-  // static FirebaseAnalytics? analytics = FirebaseAnalytics.instance;
-  // static FirebaseAnalyticsObserver observer = FirebaseAnalyticsObserver(analytics: analytics!);
-
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => UserProvider()),
-        ChangeNotifierProvider(create: (_) => AdminProvider()),
-        ChangeNotifierProvider(create: (_) => ProductProvider()),
-        ChangeNotifierProvider(create: (_) => AuctionProvider()),
-        ChangeNotifierProvider(create: (_) => MachineryProvider()),
-        ChangeNotifierProvider(create: (_) => TransportProvider()),
-        ChangeNotifierProvider(create: (_) => CartProvider()),
-      ],
-      child: GetMaterialApp(
-        title: 'AgroLinkBD',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: ThemeMode.system,
-        home: const AppRouter(), // Routes based on admin/user login status
-        // home: const WelcomeScreen(), // Restore when auth is needed
-        // navigatorObservers: [observer], // Will be enabled when Firebase is added
-        locale: const Locale('bn', 'BD'),
-        fallbackLocale: const Locale('en', 'US'),
-        translations: AppTranslations(),
-        routes: {
-          '/admin-login': (context) => const AdminLoginScreen(),
-          '/admin-dashboard': (context) => const AdminDashboard(),
-        },
+    return ProviderScope(
+      child: MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => UserProvider()),
+          ChangeNotifierProvider(create: (_) => AdminProvider()),
+          ChangeNotifierProvider(create: (_) => ProductProvider()),
+          ChangeNotifierProvider(create: (_) => AuctionProvider()),
+          ChangeNotifierProvider(create: (_) => MachineryProvider()),
+          ChangeNotifierProvider(create: (_) => TransportProvider()),
+          ChangeNotifierProvider(create: (_) => CartProvider()),
+          ChangeNotifierProvider(create: (_) => RoleContentProvider()),
+        ],
+        child: GetMaterialApp(
+          title: 'AgroLinkBD - কৃষি বাজার',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: ThemeMode.system,
+          home: const AppRouter(),
+          initialBinding: AuthRouteBindings(),
+          getPages: [
+            // Auth routes
+            ...authPages,
+
+            // Admin routes
+            GetPage(
+              name: '/admin-login',
+              page: () => const AdminLoginScreen(),
+              transition: Transition.fadeIn,
+            ),
+            GetPage(
+              name: '/admin-dashboard',
+              page: () => const AdminDashboard(),
+              transition: Transition.fadeIn,
+            ),
+
+            // Buyer routes
+            GetPage(
+              name: '/buyer/dashboard',
+              page: () => const BuyerDashboardScreen(),
+              transition: Transition.fadeIn,
+            ),
+            GetPage(
+              name: '/buyer/browse',
+              page: () => const BrowseProductsScreen(),
+              transition: Transition.rightToLeft,
+            ),
+            GetPage(
+              name: '/buyer/cart',
+              page: () => const CartScreen(),
+              transition: Transition.rightToLeft,
+            ),
+            GetPage(
+              name: '/buyer/checkout',
+              page: () => const CheckoutScreen(),
+              transition: Transition.rightToLeft,
+            ),
+            GetPage(
+              name: '/buyer/orders',
+              page: () => const BuyerOrdersScreen(),
+              transition: Transition.rightToLeft,
+            ),
+            GetPage(
+              name: '/buyer/wishlist',
+              page: () => const WishlistScreen(),
+              transition: Transition.rightToLeft,
+            ),
+          ],
+          // Fallback routes dictionary for named route navigation
+          routes: {
+            // ========== ADMIN ROUTES ==========
+            '/admin-login': (context) => const AdminLoginScreen(),
+            '/admin-dashboard': (context) => const AdminDashboard(),
+
+            // ========== BUYER MODULE ROUTES ==========
+            '/buyer/dashboard': (context) => const BuyerDashboardScreen(),
+            '/buyer/browse': (context) => const BrowseProductsScreen(),
+            '/buyer/cart': (context) => const CartScreen(),
+            '/buyer/checkout': (context) => const CheckoutScreen(),
+            '/buyer/orders': (context) => const BuyerOrdersScreen(),
+            '/buyer/wishlist': (context) => const WishlistScreen(),
+          },
+        ),
       ),
     );
   }
-}
-
-// Localization
-class AppTranslations extends Translations {
-  @override
-  Map<String, Map<String, String>> get keys => {
-        'bn_BD': {
-          'app_name': 'AgroLinkBD',
-          'welcome': 'Welcome',
-          'login': 'Login',
-          'register': 'Register',
-          'farmer': 'Farmer',
-          'buyer': 'Buyer',
-          'driver': 'Driver',
-          'service_provider': 'Service Provider',
-          'marketplace': 'Marketplace',
-          'machinery_rental': 'Machinery Rental',
-          'transport': 'Transport',
-          'auction': 'Auction',
-          'invest': 'Investment',
-          'soil_test': 'Soil Testing',
-          'voice_assistant': 'Voice Assistant',
-          'calendar': 'Calendar',
-          'contract_farming': 'Contract Farming',
-        },
-        'en_US': {
-          'app_name': 'AgroLinkBD',
-          'welcome': 'Welcome',
-          'login': 'Login',
-          'register': 'Register',
-          'farmer': 'Farmer',
-          'buyer': 'Buyer',
-          'driver': 'Driver',
-          'service_provider': 'Service Provider',
-          'marketplace': 'Marketplace',
-          'machinery_rental': 'Machinery Rental',
-          'transport': 'Transport',
-          'auction': 'Auction',
-          'invest': 'Invest',
-          'soil_test': 'Soil Test',
-          'voice_assistant': 'Voice Assistant',
-          'calendar': 'Calendar',
-          'contract_farming': 'Contract Farming',
-        },
-      };
 }
