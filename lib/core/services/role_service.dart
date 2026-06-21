@@ -58,9 +58,9 @@ class RoleService {
           },
           {'label': 'Marketplace', 'labelBN': 'বাজার', 'icon': Icons.shop},
           {
-            'label': 'Notifications',
-            'labelBN': 'বিজ্ঞপ্তি',
-            'icon': Icons.notifications
+            'label': 'Settings',
+            'labelBN': 'সেটিংস',
+            'icon': Icons.settings
           },
         ];
       case UserType.buyer:
@@ -82,9 +82,9 @@ class RoleService {
             'icon': Icons.receipt_long
           },
           {
-            'label': 'Profile',
-            'labelBN': 'প্রোফাইল',
-            'icon': Icons.person
+            'label': 'Settings',
+            'labelBN': 'সেটিংস',
+            'icon': Icons.settings
           },
         ];
       case UserType.driver:
@@ -102,9 +102,9 @@ class RoleService {
           },
           {'label': 'Marketplace', 'labelBN': 'বাজার', 'icon': Icons.shop},
           {
-            'label': 'Notifications',
-            'labelBN': 'বিজ্ঞপ্তি',
-            'icon': Icons.notifications
+            'label': 'Settings',
+            'labelBN': 'সেটিংস',
+            'icon': Icons.settings
           },
         ];
       case UserType.serviceProvider:
@@ -118,9 +118,9 @@ class RoleService {
           },
           {'label': 'Marketplace', 'labelBN': 'বাজার', 'icon': Icons.shop},
           {
-            'label': 'Notifications',
-            'labelBN': 'বিজ্ঞপ্তি',
-            'icon': Icons.notifications
+            'label': 'Settings',
+            'labelBN': 'সেটিংস',
+            'icon': Icons.settings
           },
         ];
       case UserType.company:

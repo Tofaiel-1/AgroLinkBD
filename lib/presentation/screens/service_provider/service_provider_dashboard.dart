@@ -7,6 +7,10 @@ import 'package:agrolinkbd/core/providers/service_provider_providers.dart';
 import 'package:agrolinkbd/core/models/service_model.dart';
 import 'package:agrolinkbd/presentation/screens/service_provider/manage_services_screen.dart';
 import 'package:agrolinkbd/presentation/screens/service_provider/portfolio_gallery_screen.dart';
+import 'package:agrolinkbd/presentation/screens/service_provider/premium_features/booking_calendar_screen.dart';
+import 'package:agrolinkbd/presentation/screens/service_provider/premium_features/ai_assistant_screen.dart';
+import 'package:agrolinkbd/presentation/screens/service_provider/premium_features/premium_subscription_screen.dart';
+import 'package:agrolinkbd/presentation/screens/service_provider/premium_features/client_crm_screen.dart';
 import 'dart:ui';
 
 class ServiceProviderDashboard extends ConsumerStatefulWidget {
@@ -96,8 +100,10 @@ class _ServiceProviderDashboardState extends ConsumerState<ServiceProviderDashbo
                     shape: BoxShape.circle,
                   ),
                   child: IconButton(
-                    icon: const Icon(Icons.notifications_active_rounded, color: Colors.white),
-                    onPressed: () {},
+                    icon: const Icon(Icons.settings_rounded, color: Colors.white),
+                    onPressed: () {
+                      // Navigate to settings
+                    },
                   ),
                 ),
                 Container(
@@ -433,6 +439,54 @@ class _ServiceProviderDashboardState extends ConsumerState<ServiceProviderDashbo
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
+                      'প্রিমিয়াম ফিটচার্স',
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF1E293B),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    GridView.count(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      childAspectRatio: 1.1,
+                      children: [
+                        _buildActionCard(
+                          icon: Icons.calendar_month_rounded,
+                          title: 'বুকিং ক্যালেন্ডার',
+                          subtitle: 'অর্ডার মেইনটেইন',
+                          gradient: const [Color(0xFF11998E), Color(0xFF38EF7D)],
+                          onTap: () => Get.to(() => const BookingCalendarScreen()),
+                        ),
+                        _buildActionCard(
+                          icon: Icons.smart_toy_rounded,
+                          title: 'স্মার্ট কনসালটেন্ট',
+                          subtitle: 'এআই সাপোর্ট',
+                          gradient: const [Color(0xFF8E2DE2), Color(0xFF4A00E0)],
+                          onTap: () => Get.to(() => const AiAssistantScreen()),
+                        ),
+                        _buildActionCard(
+                          icon: Icons.people_alt_rounded,
+                          title: 'ক্লায়েন্ট CRM',
+                          subtitle: 'কাস্টমার মেসেজিং',
+                          gradient: const [Color(0xFF00B4DB), Color(0xFF0083B0)],
+                          onTap: () => Get.to(() => const ClientCrmScreen()),
+                        ),
+                        _buildActionCard(
+                          icon: Icons.workspace_premium_rounded,
+                          title: 'AgroLinkBD Pro',
+                          subtitle: 'আপগ্রেড করুন',
+                          gradient: const [Color(0xFFF2994A), Color(0xFFF2C94C)],
+                          onTap: () => Get.to(() => const PremiumSubscriptionScreen()),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
                       'কুইক অ্যাকশন',
                       style: GoogleFonts.poppins(
                         fontSize: 18,
@@ -462,20 +516,6 @@ class _ServiceProviderDashboardState extends ConsumerState<ServiceProviderDashbo
                           subtitle: 'আপনার কাজ দেখান',
                           gradient: const [Color(0xFFFF416C), Color(0xFFFF4B2B)],
                           onTap: () => Get.to(() => const PortfolioGalleryScreen()),
-                        ),
-                        _buildActionCard(
-                          icon: Icons.book_online_rounded,
-                          title: 'অর্ডার ও বুকিং',
-                          subtitle: 'নতুন ৫ টি অর্ডার',
-                          gradient: const [Color(0xFF11998E), Color(0xFF38EF7D)],
-                          onTap: () {}, // To implement
-                        ),
-                        _buildActionCard(
-                          icon: Icons.account_balance_wallet_rounded,
-                          title: 'উপার্জন ও পে আউট',
-                          subtitle: 'ব্যালেন্স দেখুন',
-                          gradient: const [Color(0xFFF2994A), Color(0xFFF2C94C)],
-                          onTap: () {}, // To implement
                         ),
                       ],
                     ),

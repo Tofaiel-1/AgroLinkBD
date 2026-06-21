@@ -234,7 +234,7 @@ class _RoleBasedNavigationContainerState
           const FarmManagementScreen(),
           const FarmerAnalyticsScreen(),
           const BazaarHome(),
-          const NotificationCenter(),
+          const ProfileSettings(),
         ];
 
       case UserType.buyer:
@@ -252,7 +252,7 @@ class _RoleBasedNavigationContainerState
           const DriverDeliveryMapScreen(),
           const DriverAnalyticsScreen(),
           const BazaarHome(),
-          const NotificationCenter(),
+          const ProfileSettings(),
         ];
 
       case UserType.serviceProvider:
@@ -260,7 +260,7 @@ class _RoleBasedNavigationContainerState
           const ServiceProviderDashboard(),
           const ServiceProviderProductsScreen(),
           const ServiceProviderOrdersScreen(),
-          const NotificationCenter(),
+          const BazaarHome(),
           const ProfileSettings(),
         ];
 
