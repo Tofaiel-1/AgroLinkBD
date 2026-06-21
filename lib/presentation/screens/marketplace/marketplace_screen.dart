@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
+import 'package:agrolinkbd/presentation/screens/marketplace/add_product_screen.dart';
 
 class MarketplaceScreen extends StatefulWidget {
   const MarketplaceScreen({super.key});
@@ -11,62 +13,73 @@ class MarketplaceScreen extends StatefulWidget {
 class _MarketplaceScreenState extends State<MarketplaceScreen> {
   String _selectedCategory = 'সব';
   String _sortBy = 'popular';
+  int _currentBannerIndex = 0;
+
+  final List<String> _banners = [
+    'https://images.unsplash.com/photo-1488459716781-31db52582fe9?q=80&w=1200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=1200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1595853035070-59a39fe84da3?q=80&w=1200&auto=format&fit=crop',
+  ];
 
   final List<Map<String, dynamic>> _categories = [
-    {'label': 'সব', 'emoji': '🛒'},
-    {'label': 'সবজি', 'emoji': '🥬'},
-    {'label': 'ফলমূল', 'emoji': '🍎'},
-    {'label': 'চাল', 'emoji': '🌾'},
-    {'label': 'মসলা', 'emoji': '🌶️'},
-    {'label': 'মাছ', 'emoji': '🐟'},
-    {'label': 'মাংস', 'emoji': '🥩'},
-    {'label': 'দুধ-ডিম', 'emoji': '🥚'},
+    {'label': 'সব', 'icon': Icons.grid_view_rounded},
+    {'label': 'সবজি', 'icon': Icons.grass_rounded},
+    {'label': 'ফলমূল', 'icon': Icons.apple_rounded},
+    {'label': 'চাল', 'icon': Icons.agriculture_rounded},
+    {'label': 'মসলা', 'icon': Icons.local_florist_rounded},
+    {'label': 'মাছ', 'icon': Icons.set_meal_rounded},
+    {'label': 'মাংস', 'icon': Icons.kebab_dining_rounded},
+    {'label': 'দুধ-ডিম', 'icon': Icons.egg_rounded},
   ];
 
   final List<Map<String, dynamic>> _products = [
     {
-      'name': 'তাজা টমেটো',
+      'name': 'তাজা টমেটো (Premium)',
       'price': 40,
       'unit': 'কেজি',
       'farmer': 'করিম ফার্ম',
       'location': 'বগুড়া',
-      'emoji': '🍅',
-      'color': Colors.red,
+      'image': 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?q=80&w=600&auto=format&fit=crop',
       'rating': 4.8,
       'category': 'সবজি',
+      'badge': 'Hot',
+      'isVerified': true,
     },
     {
-      'name': 'দেশি পেঁয়াজ',
+      'name': 'দেশি পেঁয়াজ (Organic)',
       'price': 70,
       'unit': 'কেজি',
       'farmer': 'রহিম এগ্রো',
       'location': 'পাবনা',
-      'emoji': '🧅',
-      'color': Colors.purple,
+      'image': 'https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?q=80&w=600&auto=format&fit=crop',
       'rating': 4.5,
       'category': 'সবজি',
+      'badge': 'Sale',
+      'isVerified': true,
     },
     {
-      'name': 'মিনিকেট চাল',
+      'name': 'মিনিকেট চাল (সুপার)',
       'price': 65,
       'unit': 'কেজি',
       'farmer': 'কৃষক সমবায়',
       'location': 'দিনাজপুর',
-      'emoji': '🌾',
-      'color': Colors.amber,
+      'image': 'https://images.unsplash.com/photo-1586201375761-83865001e31c?q=80&w=600&auto=format&fit=crop',
       'rating': 4.9,
       'category': 'চাল',
+      'badge': null,
+      'isVerified': true,
     },
     {
-      'name': 'আলু',
+      'name': 'তাজা আলু (রংপুর)',
       'price': 25,
       'unit': 'কেজি',
       'farmer': 'রংপুর ফার্ম',
       'location': 'রংপুর',
-      'emoji': '🥔',
-      'color': Colors.brown,
+      'image': 'https://images.unsplash.com/photo-1518977676601-b53f82aba655?q=80&w=600&auto=format&fit=crop',
       'rating': 4.3,
       'category': 'সবজি',
+      'badge': null,
+      'isVerified': false,
     },
     {
       'name': 'আম (হিমসাগর)',
@@ -74,43 +87,23 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       'unit': 'কেজি',
       'farmer': 'রাজশাহী ফ্রুট',
       'location': 'রাজশাহী',
-      'emoji': '🥭',
-      'color': Colors.orange,
+      'image': 'https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?q=80&w=600&auto=format&fit=crop',
       'rating': 4.9,
       'category': 'ফলমূল',
+      'badge': 'Top Rated',
+      'isVerified': true,
     },
     {
-      'name': 'হলুদ গুঁড়া',
-      'price': 250,
-      'unit': 'কেজি',
-      'farmer': 'মসলা ঘর',
-      'location': 'মানিকগঞ্জ',
-      'emoji': '🟡',
-      'color': Colors.yellow,
-      'rating': 4.6,
-      'category': 'মসলা',
-    },
-    {
-      'name': 'রুই মাছ',
+      'name': 'রুই মাছ (হালদা)',
       'price': 350,
       'unit': 'কেজি',
       'farmer': 'মৎস্য খামার',
       'location': 'ময়মনসিংহ',
-      'emoji': '🐟',
-      'color': Colors.blue,
+      'image': 'https://images.unsplash.com/photo-1524824267900-2fa9cbf7a506?q=80&w=600&auto=format&fit=crop',
       'rating': 4.7,
       'category': 'মাছ',
-    },
-    {
-      'name': 'দেশি মুরগি',
-      'price': 550,
-      'unit': 'কেজি',
-      'farmer': 'গ্রামীণ পোল্ট্রি',
-      'location': 'গাজীপুর',
-      'emoji': '🐔',
-      'color': Colors.deepOrange,
-      'rating': 4.4,
-      'category': 'মাংস',
+      'badge': 'Fresh',
+      'isVerified': true,
     },
   ];
 
@@ -133,127 +126,204 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF5F7FA),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Top bar + Search
-            Container(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  // Title row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'কৃষি বাজার 🛒',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.white : Colors.black87,
-                        ),
-                      ),
-                      PopupMenuButton<String>(
-                        icon: Icon(
-                          Icons.sort,
-                          color: isDark ? Colors.white70 : Colors.grey.shade700,
-                        ),
-                        onSelected: (value) => setState(() => _sortBy = value),
-                        itemBuilder: (_) => [
-                          const PopupMenuItem(value: 'popular', child: Text('জনপ্রিয়')),
-                          const PopupMenuItem(value: 'price_low', child: Text('দাম: কম → বেশি')),
-                          const PopupMenuItem(value: 'price_high', child: Text('দাম: বেশি → কম')),
-                          const PopupMenuItem(value: 'rating', child: Text('সেরা রেটিং')),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  // Search bar
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: TextField(
-                      decoration: InputDecoration(
-                        hintText: 'পণ্য খুঁজুন...',
-                        hintStyle: TextStyle(
-                          color: isDark ? Colors.white38 : Colors.grey.shade400,
-                          fontSize: 14,
-                        ),
-                        border: InputBorder.none,
-                        icon: Icon(Icons.search,
-                            color: isDark ? Colors.white38 : Colors.grey.shade400),
-                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                    ),
-                  ),
-                ],
+      backgroundColor: const Color(0xFFF5F7FA),
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          // ==========================================
+          // PREMIUM APP BAR & SEARCH
+          // ==========================================
+          SliverAppBar(
+            expandedHeight: 140,
+            pinned: true,
+            floating: true,
+            backgroundColor: const Color(0xFF1B5E20), // Deep forest green
+            elevation: 0,
+            title: Text(
+              'এগ্রোলিংক মার্কেট',
+              style: GoogleFonts.poppins(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
               ),
             ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white),
+                onPressed: () {},
+              ),
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.sort, color: Colors.white),
+                onSelected: (value) => setState(() => _sortBy = value),
+                itemBuilder: (_) => [
+                  PopupMenuItem(value: 'popular', child: Text('জনপ্রিয়', style: GoogleFonts.poppins())),
+                  PopupMenuItem(value: 'price_low', child: Text('দাম: কম → বেশি', style: GoogleFonts.poppins())),
+                  PopupMenuItem(value: 'price_high', child: Text('দাম: বেশি → কম', style: GoogleFonts.poppins())),
+                  PopupMenuItem(value: 'rating', child: Text('সেরা রেটিং', style: GoogleFonts.poppins())),
+                ],
+              ),
+            ],
+            flexibleSpace: FlexibleSpaceBar(
+              background: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF1B5E20), Color(0xFF4CAF50)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 60, left: 16, right: 16),
+                    child: Container(
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          )
+                        ],
+                      ),
+                      child: TextField(
+                        decoration: InputDecoration(
+                          hintText: 'কী খুঁজছেন? (যেমন: টমেটো, আলু)',
+                          hintStyle: GoogleFonts.poppins(color: Colors.grey.shade400, fontSize: 14),
+                          prefixIcon: const Icon(Icons.search, color: Color(0xFF1B5E20)),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(vertical: 15),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
 
-            // Category chips
-            SizedBox(
-              height: 52,
+          // ==========================================
+          // BANNER CAROUSEL
+          // ==========================================
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 10),
+              child: SizedBox(
+                height: 160,
+                child: Stack(
+                  children: [
+                    PageView.builder(
+                      itemCount: _banners.length,
+                      onPageChanged: (index) => setState(() => _currentBannerIndex = index),
+                      itemBuilder: (context, index) {
+                        return Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            image: DecorationImage(
+                              image: NetworkImage(_banners[index]),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              gradient: LinearGradient(
+                                colors: [Colors.black.withOpacity(0.6), Colors.transparent],
+                                begin: Alignment.bottomLeft,
+                                end: Alignment.topRight,
+                              ),
+                            ),
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(4)),
+                                  child: Text('HOT DEALS', style: GoogleFonts.poppins(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  index == 0 ? 'তাজা শাকসবজি' : index == 1 ? 'সরাসরি কৃষকের থেকে' : 'অর্গানিক ফলমূল',
+                                  style: GoogleFonts.poppins(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    Positioned(
+                      bottom: 10,
+                      left: 0,
+                      right: 0,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(_banners.length, (index) {
+                          return Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            width: _currentBannerIndex == index ? 20 : 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: _currentBannerIndex == index ? const Color(0xFF4CAF50) : Colors.white.withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // ==========================================
+          // CATEGORY CHIPS
+          // ==========================================
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: 100,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 itemCount: _categories.length,
                 itemBuilder: (context, index) {
                   final cat = _categories[index];
                   final isSelected = _selectedCategory == cat['label'];
                   return GestureDetector(
                     onTap: () => setState(() => _selectedCategory = cat['label']),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      margin: const EdgeInsets.only(right: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    child: Container(
+                      width: 75,
+                      margin: const EdgeInsets.only(right: 12),
                       decoration: BoxDecoration(
-                        color: isSelected
-                            ? const Color(0xFF1976D2)
-                            : isDark
-                                ? const Color(0xFF2A2A2A)
-                                : Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: isSelected
-                              ? const Color(0xFF1976D2)
-                              : isDark
-                                  ? Colors.white12
-                                  : Colors.grey.shade200,
-                        ),
+                        color: isSelected ? const Color(0xFF1B5E20) : Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 4)),
+                        ],
                       ),
-                      child: Row(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(cat['emoji'], style: const TextStyle(fontSize: 16)),
-                          const SizedBox(width: 6),
+                          Icon(
+                            cat['icon'],
+                            color: isSelected ? Colors.white : const Color(0xFF1B5E20),
+                            size: 28,
+                          ),
+                          const SizedBox(height: 8),
                           Text(
                             cat['label'],
-                            style: TextStyle(
-                              color: isSelected
-                                  ? Colors.white
-                                  : isDark
-                                      ? Colors.white70
-                                      : Colors.grey.shade700,
+                            style: GoogleFonts.poppins(
+                              color: isSelected ? Colors.white : Colors.grey.shade700,
                               fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                              fontSize: 13,
+                              fontSize: 12,
                             ),
                           ),
                         ],
@@ -263,373 +333,215 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 },
               ),
             ),
+          ),
 
-            // Results count
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          // ==========================================
+          // PRODUCT COUNT
+          // ==========================================
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               child: Row(
                 children: [
                   Text(
-                    '${_filteredProducts.length}টি পণ্য পাওয়া গেছে',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isDark ? Colors.white54 : Colors.grey.shade500,
+                    '${_filteredProducts.length} টি পণ্য পাওয়া গেছে',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade700,
                     ),
                   ),
                 ],
               ),
             ),
+          ),
 
-            // Product Grid
-            Expanded(
-              child: _filteredProducts.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.search_off, size: 64,
-                              color: isDark ? Colors.white24 : Colors.grey.shade300),
-                          const SizedBox(height: 12),
-                          Text(
-                            'কোনো পণ্য পাওয়া যায়নি',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: isDark ? Colors.white54 : Colors.grey.shade500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : GridView.builder(
-                      physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.all(12),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        childAspectRatio: 0.72,
-                      ),
-                      itemCount: _filteredProducts.length,
-                      itemBuilder: (context, index) {
-                        final product = _filteredProducts[index];
-                        return _buildGridProductCard(product, isDark);
-                      },
-                    ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGridProductCard(Map<String, dynamic> product, bool isDark) {
-    return GestureDetector(
-      onTap: () {
-        Get.snackbar(
-          product['name'],
-          '${product['farmer']} — ${product['location']}',
-          backgroundColor: isDark ? Colors.grey.shade800 : Colors.white,
-          colorText: isDark ? Colors.white : Colors.black87,
-        );
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: isDark
-              ? []
-              : [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Product image area
-            Expanded(
-              flex: 5,
-              child: Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      (product['color'] as Color).withOpacity(0.08),
-                      (product['color'] as Color).withOpacity(0.15),
-                    ],
-                  ),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(16),
-                    topRight: Radius.circular(16),
-                  ),
-                ),
-                child: Stack(
-                  children: [
-                    Center(
-                      child: Text(
-                        product['emoji'],
-                        style: const TextStyle(fontSize: 52),
-                      ),
-                    ),
-                    // Rating badge
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: isDark ? Colors.black54 : Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
+          // ==========================================
+          // PRODUCT GRID
+          // ==========================================
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            sliver: _filteredProducts.isEmpty
+                ? SliverToBoxAdapter(
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(40.0),
+                        child: Column(
                           children: [
-                            const Icon(Icons.star, size: 12, color: Colors.amber),
-                            const SizedBox(width: 2),
-                            Text(
-                              '${product['rating']}',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: isDark ? Colors.white : Colors.black87,
-                              ),
-                            ),
+                            Icon(Icons.search_off_rounded, size: 80, color: Colors.grey.shade300),
+                            const SizedBox(height: 16),
+                            Text('কোনো পণ্য পাওয়া যায়নি', style: GoogleFonts.poppins(color: Colors.grey.shade600, fontSize: 16)),
                           ],
                         ),
                       ),
                     ),
-                  ],
-                ),
-              ),
-            ),
-            // Product info
-            Expanded(
-              flex: 5,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      product['name'],
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                        color: isDark ? Colors.white : Colors.black87,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                  )
+                : SliverGrid(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                      childAspectRatio: 0.68,
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${product['farmer']} • ${product['location']}',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: isDark ? Colors.white54 : Colors.grey.shade500,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        return _buildProductCard(_filteredProducts[index]);
+                      },
+                      childCount: _filteredProducts.length,
                     ),
-                    const Spacer(),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '৳${product['price']}/${product['unit']}',
-                          style: TextStyle(
-                            color: Colors.green.shade700,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () {
-                            _showAddToCartBottomSheet(context, product, isDark);
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF1976D2),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(Icons.add_shopping_cart,
-                                color: Colors.white, size: 16),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+                  ),
+          ),
+          
+          const SliverToBoxAdapter(child: SizedBox(height: 80)),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Get.to(() => const AddProductScreen());
+        },
+        backgroundColor: const Color(0xFF1B5E20),
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: Text('পণ্য যোগ করুন', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold)),
       ),
     );
   }
 
-  void _showAddToCartBottomSheet(BuildContext context, Map<String, dynamic> product, bool isDark) {
-    int quantity = 1;
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+  Widget _buildProductCard(Map<String, dynamic> product) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Padding(
-              padding: const EdgeInsets.all(24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Image Area
+          Expanded(
+            flex: 5,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                image: DecorationImage(
+                  image: NetworkImage(product['image']),
+                  fit: BoxFit.cover,
+                ),
+              ),
+              child: Stack(
+                children: [
+                  if (product['badge'] != null)
+                    Positioned(
+                      top: 10,
+                      left: 10,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: product['badge'] == 'Hot' ? Colors.red : Colors.orange,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          product['badge'],
+                          style: GoogleFonts.poppins(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          // Info Area
+          Expanded(
+            flex: 5,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
               child: Column(
-                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      Text(
-                        product['emoji'],
-                        style: const TextStyle(fontSize: 40),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              product['name'],
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: isDark ? Colors.white : Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '৳${product['price']} / ${product['unit']}',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.green.shade700,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      const Icon(Icons.star_rounded, size: 14, color: Colors.amber),
+                      const SizedBox(width: 4),
+                      Text('${product['rating']}', style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold)),
+                      const Spacer(),
+                      if (product['isVerified'])
+                        const Icon(Icons.verified, size: 14, color: Colors.blue),
                     ],
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 6),
                   Text(
-                    'পরিমাণ নির্বাচন করুন',
-                    style: TextStyle(
-                      fontSize: 16,
+                    product['name'],
+                    style: GoogleFonts.poppins(
                       fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white70 : Colors.black87,
+                      fontSize: 14,
+                      color: const Color(0xFF1E293B),
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 4),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      GestureDetector(
-                        onTap: () {
-                          if (quantity > 1) {
-                            setModalState(() => quantity--);
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: isDark ? Colors.white12 : Colors.grey.shade200,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(Icons.remove, color: isDark ? Colors.white : Colors.black),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 32),
+                      Icon(Icons.location_on_rounded, size: 12, color: Colors.grey.shade500),
+                      const SizedBox(width: 4),
+                      Expanded(
                         child: Text(
-                          '$quantity',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: isDark ? Colors.white : Colors.black87,
+                          product['location'],
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            color: Colors.grey.shade500,
                           ),
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          setModalState(() => quantity++);
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF1976D2),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.add, color: Colors.white),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 24),
+                  const Spacer(),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'মোট মূল্য:',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: isDark ? Colors.white70 : Colors.black87,
-                        ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '৳${product['price']}',
+                            style: GoogleFonts.poppins(
+                              color: const Color(0xFF1B5E20),
+                              fontWeight: FontWeight.w800,
+                              fontSize: 16,
+                            ),
+                          ),
+                          Text(
+                            'প্রতি ${product['unit']}',
+                            style: GoogleFonts.poppins(
+                              color: Colors.grey.shade600,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        '৳${product['price'] * quantity}',
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1976D2),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1B5E20),
+                          borderRadius: BorderRadius.circular(10),
                         ),
+                        child: const Icon(Icons.add_shopping_cart_rounded, color: Colors.white, size: 18),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        Get.snackbar(
-                          'কার্টে যোগ হয়েছে ✓',
-                          '$quantity ${product['unit']} ${product['name']} কার্টে যোগ করা হয়েছে',
-                          backgroundColor: Colors.green.shade100,
-                          colorText: Colors.green.shade900,
-                          duration: const Duration(seconds: 2),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1976D2),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        'কার্টে যোগ করুন',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-                      ),
-                    ),
-                  ),
                 ],
               ),
-            );
-          },
-        );
-      },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
