@@ -11,11 +11,13 @@ class AdminProvider with ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   List<AdminModel> _allAdmins = [];
+  bool _isPinVerified = false;
 
   AdminModel? get currentAdmin => _currentAdmin;
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isAdminLoggedIn => _currentAdmin != null;
+  bool get isPinVerified => _isPinVerified;
   bool get isSuperAdmin => _currentAdmin?.role == 'super_admin';
   List<AdminModel> get allAdmins => _allAdmins;
 
@@ -70,6 +72,10 @@ class AdminProvider with ChangeNotifier {
 
         _isLoading = false;
         notifyListeners();
+        
+        // Log successful login
+        await logAdminAction('ADMIN_LOGIN', 'Admin logged into the system: ${_currentAdmin?.name}');
+        
         return true;
       } on FirebaseException catch (e) {
         _error =
@@ -107,10 +113,30 @@ class AdminProvider with ChangeNotifier {
 
   /// Admin Sign Out
   Future<void> adminSignOut() async {
+    // Log logout before clearing current admin
+    if (_currentAdmin != null) {
+      await logAdminAction('ADMIN_LOGOUT', 'Admin logged out: ${_currentAdmin?.name}');
+    }
     await _auth.signOut();
     _currentAdmin = null;
+    _isPinVerified = false;
     _error = null;
     notifyListeners();
+  }
+
+  /// Verify 2FA Security PIN
+  Future<bool> verifyPin(String pin) async {
+    // In production, this might verify against Firestore doc
+    // For now, hardcoded 123456 as requested
+    if (pin == '123456') {
+      _isPinVerified = true;
+      notifyListeners();
+      await logAdminAction('2FA_SUCCESS', 'Admin successfully passed 2FA Security PIN');
+      return true;
+    } else {
+      await logAdminAction('2FA_FAILED', 'Admin failed 2FA Security PIN attempt');
+      return false;
+    }
   }
 
   /// Create New Admin (Super Admin only)
@@ -150,7 +176,7 @@ class AdminProvider with ChangeNotifier {
           );
 
       // Log activity
-      await _logActivity('ADMIN_CREATED', 'Admin created: $email');
+      await logAdminAction('ADMIN_CREATED', 'Admin created: $email');
 
       _isLoading = false;
       notifyListeners();
@@ -209,7 +235,7 @@ class AdminProvider with ChangeNotifier {
         'isActive': isActive,
       });
 
-      await _logActivity('ADMIN_UPDATED', 'Admin updated: $adminId');
+      await logAdminAction('ADMIN_UPDATED', 'Admin updated: $adminId');
       await loadAllAdmins();
       return true;
     } catch (e) {
@@ -233,7 +259,7 @@ class AdminProvider with ChangeNotifier {
 
       // Note: Firebase Auth user deletion requires running as Cloud Function
       // For now, just log the activity
-      await _logActivity('ADMIN_DELETED', 'Admin deleted: $adminId');
+      await logAdminAction('ADMIN_DELETED', 'Admin deleted: $adminId');
 
       await loadAllAdmins();
       return true;
@@ -244,8 +270,8 @@ class AdminProvider with ChangeNotifier {
     }
   }
 
-  /// Log admin activity
-  Future<void> _logActivity(String actionType, String description) async {
+  /// Log admin activity publicly
+  Future<void> logAdminAction(String actionType, String description) async {
     try {
       await _firestore.collection('admin_logs').add({
         'adminId': _currentAdmin?.id,

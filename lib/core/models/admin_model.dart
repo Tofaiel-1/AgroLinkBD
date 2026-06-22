@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class AdminModel {
   final String id;
   final String email;
@@ -19,18 +21,23 @@ class AdminModel {
     this.isSuspended = false,
   });
 
+  static DateTime? _parseDate(dynamic date) {
+    if (date == null) return null;
+    if (date is DateTime) return date;
+    if (date is Timestamp) return date.toDate();
+    if (date is int) return DateTime.fromMillisecondsSinceEpoch(date);
+    if (date is String) return DateTime.tryParse(date);
+    return null;
+  }
+
   factory AdminModel.fromMap(Map<String, dynamic> map) {
     return AdminModel(
       id: map['id'] as String? ?? '',
       email: map['email'] as String? ?? '',
       name: map['name'] as String? ?? '',
       role: map['role'] as String? ?? 'admin',
-      createdAt: map['createdAt'] != null
-          ? DateTime.parse(map['createdAt'].toString())
-          : DateTime.now(),
-      lastLogin: map['lastLogin'] != null
-          ? DateTime.parse(map['lastLogin'].toString())
-          : null,
+      createdAt: _parseDate(map['createdAt']) ?? DateTime.now(),
+      lastLogin: _parseDate(map['lastLogin']),
       isActive: map['isActive'] as bool? ?? true,
       isSuspended: map['isSuspended'] as bool? ?? false,
     );
