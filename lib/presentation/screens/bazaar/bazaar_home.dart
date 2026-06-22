@@ -62,7 +62,6 @@ class _BazaarHomeState extends State<BazaarHome> {
       }
 
       if (mounted) {
-        // Check mounted before setState
         setState(() {
           _categoryProductCounts = tempCounts;
           _isLoading = false;
@@ -83,7 +82,13 @@ class _BazaarHomeState extends State<BazaarHome> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Bazaar'), elevation: 0),
+      backgroundColor: const Color(0xFFF5F7FA), // Light theme background
+      appBar: AppBar(
+        title: const Text('Bazaar', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), 
+        elevation: 0,
+        backgroundColor: Colors.green.shade800,
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
@@ -91,30 +96,31 @@ class _BazaarHomeState extends State<BazaarHome> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 1. Search Bar (Glassmorphism)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade900.withOpacity(0.4),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.1),
-                            width: 1.5,
-                          ),
+                  // 1. Search Bar (Premium Light Mode Style)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
                         ),
-                        child: TextField(
-                          style: const TextStyle(color: Colors.white),
-                          decoration: InputDecoration(
-                            hintText: 'Search crops, spices, and more...',
-                            hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-                            icon: const Icon(Icons.search, color: Colors.amber),
-                            border: InputBorder.none,
-                          ),
-                        ),
+                      ],
+                      border: Border.all(
+                        color: Colors.grey.withOpacity(0.2),
+                        width: 1,
+                      ),
+                    ),
+                    child: TextField(
+                      style: const TextStyle(color: Colors.black87),
+                      decoration: InputDecoration(
+                        hintText: 'Search crops, spices, and more...',
+                        hintStyle: TextStyle(color: Colors.grey.shade500),
+                        icon: const Icon(Icons.search, color: Colors.amber),
+                        border: InputBorder.none,
                       ),
                     ),
                   ),
@@ -183,7 +189,7 @@ class _BazaarHomeState extends State<BazaarHome> {
                     'Explore Marketplace',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: Colors.black87,
                         ),
                   ),
                   const SizedBox(height: 12),
@@ -198,74 +204,77 @@ class _BazaarHomeState extends State<BazaarHome> {
                     },
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(16),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                        child: Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.green.withOpacity(0.3),
-                                Colors.greenAccent.withOpacity(0.1),
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: Colors.greenAccent.withOpacity(0.3),
-                              width: 1.5,
-                            ),
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade50,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Colors.green.shade200,
+                            width: 1.5,
                           ),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: const Icon(
-                                  Icons.storefront,
-                                  color: Colors.greenAccent,
-                                  size: 36,
-                                ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.green.withOpacity(0.1),
+                              blurRadius: 10,
+                              offset: const Offset(0, 5),
+                            )
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.green.withOpacity(0.1),
+                                    blurRadius: 5,
+                                  )
+                                ],
                               ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Browse Bazaar',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleLarge
-                                          ?.copyWith(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'See products from all farmers',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium
-                                          ?.copyWith(
-                                            color: Colors.white.withOpacity(0.7),
-                                          ),
-                                    ),
-                                  ],
-                                ),
+                              child: const Icon(
+                                Icons.storefront,
+                                color: Colors.green,
+                                size: 36,
                               ),
-                              const Icon(
-                                Icons.arrow_forward_ios,
-                                color: Colors.greenAccent,
-                                size: 20,
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Browse Bazaar',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleLarge
+                                        ?.copyWith(
+                                          color: Colors.green.shade800,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'See products from all farmers',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          color: Colors.green.shade700,
+                                        ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
+                            ),
+                            Icon(
+                              Icons.arrow_forward_ios,
+                              color: Colors.green.shade400,
+                              size: 20,
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -280,14 +289,14 @@ class _BazaarHomeState extends State<BazaarHome> {
                         'Trending Crops',
                         style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: Colors.black87,
                             ),
                       ),
                       Row(
                         children: [
-                          Icon(Icons.arrow_back_ios, size: 14, color: Colors.white.withOpacity(0.5)),
+                          Icon(Icons.arrow_back_ios, size: 14, color: Colors.grey.shade400),
                           const SizedBox(width: 4),
-                          Icon(Icons.arrow_forward_ios, size: 14, color: Colors.white.withOpacity(0.5)),
+                          Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey.shade400),
                         ],
                       ),
                     ],
@@ -301,7 +310,7 @@ class _BazaarHomeState extends State<BazaarHome> {
                     'My Shop',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: Colors.black87,
                         ),
                   ),
                   const SizedBox(height: 16),
@@ -313,7 +322,7 @@ class _BazaarHomeState extends State<BazaarHome> {
                     'Shop Statistics',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: Colors.black87,
                         ),
                   ),
                   const SizedBox(height: 16),
@@ -326,88 +335,126 @@ class _BazaarHomeState extends State<BazaarHome> {
 
   Widget _buildTrendingCrops() {
     final trending = [
-      {'name': 'Fresh Chili', 'price': '৳120/kg', 'rating': '4.8★', 'icon': Icons.local_fire_department, 'color': Colors.redAccent},
-      {'name': 'Deshi Mango', 'price': '৳80/kg', 'rating': '4.9★', 'icon': Icons.brightness_high, 'color': Colors.orangeAccent},
-      {'name': 'Premium Rice', 'price': '৳75/kg', 'rating': '4.7★', 'icon': Icons.grass, 'color': Colors.amber},
-      {'name': 'Organic Onion', 'price': '৳90/kg', 'rating': '4.5★', 'icon': Icons.eco, 'color': Colors.purpleAccent},
+      {
+        'name': 'Fresh Chili', 
+        'price': '৳120/kg', 
+        'rating': '4.8★', 
+        'image': 'https://images.unsplash.com/photo-1596646549215-6f9185fb846b?w=400&q=80',
+        'color': Colors.redAccent
+      },
+      {
+        'name': 'Deshi Mango', 
+        'price': '৳80/kg', 
+        'rating': '4.9★', 
+        'image': 'https://images.unsplash.com/photo-1591073113125-e46713c829ed?w=400&q=80',
+        'color': Colors.orangeAccent
+      },
+      {
+        'name': 'Premium Rice', 
+        'price': '৳75/kg', 
+        'rating': '4.7★', 
+        'image': 'https://images.unsplash.com/photo-1586201375761-83865001e8ac?w=400&q=80',
+        'color': Colors.amber
+      },
+      {
+        'name': 'Organic Onion', 
+        'price': '৳90/kg', 
+        'rating': '4.5★', 
+        'image': 'https://images.unsplash.com/photo-1518977956812-cd3dbadaaf31?w=400&q=80',
+        'color': Colors.purpleAccent
+      },
     ];
 
     return SizedBox(
-      height: 170,
+      height: 200,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: trending.length,
         itemBuilder: (context, index) {
           final item = trending[index];
           return Container(
-            width: 140,
+            width: 150,
             margin: const EdgeInsets.only(right: 16),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: (item['color'] as Color).withOpacity(0.3),
-                      width: 1,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    flex: 5,
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                      child: Image.network(
+                        item['image'] as String,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: (item['color'] as Color).withOpacity(0.2),
+                          child: Icon(Icons.image_not_supported, color: item['color'] as Color),
+                        ),
+                      ),
                     ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: (item['color'] as Color).withOpacity(0.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(item['icon'] as IconData, color: item['color'] as Color, size: 28),
-                      ),
-                      Column(
+                  Expanded(
+                    flex: 4,
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
                             item['name'] as String,
                             style: const TextStyle(
-                              color: Colors.white,
+                              color: Colors.black87,
                               fontWeight: FontWeight.bold,
                               fontSize: 15,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 4),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
                                 item['price'] as String,
                                 style: TextStyle(
-                                  color: Colors.greenAccent.shade400,
+                                  color: Colors.green.shade700,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 13,
                                 ),
                               ),
-                              Text(
-                                item['rating'] as String,
-                                style: const TextStyle(
-                                  color: Colors.amber,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  item['rating'] as String,
+                                  style: TextStyle(
+                                    color: Colors.orange.shade800,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ],
                           ),
                         ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
           );
@@ -418,9 +465,9 @@ class _BazaarHomeState extends State<BazaarHome> {
 
   Widget _buildCategoryGrid() {
     final categories = [
-      {'name': 'Vegetables', 'icon': Icons.eco, 'key': 'vegetables', 'color': Colors.lightGreenAccent},
-      {'name': 'Fruits', 'icon': Icons.apple, 'key': 'fruits', 'color': Colors.orangeAccent},
-      {'name': 'Spices', 'icon': Icons.grain, 'key': 'spices', 'color': Colors.redAccent},
+      {'name': 'Vegetables', 'icon': Icons.eco, 'key': 'vegetables', 'color': Colors.lightGreen},
+      {'name': 'Fruits', 'icon': Icons.apple, 'key': 'fruits', 'color': Colors.orange},
+      {'name': 'Spices', 'icon': Icons.grain, 'key': 'spices', 'color': Colors.red},
     ];
 
     return GridView.count(
@@ -460,60 +507,54 @@ class _BazaarHomeState extends State<BazaarHome> {
           _loadProductCounts();
         });
       },
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: color.withOpacity(0.2),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: color.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 36, color: color),
-                const SizedBox(height: 8),
-                Text(
-                  name,
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    '$productCount Items',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: color,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: color.withOpacity(0.3),
+            width: 1,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 5,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 28, color: color),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              name,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '$productCount Items',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -524,57 +565,54 @@ class _BazaarHomeState extends State<BazaarHome> {
 
     return Row(
       children: [
-        _buildStatCard('Total Products', '$total', Icons.inventory_2, Colors.blueAccent),
+        _buildStatCard('Total Products', '$total', Icons.inventory_2, Colors.blue),
         const SizedBox(width: 12),
-        _buildStatCard('Categories', '3', Icons.category, Colors.purpleAccent),
+        _buildStatCard('Categories', '3', Icons.category, Colors.purple),
         const SizedBox(width: 12),
-        _buildStatCard('Active', 'Yes', Icons.check_circle, Colors.greenAccent),
+        _buildStatCard('Active', 'Yes', Icons.check_circle, Colors.green),
       ],
     );
   }
 
   Widget _buildStatCard(String label, String value, IconData icon, Color color) {
     return Expanded(
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: color.withOpacity(0.2),
-                width: 1.5,
-              ),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 5,
+              offset: const Offset(0, 2),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(icon, color: color, size: 28),
-                const SizedBox(height: 12),
-                Text(
-                  value,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.white.withOpacity(0.7),
-                    fontWeight: FontWeight.w500,
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: color, size: 28),
+            const SizedBox(height: 12),
+            Text(
+              value,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
             ),
-          ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ),
       ),
     );

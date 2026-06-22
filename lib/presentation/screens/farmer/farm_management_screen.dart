@@ -3,7 +3,18 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:agrolinkbd/core/services/phase2_services/farm_service.dart';
 import 'package:agrolinkbd/core/models/phase2_models/farm_models.dart';
 
-/// Farmer farm management screen
+import 'package:agrolinkbd/presentation/screens/farmer/farm_management/farm_profile_screen.dart';
+import 'package:agrolinkbd/presentation/screens/farmer/farm_management/crop_production_screen.dart';
+import 'package:agrolinkbd/presentation/screens/farmer/farm_management/expense_management_screen.dart';
+import 'package:agrolinkbd/presentation/screens/farmer/farm_management/revenue_profit_screen.dart';
+import 'package:agrolinkbd/presentation/screens/farmer/farm_management/task_management_screen.dart';
+import 'package:agrolinkbd/presentation/screens/farmer/farm_management/inventory_screen.dart';
+import 'package:agrolinkbd/presentation/screens/farmer/farm_management/farm_gallery_screen.dart';
+import 'package:agrolinkbd/presentation/screens/farmer/farm_management/gps_mapping_screen.dart';
+import 'package:agrolinkbd/presentation/screens/farmer/farm_management/harvest_tracking_screen.dart';
+import 'package:agrolinkbd/presentation/screens/farmer/farm_management/yield_prediction_screen.dart';
+import 'package:agrolinkbd/presentation/screens/farmer/farm_management/farm_notifications_screen.dart';
+
 class FarmManagementScreen extends StatefulWidget {
   const FarmManagementScreen({Key? key}) : super(key: key);
 
@@ -15,6 +26,86 @@ class _FarmManagementScreenState extends State<FarmManagementScreen> {
   final farmService = FarmService();
   late Future<List<Farm>> farmsFuture;
 
+  final List<Map<String, dynamic>> _modules = [
+    {
+      'title': 'Farm Management',
+      'subtitle': 'Details & Setup',
+      'icon': Icons.agriculture,
+      'color': const Color(0xFF4CAF50),
+      'screen': const FarmProfileScreen(),
+    },
+    {
+      'title': 'Crop Production',
+      'subtitle': 'Tracking & Growth',
+      'icon': Icons.grass,
+      'color': const Color(0xFF8BC34A),
+      'screen': const CropProductionScreen(),
+    },
+    {
+      'title': 'Expense Mgmt',
+      'subtitle': 'Costs & Spending',
+      'icon': Icons.money_off_rounded,
+      'color': const Color(0xFFF44336),
+      'screen': const ExpenseManagementScreen(),
+    },
+    {
+      'title': 'Revenue & Profit',
+      'subtitle': 'Sales & Margins',
+      'icon': Icons.attach_money_rounded,
+      'color': const Color(0xFF009688),
+      'screen': const RevenueProfitScreen(),
+    },
+    {
+      'title': 'Task Management',
+      'subtitle': 'To-Dos & Staff',
+      'icon': Icons.assignment_rounded,
+      'color': const Color(0xFFFF9800),
+      'screen': const TaskManagementScreen(),
+    },
+    {
+      'title': 'Inventory',
+      'subtitle': 'Seeds & Fertilizer',
+      'icon': Icons.inventory_2_rounded,
+      'color': const Color(0xFF795548),
+      'screen': const InventoryScreen(),
+    },
+    {
+      'title': 'Farm Gallery',
+      'subtitle': 'Photos & Media',
+      'icon': Icons.photo_library_rounded,
+      'color': const Color(0xFF9C27B0),
+      'screen': const FarmGalleryScreen(),
+    },
+    {
+      'title': 'GPS Mapping',
+      'subtitle': 'Borders & Zones',
+      'icon': Icons.map_rounded,
+      'color': const Color(0xFF2196F3),
+      'screen': const GpsMappingScreen(),
+    },
+    {
+      'title': 'Harvest Tracking',
+      'subtitle': 'Yields & Logs',
+      'icon': Icons.shopping_basket_rounded,
+      'color': const Color(0xFFFFC107),
+      'screen': const HarvestTrackingScreen(),
+    },
+    {
+      'title': 'Yield Prediction',
+      'subtitle': 'AI Forecasts',
+      'icon': Icons.analytics_rounded,
+      'color': const Color(0xFF3F51B5),
+      'screen': const YieldPredictionScreen(),
+    },
+    {
+      'title': 'Notifications',
+      'subtitle': 'Alerts & Reminders',
+      'icon': Icons.notifications_active_rounded,
+      'color': const Color(0xFFFF5722),
+      'screen': const FarmNotificationsScreen(),
+    },
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -24,156 +115,328 @@ class _FarmManagementScreenState extends State<FarmManagementScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF2E7D32),
-        title: Text(
-          'My Farms',
-          style: GoogleFonts.openSans(
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
+      backgroundColor: const Color(0xFFF5F7FA),
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          _buildSliverAppBar(),
+          SliverToBoxAdapter(
+            child: _buildSummarySection(),
           ),
-        ),
-      ),
-      body: FutureBuilder<List<Farm>>(
-        future: farmsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.agriculture,
-                    size: 64,
-                    color: Colors.grey[400],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No Farms Added',
-                    style: GoogleFonts.openSans(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+            sliver: SliverToBoxAdapter(
+              child: Text(
+                'Management Modules',
+                style: GoogleFonts.openSans(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF2D3748),
+                ),
               ),
-            );
-          }
-
-          final farms = snapshot.data!;
-          return ListView.builder(
-            padding: const EdgeInsets.all(12),
-            itemCount: farms.length,
-            itemBuilder: (context, index) {
-              return _buildFarmCard(farms[index]);
-            },
-          );
-        },
+            ),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+            sliver: SliverGrid(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 1.05,
+              ),
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  return _buildModuleCard(_modules[index]);
+                },
+                childCount: _modules.length,
+              ),
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 40)),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {},
         backgroundColor: const Color(0xFF2E7D32),
-        child: const Icon(Icons.add),
+        elevation: 4,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }
 
-  Widget _buildFarmCard(Farm farm) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey[300]!),
-        borderRadius: BorderRadius.circular(12),
+  Widget _buildSliverAppBar() {
+    return SliverAppBar(
+      expandedHeight: 160.0,
+      pinned: true,
+      backgroundColor: const Color(0xFF2E7D32),
+      elevation: 0,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          bottom: Radius.circular(30),
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      flexibleSpace: FlexibleSpaceBar(
+        titlePadding: const EdgeInsets.only(left: 20, bottom: 20),
+        title: Text(
+          'Agro Dashboard',
+          style: GoogleFonts.openSans(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            fontSize: 22,
+          ),
+        ),
+        background: Container(
+          decoration: const BoxDecoration(
+            borderRadius: BorderRadius.vertical(
+              bottom: Radius.circular(30),
+            ),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF388E3C),
+                Color(0xFF1B5E20),
+              ],
+            ),
+          ),
+          child: Stack(
+            children: [
+              Positioned(
+                right: -40,
+                top: -40,
+                child: CircleAvatar(
+                  radius: 100,
+                  backgroundColor: Colors.white.withOpacity(0.08),
+                ),
+              ),
+              Positioned(
+                right: 40,
+                bottom: -20,
+                child: CircleAvatar(
+                  radius: 60,
+                  backgroundColor: Colors.white.withOpacity(0.05),
+                ),
+              ),
+              Positioned(
+                right: 20,
+                top: 60,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const CircleAvatar(
+                    radius: 20,
+                    backgroundColor: Color(0xFFE8F5E9),
+                    child: Icon(Icons.person, color: Color(0xFF2E7D32)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSummarySection() {
+    return FutureBuilder<List<Farm>>(
+      future: farmsFuture,
+      builder: (context, snapshot) {
+        String activeFarms = '-';
+        String totalArea = '-';
+
+        if (snapshot.connectionState == ConnectionState.done && snapshot.hasData) {
+          activeFarms = snapshot.data!.length.toString();
+          double area = snapshot.data!.fold(0, (sum, farm) => sum + farm.area);
+          totalArea = '${area.toStringAsFixed(1)} ha';
+        }
+
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+          child: Row(
             children: [
               Expanded(
-                child: Column(
+                child: _buildStatCard(
+                  'Active Farms',
+                  activeFarms,
+                  Icons.agriculture_rounded,
+                  const Color(0xFFE8F5E9),
+                  const Color(0xFF2E7D32),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildStatCard(
+                  'Total Area',
+                  totalArea,
+                  Icons.landscape_rounded,
+                  const Color(0xFFFFF3E0),
+                  const Color(0xFFEF6C00),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildStatCard(String title, String value, IconData icon, Color bgColor, Color iconColor) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFCBD5E1).withOpacity(0.4),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(icon, color: iconColor, size: 28),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.openSans(
+                    fontSize: 13,
+                    color: const Color(0xFF718096),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: GoogleFonts.openSans(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF2D3748),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModuleCard(Map<String, dynamic> module) {
+    final Color color = module['color'];
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFCBD5E1).withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(24),
+          onTap: () {
+            if (module['screen'] != null) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => module['screen']),
+              );
+            }
+          },
+          splashColor: color.withOpacity(0.1),
+          highlightColor: color.withOpacity(0.05),
+          child: Padding(
+            padding: const EdgeInsets.all(18.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      farm.name,
-                      style: GoogleFonts.openSans(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Icon(
+                        module['icon'] as IconData,
+                        color: color,
+                        size: 28,
                       ),
                     ),
-                    Text(
-                      farm.location,
-                      style: GoogleFonts.openSans(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                      ),
+                    Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      color: Colors.grey.shade300,
+                      size: 16,
                     ),
                   ],
                 ),
-              ),
-              PopupMenuButton(
-                itemBuilder: (context) => [
-                  const PopupMenuItem(child: Text('Edit')),
-                  const PopupMenuItem(child: Text('Delete')),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildInfoChip('Area', '${farm.area} ha'),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildInfoChip('Soil', farm.soilType),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Crops: ${farm.crops.join(", ")}',
-            style: GoogleFonts.openSans(
-              fontSize: 12,
-              color: Colors.grey[600],
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      module['title'] as String,
+                      style: GoogleFonts.openSans(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        color: const Color(0xFF2D3748),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      module['subtitle'] as String,
+                      style: GoogleFonts.openSans(
+                        fontSize: 12,
+                        color: const Color(0xFF718096),
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoChip(String label, String value) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2E7D32).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: GoogleFonts.openSans(
-              fontSize: 10,
-              color: Colors.grey[600],
-            ),
-          ),
-          Text(
-            value,
-            style: GoogleFonts.openSans(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
