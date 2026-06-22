@@ -8,6 +8,7 @@ import 'package:agrolinkbd/presentation/screens/navigation/role_based_navigation
 import 'package:agrolinkbd/presentation/screens/admin/admin_dashboard.dart';
 import 'package:agrolinkbd/presentation/screens/auth/login_screen.dart';
 import 'package:agrolinkbd/presentation/screens/auth/register_screen.dart';
+import 'package:agrolinkbd/presentation/screens/admin/admin_security_pin_screen.dart';
 
 /// App Router - Routes user to appropriate screen based on authentication and login status
 /// 1. Admin logged in → AdminDashboard
@@ -69,8 +70,11 @@ class _AppRouterState extends State<AppRouter> {
 
     return Consumer2<AdminProvider, UserProvider>(
       builder: (context, adminProvider, userProvider, _) {
-        // If admin is logged in, show admin dashboard
+        // If admin is logged in, check 2FA PIN verification
         if (adminProvider.isAdminLoggedIn) {
+          if (!adminProvider.isPinVerified) {
+            return const AdminSecurityPinScreen();
+          }
           return const AdminDashboard();
         }
 

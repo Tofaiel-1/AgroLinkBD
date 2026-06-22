@@ -22,15 +22,10 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
   late AnimationController _animController;
   late Animation<double> _fadeAnimation;
 
-  // Demo credentials
-  static const String _demoEmail = 'superadmin@agrolinkbd.com';
-  static const String _demoPassword = 'super123';
 
   @override
   void initState() {
     super.initState();
-    _emailController.text = _demoEmail;
-    _passwordController.text = _demoPassword;
 
     _animController = AnimationController(
       vsync: this,
@@ -64,18 +59,6 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
 
     setState(() => _isLoading = true);
 
-    // BYPASS FOR DEMO / TEACHER PRESENTATION
-    final email = _emailController.text.trim();
-    if ((email.startsWith('mdtofa') || email == 'superadmin@agrolinkbd.com') && 
-        _passwordController.text == 'super123') {
-      
-      // Fake a delay for realism
-      await Future.delayed(const Duration(seconds: 1));
-      
-      setState(() => _isLoading = false);
-      Get.offAll(() => const AdvancedAdminDashboard());
-      return;
-    }
 
     final adminProvider = Provider.of<AdminProvider>(context, listen: false);
     final success = await adminProvider.adminSignIn(
