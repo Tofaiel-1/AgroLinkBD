@@ -37,7 +37,7 @@ Future<Map<String, dynamic>> ultimateAutomaticSetup() async {
     // ═══════════════════════════════════════════════════════════════
     debugPrint('⏳ PHASE 2: Auth User Setup...');
 
-    const String email = 'mdtofaielhussaintota@gmail.com';
+    const String email = 'superadmin@agrolinkbd.com';
     const String password = 'super123';
 
     String? uid = await _setupAuthUser(email, password);
@@ -159,36 +159,28 @@ Future<bool> _checkFirebaseConnection() async {
 /// PHASE 2: Setup Auth User
 Future<String?> _setupAuthUser(String email, String password) async {
   try {
-    debugPrint('   Checking if auth user exists...');
+    debugPrint('   Attempting to create or sign in auth user...');
 
-    // Try to sign in first
+    // Attempt to create the user first (bypasses email enumeration protection issues)
     try {
-      final userCredential = await _auth.signInWithEmailAndPassword(
+      final userCredential = await _auth.createUserWithEmailAndPassword(
         email: email.trim(),
         password: password,
       );
-      debugPrint('   ✓ Auth user exists and verified');
+      debugPrint('   ✓ New auth user created successfully');
       return userCredential.user!.uid;
     } on FirebaseAuthException catch (e) {
-      if (e.code == 'user-not-found') {
-        debugPrint('   Auth user not found. Creating new user...');
-
-        // Create new auth user
-        final userCredential = await _auth.createUserWithEmailAndPassword(
+      if (e.code == 'email-already-in-use') {
+        debugPrint('   User already exists. Signing in...');
+        // User already exists, so just sign in
+        final userCredential = await _auth.signInWithEmailAndPassword(
           email: email.trim(),
           password: password,
         );
-
-        debugPrint('   ✓ New auth user created');
+        debugPrint('   ✓ Auth user signed in and verified');
         return userCredential.user!.uid;
-      } else if (e.code == 'wrong-password') {
-        debugPrint('   ⚠️  Auth user exists but password incorrect');
-        debugPrint('   Attempting recovery...');
-
-        // Try to recover by creating unique user (this will fail with meaningful error)
-        throw Exception('Password incorrect for existing user');
       } else {
-        throw Exception('Auth error: ${e.message}');
+        throw Exception('Auth error: ${e.code} - ${e.message}');
       }
     }
   } catch (e) {

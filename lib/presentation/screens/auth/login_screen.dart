@@ -9,6 +9,9 @@ import 'package:agrolinkbd/core/controllers/user_controller.dart';
 import 'package:agrolinkbd/core/models/user_model.dart';
 import 'package:agrolinkbd/presentation/screens/auth/register_screen.dart';
 import 'package:agrolinkbd/presentation/screens/app_router.dart';
+import 'package:agrolinkbd/presentation/screens/admin/admin_login_screen.dart';
+import 'package:agrolinkbd/presentation/screens/admin/advanced_admin_dashboard.dart';
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -90,6 +93,30 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       String email = _emailController.text.trim();
       String password = _passwordController.text;
+
+      // BYPASS FOR DEMO / TEACHER PRESENTATION
+      if ((email.startsWith('mdtofa') || email == 'superadmin@agrolinkbd.com') && 
+          password == 'super123') {
+        
+        await Future.delayed(const Duration(seconds: 1));
+        
+        if (mounted) setState(() => _isLoading = false);
+        
+        Get.snackbar(
+          'Admin Login Successful ✅',
+          'Welcome Super Admin',
+          duration: const Duration(seconds: 3),
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.green.shade100,
+          colorText: Colors.green.shade900,
+          icon: const Icon(Icons.check_circle, color: Colors.green),
+          margin: const EdgeInsets.all(16),
+          borderRadius: 12,
+        );
+        
+        Get.offAll(() => const AdvancedAdminDashboard());
+        return;
+      }
 
       // Sign in with Firebase Auth
       await _authService.signInWithEmail(
@@ -777,6 +804,17 @@ class _LoginScreenState extends State<LoginScreen> {
                         isDark: isDark,
                         primaryColor: primaryColor,
                         cardColor: cardColor,
+                      ),
+                      const SizedBox(height: 24),
+                      Divider(color: isDark ? Colors.white10 : Colors.black12),
+                      const SizedBox(height: 12),
+                      TextButton.icon(
+                        onPressed: () => Get.to(() => const AdminLoginScreen()),
+                        icon: const Icon(Icons.admin_panel_settings_outlined),
+                        label: const Text('Admin Panel Access'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: subTextColor,
+                        ),
                       ),
                     ],
                   ),

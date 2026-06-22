@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:agrolinkbd/core/models/cart_model.dart';
 import 'package:agrolinkbd/presentation/screens/payment/payment_flow_tracking_screen.dart';
+import 'package:agrolinkbd/core/services/transaction_service.dart';
 
 class UniversalCheckoutScreen extends StatefulWidget {
   final List<CartItem> cartItems;
@@ -22,6 +23,8 @@ class _UniversalCheckoutScreenState extends State<UniversalCheckoutScreen> {
   bool _useEscrow = true;
   final double _deliveryFee = 150.0;
   final double _platformFee = 10.0;
+  final TransactionService _transactionService = TransactionService();
+  bool _isProcessing = false;
 
   @override
   Widget build(BuildContext context) {
@@ -409,11 +412,54 @@ class _UniversalCheckoutScreenState extends State<UniversalCheckoutScreen> {
           width: double.infinity,
           height: 54,
           child: ElevatedButton(
-            onPressed: () {
+            onPressed: _isProcessing ? null : () async {
+              if (_selectedPaymentMethod != 'wallet') {
+                Get.snackbar('Error', 'Only Wallet is supported for this demo');
+                return;
+              }
+
+              setState(() => _isProcessing = true);
+              
+              String buyerId = 'buyer_demo';
+              String farmerId = 'farmer_demo';
+              String driverId = 'driver_demo';
+              
+              // Pay Farmer for Goods
+              bool goodsSuccess = await _transactionService.transferFunds(
+                senderId: buyerId,
+                receiverId: farmerId,
+                amount: widget.subtotal,
+                reason: 'Goods Payment',
+              );
+
+              if (!goodsSuccess) {
+                setState(() => _isProcessing = false);
+                Get.snackbar('Payment Failed', 'Insufficient wallet balance for goods.');
+                return;
+              }
+
+              // Pay Driver for Transport
+              bool transportSuccess = await _transactionService.transferFunds(
+                senderId: buyerId,
+                receiverId: driverId,
+                amount: _deliveryFee,
+                reason: 'Transport Fee',
+              );
+
+              // Platform Fee is deducted, sent to 'admin_demo'
+              await _transactionService.transferFunds(
+                senderId: buyerId,
+                receiverId: 'admin_demo',
+                amount: _platformFee,
+                reason: 'Platform Fee',
+              );
+
+              setState(() => _isProcessing = false);
+
               // Complete the order
               Get.snackbar(
                 'পেমেন্ট সফল',
-                'আপনার পেমেন্ট Pending (Escrow) এ রাখা হয়েছে।',
+                'আপনার পেমেন্ট সফলভাবে সম্পন্ন হয়েছে।',
                 backgroundColor: Colors.green.shade100,
                 colorText: Colors.green.shade900,
               );
@@ -431,10 +477,13 @@ class _UniversalCheckoutScreenState extends State<UniversalCheckoutScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.lock_outline, color: Colors.white, size: 20),
+                if (_isProcessing)
+                  const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                else
+                  const Icon(Icons.lock_outline, color: Colors.white, size: 20),
                 const SizedBox(width: 8),
                 Text(
-                  'নিরাপদে পে করুন (৳$total)',
+                  _isProcessing ? 'Processing...' : 'নিরাপদে পে করুন (৳$total)',
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
               ],

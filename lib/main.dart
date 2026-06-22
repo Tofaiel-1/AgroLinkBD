@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 // import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 // import 'package:firebase_analytics/firebase_analytics.dart';
@@ -62,8 +63,9 @@ void main() async {
     await FirebaseFirestore.instance.enableNetwork();
     debugPrint('✅ Firestore network enabled');
 
-    // Initialize admin on first run
-    await _initializeAdminIfNeeded();
+    // Force sign out to clear any stuck state from the background script
+    await FirebaseAuth.instance.signOut();
+    debugPrint('✅ Forced sign out to show login screen');
   } catch (e) {
     debugPrint('❌❌ Firebase initialization ERROR: $e');
     debugPrint('🔧 Ensure you have:');

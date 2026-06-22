@@ -1,8 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:agrolinkbd/core/services/transaction_service.dart';
+import 'package:agrolinkbd/presentation/screens/wallet/add_money_screen.dart';
 
-class WalletScreen extends StatelessWidget {
-  const WalletScreen({super.key});
+class WalletScreen extends StatefulWidget {
+  final String userId;
+  
+  const WalletScreen({super.key, this.userId = 'demo_user'});
+
+  @override
+  State<WalletScreen> createState() => _WalletScreenState();
+}
+
+class _WalletScreenState extends State<WalletScreen> {
+  final TransactionService _transactionService = TransactionService();
+  double _balance = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBalance();
+  }
+
+  Future<void> _loadBalance() async {
+    final balance = await _transactionService.getWalletBalance(widget.userId);
+    setState(() {
+      _balance = balance;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,9 +86,9 @@ class WalletScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  const Text(
-                    '84,500 Taka',
-                    style: TextStyle(
+                  Text(
+                    '$_balance Taka',
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
@@ -75,7 +100,7 @@ class WalletScreen extends StatelessWidget {
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: () {
-                            _showAddMoneyDialog(context);
+                            Get.to(() => AddMoneyScreen(userId: widget.userId))?.then((_) => _loadBalance());
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
@@ -258,43 +283,6 @@ class WalletScreen extends StatelessWidget {
             color: isCredit ? Colors.green.shade700 : Colors.red.shade700,
           ),
         ),
-      ),
-    );
-  }
-
-  void _showAddMoneyDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('টাকা যোগ করুন'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: 'পরিমাণ (টাকা)',
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text('পেমেন্ট পদ্ধতি নির্বাচন করুন'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('বাতিল'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Get.snackbar('সফল', 'টাকা যোগ প্রক্রিয়া শুরু হয়েছে');
-            },
-            child: const Text('চালিয়ে যান'),
-          ),
-        ],
       ),
     );
   }

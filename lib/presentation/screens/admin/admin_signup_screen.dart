@@ -1,37 +1,36 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import 'package:get/get.dart';
-import 'package:agrolinkbd/core/providers/admin_provider.dart';
-import 'package:agrolinkbd/presentation/screens/admin/advanced_admin_dashboard.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:agrolinkbd/presentation/screens/admin/admin_login_screen.dart';
 
-class AdminLoginScreen extends StatefulWidget {
-  const AdminLoginScreen({super.key});
+class AdminSignUpScreen extends StatefulWidget {
+  const AdminSignUpScreen({super.key});
 
   @override
-  State<AdminLoginScreen> createState() => _AdminLoginScreenState();
+  State<AdminSignUpScreen> createState() => _AdminSignUpScreenState();
 }
 
-class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerProviderStateMixin {
+class _AdminSignUpScreenState extends State<AdminSignUpScreen> with SingleTickerProviderStateMixin {
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _secretKeyController = TextEditingController();
+  
   bool _obscurePassword = true;
   bool _isLoading = false;
 
   late AnimationController _animController;
   late Animation<double> _fadeAnimation;
 
-  // Demo credentials
-  static const String _demoEmail = 'superadmin@agrolinkbd.com';
-  static const String _demoPassword = 'super123';
+  // For security, a secret key is required to register as a super admin
+  static const String _requiredSecretKey = 'AGRO_ADMIN_2026';
 
   @override
   void initState() {
     super.initState();
-    _emailController.text = _demoEmail;
-    _passwordController.text = _demoPassword;
-
     _animController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1000),
@@ -44,55 +43,68 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
 
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _secretKeyController.dispose();
     _animController.dispose();
     super.dispose();
   }
 
-  Future<void> _handleLogin() async {
-    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      Get.snackbar(
-        'Missing Fields',
-        'Please enter both email and password.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.redAccent,
-        colorText: Colors.white,
-      );
+  Future<void> _handleSignUp() async {
+    final name = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+    final secretKey = _secretKeyController.text.trim();
+
+    if (name.isEmpty || email.isEmpty || password.isEmpty || secretKey.isEmpty) {
+      Get.snackbar('Error', 'All fields are required.', backgroundColor: Colors.redAccent, colorText: Colors.white);
+      return;
+    }
+
+    if (secretKey != _requiredSecretKey) {
+      Get.snackbar('Access Denied', 'Invalid Secret Key for Super Admin creation.', backgroundColor: Colors.redAccent, colorText: Colors.white);
       return;
     }
 
     setState(() => _isLoading = true);
 
-    // BYPASS FOR DEMO / TEACHER PRESENTATION
-    final email = _emailController.text.trim();
-    if ((email.startsWith('mdtofa') || email == 'superadmin@agrolinkbd.com') && 
-        _passwordController.text == 'super123') {
-      
-      // Fake a delay for realism
-      await Future.delayed(const Duration(seconds: 1));
-      
+    try {
+      // 1. Create Firebase Auth User
+      final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      final uid = userCredential.user!.uid;
+
+      // 2. Save Admin data to Firestore
+      await FirebaseFirestore.instance.collection('admins').doc(uid).set({
+        'id': uid,
+        'email': email,
+        'name': name,
+        'role': 'super_admin',
+        'isActive': true,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
       setState(() => _isLoading = false);
-      Get.offAll(() => const AdvancedAdminDashboard());
-      return;
-    }
 
-    final adminProvider = Provider.of<AdminProvider>(context, listen: false);
-    final success = await adminProvider.adminSignIn(
-      email: _emailController.text.trim(),
-      password: _passwordController.text,
-    );
-
-    setState(() => _isLoading = false);
-
-    if (success) {
-      Get.offAll(() => const AdvancedAdminDashboard());
-    } else {
-      final errorMsg = adminProvider.error ?? 'Login failed. Please try again.';
       Get.snackbar(
-        'Login Failed',
-        errorMsg,
-        snackPosition: SnackPosition.BOTTOM,
+        'Success!',
+        'Super Admin account created successfully. Please login.',
+        backgroundColor: const Color(0xFF10B981),
+        colorText: Colors.white,
+      );
+
+      // Navigate to login screen
+      Get.offAll(() => const AdminLoginScreen());
+
+    } catch (e) {
+      setState(() => _isLoading = false);
+      Get.snackbar(
+        'Registration Failed',
+        e.toString().contains(']') ? e.toString().split(']').last.trim() : 'Error creating account.',
         backgroundColor: Colors.redAccent,
         colorText: Colors.white,
       );
@@ -105,32 +117,31 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
       backgroundColor: const Color(0xFF0F172A),
       body: Stack(
         children: [
-          // Background design elements
+          // Background Elements
           Positioned(
             top: -100,
-            left: -100,
+            right: -100,
             child: Container(
               width: 300,
               height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFF10B981).withOpacity(0.2),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -150,
-            right: -100,
-            child: Container(
-              width: 400,
-              height: 400,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: const Color(0xFF3B82F6).withOpacity(0.15),
               ),
             ),
           ),
-          // Blur effect
+          Positioned(
+            bottom: -150,
+            left: -100,
+            child: Container(
+              width: 400,
+              height: 400,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF10B981).withOpacity(0.15),
+              ),
+            ),
+          ),
           BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
             child: Container(color: Colors.transparent),
@@ -138,7 +149,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
           
           Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
               child: FadeTransition(
                 opacity: _fadeAnimation,
                 child: Container(
@@ -160,70 +171,87 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Logo
                       Container(
-                        width: 80,
-                        height: 80,
+                        width: 70,
+                        height: 70,
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
-                            colors: [Color(0xFF059669), Color(0xFF10B981)],
+                            colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
                           ),
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF10B981).withOpacity(0.4),
+                              color: const Color(0xFF3B82F6).withOpacity(0.4),
                               blurRadius: 15,
                               offset: const Offset(0, 5),
                             ),
                           ],
                         ),
-                        child: const Icon(Icons.admin_panel_settings, size: 40, color: Colors.white),
+                        child: const Icon(Icons.person_add_alt_1, size: 35, color: Colors.white),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 20),
                       Text(
-                        'AgroLinkBD',
+                        'Setup Super Admin',
                         style: GoogleFonts.poppins(
-                          fontSize: 28,
+                          fontSize: 24,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
                       ),
                       Text(
-                        'Super Admin Portal',
+                        'Register a new system administrator',
                         style: GoogleFonts.poppins(
-                          fontSize: 14,
+                          fontSize: 13,
                           color: Colors.white60,
-                          letterSpacing: 1.5,
                         ),
                       ),
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 30),
 
-                      // Email Field
+                      _buildTextField(
+                        controller: _nameController,
+                        hintText: 'Full Name',
+                        icon: Icons.person_outline,
+                      ),
+                      const SizedBox(height: 16),
+
                       _buildTextField(
                         controller: _emailController,
                         hintText: 'Admin Email',
                         icon: Icons.email_outlined,
                         keyboardType: TextInputType.emailAddress,
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
 
-                      // Password Field
                       _buildTextField(
                         controller: _passwordController,
                         hintText: 'Password',
                         icon: Icons.lock_outline,
                         isPassword: true,
                       ),
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 16),
 
-                      // Login Button
+                      _buildTextField(
+                        controller: _secretKeyController,
+                        hintText: 'Secret Registration Key',
+                        icon: Icons.key,
+                      ),
+                      const SizedBox(height: 12),
+                      const Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Hint: Key is AGRO_ADMIN_2026',
+                          style: TextStyle(color: Colors.white38, fontSize: 11),
+                        ),
+                      ),
+                      const SizedBox(height: 30),
+
                       SizedBox(
                         width: double.infinity,
                         height: 55,
                         child: ElevatedButton(
-                          onPressed: _isLoading ? null : _handleLogin,
+                          onPressed: _isLoading ? null : _handleSignUp,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF10B981),
+                            backgroundColor: const Color(0xFF3B82F6),
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
@@ -240,7 +268,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
                                   ),
                                 )
                               : Text(
-                                  'Secure Sign In',
+                                  'Register Admin',
                                   style: GoogleFonts.poppins(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
@@ -249,23 +277,18 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
                                 ),
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 20),
                       
-                      // Footer Text
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.shield_outlined, size: 16, color: Colors.white54),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Authorized Access Only',
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              color: Colors.white54,
-                            ),
+                      TextButton(
+                        onPressed: () => Get.back(),
+                        child: Text(
+                          'Already have an account? Login here',
+                          style: GoogleFonts.poppins(
+                            color: Colors.white70,
+                            decoration: TextDecoration.underline,
                           ),
-                        ],
-                      ),
+                        ),
+                      )
                     ],
                   ),
                 ),

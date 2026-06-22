@@ -6,6 +6,9 @@ import 'package:get/get.dart';
 import 'package:agrolinkbd/core/providers/user_provider.dart';
 import 'package:agrolinkbd/presentation/screens/disease/disease_detection_screen.dart';
 import 'package:agrolinkbd/presentation/screens/farmer/add_product_screen.dart';
+import 'package:agrolinkbd/presentation/screens/payment/direct_transfer_screen.dart';
+import 'package:agrolinkbd/core/services/transaction_service.dart';
+import 'package:agrolinkbd/presentation/screens/wallet/wallet_screen.dart';
 
 class FarmerDashboard extends StatefulWidget {
   const FarmerDashboard({super.key});
@@ -26,6 +29,10 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
     {'title': 'পুকুরের মাছের খাবার দেওয়া', 'completed': true},
   ];
 
+  final TransactionService _transactionService = TransactionService();
+  double _balance = 0.0;
+  final String _userId = 'farmer_demo'; // In a real app, get from UserProvider
+
   @override
   void initState() {
     super.initState();
@@ -45,6 +52,17 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _startAutoScroll();
     });
+
+    _fetchBalance();
+  }
+
+  Future<void> _fetchBalance() async {
+    final balance = await _transactionService.getWalletBalance(_userId);
+    if (mounted) {
+      setState(() {
+        _balance = balance;
+      });
+    }
   }
 
   void _startAutoScroll() async {
@@ -144,26 +162,31 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
                 ),
                 Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: emeraldGreen.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: emeraldGreen.withOpacity(0.3)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.account_balance_wallet, size: 16, color: emeraldGreen),
-                          const SizedBox(width: 4),
-                          Text(
-                            '৳ ১২,৫০০',
-                            style: GoogleFonts.hindSiliguri(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: emeraldGreen,
+                    GestureDetector(
+                      onTap: () {
+                        Get.to(() => WalletScreen(userId: _userId))?.then((_) => _fetchBalance());
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: emeraldGreen.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: emeraldGreen.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.account_balance_wallet, size: 16, color: emeraldGreen),
+                            const SizedBox(width: 4),
+                            Text(
+                              '৳ $_balance',
+                              style: GoogleFonts.hindSiliguri(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: emeraldGreen,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -360,6 +383,12 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
           icon: Icons.local_shipping,
           color: earthyBrown,
           onTap: () => Get.snackbar('পরিবহন সেবা', 'ট্রাক বুকিং শীঘ্রই আসছে!'),
+        ),
+        _ActionCard(
+          title: 'পেমেন্ট (Payment)',
+          icon: Icons.payment,
+          color: Colors.orange.shade700,
+          onTap: () => Get.to(() => const DirectTransferScreen(senderId: 'farmer_demo')),
         ),
       ],
     );

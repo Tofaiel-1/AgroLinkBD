@@ -403,4 +403,80 @@ class TransactionService {
       return false;
     }
   }
+  // Transfer funds (P2P Cyclic Payments)
+  Future<bool> transferFunds({
+    required String senderId,
+    required String receiverId,
+    required double amount,
+    required String reason,
+    Map<String, dynamic>? metadata,
+  }) async {
+    try {
+      bool success = await _firestore.runTransaction((transaction) async {
+        firestore.DocumentReference senderRef = _firestore.collection(_usersCollection).doc(senderId);
+        firestore.DocumentReference receiverRef = _firestore.collection(_usersCollection).doc(receiverId);
+
+        firestore.DocumentSnapshot senderSnapshot = await transaction.get(senderRef);
+        firestore.DocumentSnapshot receiverSnapshot = await transaction.get(receiverRef);
+
+        double senderBalance = 0.0;
+        if (senderSnapshot.exists) {
+          final data = senderSnapshot.data() as Map<String, dynamic>?;
+          if (data != null && data.containsKey(_walletField)) {
+            senderBalance = (data[_walletField] as num).toDouble();
+          }
+        } else {
+           // Create sender if not exist with 0 balance
+           transaction.set(senderRef, {_walletField: 0.0, _pendingWalletField: 0.0});
+        }
+
+        double receiverBalance = 0.0;
+        if (receiverSnapshot.exists) {
+           final data = receiverSnapshot.data() as Map<String, dynamic>?;
+           if (data != null && data.containsKey(_walletField)) {
+             receiverBalance = (data[_walletField] as num).toDouble();
+           }
+        } else {
+           // Create receiver if not exist with 0 balance
+           transaction.set(receiverRef, {_walletField: 0.0, _pendingWalletField: 0.0});
+        }
+
+        if (senderBalance < amount) {
+          throw Exception('Insufficient balance for transfer');
+        }
+
+        // Update balances
+        transaction.update(senderRef, {_walletField: senderBalance - amount});
+        transaction.update(receiverRef, {_walletField: receiverBalance + amount});
+        
+        return true;
+      });
+
+      if (success) {
+        // Log transactions outside the firestore transaction block
+        await addTransaction(
+          id: const Uuid().v4(),
+          userId: senderId,
+          type: TransactionType.debit,
+          amount: amount,
+          title: 'Transfer Sent: $reason',
+          metadata: {'receiverId': receiverId, ...?metadata},
+        );
+
+        await addTransaction(
+          id: const Uuid().v4(),
+          userId: receiverId,
+          type: TransactionType.credit,
+          amount: amount,
+          title: 'Transfer Received: $reason',
+          metadata: {'senderId': senderId, ...?metadata},
+        );
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('Error transferring funds: $e');
+      return false;
+    }
+  }
 }

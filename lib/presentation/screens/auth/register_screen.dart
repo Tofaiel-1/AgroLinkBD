@@ -3,9 +3,9 @@ import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'package:agrolinkbd/core/models/user_model.dart';
 import 'package:agrolinkbd/core/providers/user_provider.dart';
-import 'package:agrolinkbd/core/services/auth_service.dart';
 import 'package:agrolinkbd/core/controllers/user_controller.dart';
-
+import 'package:agrolinkbd/core/services/auth_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:agrolinkbd/presentation/screens/auth/login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {

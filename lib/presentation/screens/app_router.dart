@@ -144,7 +144,7 @@ class _AppRouterState extends State<AppRouter> {
             if (authSnapshot.data == null) {
               _loadingUserIds.clear();
               _loadedUserIds.clear();
-              return const RegisterScreen(userId: '', phone: '');
+              return const LoginScreen();
             }
 
             final userId = authSnapshot.data!.uid;

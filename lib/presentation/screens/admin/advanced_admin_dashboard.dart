@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:get/get.dart';
+import 'package:agrolinkbd/presentation/screens/admin/admin_deposit_approval_screen.dart';
+import 'package:agrolinkbd/presentation/screens/admin/admin_send_money_screen.dart';
 
 /// Advanced Dashboard with Sidebar Navigation
 /// Features: Real-time metrics, activity feed, alerts, quick actions
@@ -910,6 +913,16 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
     final actions = [
       {'icon': Icons.person_add, 'label': 'Create User', 'color': Colors.blue},
       {
+        'icon': Icons.account_balance_wallet,
+        'label': 'Deposit Approvals',
+        'color': Colors.cyan
+      },
+      {
+        'icon': Icons.send_to_mobile,
+        'label': 'Send Funds',
+        'color': Colors.greenAccent
+      },
+      {
         'icon': Icons.notifications,
         'label': 'Send Notification',
         'color': Colors.green
@@ -977,7 +990,13 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
     required Color color,
   }) {
     return GestureDetector(
-      onTap: () {},
+      onTap: () {
+        if (label == 'Deposit Approvals') {
+          Get.to(() => const AdminDepositApprovalScreen());
+        } else if (label == 'Send Funds') {
+          Get.to(() => const AdminSendMoneyScreen());
+        }
+      },
       child: Container(
         decoration: BoxDecoration(
           color: color.withOpacity(0.1),
