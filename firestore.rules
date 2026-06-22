@@ -147,6 +147,36 @@ service cloud.firestore {
     }
     
     // ============================================
+    // PHASE 4: INVENTORY & REFUNDS
+    // ============================================
+
+    // Inventory Products
+    match /inventory_products/{productId} {
+      // Public can read to see available stock and pricing
+      allow read: if request.auth != null;
+      
+      // ONLY Admins can create/update/delete inventory products
+      allow create, update, delete: if request.auth != null && 
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // Refund Requests
+    match /refund_requests/{requestId} {
+      // Users can only read their own refund requests
+      allow read: if request.auth != null && 
+        (resource.data.userId == request.auth.uid || 
+         exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+         
+      // Users can create a refund request for their transactions
+      allow create: if request.auth != null && 
+        request.resource.data.userId == request.auth.uid;
+        
+      // Only admins can update refund status
+      allow update, delete: if request.auth != null && 
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+    
+    // ============================================
     // MARKETPLACE COLLECTIONS (Public Read)
     // ============================================
     

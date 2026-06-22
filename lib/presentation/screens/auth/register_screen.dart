@@ -368,6 +368,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
           fontSize: 20,
           fontWeight: FontWeight.bold,
         ),
+        actions: [
+          IconButton(
+            icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode, color: isDark ? Colors.white : Colors.black87),
+            onPressed: () {
+              Get.changeThemeMode(isDark ? ThemeMode.light : ThemeMode.dark);
+            },
+          ),
+        ],
       ),
       body: Container(
         decoration: BoxDecoration(gradient: bgGradient),

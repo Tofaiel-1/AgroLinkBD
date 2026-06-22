@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/models/enhanced_transaction_model.dart';
 import '../../core/theme/app_theme.dart';
 
@@ -689,7 +691,23 @@ class _TransactionHistoryScreenState
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _submitRefundRequest(context, 'TXN-ABC12345');
+                },
+                icon: const Icon(Icons.refresh, color: Colors.white),
+                label: const Text('Request Refund', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
                 onPressed: () => Navigator.pop(context),
                 child: const Text('Close'),
               ),
@@ -723,5 +741,34 @@ class _TransactionHistoryScreenState
         ],
       ),
     );
+  }
+
+  Future<void> _submitRefundRequest(BuildContext context, String txId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please login first.')));
+      return;
+    }
+
+    try {
+      await FirebaseFirestore.instance.collection('refund_requests').add({
+        'transactionId': txId,
+        'userId': user.uid,
+        'reason': 'User requested via app',
+        'status': 'Pending',
+        'requestDate': FieldValue.serverTimestamp(),
+      });
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Refund request submitted successfully.'), backgroundColor: Colors.green),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to submit: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 }
