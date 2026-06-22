@@ -448,6 +448,19 @@ class _LoginScreenState extends State<LoginScreen> {
     );
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode, color: isDark ? Colors.white : Colors.black87),
+            onPressed: () {
+              Get.changeThemeMode(isDark ? ThemeMode.light : ThemeMode.dark);
+            },
+          ),
+        ],
+      ),
       body: Container(
         decoration: BoxDecoration(gradient: bgGradient),
         child: SafeArea(

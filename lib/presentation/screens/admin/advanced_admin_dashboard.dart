@@ -8,6 +8,8 @@ import 'package:agrolinkbd/presentation/screens/admin/admin_send_money_screen.da
 import 'package:agrolinkbd/presentation/screens/admin/admin_user_management_screen.dart';
 import 'package:agrolinkbd/presentation/screens/admin/admin_announcement_screen.dart';
 import 'package:agrolinkbd/presentation/screens/admin/audit_logs_viewer.dart';
+import 'package:agrolinkbd/presentation/screens/admin/inventory_dashboard_screen.dart';
+import 'package:agrolinkbd/presentation/screens/admin/refund_queue_screen.dart';
 
 /// Pulse Animation Wrapper for live counters
 class PulseEffect extends StatefulWidget {
@@ -268,7 +270,7 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
             const SizedBox(height: 24),
             if (!_isLoadingData) _buildActivityFeed(),
             const SizedBox(height: 24),
-            _buildQuickActionsGrid(crossAxisCount: 2),
+            _buildQuickActionsGrid(crossAxisCount: 4),
             const SizedBox(height: 40),
           ],
         ),
@@ -306,7 +308,7 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
                       ],
                     ),
                   const SizedBox(height: 32),
-                  _buildQuickActionsGrid(crossAxisCount: 5),
+                  _buildQuickActionsGrid(crossAxisCount: 4),
                 ],
               ),
             ),
@@ -955,8 +957,10 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
     final actions = [
       {'icon': Icons.account_balance_wallet_rounded, 'label': 'Deposit', 'color': const Color(0xFF10B981), 'route': 'deposit'},
       {'icon': Icons.send_rounded, 'label': 'Send Funds', 'color': const Color(0xFF3B82F6), 'route': 'send'},
-      {'icon': Icons.person_add_rounded, 'label': 'User DB', 'color': const Color(0xFF8B5CF6), 'route': 'users'},
-      {'icon': Icons.campaign_rounded, 'label': 'Announce', 'color': const Color(0xFFF59E0B), 'route': 'announce'},
+      {'icon': Icons.inventory_2_rounded, 'label': 'Inventory', 'color': const Color(0xFF8B5CF6), 'route': 'inventory'},
+      {'icon': Icons.receipt_long_rounded, 'label': 'Refunds', 'color': const Color(0xFFF59E0B), 'route': 'refunds'},
+      {'icon': Icons.person_add_rounded, 'label': 'User DB', 'color': const Color(0xFF14B8A6), 'route': 'users'},
+      {'icon': Icons.campaign_rounded, 'label': 'Announce', 'color': const Color(0xFFF97316), 'route': 'announce'},
       {'icon': Icons.history_edu_rounded, 'label': 'Audit Logs', 'color': const Color(0xFFEF4444), 'route': 'logs'},
     ];
 
@@ -969,9 +973,9 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
           crossAxisCount: crossAxisCount,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
-          childAspectRatio: MediaQuery.of(context).size.width < 768 ? 0.9 : 1.1,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: MediaQuery.of(context).size.width < 768 ? 1.0 : 1.3,
           children: actions.map((action) => _buildQuickActionCard(
             icon: action['icon'] as IconData,
             label: action['label'] as String,
@@ -988,22 +992,24 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
       onTap: () {
         if (route == 'deposit') Get.to(() => const AdminDepositApprovalScreen());
         if (route == 'send') Get.to(() => const AdminSendMoneyScreen());
+        if (route == 'inventory') Get.to(() => const InventoryDashboardScreen());
+        if (route == 'refunds') Get.to(() => const RefundQueueScreen());
         if (route == 'users') Get.to(() => const AdminUserManagementScreen());
-        if (route == 'announce') Get.to(() => const AdminAnnouncementScreen());
+        if (route == 'announce') Get.to(() => AdminAnnouncementScreen());
         if (route == 'logs') Get.to(() => const AuditLogsViewer());
       },
       child: _buildGlassContainer(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(8),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(color: color.withOpacity(0.15), shape: BoxShape.circle),
-              child: Icon(icon, color: color, size: 22),
+              child: Icon(icon, color: color, size: 18),
             ),
-            const SizedBox(height: 12),
-            Text(label, style: TextStyle(color: _textColor, fontSize: 11, fontWeight: FontWeight.w600), textAlign: TextAlign.center),
+            const SizedBox(height: 8),
+            Text(label, style: TextStyle(color: _textColor, fontSize: 10, fontWeight: FontWeight.w600), textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis),
           ],
         ),
       ),
