@@ -94,29 +94,7 @@ class _LoginScreenState extends State<LoginScreen> {
       String email = _emailController.text.trim();
       String password = _passwordController.text;
 
-      // BYPASS FOR DEMO / TEACHER PRESENTATION
-      if ((email.startsWith('mdtofa') || email == 'superadmin@agrolinkbd.com') && 
-          password == 'super123') {
-        
-        await Future.delayed(const Duration(seconds: 1));
-        
-        if (mounted) setState(() => _isLoading = false);
-        
-        Get.snackbar(
-          'Admin Login Successful ✅',
-          'Welcome Super Admin',
-          duration: const Duration(seconds: 3),
-          snackPosition: SnackPosition.TOP,
-          backgroundColor: Colors.green.shade100,
-          colorText: Colors.green.shade900,
-          icon: const Icon(Icons.check_circle, color: Colors.green),
-          margin: const EdgeInsets.all(16),
-          borderRadius: 12,
-        );
-        
-        Get.offAll(() => const AdvancedAdminDashboard());
-        return;
-      }
+
 
       // Sign in with Firebase Auth
       await _authService.signInWithEmail(
