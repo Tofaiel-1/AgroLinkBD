@@ -7,6 +7,7 @@ import 'package:agrolinkbd/presentation/widgets/admin_search_filter_widget.dart'
 import 'admin_edit_user.dart';
 import 'admin_edit_product.dart';
 import 'admin_financial_requests_screen.dart';
+import 'admin_transaction_analytics_screen.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -349,6 +350,18 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => const AdminFinancialRequestsScreen()),
+                    );
+                  },
+                ),
+                _buildActionCard(
+                  icon: Icons.analytics,
+                  title: 'Cash Flow',
+                  subtitle: 'Transaction Analytics',
+                  color: Colors.indigo,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const AdminTransactionAnalyticsScreen()),
                     );
                   },
                 ),

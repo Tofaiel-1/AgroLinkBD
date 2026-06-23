@@ -25,18 +25,23 @@ class TransactionHistoryScreen extends StatelessWidget {
       body: StreamBuilder<List<Transaction>>(
         stream: transactionService.getUserTransactions(userId, limit: 100),
         builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: SelectableText(
+                  'Error loading transactions: ${snapshot.error}\n\nIf this is a Firebase Index error, click the link provided in the error text to create it.',
+                  style: TextStyle(color: Colors.red.shade400, fontSize: 14),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            );
+          }
+
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator(color: Color(0xFF2E7D32)));
           }
 
-          if (snapshot.hasError) {
-            return Center(
-              child: Text(
-                'Error loading transactions',
-                style: TextStyle(color: Colors.red.shade400),
-              ),
-            );
-          }
 
           final transactions = snapshot.data ?? [];
 
