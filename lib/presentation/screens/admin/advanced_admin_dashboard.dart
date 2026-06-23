@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:agrolinkbd/presentation/screens/auth/login_screen.dart';
 import 'package:agrolinkbd/presentation/screens/admin/admin_deposit_approval_screen.dart';
 import 'package:agrolinkbd/presentation/screens/admin/admin_send_money_screen.dart';
 import 'package:agrolinkbd/presentation/screens/admin/admin_user_management_screen.dart';
@@ -544,7 +546,10 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () => Get.offAllNamed('/login'),
+              onPressed: () async {
+                await FirebaseAuth.instance.signOut();
+                Get.offAll(() => const LoginScreen());
+              },
               style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFEF4444).withOpacity(0.15),
                   foregroundColor: const Color(0xFFEF4444),
@@ -609,6 +614,14 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
             _buildGlassIconButton(
               icon: Icons.refresh_rounded,
               onTap: _fetchRealData,
+            ),
+            const SizedBox(width: 12),
+            _buildGlassIconButton(
+              icon: Icons.power_settings_new_rounded,
+              onTap: () async {
+                await FirebaseAuth.instance.signOut();
+                Get.offAll(() => const LoginScreen());
+              },
             ),
           ],
         ),
