@@ -11,6 +11,8 @@ import 'package:agrolinkbd/presentation/screens/service_provider/premium_feature
 import 'package:agrolinkbd/presentation/screens/service_provider/premium_features/ai_assistant_screen.dart';
 import 'package:agrolinkbd/presentation/screens/service_provider/premium_features/premium_subscription_screen.dart';
 import 'package:agrolinkbd/presentation/screens/service_provider/premium_features/client_crm_screen.dart';
+import 'package:agrolinkbd/core/services/transaction_service.dart';
+import 'package:agrolinkbd/core/controllers/user_controller.dart';
 import 'dart:ui';
 
 class ServiceProviderDashboard extends ConsumerStatefulWidget {
@@ -24,6 +26,8 @@ class _ServiceProviderDashboardState extends ConsumerState<ServiceProviderDashbo
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+  final TransactionService _transactionService = TransactionService();
+  double _balance = 0.0;
 
   @override
   void initState() {
@@ -36,6 +40,20 @@ class _ServiceProviderDashboardState extends ConsumerState<ServiceProviderDashbo
       CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
     );
     _animationController.forward();
+    _fetchBalance();
+  }
+
+  Future<void> _fetchBalance() async {
+    final userController = Get.isRegistered<UserController>()
+        ? Get.find<UserController>()
+        : Get.put(UserController());
+    String uid = userController.userId.isNotEmpty ? userController.userId : 'service_provider_demo';
+    final balance = await _transactionService.getWalletBalance(uid);
+    if (mounted) {
+      setState(() {
+        _balance = balance;
+      });
+    }
   }
 
   @override
@@ -258,7 +276,7 @@ class _ServiceProviderDashboardState extends ConsumerState<ServiceProviderDashbo
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      _buildHeaderStat('মোট আয়', '৳ ৮৫,০০০', Icons.account_balance_wallet_rounded),
+                                      _buildHeaderStat('ওয়ালেট ব্যালেন্স', '৳ ${_balance.toStringAsFixed(0)}', Icons.account_balance_wallet_rounded),
                                       Container(width: 1, height: 40, color: Colors.white.withOpacity(0.3)),
                                       _buildHeaderStat('সেবা সম্পন্ন', '১৪২ টি', Icons.task_alt_rounded),
                                       Container(width: 1, height: 40, color: Colors.white.withOpacity(0.3)),
