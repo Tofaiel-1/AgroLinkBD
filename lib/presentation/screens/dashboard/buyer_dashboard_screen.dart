@@ -4,11 +4,40 @@ import 'package:agrolinkbd/core/controllers/user_controller.dart';
 import 'package:agrolinkbd/presentation/screens/marketplace/marketplace_screen.dart';
 import 'package:agrolinkbd/presentation/screens/profile/profile_screen.dart';
 
-class BuyerDashboardScreen extends StatelessWidget {
+import 'package:agrolinkbd/core/services/transaction_service.dart';
+
+class BuyerDashboardScreen extends StatefulWidget {
   const BuyerDashboardScreen({super.key});
 
+  @override
+  State<BuyerDashboardScreen> createState() => _BuyerDashboardScreenState();
+}
+
+class _BuyerDashboardScreenState extends State<BuyerDashboardScreen> {
   static const Color _primaryBlue = Color(0xFF1976D2);
   static const Color _darkBlue = Color(0xFF0D47A1);
+
+  final TransactionService _transactionService = TransactionService();
+  double _balance = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchBalance();
+  }
+
+  Future<void> _fetchBalance() async {
+    final userController = Get.isRegistered<UserController>()
+        ? Get.find<UserController>()
+        : Get.put(UserController());
+    String uid = userController.userId.isNotEmpty ? userController.userId : 'buyer_demo';
+    final balance = await _transactionService.getWalletBalance(uid);
+    if (mounted) {
+      setState(() {
+        _balance = balance;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -148,8 +177,8 @@ class BuyerDashboardScreen extends StatelessWidget {
                       context,
                       icon: Icons.account_balance_wallet_outlined,
                       iconColor: Colors.green,
-                      value: '৳১২,৫০০',
-                      label: 'মোট খরচ',
+                      value: '৳${_balance.toStringAsFixed(0)}',
+                      label: 'ওয়ালেট ব্যালেন্স',
                       isDark: isDark,
                     ),
                   ),
