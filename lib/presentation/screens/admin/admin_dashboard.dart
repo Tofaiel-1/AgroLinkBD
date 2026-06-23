@@ -6,6 +6,7 @@ import 'package:agrolinkbd/core/providers/admin_provider.dart';
 import 'package:agrolinkbd/presentation/widgets/admin_search_filter_widget.dart';
 import 'admin_edit_user.dart';
 import 'admin_edit_product.dart';
+import 'admin_financial_requests_screen.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -338,6 +339,18 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   subtitle: 'View logs',
                   color: Colors.orange,
                   onTap: () => setState(() => _selectedIndex = 4),
+                ),
+                _buildActionCard(
+                  icon: Icons.account_balance,
+                  title: 'Financial Requests',
+                  subtitle: 'Deposits & Withdrawals',
+                  color: Colors.teal,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const AdminFinancialRequestsScreen()),
+                    );
+                  },
                 ),
               ] else ...[
                 _buildActionCard(

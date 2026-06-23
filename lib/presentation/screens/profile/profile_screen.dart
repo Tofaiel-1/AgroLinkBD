@@ -4,8 +4,11 @@ import 'package:agrolinkbd/presentation/screens/auth/login_screen.dart';
 import 'package:agrolinkbd/presentation/screens/crops/crop_management_screen.dart';
 import 'package:agrolinkbd/core/controllers/user_controller.dart';
 import 'package:agrolinkbd/presentation/screens/marketplace/marketplace_screen.dart';
+import 'package:provider/provider.dart';
 import 'package:agrolinkbd/presentation/screens/transport/transport_screen.dart';
 import 'package:agrolinkbd/presentation/screens/wallet/wallet_screen.dart';
+import 'package:agrolinkbd/core/providers/user_provider.dart';
+import 'package:agrolinkbd/core/providers/admin_provider.dart';
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
@@ -195,8 +198,16 @@ class ProfileScreen extends StatelessWidget {
               margin: const EdgeInsets.symmetric(horizontal: 16),
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: () {
+                onPressed: () async {
                   userController.logout();
+                  
+                  // Clear providers and sign out of Firebase
+                  final userProvider = Provider.of<UserProvider>(context, listen: false);
+                  final adminProvider = Provider.of<AdminProvider>(context, listen: false);
+                  
+                  await userProvider.signOut();
+                  await adminProvider.adminSignOut();
+                  
                   Get.offAll(() => const LoginScreen());
                 },
                 style: ElevatedButton.styleFrom(

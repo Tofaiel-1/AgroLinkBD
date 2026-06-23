@@ -183,6 +183,17 @@ service cloud.firestore {
       // Allow read/write for testing purposes
       allow read, write: if true;
     }
+
+    // Withdraw Requests
+    match /withdraw_requests/{requestId} {
+      allow read: if request.auth != null && 
+        (resource.data.userId == request.auth.uid || 
+         exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+      allow create: if request.auth != null && 
+        request.resource.data.userId == request.auth.uid;
+      allow update, delete: if request.auth != null && 
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
     
     // ============================================
     // MARKETPLACE COLLECTIONS (Public Read)
