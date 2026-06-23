@@ -74,9 +74,9 @@ class TransactionService {
           .set(transaction.toJson());
 
       // Update user wallet balance
-      await _firestore.collection(_usersCollection).doc(userId).update({
+      await _firestore.collection(_usersCollection).doc(userId).set({
         _walletField: balanceAfter,
-      });
+      }, firestore.SetOptions(merge: true));
 
       debugPrint(
         'Transaction added: $transactionId | Type: ${type.toString()} | Amount: $amount | New Balance: $balanceAfter',

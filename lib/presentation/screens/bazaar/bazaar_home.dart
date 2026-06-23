@@ -339,28 +339,28 @@ class _BazaarHomeState extends State<BazaarHome> {
         'name': 'Fresh Chili', 
         'price': '৳120/kg', 
         'rating': '4.8★', 
-        'image': 'https://images.unsplash.com/photo-1596646549215-6f9185fb846b?w=400&q=80',
+        'image': 'https://picsum.photos/id/292/400/300',
         'color': Colors.redAccent
       },
       {
         'name': 'Deshi Mango', 
         'price': '৳80/kg', 
         'rating': '4.9★', 
-        'image': 'https://images.unsplash.com/photo-1591073113125-e46713c829ed?w=400&q=80',
+        'image': 'https://picsum.photos/id/152/400/300',
         'color': Colors.orangeAccent
       },
       {
         'name': 'Premium Rice', 
         'price': '৳75/kg', 
         'rating': '4.7★', 
-        'image': 'https://images.unsplash.com/photo-1586201375761-83865001e8ac?w=400&q=80',
+        'image': 'https://picsum.photos/id/312/400/300',
         'color': Colors.amber
       },
       {
         'name': 'Organic Onion', 
         'price': '৳90/kg', 
         'rating': '4.5★', 
-        'image': 'https://images.unsplash.com/photo-1518977956812-cd3dbadaaf31?w=400&q=80',
+        'image': 'https://picsum.photos/id/111/400/300',
         'color': Colors.purpleAccent
       },
     ];

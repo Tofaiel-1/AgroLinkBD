@@ -291,6 +291,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
                   onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                 )
               : null,
+          filled: false,
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
         ),

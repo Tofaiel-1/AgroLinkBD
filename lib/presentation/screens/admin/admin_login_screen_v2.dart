@@ -574,8 +574,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
               hintText: 'Email address',
               hintStyle: const TextStyle(color: Colors.white38),
               prefixIcon: const Icon(Icons.email, color: Colors.white54),
-              filled: true,
-              fillColor: Colors.white.withOpacity(0.05),
+              filled: false,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
@@ -613,8 +612,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
                   color: Colors.white54,
                 ),
               ),
-              filled: true,
-              fillColor: Colors.white.withOpacity(0.05),
+              filled: false,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),

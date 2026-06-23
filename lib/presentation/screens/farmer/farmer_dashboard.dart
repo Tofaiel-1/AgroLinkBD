@@ -1,14 +1,15 @@
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:get/get.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:agrolinkbd/core/providers/user_provider.dart';
 import 'package:agrolinkbd/presentation/screens/disease/disease_detection_screen.dart';
 import 'package:agrolinkbd/presentation/screens/farmer/add_product_screen.dart';
 import 'package:agrolinkbd/presentation/screens/payment/direct_transfer_screen.dart';
 import 'package:agrolinkbd/core/services/transaction_service.dart';
 import 'package:agrolinkbd/presentation/screens/wallet/wallet_screen.dart';
+import 'package:agrolinkbd/core/controllers/user_controller.dart';
 
 class FarmerDashboard extends StatefulWidget {
   const FarmerDashboard({super.key});
@@ -31,11 +32,18 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
 
   final TransactionService _transactionService = TransactionService();
   double _balance = 0.0;
-  final String _userId = 'farmer_demo'; // In a real app, get from UserProvider
+  late String _userId;
 
   @override
   void initState() {
     super.initState();
+    final userController = Get.isRegistered<UserController>()
+        ? Get.find<UserController>()
+        : Get.put(UserController());
+    _userId = userController.userId.isNotEmpty 
+        ? userController.userId 
+        : (FirebaseAuth.instance.currentUser?.uid ?? 'farmer_demo');
+
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
@@ -388,7 +396,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
           title: 'পেমেন্ট (Payment)',
           icon: Icons.payment,
           color: Colors.orange.shade700,
-          onTap: () => Get.to(() => const DirectTransferScreen(senderId: 'farmer_demo')),
+          onTap: () => Get.to(() => DirectTransferScreen(senderId: _userId)),
         ),
       ],
     );

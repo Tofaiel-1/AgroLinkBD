@@ -14,11 +14,11 @@ class _AdminDepositApprovalScreenState extends State<AdminDepositApprovalScreen>
   final DepositService _depositService = DepositService();
 
   void _approveRequest(DepositRequestModel request) async {
-    bool success = await _depositService.approveDeposit(request);
-    if (success) {
+    try {
+      await _depositService.approveDeposit(request);
       Get.snackbar('Success', 'Deposit of ৳${request.amount} approved for user ${request.userId}', backgroundColor: Colors.green.shade100);
-    } else {
-      Get.snackbar('Error', 'Failed to approve deposit.', backgroundColor: Colors.red.shade100);
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to approve deposit: $e', backgroundColor: Colors.red.shade100, duration: const Duration(seconds: 5));
     }
   }
 
