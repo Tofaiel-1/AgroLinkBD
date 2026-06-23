@@ -226,6 +226,15 @@ class _WalletScreenState extends State<WalletScreen> {
                   StreamBuilder<List<Transaction>>(
                     stream: _transactionService.getUserTransactions(widget.userId, limit: 5),
                     builder: (context, snapshot) {
+                      if (snapshot.hasError) {
+                        return Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: SelectableText(
+                            'Error loading transactions: ${snapshot.error}\\n\\nIf this is a Firebase Index error, click the link provided in the error text to create it.',
+                            style: TextStyle(color: Colors.red.shade400, fontSize: 13),
+                          ),
+                        );
+                      }
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(child: CircularProgressIndicator(color: Color(0xFF2E7D32)));
                       }

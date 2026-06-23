@@ -113,6 +113,19 @@ class TransactionService {
     });
   }
 
+  // Get ALL transactions (For Admin Analytics)
+  Stream<List<Transaction>> getAllTransactions() {
+    return _firestore
+        .collection(_transactionsCollection)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => Transaction.fromJson(doc.data() as Map<String, dynamic>))
+          .toList();
+    });
+  }
+
   // Get transaction by ID
   Future<Transaction?> getTransaction(String transactionId) async {
     try {
