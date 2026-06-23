@@ -47,11 +47,14 @@ class DepositService {
     return _firestore
         .collection(_depositCollection)
         .where('userId', isEqualTo: userId)
-        .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => DepositRequestModel.fromJson(doc.data()))
-            .toList());
+        .map((snapshot) {
+          final list = snapshot.docs
+              .map((doc) => DepositRequestModel.fromJson(doc.data()))
+              .toList();
+          list.sort((a, b) => b.createdAt.compareTo(a.createdAt)); // descending
+          return list;
+        });
   }
 
   // Get all pending deposit requests for Admin
@@ -59,11 +62,14 @@ class DepositService {
     return _firestore
         .collection(_depositCollection)
         .where('status', isEqualTo: 'pending')
-        .orderBy('createdAt', descending: false)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => DepositRequestModel.fromJson(doc.data()))
-            .toList());
+        .map((snapshot) {
+          final list = snapshot.docs
+              .map((doc) => DepositRequestModel.fromJson(doc.data()))
+              .toList();
+          list.sort((a, b) => a.createdAt.compareTo(b.createdAt)); // ascending
+          return list;
+        });
   }
 
   // Admin approves a deposit
@@ -91,7 +97,7 @@ class DepositService {
       return true;
     } catch (e) {
       debugPrint('Error approving deposit: $e');
-      return false;
+      throw Exception(e.toString());
     }
   }
 

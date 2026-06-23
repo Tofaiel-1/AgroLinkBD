@@ -271,25 +271,25 @@ class _BazaarMarketplaceState extends State<BazaarMarketplace> {
       final name = product['name']?.toString().toLowerCase() ?? '';
 
       if (name.contains('chili') || name.contains('মরিচ')) {
-        imageUrl = 'https://6a38c58967012f040a070b17.imgix.net/Screenshot%202026-06-22%20111227.png?auto=format&fit=fill&w=384';
+        imageUrl = 'https://picsum.photos/id/292/400/300';
       } else if (name.contains('mango') || name.contains('আম')) {
-        imageUrl = 'https://images.unsplash.com/photo-1591073113125-e46713c829ed?w=400&q=80';
+        imageUrl = 'https://picsum.photos/id/152/400/300';
       } else if (name.contains('rice') || name.contains('ধান') || name.contains('চাল')) {
-        imageUrl = 'https://images.unsplash.com/photo-1586201375761-83865001e8ac?w=400&q=80';
+        imageUrl = 'https://picsum.photos/id/312/400/300';
       } else if (name.contains('onion') || name.contains('পেঁয়াজ')) {
-        imageUrl = 'https://images.unsplash.com/photo-1518977956812-cd3dbadaaf31?w=400&q=80';
+        imageUrl = 'https://picsum.photos/id/111/400/300';
       } else if (name.contains('potato') || name.contains('আলু')) {
-        imageUrl = 'https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=400&q=80';
+        imageUrl = 'https://picsum.photos/id/112/400/300';
       } else if (name.contains('tomato') || name.contains('টমেটো')) {
-        imageUrl = 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400&q=80';
+        imageUrl = 'https://picsum.photos/id/113/400/300';
       } else if (cat == 'vegetables') {
-        imageUrl = 'https://images.unsplash.com/photo-1566385101042-1a0aa0c1268c?w=400&q=80';
+        imageUrl = 'https://picsum.photos/id/114/400/300';
       } else if (cat == 'fruits') {
-        imageUrl = 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=400&q=80';
+        imageUrl = 'https://picsum.photos/id/115/400/300';
       } else if (cat == 'spices') {
-        imageUrl = 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=400&q=80';
+        imageUrl = 'https://picsum.photos/id/116/400/300';
       } else {
-        imageUrl = 'https://images.unsplash.com/photo-1592982537447-7440770cbfc9?w=400&q=80';
+        imageUrl = 'https://picsum.photos/id/117/400/300';
       }
     }
 

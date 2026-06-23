@@ -276,6 +276,7 @@ class _AdminSendMoneyScreenState extends State<AdminSendMoneyScreen> with Single
           hintText: hintText,
           hintStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
           prefixIcon: Icon(icon, color: Colors.white60),
+          filled: false,
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
         ),

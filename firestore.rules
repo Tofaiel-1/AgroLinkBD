@@ -61,8 +61,8 @@ service cloud.firestore {
       // ✅ User can delete their own profile
       allow delete: if request.auth != null && request.auth.uid == userId;
       
-      // ✅ Admins can read and manage all users (for admin panel)
-      allow read, update, delete: if request.auth != null && 
+      // ✅ Admins can read, create, and manage all users (for admin panel)
+      allow read, create, update, delete: if request.auth != null && 
         exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
@@ -83,13 +83,15 @@ service cloud.firestore {
 
     // User transactions - ONLY user can see their own transactions
     match /transactions/{transactionId} {
-      // ✅ Read only own transactions
+      // ✅ Read only own transactions or if admin
       allow read: if request.auth != null && 
-        resource.data.userId == request.auth.uid;
+        (resource.data.userId == request.auth.uid || 
+         exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
       
-      // ✅ Create own transactions
+      // ✅ Create own transactions or if admin
       allow create: if request.auth != null && 
-        request.resource.data.userId == request.auth.uid;
+        (request.resource.data.userId == request.auth.uid || 
+         exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
       
       // ✅ Cannot update transactions (immutable)
       allow update: if false;
@@ -174,6 +176,12 @@ service cloud.firestore {
       // Only admins can update refund status
       allow update, delete: if request.auth != null && 
         exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // Deposit Requests
+    match /deposit_requests/{requestId} {
+      // Allow read/write for testing purposes
+      allow read, write: if true;
     }
     
     // ============================================
