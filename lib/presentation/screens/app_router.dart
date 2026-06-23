@@ -68,23 +68,12 @@ class _AppRouterState extends State<AppRouter> {
       );
     }
 
-    return Consumer2<AdminProvider, UserProvider>(
-      builder: (context, adminProvider, userProvider, _) {
-        // If admin is logged in, check 2FA PIN verification
-        if (adminProvider.isAdminLoggedIn) {
-          if (!adminProvider.isPinVerified) {
-            return const AdminSecurityPinScreen();
-          }
-          return const AdminDashboard();
-        }
-
-        // Check Firebase Auth state
-        return StreamBuilder<User?>(
-          stream: FirebaseAuth.instance.authStateChanges(),
-          builder: (context, authSnapshot) {
-            // Still loading auth state
-            if (authSnapshot.connectionState == ConnectionState.waiting) {
-              return Scaffold(
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, authSnapshot) {
+        // Still loading auth state
+        if (authSnapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(
                 backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                 body: Center(
                   child: Column(
@@ -148,10 +137,36 @@ class _AppRouterState extends State<AppRouter> {
             if (authSnapshot.data == null) {
               _loadingUserIds.clear();
               _loadedUserIds.clear();
+              
+              // Clear stale provider state if previously logged out without clearing
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  final adminProvider = Provider.of<AdminProvider>(context, listen: false);
+                  final userProvider = Provider.of<UserProvider>(context, listen: false);
+                  
+                  if (adminProvider.isAdminLoggedIn) {
+                    adminProvider.adminSignOut();
+                  }
+                  // We don't call userProvider.signOut() because it calls auth.signOut(), which could loop.
+                  // We just need it to clear its internal state if we had a method for that.
+                  // However, let's just let it be, as userProvider reloads data on login anyway.
+                }
+              });
+              
               return const LoginScreen();
             }
 
-            final userId = authSnapshot.data!.uid;
+            return Consumer2<AdminProvider, UserProvider>(
+              builder: (context, adminProvider, userProvider, _) {
+                // If admin is logged in, check 2FA PIN verification
+                if (adminProvider.isAdminLoggedIn) {
+                  if (!adminProvider.isPinVerified) {
+                    return const AdminSecurityPinScreen();
+                  }
+                  return const AdminDashboard();
+                }
+
+                final userId = authSnapshot.data!.uid;
             final email = authSnapshot.data!.email ?? 'user@example.com';
 
             // User is authenticated - Load user data if not already loaded
@@ -234,9 +249,9 @@ class _AppRouterState extends State<AppRouter> {
                 ),
               ),
             );
+              },
+            );
           },
         );
-      },
-    );
   }
 }

@@ -94,7 +94,9 @@ class _LoginScreenState extends State<LoginScreen> {
       String email = _emailController.text.trim();
       String password = _passwordController.text;
 
-
+      // Extract providers before await to avoid "widget unmounted" errors
+      final adminProvider = Provider.of<AdminProvider>(context, listen: false);
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
 
       // Sign in with Firebase Auth
       await _authService.signInWithEmail(
@@ -106,7 +108,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
       // CHECK IF THIS IS AN ADMIN ACCOUNT (read-only check, no re-sign-in)
       try {
-        final adminProvider = Provider.of<AdminProvider>(context, listen: false);
         final adminDoc = await FirebaseFirestore.instance
             .collection('admins')
             .doc(userId)
@@ -170,10 +171,7 @@ class _LoginScreenState extends State<LoginScreen> {
         );
 
         // Load user in provider
-        await Provider.of<UserProvider>(
-          context,
-          listen: false,
-        ).loadUser(userId);
+        await userProvider.loadUser(userId);
 
         // Update last login
         await _authService.updateLastLogin(userId);

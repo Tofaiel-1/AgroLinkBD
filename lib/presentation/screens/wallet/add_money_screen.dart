@@ -59,8 +59,14 @@ class _AddMoneyScreenState extends State<AddMoneyScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final bgColor = isDark ? const Color(0xFF121212) : const Color(0xFFF5F7FA);
+    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final hintColor = isDark ? Colors.grey.shade500 : Colors.grey.shade400;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: bgColor,
       appBar: AppBar(
         title: const Text('Add Money to Wallet'),
         backgroundColor: const Color(0xFF2E7D32),
@@ -71,47 +77,51 @@ class _AddMoneyScreenState extends State<AddMoneyScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Enter Amount',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _amountController,
               keyboardType: TextInputType.number,
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: textColor),
               decoration: InputDecoration(
                 prefixText: '৳ ',
+                prefixStyle: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: textColor),
                 hintText: 'e.g. 1000',
+                hintStyle: TextStyle(color: hintColor),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: cardColor,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
                 ),
               ),
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'Select Payment Method',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor),
             ),
             const SizedBox(height: 12),
             _buildMethodOption('bkash', 'bKash', Colors.pink),
             _buildMethodOption('nagad', 'Nagad', Colors.orange),
             _buildMethodOption('bank', 'Bank Transfer', Colors.blue),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'Transaction ID (Optional)',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _txnIdController,
+              style: TextStyle(color: textColor),
               decoration: InputDecoration(
                 hintText: 'e.g. 8KDF93HDK',
+                hintStyle: TextStyle(color: hintColor),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: cardColor,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -145,6 +155,11 @@ class _AddMoneyScreenState extends State<AddMoneyScreen> {
   }
 
   Widget _buildMethodOption(String id, String name, Color color) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final borderColor = isDark ? Colors.grey.shade800 : Colors.grey.shade300;
+
     final isSelected = _selectedMethod == id;
     return GestureDetector(
       onTap: () => setState(() => _selectedMethod = id),
@@ -152,10 +167,10 @@ class _AddMoneyScreenState extends State<AddMoneyScreen> {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cardColor,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? color : Colors.grey.shade300,
+            color: isSelected ? color : borderColor,
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -165,7 +180,7 @@ class _AddMoneyScreenState extends State<AddMoneyScreen> {
             const SizedBox(width: 16),
             Text(
               name,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: textColor),
             ),
             const Spacer(),
             if (isSelected) Icon(Icons.check_circle, color: color),

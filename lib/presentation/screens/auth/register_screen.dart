@@ -69,6 +69,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       debugPrint('   Name: ${_nameController.text}');
       debugPrint('   Type: ${_selectedUserType.toString()}');
 
+      // Extract provider before await
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+
       // Register with Firebase Auth (Email/Password)
       final credential = await _authService.registerWithEmail(
         email: _emailController.text.trim(),
@@ -151,13 +154,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       // Load user in provider
       debugPrint('📝 Loading user in provider...');
-      if (mounted) {
-        await Provider.of<UserProvider>(
-          context,
-          listen: false,
-        ).loadUser(userId);
-        debugPrint('✅ User loaded in provider');
-      }
+      await userProvider.loadUser(userId);
+      debugPrint('✅ User loaded in provider');
 
       Get.snackbar(
         'Registration Success! ✅',
