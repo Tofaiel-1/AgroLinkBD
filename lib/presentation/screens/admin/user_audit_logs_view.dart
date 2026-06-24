@@ -62,7 +62,8 @@ class _UserAuditLogsViewState extends State<UserAuditLogsView> {
         'Email/Phone',
         'Action',
         'Device Info',
-        'Session Duration (s)',
+        'Session Duration (Seconds)',
+        'Session Duration (Formatted)',
         'Status'
       ]);
 
@@ -82,7 +83,8 @@ class _UserAuditLogsViewState extends State<UserAuditLogsView> {
           log.userName,
           log.action,
           log.deviceInfo,
-          log.sessionDuration ?? '',
+          log.sessionDuration ?? 0,
+          log.getFormattedDuration(),
           log.status,
         ]);
       }
