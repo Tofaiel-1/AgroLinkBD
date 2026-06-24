@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
+import 'package:agrolinkbd/core/providers/admin_provider.dart';
+import 'package:agrolinkbd/core/services/transaction_service.dart';
 
 class AdminEditUserScreen extends StatefulWidget {
   final String userId;
@@ -24,6 +27,7 @@ class _AdminEditUserScreenState extends State<AdminEditUserScreen> {
   bool _isActive = true;
   bool _isLoading = false;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final TransactionService _transactionService = TransactionService();
 
   @override
   void initState() {
@@ -89,6 +93,198 @@ class _AdminEditUserScreenState extends State<AdminEditUserScreen> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  void _showFundsDialog(bool isAdding) {
+    final amountController = TextEditingController();
+    final reasonController = TextEditingController();
+    bool isProcessing = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Container(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+              left: 20,
+              right: 20,
+              top: 20,
+            ),
+            decoration: BoxDecoration(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Icon(
+                        isAdding ? Icons.add_circle : Icons.remove_circle,
+                        color: isAdding ? Colors.green : Colors.red,
+                        size: 32,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        isAdding ? 'Add Funds to Wallet' : 'Deduct Funds',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  TextField(
+                    controller: amountController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      labelText: 'Amount (৳)',
+                      prefixIcon: const Icon(Icons.attach_money),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: reasonController,
+                    decoration: InputDecoration(
+                      labelText: 'Reason',
+                      hintText: isAdding ? 'e.g. Bonus, Refund' : 'e.g. Penalty, Correction',
+                      prefixIcon: const Icon(Icons.description),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 54,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isAdding ? Colors.green : Colors.red,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: isProcessing
+                          ? null
+                          : () async {
+                              final amount = double.tryParse(amountController.text);
+                              final reason = reasonController.text.trim();
+
+                              if (amount == null || amount <= 0) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Please enter a valid amount')),
+                                );
+                                return;
+                              }
+
+                              if (reason.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Please enter a reason')),
+                                );
+                                return;
+                              }
+
+                              setModalState(() => isProcessing = true);
+
+                              try {
+                                bool success = false;
+                                if (isAdding) {
+                                  success = await _transactionService.addCredit(
+                                    userId: widget.userId,
+                                    amount: amount,
+                                    reason: 'Admin: $reason',
+                                  );
+                                } else {
+                                  success = await _transactionService.deductBalance(
+                                    userId: widget.userId,
+                                    amount: amount,
+                                    reason: 'Admin: $reason',
+                                  );
+                                }
+
+                                if (success) {
+                                  // Log the action
+                                  final adminProvider = Provider.of<AdminProvider>(context, listen: false);
+                                  await adminProvider.logAdminAction(
+                                    isAdding ? 'FUNDS_ADDED' : 'FUNDS_DEDUCTED',
+                                    '${isAdding ? "Added" : "Deducted"} ৳$amount ${isAdding ? "to" : "from"} user ${widget.userId} for: $reason',
+                                  );
+
+                                  if (mounted) {
+                                    Navigator.pop(context);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          isAdding
+                                              ? 'Successfully added ৳$amount'
+                                              : 'Successfully deducted ৳$amount',
+                                        ),
+                                        backgroundColor: isAdding ? Colors.green : Colors.red,
+                                      ),
+                                    );
+                                  }
+                                } else {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Failed to process transaction. Check balance or try again.'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                }
+                              } catch (e) {
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Error: $e')),
+                                  );
+                                }
+                              } finally {
+                                if (mounted) {
+                                  setModalState(() => isProcessing = false);
+                                }
+                              }
+                            },
+                      child: isProcessing
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : Text(
+                              isAdding ? 'Confirm Add Funds' : 'Confirm Deduction',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   @override
@@ -283,6 +479,70 @@ class _AdminEditUserScreenState extends State<AdminEditUserScreen> {
                     onChanged: (value) {
                       setState(() => _isPremium = value);
                     },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Manage Funds Card
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Theme.of(context).primaryColor.withOpacity(0.2),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.account_balance_wallet, color: Theme.of(context).primaryColor),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Manage Wallet Funds',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => _showFundsDialog(true),
+                          icon: const Icon(Icons.add, color: Colors.white),
+                          label: const Text('Add', style: TextStyle(color: Colors.white)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => _showFundsDialog(false),
+                          icon: const Icon(Icons.remove, color: Colors.white),
+                          label: const Text('Deduct', style: TextStyle(color: Colors.white)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

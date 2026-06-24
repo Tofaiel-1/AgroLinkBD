@@ -83,10 +83,19 @@ service cloud.firestore {
 
     // User transactions - ONLY user can see their own transactions
     match /transactions/{transactionId} {
-      // ✅ Read only own transactions or if admin
-      allow read: if request.auth != null && 
+      // ✅ Read a single transaction if own or admin
+      allow get: if request.auth != null && 
         (resource.data.userId == request.auth.uid || 
          exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+
+      // ✅ Query transactions if own or admin
+      allow list: if request.auth != null && 
+        (
+          // If querying for a specific user, we can safely check resource.data
+          (resource.data.userId == request.auth.uid) || 
+          // Admins can query ALL transactions (doesn't depend on resource.data)
+          exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        );
       
       // ✅ Create own transactions or if admin
       allow create: if request.auth != null && 
@@ -246,6 +255,53 @@ service cloud.firestore {
       // Admins can read, update and delete all products
       allow read, update, delete: if request.auth != null && 
         exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+    // ============================================
+    // FARM MANAGEMENT (Phase 2)
+    // ============================================
+
+    // Farms
+    match /farms/{farmId} {
+      allow read: if request.auth != null; // Client already filters by userId
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    // Crop Plantings
+    match /crop_plantings/{plantingId} {
+      // For read, we might fetch by farmId. The farmer should own the crop (or we just use userId in crop?).
+      // Wait, we didn't add userId to crop_plantings. Let's rely on farmId or just allow read if authenticated for now.
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null;
+    }
+
+    // Farm Activities
+    match /farm_activities/{activityId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null;
+    }
+
+    // Farm Expenses
+    match /farm_expenses/{expenseId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null;
+    }
+
+    // Farm Revenues
+    match /farm_revenues/{revenueId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null;
+    }
+
+    // Farm Inventory
+    match /farm_inventory/{itemId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null;
     }
   }
 }

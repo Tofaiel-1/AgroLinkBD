@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:agrolinkbd/core/models/phase2_models/farm_models.dart';
+import 'package:agrolinkbd/core/services/phase2_services/farm_service.dart';
+import 'package:intl/intl.dart';
+import 'add_edit_expense_screen.dart';
 
 class ExpenseManagementScreen extends StatefulWidget {
   const ExpenseManagementScreen({Key? key}) : super(key: key);
@@ -9,36 +13,38 @@ class ExpenseManagementScreen extends StatefulWidget {
 }
 
 class _ExpenseManagementScreenState extends State<ExpenseManagementScreen> {
-  final List<Map<String, dynamic>> _recentTransactions = [
-    {
-      'title': 'Urea Fertilizer',
-      'date': '20 Jun 2026',
-      'amount': '৳ 4,500',
-      'icon': Icons.science,
-      'color': Colors.blue,
-    },
-    {
-      'title': 'Labor (Weeding)',
-      'date': '18 Jun 2026',
-      'amount': '৳ 2,000',
-      'icon': Icons.people,
-      'color': Colors.orange,
-    },
-    {
-      'title': 'Tractor Rent',
-      'date': '15 Jun 2026',
-      'amount': '৳ 5,500',
-      'icon': Icons.agriculture,
-      'color': Colors.brown,
-    },
-    {
-      'title': 'Paddy Seeds',
-      'date': '10 Jun 2026',
-      'amount': '৳ 3,200',
-      'icon': Icons.grass,
-      'color': Colors.green,
-    },
-  ];
+  final FarmService _farmService = FarmService();
+  late Stream<List<FarmExpense>> _expensesStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _expensesStream = _farmService.getExpensesStream();
+  }
+
+  IconData _getCategoryIcon(String category) {
+    switch (category) {
+      case 'Fertilizer': return Icons.science;
+      case 'Labor': return Icons.people;
+      case 'Seeds': return Icons.grass;
+      case 'Equipment': return Icons.agriculture;
+      case 'Pesticides': return Icons.pest_control;
+      case 'Irrigation': return Icons.water_drop;
+      default: return Icons.attach_money;
+    }
+  }
+
+  Color _getCategoryColor(String category) {
+    switch (category) {
+      case 'Fertilizer': return Colors.blue;
+      case 'Labor': return Colors.orange;
+      case 'Seeds': return Colors.green;
+      case 'Equipment': return Colors.brown;
+      case 'Pesticides': return Colors.purple;
+      case 'Irrigation': return Colors.lightBlue;
+      default: return Colors.grey;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,97 +57,121 @@ class _ExpenseManagementScreenState extends State<ExpenseManagementScreen> {
           'Expense Management',
           style: GoogleFonts.openSans(fontWeight: FontWeight.bold, color: Colors.white),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.picture_as_pdf, color: Colors.white),
-            onPressed: () {
-              // Export Report
-            },
-          ),
-        ],
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: const BoxDecoration(
-                color: Color(0xFFF44336),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(30),
-                  bottomRight: Radius.circular(30),
-                ),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    'Total Expenses (This Month)',
-                    style: GoogleFonts.openSans(
-                      color: Colors.white.withOpacity(0.9),
-                      fontSize: 14,
+      body: StreamBuilder<List<FarmExpense>>(
+        stream: _expensesStream,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator(color: Color(0xFFF44336)));
+          }
+
+          final expenses = snapshot.data ?? [];
+          final currentMonth = DateTime.now().month;
+          final currentYear = DateTime.now().year;
+
+          double totalThisMonth = 0.0;
+          Map<String, double> categoryTotals = {};
+
+          for (var exp in expenses) {
+            if (exp.date.month == currentMonth && exp.date.year == currentYear) {
+              totalThisMonth += exp.amount;
+              categoryTotals[exp.category] = (categoryTotals[exp.category] ?? 0) + exp.amount;
+            }
+          }
+
+          return CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFF44336),
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(30),
+                      bottomRight: Radius.circular(30),
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '৳ 15,200',
-                    style: GoogleFonts.openSans(
-                      color: Colors.white,
-                      fontSize: 36,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildSummaryChip('Fertilizer', '40%'),
-                      _buildSummaryChip('Labor', '35%'),
-                      _buildSummaryChip('Seeds', '25%'),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.all(20.0),
-            sliver: SliverToBoxAdapter(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  child: Column(
                     children: [
                       Text(
-                        'Recent Transactions',
+                        'Total Expenses (This Month)',
                         style: GoogleFonts.openSans(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFF2D3748),
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 14,
                         ),
                       ),
-                      TextButton(
-                        onPressed: () {},
-                        child: Text(
-                          'See All',
-                          style: GoogleFonts.openSans(
-                            color: const Color(0xFFF44336),
-                            fontWeight: FontWeight.w600,
-                          ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '৳ ${NumberFormat('#,##0.00').format(totalThisMonth)}',
+                        style: GoogleFonts.openSans(
+                          color: Colors.white,
+                          fontSize: 36,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: categoryTotals.entries.map((e) {
+                            final percentage = totalThisMonth > 0 ? (e.value / totalThisMonth * 100) : 0.0;
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                              child: _buildSummaryChip(e.key, '${percentage.toStringAsFixed(0)}%'),
+                            );
+                          }).toList(),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  ..._recentTransactions.map((tx) => _buildTransactionCard(tx)).toList(),
-                ],
+                ),
               ),
-            ),
-          ),
-        ],
+              SliverPadding(
+                padding: const EdgeInsets.all(20.0),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Recent Transactions',
+                          style: GoogleFonts.openSans(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF2D3748),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    if (expenses.isEmpty)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(32.0),
+                          child: Text(
+                            'No expenses recorded yet',
+                            style: GoogleFonts.openSans(color: Colors.grey),
+                          ),
+                        ),
+                      )
+                    else
+                      ...expenses.map((tx) => _buildTransactionCard(tx)).toList(),
+                  ]),
+                ),
+              ),
+            ],
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AddEditExpenseScreen()),
+          );
+        },
         backgroundColor: const Color(0xFFF44336),
         child: const Icon(Icons.add, color: Colors.white),
       ),
@@ -177,7 +207,10 @@ class _ExpenseManagementScreenState extends State<ExpenseManagementScreen> {
     );
   }
 
-  Widget _buildTransactionCard(Map<String, dynamic> tx) {
+  Widget _buildTransactionCard(FarmExpense tx) {
+    final color = _getCategoryColor(tx.category);
+    final icon = _getCategoryIcon(tx.category);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -197,10 +230,10 @@ class _ExpenseManagementScreenState extends State<ExpenseManagementScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: (tx['color'] as Color).withOpacity(0.1),
+              color: color.withOpacity(0.1),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(tx['icon'], color: tx['color']),
+            child: Icon(icon, color: color),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -208,16 +241,26 @@ class _ExpenseManagementScreenState extends State<ExpenseManagementScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  tx['title'],
+                  tx.category,
                   style: GoogleFonts.openSans(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                     color: const Color(0xFF2D3748),
                   ),
                 ),
+                if (tx.description.isNotEmpty)
+                  Text(
+                    tx.description,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.openSans(
+                      fontSize: 13,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
                 const SizedBox(height: 4),
                 Text(
-                  tx['date'],
+                  DateFormat('dd MMM yyyy').format(tx.date),
                   style: GoogleFonts.openSans(
                     fontSize: 12,
                     color: const Color(0xFF718096),
@@ -227,7 +270,7 @@ class _ExpenseManagementScreenState extends State<ExpenseManagementScreen> {
             ),
           ),
           Text(
-            '- ${tx['amount']}',
+            '- ৳${NumberFormat('#,##0').format(tx.amount)}',
             style: GoogleFonts.openSans(
               fontWeight: FontWeight.bold,
               fontSize: 16,

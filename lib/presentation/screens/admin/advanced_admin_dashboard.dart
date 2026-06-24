@@ -12,6 +12,8 @@ import 'package:agrolinkbd/presentation/screens/admin/admin_announcement_screen.
 import 'package:agrolinkbd/presentation/screens/admin/audit_logs_viewer.dart';
 import 'package:agrolinkbd/presentation/screens/admin/inventory_dashboard_screen.dart';
 import 'package:agrolinkbd/presentation/screens/admin/refund_queue_screen.dart';
+import 'package:agrolinkbd/presentation/screens/admin/admin_transaction_analytics_screen.dart';
+import 'package:agrolinkbd/presentation/screens/admin/admin_financial_requests_screen.dart';
 
 /// Pulse Animation Wrapper for live counters
 class PulseEffect extends StatefulWidget {
@@ -452,11 +454,13 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
               setState(() => _selectedMenuIndex = index);
               if (entry.value['action'] == 'users') {
                 Get.to(() => const AdminUserManagementScreen());
-                // Reset selection after returning
-                Future.delayed(const Duration(milliseconds: 500), () {
-                  if (mounted) setState(() => _selectedMenuIndex = 0);
-                });
+              } else if (entry.value['action'] == 'trans') {
+                Get.to(() => const AdminTransactionAnalyticsScreen());
               }
+              // Reset selection after returning
+              Future.delayed(const Duration(milliseconds: 500), () {
+                if (mounted) setState(() => _selectedMenuIndex = 0);
+              });
             },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
@@ -970,6 +974,8 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
     final actions = [
       {'icon': Icons.account_balance_wallet_rounded, 'label': 'Deposit', 'color': const Color(0xFF10B981), 'route': 'deposit'},
       {'icon': Icons.send_rounded, 'label': 'Send Funds', 'color': const Color(0xFF3B82F6), 'route': 'send'},
+      {'icon': Icons.analytics_rounded, 'label': 'Cash Flow', 'color': const Color(0xFF14B8A6), 'route': 'cashflow'},
+      {'icon': Icons.request_quote_rounded, 'label': 'Requests', 'color': const Color(0xFFEAB308), 'route': 'requests'},
       {'icon': Icons.inventory_2_rounded, 'label': 'Inventory', 'color': const Color(0xFF8B5CF6), 'route': 'inventory'},
       {'icon': Icons.receipt_long_rounded, 'label': 'Refunds', 'color': const Color(0xFFF59E0B), 'route': 'refunds'},
       {'icon': Icons.person_add_rounded, 'label': 'User DB', 'color': const Color(0xFF14B8A6), 'route': 'users'},
@@ -1005,6 +1011,8 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
       onTap: () {
         if (route == 'deposit') Get.to(() => const AdminDepositApprovalScreen());
         if (route == 'send') Get.to(() => const AdminSendMoneyScreen());
+        if (route == 'cashflow') Get.to(() => const AdminTransactionAnalyticsScreen());
+        if (route == 'requests') Get.to(() => const AdminFinancialRequestsScreen());
         if (route == 'inventory') Get.to(() => const InventoryDashboardScreen());
         if (route == 'refunds') Get.to(() => const RefundQueueScreen());
         if (route == 'users') Get.to(() => const AdminUserManagementScreen());

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:agrolinkbd/core/models/phase2_models/farm_models.dart';
+import 'package:agrolinkbd/core/services/phase2_services/farm_service.dart';
+import 'package:agrolinkbd/presentation/screens/farmer/farm_management/add_edit_farm_screen.dart';
 
 class FarmProfileScreen extends StatefulWidget {
   const FarmProfileScreen({Key? key}) : super(key: key);
@@ -9,12 +12,36 @@ class FarmProfileScreen extends StatefulWidget {
 }
 
 class _FarmProfileScreenState extends State<FarmProfileScreen> {
-  bool _isEditing = false;
+  final FarmService _farmService = FarmService();
 
-  final TextEditingController _nameController = TextEditingController(text: 'Green Valley Farm');
-  final TextEditingController _locationController = TextEditingController(text: 'Rajshahi, Bangladesh');
-  final TextEditingController _areaController = TextEditingController(text: '12.5');
-  final TextEditingController _soilController = TextEditingController(text: 'Loamy Soil');
+  void _confirmDelete(BuildContext context, String farmId) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Farm'),
+        content: const Text('Are you sure you want to delete this farm? All associated data may be lost.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await _farmService.deleteFarm(farmId);
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Farm deleted'), backgroundColor: Colors.red),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,35 +56,80 @@ class _FarmProfileScreenState extends State<FarmProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSectionHeader('Basic Details', Icons.info_outline),
+                  _buildSectionHeader('My Farms', Icons.landscape),
                   const SizedBox(height: 16),
-                  _buildFormCard(),
-                  const SizedBox(height: 30),
-                  _buildSectionHeader('Quick Statistics', Icons.bar_chart),
-                  const SizedBox(height: 16),
-                  _buildStatisticsGrid(),
-                  const SizedBox(height: 40),
                 ],
               ),
             ),
           ),
+          StreamBuilder<List<Farm>>(
+            stream: _farmService.getFarmsStream(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const SliverFillRemaining(
+                  child: Center(child: CircularProgressIndicator(color: Color(0xFF4CAF50))),
+                );
+              }
+
+              if (snapshot.hasError) {
+                return SliverFillRemaining(
+                  child: Center(child: Text('Error loading farms', style: GoogleFonts.openSans(color: Colors.red))),
+                );
+              }
+
+              final farms = snapshot.data ?? [];
+
+              if (farms.isEmpty) {
+                return SliverFillRemaining(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.agriculture, size: 80, color: Colors.grey.shade400),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No farms found',
+                          style: GoogleFonts.openSans(fontSize: 18, color: Colors.grey.shade600),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Click the + button to add your first farm.',
+                          style: GoogleFonts.openSans(fontSize: 14, color: Colors.grey.shade500),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              return SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final farm = farms[index];
+                      return _buildFarmCard(context, farm);
+                    },
+                    childCount: farms.length,
+                  ),
+                ),
+              );
+            },
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 80)),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          setState(() {
-            _isEditing = !_isEditing;
-          });
-          if (!_isEditing) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Farm details saved successfully!')),
-            );
-          }
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AddEditFarmScreen()),
+          );
         },
-        backgroundColor: _isEditing ? const Color(0xFF1976D2) : const Color(0xFF4CAF50),
-        icon: Icon(_isEditing ? Icons.save : Icons.edit, color: Colors.white),
+        backgroundColor: const Color(0xFF4CAF50),
+        icon: const Icon(Icons.add, color: Colors.white),
         label: Text(
-          _isEditing ? 'Save Changes' : 'Edit Profile',
+          'Add Farm',
           style: GoogleFonts.openSans(fontWeight: FontWeight.bold, color: Colors.white),
         ),
       ),
@@ -73,7 +145,7 @@ class _FarmProfileScreenState extends State<FarmProfileScreen> {
       flexibleSpace: FlexibleSpaceBar(
         titlePadding: const EdgeInsets.only(left: 20, bottom: 16),
         title: Text(
-          'Farm Profile',
+          'Farm Management',
           style: GoogleFonts.openSans(
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -127,93 +199,9 @@ class _FarmProfileScreenState extends State<FarmProfileScreen> {
     );
   }
 
-  Widget _buildFormCard() {
+  Widget _buildFarmCard(BuildContext context, Farm farm) {
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFCBD5E1).withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          _buildTextField('Farm Name', _nameController, Icons.landscape),
-          const SizedBox(height: 16),
-          _buildTextField('Location', _locationController, Icons.location_on),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildTextField('Area (ha)', _areaController, Icons.aspect_ratio),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildTextField('Soil Type', _soilController, Icons.grass),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTextField(String label, TextEditingController controller, IconData icon) {
-    return TextFormField(
-      controller: controller,
-      enabled: _isEditing,
-      style: GoogleFonts.openSans(
-        fontSize: 15,
-        fontWeight: FontWeight.w600,
-        color: const Color(0xFF2D3748),
-      ),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: GoogleFonts.openSans(color: Colors.grey.shade600),
-        prefixIcon: Icon(icon, color: _isEditing ? const Color(0xFF4CAF50) : Colors.grey.shade400),
-        filled: true,
-        fillColor: _isEditing ? Colors.white : Colors.grey.shade50,
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-        disabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.grey.shade200),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFF4CAF50), width: 2),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatisticsGrid() {
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
-      childAspectRatio: 1.5,
-      children: [
-        _buildStatCard('Total Crops', '4 Active', Icons.grass, const Color(0xFFE8F5E9), const Color(0xFF2E7D32)),
-        _buildStatCard('Employees', '12 Staff', Icons.people, const Color(0xFFE3F2FD), const Color(0xFF1565C0)),
-        _buildStatCard('Est. Yield', '850 Tons', Icons.analytics, const Color(0xFFFFF3E0), const Color(0xFFE65100)),
-        _buildStatCard('Last Harvest', '2 Weeks Ago', Icons.history, const Color(0xFFF3E5F5), const Color(0xFF6A1B9A)),
-      ],
-    );
-  }
-
-  Widget _buildStatCard(String title, String value, IconData icon, Color bgColor, Color iconColor) {
-    return Container(
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -225,42 +213,100 @@ class _FarmProfileScreenState extends State<FarmProfileScreen> {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: bgColor,
-                  borderRadius: BorderRadius.circular(12),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () {
+            // Future implementation: View farm details or navigate to specific farm dashboard
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        farm.name,
+                        style: GoogleFonts.openSans(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF2D3748),
+                        ),
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => AddEditFarmScreen(farm: farm)),
+                            );
+                          },
+                          constraints: const BoxConstraints(),
+                          padding: const EdgeInsets.all(8),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                          onPressed: () => _confirmDelete(context, farm.id),
+                          constraints: const BoxConstraints(),
+                          padding: const EdgeInsets.all(8),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                child: Icon(icon, color: iconColor, size: 20),
-              ),
-              const Spacer(),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: GoogleFonts.openSans(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFF2D3748),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Icon(Icons.location_on, size: 16, color: Colors.grey.shade500),
+                    const SizedBox(width: 8),
+                    Text(
+                      farm.location,
+                      style: GoogleFonts.openSans(fontSize: 14, color: Colors.grey.shade600),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Icon(Icons.aspect_ratio, size: 16, color: Colors.grey.shade500),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${farm.area} ha',
+                            style: GoogleFonts.openSans(fontSize: 14, color: Colors.grey.shade600),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Icon(Icons.grass, size: 16, color: Colors.grey.shade500),
+                          const SizedBox(width: 8),
+                          Text(
+                            farm.soilType.isNotEmpty ? farm.soilType : 'Unknown Soil',
+                            style: GoogleFonts.openSans(fontSize: 14, color: Colors.grey.shade600),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-          Text(
-            title,
-            style: GoogleFonts.openSans(
-              fontSize: 12,
-              color: const Color(0xFF718096),
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 }
+
