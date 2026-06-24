@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../models/payment_model.dart';
+import '../models/transfer_request_model.dart';
 
 class TransactionService {
   final firestore.FirebaseFirestore _firestore =
@@ -416,6 +417,126 @@ class TransactionService {
       return false;
     }
   }
+
+  // Request a transfer to an external account (Admin Approval Required)
+  Future<bool> requestTransfer({
+    required String senderId,
+    required String receiverId,
+    required double amount,
+    required String paymentMethod,
+    required String accountNumber,
+    required String reason,
+  }) async {
+    try {
+      // 1. Deduct balance from sender immediately to lock funds
+      double currentBalance = await getWalletBalance(senderId);
+
+      if (currentBalance < amount) {
+        throw Exception('Insufficient wallet balance');
+      }
+
+      await addTransaction(
+        id: const Uuid().v4(),
+        userId: senderId,
+        type: TransactionType.debit,
+        amount: amount,
+        title: 'Transfer Request: $reason',
+        metadata: {
+          'receiverId': receiverId,
+          'paymentMethod': paymentMethod,
+          'accountNumber': accountNumber,
+          'status': 'pending_approval'
+        },
+      );
+
+      // 2. Create the request record for Admin to approve
+      await _firestore.collection('transfer_requests').add({
+        'senderId': senderId,
+        'receiverId': receiverId,
+        'amount': amount,
+        'paymentMethod': paymentMethod,
+        'accountNumber': accountNumber,
+        'reason': reason,
+        'status': 'pending',
+        'createdAt': firestore.FieldValue.serverTimestamp(),
+      });
+
+      return true;
+    } catch (e) {
+      debugPrint('Error requesting transfer: $e');
+      return false;
+    }
+  }
+
+  // Get pending transfer requests
+  Stream<List<TransferRequestModel>> getPendingTransferRequests() {
+    return _firestore
+        .collection('transfer_requests')
+        .where('status', isEqualTo: 'pending')
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => TransferRequestModel.fromJson(doc.data() as Map<String, dynamic>, doc.id))
+          .toList();
+    });
+  }
+
+  // Approve transfer request
+  Future<void> approveTransferRequest(TransferRequestModel req) async {
+    try {
+      // Add funds to receiver
+      await addTransaction(
+        id: const Uuid().v4(),
+        userId: req.receiverId,
+        type: TransactionType.credit,
+        amount: req.amount,
+        title: 'Received from transfer: ${req.reason}',
+        metadata: {
+          'transferRequestId': req.id,
+          'senderId': req.senderId,
+        },
+      );
+
+      // Update status
+      await _firestore.collection('transfer_requests').doc(req.id).update({
+        'status': 'approved',
+        'approvedAt': firestore.FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      debugPrint('Error approving transfer: $e');
+      throw Exception('Failed to approve transfer: $e');
+    }
+  }
+
+  // Reject transfer request
+  Future<void> rejectTransferRequest(TransferRequestModel req) async {
+    try {
+      // Refund sender
+      await addTransaction(
+        id: const Uuid().v4(),
+        userId: req.senderId,
+        type: TransactionType.refund,
+        amount: req.amount,
+        title: 'Refund for rejected transfer: ${req.reason}',
+        metadata: {
+          'transferRequestId': req.id,
+          'receiverId': req.receiverId,
+          'type': 'refund'
+        },
+      );
+
+      // Update status
+      await _firestore.collection('transfer_requests').doc(req.id).update({
+        'status': 'rejected',
+        'rejectedAt': firestore.FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      debugPrint('Error rejecting transfer: $e');
+      throw Exception('Failed to reject transfer: $e');
+    }
+  }
+
   // Transfer funds (P2P Cyclic Payments)
   Future<bool> transferFunds({
     required String senderId,

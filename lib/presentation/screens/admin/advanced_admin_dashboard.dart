@@ -976,6 +976,7 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
       {'icon': Icons.send_rounded, 'label': 'Send Funds', 'color': const Color(0xFF3B82F6), 'route': 'send'},
       {'icon': Icons.analytics_rounded, 'label': 'Cash Flow', 'color': const Color(0xFF14B8A6), 'route': 'cashflow'},
       {'icon': Icons.request_quote_rounded, 'label': 'Requests', 'color': const Color(0xFFEAB308), 'route': 'requests'},
+      {'icon': Icons.currency_exchange_rounded, 'label': 'Transfers', 'color': const Color(0xFF06B6D4), 'route': 'transfers'},
       {'icon': Icons.inventory_2_rounded, 'label': 'Inventory', 'color': const Color(0xFF8B5CF6), 'route': 'inventory'},
       {'icon': Icons.receipt_long_rounded, 'label': 'Refunds', 'color': const Color(0xFFF59E0B), 'route': 'refunds'},
       {'icon': Icons.person_add_rounded, 'label': 'User DB', 'color': const Color(0xFF14B8A6), 'route': 'users'},
@@ -1013,6 +1014,7 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
         if (route == 'send') Get.to(() => const AdminSendMoneyScreen());
         if (route == 'cashflow') Get.to(() => const AdminTransactionAnalyticsScreen());
         if (route == 'requests') Get.to(() => const AdminFinancialRequestsScreen());
+        if (route == 'transfers') Get.to(() => const AdminFinancialRequestsScreen(initialTabIndex: 2));
         if (route == 'inventory') Get.to(() => const InventoryDashboardScreen());
         if (route == 'refunds') Get.to(() => const RefundQueueScreen());
         if (route == 'users') Get.to(() => const AdminUserManagementScreen());

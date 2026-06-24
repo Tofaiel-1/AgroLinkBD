@@ -49,8 +49,8 @@ service cloud.firestore {
     
     // User profiles - ONLY user can read/write their own profile
     match /users/{userId} {
-      // ✅ User can ONLY read their own profile
-      allow read: if request.auth != null && request.auth.uid == userId;
+      // ✅ Allow authenticated users to read user profiles (needed for searching recipients)
+      allow read: if request.auth != null;
       
       // ✅ User can ONLY create their own profile (during registration)
       allow create: if request.auth != null && request.auth.uid == userId;
@@ -321,6 +321,19 @@ service cloud.firestore {
       allow read: if request.auth != null;
       // Only admins can manage announcements
       allow write: if request.auth != null && 
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+    // ============================================
+    // TRANSFER REQUESTS
+    // ============================================
+    match /transfer_requests/{requestId} {
+      // Senders can create requests and read their own requests
+      allow create: if request.auth != null && request.resource.data.senderId == request.auth.uid;
+      // Participants (sender or receiver) can read the request
+      allow read: if request.auth != null && 
+        (resource.data.senderId == request.auth.uid || resource.data.receiverId == request.auth.uid);
+      // Admins can manage all requests
+      allow read, update, delete: if request.auth != null && 
         exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
   }

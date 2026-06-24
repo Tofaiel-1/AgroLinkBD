@@ -147,11 +147,11 @@ class UserModel {
       phone: json['phone'] ?? '',
       email: json['email'] ?? '',
       userType: UserType.values.firstWhere(
-        (e) => e.toString() == json['userType'],
+        (e) => e.toString() == json['userType'] || e.name.toLowerCase() == json['userType']?.toString().toLowerCase(),
         orElse: () => UserType.farmer,
       ),
       status: UserStatus.values.firstWhere(
-        (e) => e.toString() == json['status'],
+        (e) => e.toString() == json['status'] || e.name.toLowerCase() == json['status']?.toString().toLowerCase(),
         orElse: () => UserStatus.active,
       ),
       profileImage: json['profileImage'],

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:agrolinkbd/core/services/transaction_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:agrolinkbd/core/models/user_model.dart';
+import 'package:flutter/services.dart';
 
 class DirectTransferScreen extends StatefulWidget {
   final String senderId;
@@ -16,11 +17,14 @@ class DirectTransferScreen extends StatefulWidget {
 class _DirectTransferScreenState extends State<DirectTransferScreen> {
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _reasonController = TextEditingController();
+  final TextEditingController _accountNumberController = TextEditingController();
   final TransactionService _transactionService = TransactionService();
   
   List<UserModel> _recipients = [];
   List<UserModel> _filteredRecipients = [];
   UserModel? _selectedRecipient;
+  String _selectedPaymentMethod = 'bKash';
+  String _selectedReason = 'Tractor / Machine Rental';
   
   bool _isLoadingRecipients = true;
   bool _isProcessing = false;
@@ -33,25 +37,17 @@ class _DirectTransferScreenState extends State<DirectTransferScreen> {
 
   Future<void> _fetchRecipients() async {
     try {
-      // Fetch drivers
-      final driverSnapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .where('userType', isEqualTo: 'UserType.driver')
-          .get();
+      // Fetch all users and filter locally to handle any DB string format variations
+      final snapshot = await FirebaseFirestore.instance.collection('users').get();
           
-      // Fetch service providers
-      final providerSnapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .where('userType', isEqualTo: 'UserType.serviceProvider')
-          .get();
-          
-      final allDocs = [...driverSnapshot.docs, ...providerSnapshot.docs];
-      
-      final users = allDocs.map((doc) {
+      final users = snapshot.docs.map((doc) {
         final data = doc.data();
         data['id'] = doc.id;
         return UserModel.fromJson(data);
-      }).toList();
+      }).where((user) => 
+        user.userType == UserType.driver || 
+        user.userType == UserType.serviceProvider
+      ).toList();
       
       setState(() {
         _recipients = users;
@@ -66,13 +62,14 @@ class _DirectTransferScreenState extends State<DirectTransferScreen> {
     }
   }
 
-  void _showRecipientSearchDialog() {
+    void _showRecipientSearchDialog() {
     showDialog(
       context: context,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return Dialog(
+              backgroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               child: Container(
                 constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
@@ -86,14 +83,24 @@ class _DirectTransferScreenState extends State<DirectTransferScreen> {
                     ),
                     const SizedBox(height: 16),
                     TextField(
+                      style: const TextStyle(color: Colors.black87),
                       decoration: InputDecoration(
                         hintText: 'Search by name or phone...',
-                        prefixIcon: const Icon(Icons.search),
+                        hintStyle: TextStyle(color: Colors.grey.shade600),
+                        prefixIcon: Icon(Icons.search, color: Colors.grey.shade600),
                         filled: true,
                         fillColor: Colors.grey.shade100,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Colors.green),
                         ),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       ),
@@ -130,8 +137,8 @@ class _DirectTransferScreenState extends State<DirectTransferScreen> {
                                           color: isDriver ? Colors.blue.shade800 : Colors.orange.shade800,
                                         ),
                                       ),
-                                      title: Text(user.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                                      subtitle: Text('${user.phone} • ${isDriver ? 'Driver' : 'Service Provider'}'),
+                                      title: Text(user.name, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
+                                      subtitle: Text('${user.phone} • ${isDriver ? 'Driver' : 'Service Provider'}', style: TextStyle(color: Colors.grey.shade700)),
                                       onTap: () {
                                         setState(() {
                                           _selectedRecipient = user;
@@ -160,6 +167,24 @@ class _DirectTransferScreenState extends State<DirectTransferScreen> {
       return;
     }
 
+    final accountNumber = _accountNumberController.text.trim();
+    if (accountNumber.isEmpty) {
+      Get.snackbar('Error', 'Please enter recipient account number', backgroundColor: Colors.red.shade100);
+      return;
+    }
+
+    if (_selectedPaymentMethod == 'bKash' || _selectedPaymentMethod == 'Nagad') {
+      if (accountNumber.length < 11 || accountNumber.length > 14) {
+        Get.snackbar('Error', 'Invalid mobile number format', backgroundColor: Colors.red.shade100);
+        return;
+      }
+    }
+
+    if (_selectedPaymentMethod == 'Bank' && accountNumber.length > 16) {
+      Get.snackbar('Error', 'Bank account number cannot exceed 16 digits', backgroundColor: Colors.red.shade100);
+      return;
+    }
+
     final amountText = _amountController.text.trim();
     if (amountText.isEmpty) {
       Get.snackbar('Error', 'Please enter an amount', backgroundColor: Colors.red.shade100);
@@ -172,21 +197,27 @@ class _DirectTransferScreenState extends State<DirectTransferScreen> {
       return;
     }
 
+    final finalReason = _selectedReason == 'Other (Please specify)' 
+        ? (_reasonController.text.isNotEmpty ? _reasonController.text : 'Payment for Services')
+        : _selectedReason;
+
     setState(() => _isProcessing = true);
 
     try {
-      bool success = await _transactionService.transferFunds(
+      bool success = await _transactionService.requestTransfer(
         senderId: widget.senderId,
         receiverId: _selectedRecipient!.id,
         amount: amount,
-        reason: _reasonController.text.isNotEmpty ? _reasonController.text : 'Payment for Services',
+        paymentMethod: _selectedPaymentMethod,
+        accountNumber: accountNumber,
+        reason: finalReason,
       );
 
       if (success) {
         Get.back();
         Get.snackbar(
           'Success', 
-          'Transferred ৳$amount to ${_selectedRecipient!.name} successfully.',
+          'Transfer request submitted for Admin approval.',
           backgroundColor: Colors.green.shade100,
           colorText: Colors.green.shade900,
         );
@@ -269,6 +300,103 @@ class _DirectTransferScreenState extends State<DirectTransferScreen> {
             ),
             const SizedBox(height: 24),
             const Text(
+              'Reason / Purpose',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: _selectedReason,
+                  isExpanded: true,
+                  items: const [
+                    DropdownMenuItem(value: 'Tractor / Machine Rental', child: Text('Tractor / Machine Rental', style: TextStyle(color: Colors.black87))),
+                    DropdownMenuItem(value: 'Transport / Truck Fare', child: Text('Transport / Truck Fare', style: TextStyle(color: Colors.black87))),
+                    DropdownMenuItem(value: 'Labor Payment', child: Text('Labor Payment', style: TextStyle(color: Colors.black87))),
+                    DropdownMenuItem(value: 'Seeds / Fertilizer / Pesticide', child: Text('Seeds / Fertilizer / Pesticide', style: TextStyle(color: Colors.black87))),
+                    DropdownMenuItem(value: 'Other (Please specify)', child: Text('Other (Please specify)', style: TextStyle(color: Colors.black87))),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) setState(() => _selectedReason = val);
+                  },
+                ),
+              ),
+            ),
+            if (_selectedReason == 'Other (Please specify)') ...[
+              const SizedBox(height: 12),
+              TextField(
+                controller: _reasonController,
+                decoration: InputDecoration(
+                  hintText: 'Type your reason...',
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                style: const TextStyle(color: Colors.black87),
+              ),
+            ],
+            const SizedBox(height: 24),
+            const Text(
+              'Payment Method',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: _selectedPaymentMethod,
+                  isExpanded: true,
+                  items: const [
+                    DropdownMenuItem(value: 'bKash', child: Text('bKash', style: TextStyle(color: Colors.black87))),
+                    DropdownMenuItem(value: 'Nagad', child: Text('Nagad', style: TextStyle(color: Colors.black87))),
+                    DropdownMenuItem(value: 'Bank', child: Text('Bank Transfer', style: TextStyle(color: Colors.black87))),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) setState(() => _selectedPaymentMethod = val);
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Account / Mobile Number',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _accountNumberController,
+              keyboardType: TextInputType.phone,
+              maxLength: _selectedPaymentMethod == 'Bank' ? 16 : 14,
+              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9+]'))],
+              decoration: InputDecoration(
+                counterText: '', // Hide the length counter below the textfield
+                hintText: 'Enter recipient number',
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+              style: const TextStyle(color: Colors.black87),
+            ),
+            const SizedBox(height: 24),
+            const Text(
               'Enter Amount',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
             ),
@@ -287,25 +415,6 @@ class _DirectTransferScreenState extends State<DirectTransferScreen> {
                 ),
               ),
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Reason / Purpose',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _reasonController,
-              decoration: InputDecoration(
-                hintText: 'e.g. Tractor rental',
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-              style: const TextStyle(color: Colors.black87),
             ),
             const SizedBox(height: 40),
             SizedBox(
