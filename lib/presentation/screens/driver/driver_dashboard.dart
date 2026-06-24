@@ -10,6 +10,7 @@ import 'package:agrolinkbd/presentation/widgets/premium_dashboard_widgets.dart';
 import 'package:agrolinkbd/presentation/screens/analytics/driver_analytics.dart';
 import 'package:agrolinkbd/presentation/screens/maps/driver_delivery_map.dart';
 import 'package:agrolinkbd/presentation/screens/notifications/driver_notifications.dart';
+import 'package:agrolinkbd/presentation/widgets/global_announcement_banner.dart';
 
 /// Driver Role Dashboard
 /// Displays trip overview, earnings, available jobs, and performance metrics
@@ -248,6 +249,16 @@ class _DriverDashboardState extends ConsumerState<DriverDashboard>
                     ],
                   ),
                 ),
+              ),
+            ),
+            
+            // ============================================
+            // GLOBAL ANNOUNCEMENTS
+            // ============================================
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.only(top: 16.0),
+                child: GlobalAnnouncementBanner(),
               ),
             ),
 

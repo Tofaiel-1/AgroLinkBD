@@ -17,6 +17,7 @@ import 'package:agrolinkbd/presentation/buyer/screens/buyer_orders_screen.dart';
 import 'package:agrolinkbd/presentation/buyer/screens/wishlist_screen.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/location_service.dart';
+import 'core/services/app_lifecycle_tracker.dart';
 import 'presentation/screens/app_router.dart';
 import 'presentation/screens/auth/auth_routing_controller.dart';
 import 'presentation/screens/admin/admin_login_screen.dart';
@@ -115,7 +116,8 @@ class AgroLinkBDApp extends StatelessWidget {
           ChangeNotifierProvider(create: (_) => CartProvider()),
           ChangeNotifierProvider(create: (_) => RoleContentProvider()),
         ],
-        child: GetMaterialApp(
+        child: AppLifecycleTracker(
+          child: GetMaterialApp(
           title: 'AgroLinkBD - কৃষি বাজার',
           debugShowCheckedModeBanner: false,
           theme: AppTheme.lightTheme,
@@ -185,6 +187,7 @@ class AgroLinkBDApp extends StatelessWidget {
             '/buyer/orders': (context) => const BuyerOrdersScreen(),
             '/buyer/wishlist': (context) => const WishlistScreen(),
           },
+        ),
         ),
       ),
     );

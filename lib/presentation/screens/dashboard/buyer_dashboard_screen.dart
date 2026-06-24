@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:agrolinkbd/core/controllers/user_controller.dart';
 import 'package:agrolinkbd/presentation/screens/marketplace/marketplace_screen.dart';
 import 'package:agrolinkbd/presentation/screens/profile/profile_screen.dart';
+import 'package:agrolinkbd/presentation/widgets/global_announcement_banner.dart';
 
 import 'package:agrolinkbd/core/services/transaction_service.dart';
 
@@ -152,6 +153,14 @@ class _BuyerDashboardScreenState extends State<BuyerDashboardScreen> {
                   ),
                 ],
               ),
+            ),
+          ),
+          
+          // ===== ANNOUNCEMENTS =====
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.only(top: 8.0),
+              child: GlobalAnnouncementBanner(),
             ),
           ),
 

@@ -10,6 +10,7 @@ import 'package:agrolinkbd/presentation/screens/payment/direct_transfer_screen.d
 import 'package:agrolinkbd/core/services/transaction_service.dart';
 import 'package:agrolinkbd/presentation/screens/wallet/wallet_screen.dart';
 import 'package:agrolinkbd/core/controllers/user_controller.dart';
+import 'package:agrolinkbd/presentation/widgets/global_announcement_banner.dart';
 
 class FarmerDashboard extends StatefulWidget {
   const FarmerDashboard({super.key});
@@ -236,6 +237,10 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Global Announcements
+                    const GlobalAnnouncementBanner(),
+                    const SizedBox(height: 16),
+                    
                     // 1. Weather Alert Card
                     _buildWeatherAlertCard(),
                     const SizedBox(height: 24),
