@@ -82,42 +82,75 @@ Always identify the plant before identifying disease.
   static Future<Map<String, dynamic>?> analyzeImage(String imagePath) async {
     final apiKey = _apiKey;
     if (apiKey.isEmpty || apiKey == "YOUR_API_KEY_HERE") {
-      debugPrint("AI Disease Service: API Key is not set. Falling back to mock data.");
-      return null;
+      debugPrint("AI Disease Service: API Key is not set.");
+      return {'error': 'API Key is missing'};
     }
 
-    try {
-      final model = GenerativeModel(
-        model: 'gemini-1.5-flash',
-        apiKey: apiKey,
-        generationConfig: GenerationConfig(
-          responseMimeType: 'application/json',
-        ),
-      );
+    final modelsToTry = [
+      'gemini-2.5-flash',
+      'gemini-flash-latest',
+      'gemini-3.5-flash',
+      'gemini-2.0-flash',
+      'gemini-1.5-flash-latest',
+    ];
 
-      final imageFile = File(imagePath);
-      final imageBytes = await imageFile.readAsBytes();
-      
-      final content = [
-        Content.multi([
-          TextPart(_systemPrompt),
-          DataPart('image/jpeg', imageBytes),
-        ])
-      ];
+    String lastError = '';
 
-      final response = await model.generateContent(content);
-      final text = response.text;
+    for (final modelName in modelsToTry) {
+      try {
+        debugPrint("AI Disease Service: Trying model \$modelName...");
+        final model = GenerativeModel(
+          model: modelName,
+          apiKey: apiKey,
+          generationConfig: GenerationConfig(
+            responseMimeType: 'application/json',
+          ),
+        );
 
-      if (text != null && text.isNotEmpty) {
-        // Parse the strictly formatted JSON
-        return jsonDecode(text) as Map<String, dynamic>;
-      } else {
-        debugPrint("AI Disease Service: Empty response from Gemini API.");
-        return null;
+        final imageFile = File(imagePath);
+        final imageBytes = await imageFile.readAsBytes();
+        
+        final content = [
+          Content.multi([
+            TextPart(_systemPrompt),
+            DataPart('image/jpeg', imageBytes),
+          ])
+        ];
+
+        final response = await model.generateContent(content);
+        String text = response.text ?? '';
+
+        if (text.isNotEmpty) {
+          debugPrint("AI Disease Service: SUCCESS with model \$modelName!");
+          
+          text = text.trim();
+          if (text.startsWith('```json')) {
+            text = text.substring(7);
+          } else if (text.startsWith('```')) {
+            text = text.substring(3);
+          }
+          if (text.endsWith('```')) {
+            text = text.substring(0, text.length - 3);
+          }
+          text = text.trim();
+          
+          return jsonDecode(text) as Map<String, dynamic>;
+        }
+      } catch (e) {
+        lastError = e.toString();
+        debugPrint("AI Disease Service Error for \$modelName: \$lastError");
+        
+        // If the error is about model not found, continue to next model.
+        if (lastError.contains("is not found") || lastError.contains("is not supported")) {
+          continue;
+        } else {
+          // If it's a different error (like rate limit or network), break and return it.
+          return {'error': lastError};
+        }
       }
-    } catch (e) {
-      debugPrint("AI Disease Service Error: $e");
-      return null;
     }
+
+    // If all models failed
+    return {'error': "কোনো সমর্থিত এআই মডেল পাওয়া যায়নি। সর্বশেষ এরর: $lastError"};
   }
 }

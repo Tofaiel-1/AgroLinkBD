@@ -156,48 +156,49 @@ class _DriverDashboardState extends ConsumerState<DriverDashboard>
                         ),
                       ),
                       // Content
-                      Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // Greeting
-                            Text(
-                              'স্বাগতম, চালক! 🚚',
-                              style: GoogleFonts.poppins(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                      SafeArea(
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Greeting
+                              Text(
+                                'স্বাগতম, ${userProvider.currentUser?.name ?? 'চালক'}! 🚚',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 8),
-                            // Status
-                            Row(
-                              children: [
-                                Container(
-                                  width: 12,
-                                  height: 12,
-                                  decoration: const BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: Colors.green,
+                              const SizedBox(height: 8),
+                              // Status
+                              Row(
+                                children: [
+                                  Container(
+                                    width: 12,
+                                    height: 12,
+                                    decoration: const BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Colors.green,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'অনলাইন - ট্রিপের জন্য প্রস্তুত',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 14,
-                                    color: Colors.white.withOpacity(0.9),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'অনলাইন - ট্রিপের জন্য প্রস্তুত',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 14,
+                                      color: Colors.white.withOpacity(0.9),
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            // Earnings and stats
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              // Earnings and stats
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -245,6 +246,7 @@ class _DriverDashboardState extends ConsumerState<DriverDashboard>
                             ),
                           ],
                         ),
+                      ),
                       ),
                     ],
                   ),

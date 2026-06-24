@@ -18,6 +18,7 @@ class _DiseaseResultScreenState extends State<DiseaseResultScreen> {
   bool _isAnalyzing = true;
   Map<String, dynamic>? _aiResult;
   bool _isError = false;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -30,19 +31,24 @@ class _DiseaseResultScreenState extends State<DiseaseResultScreen> {
       final aiResponse = await AiDiseaseService.analyzeImage(widget.imagePath);
 
       if (mounted) {
-        if (aiResponse != null) {
+        if (aiResponse != null && !aiResponse.containsKey('error')) {
           setState(() {
             _aiResult = aiResponse;
             _isAnalyzing = false;
           });
         } else {
-          _fallbackToMockData();
+          setState(() {
+            _isError = true;
+            _errorMessage = aiResponse?['error']?.toString() ?? 'অজানা কারণ';
+            _isAnalyzing = false;
+          });
         }
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           _isError = true;
+          _errorMessage = e.toString();
           _isAnalyzing = false;
         });
       }
@@ -150,10 +156,17 @@ class _DiseaseResultScreenState extends State<DiseaseResultScreen> {
                       style: GoogleFonts.hindSiliguri(fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      'ইন্টারনেট কানেকশন চেক করুন অথবা কিছুক্ষণ পর আবার চেষ্টা করুন।',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.hindSiliguri(fontSize: 16, color: Colors.grey.shade700),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        _errorMessage ?? 'অজানা এরর। ইন্টারনেট কানেকশন চেক করুন।',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.hindSiliguri(fontSize: 14, color: Colors.red.shade900),
+                      ),
                     ),
                   ],
                 ),
