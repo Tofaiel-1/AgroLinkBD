@@ -955,7 +955,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
     return Scaffold(
       appBar: AppBar(
-          title: const Text('Activity Logs'),
+          title: const Text('Audit & Activity Logs', style: TextStyle(fontWeight: FontWeight.bold)),
           elevation: 0,
           automaticallyImplyLeading: false),
       body: StreamBuilder<QuerySnapshot>(
@@ -992,7 +992,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
             itemCount: logs.length,
             itemBuilder: (context, index) {
               final logDoc = logs[index];
@@ -1000,54 +1000,134 @@ class _AdminDashboardState extends State<AdminDashboard> {
               final adminName = logData['adminName'] ?? 'Unknown Admin';
               final actionType = logData['actionType'] ?? 'UNKNOWN';
               final description = logData['description'] ?? 'No description';
-              final timestamp =
-                  (logData['timestamp'] as Timestamp?)?.toDate() ??
-                      DateTime.now();
+              final timestamp = (logData['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now();
 
-              return Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                      color: Theme.of(context).primaryColor.withOpacity(0.2)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              // Determine icon and color based on action type
+              IconData iconData = Icons.info_outline;
+              Color iconColor = Colors.blue;
+
+              if (actionType.contains('CREATED') || actionType.contains('ADDED') || actionType.contains('SUCCESS')) {
+                iconData = Icons.check_circle_outline;
+                iconColor = Colors.green;
+              } else if (actionType.contains('DELETED') || actionType.contains('REMOVED') || actionType.contains('FAILED') || actionType.contains('DEDUCTED')) {
+                iconData = Icons.cancel_outlined;
+                iconColor = Colors.red;
+              } else if (actionType.contains('UPDATED') || actionType.contains('EDITED')) {
+                iconData = Icons.edit_outlined;
+                iconColor = Colors.orange;
+              }
+
+              // Timeline styling
+              bool isFirst = index == 0;
+              bool isLast = index == logs.length - 1;
+
+              return IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                actionType,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleSmall
-                                    ?.copyWith(fontWeight: FontWeight.bold),
-                              ),
-                              Text(adminName,
-                                  style:
-                                      Theme.of(context).textTheme.labelSmall),
-                            ],
+                    // Timeline line and dot
+                    SizedBox(
+                      width: 40,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Positioned(
+                            top: isFirst ? 24 : 0,
+                            bottom: isLast ? 24 : 0,
+                            child: Container(
+                              width: 2,
+                              color: Theme.of(context).primaryColor.withOpacity(0.2),
+                            ),
+                          ),
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: iconColor.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: iconColor.withOpacity(0.5), width: 2),
+                            ),
+                            child: Icon(iconData, size: 16, color: iconColor),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Log Card
+                    Expanded(
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 24),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.03),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                          border: Border.all(
+                            color: iconColor.withOpacity(0.1),
                           ),
                         ),
-                        Text(
-                          '${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}',
-                          style: Theme.of(context)
-                              .textTheme
-                              .labelSmall
-                              ?.copyWith(color: Colors.grey),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    actionType.replaceAll('_', ' '),
+                                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: iconColor,
+                                        ),
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    '${timestamp.day}/${timestamp.month}/${timestamp.year} ${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}',
+                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                          color: Colors.grey[600],
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              description,
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    height: 1.4,
+                                  ),
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Icon(Icons.person_outline, size: 14, color: Colors.grey[500]),
+                                const SizedBox(width: 4),
+                                Text(
+                                  adminName,
+                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                        color: Colors.grey[500],
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(description,
-                        style: Theme.of(context).textTheme.bodySmall),
                   ],
                 ),
               );

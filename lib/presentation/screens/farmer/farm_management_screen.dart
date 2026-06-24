@@ -24,7 +24,7 @@ class FarmManagementScreen extends StatefulWidget {
 
 class _FarmManagementScreenState extends State<FarmManagementScreen> {
   final farmService = FarmService();
-  late Future<List<Farm>> farmsFuture;
+  late Stream<List<Farm>> farmsStream;
 
   final List<Map<String, dynamic>> _modules = [
     {
@@ -109,7 +109,7 @@ class _FarmManagementScreenState extends State<FarmManagementScreen> {
   @override
   void initState() {
     super.initState();
-    farmsFuture = farmService.getFarms();
+    farmsStream = farmService.getFarmsStream();
   }
 
   @override
@@ -252,13 +252,13 @@ class _FarmManagementScreenState extends State<FarmManagementScreen> {
   }
 
   Widget _buildSummarySection() {
-    return FutureBuilder<List<Farm>>(
-      future: farmsFuture,
+    return StreamBuilder<List<Farm>>(
+      stream: farmsStream,
       builder: (context, snapshot) {
         String activeFarms = '-';
         String totalArea = '-';
 
-        if (snapshot.connectionState == ConnectionState.done && snapshot.hasData) {
+        if (snapshot.hasData) {
           activeFarms = snapshot.data!.length.toString();
           double area = snapshot.data!.fold(0, (sum, farm) => sum + farm.area);
           totalArea = '${area.toStringAsFixed(1)} ha';

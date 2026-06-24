@@ -1,42 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:agrolinkbd/core/models/phase2_models/farm_models.dart';
+import 'package:agrolinkbd/core/services/phase2_services/farm_service.dart';
+import 'add_edit_inventory_item_screen.dart';
 
-class InventoryScreen extends StatelessWidget {
+class InventoryScreen extends StatefulWidget {
   const InventoryScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    final List<Map<String, dynamic>> _inventoryItems = [
-      {
-        'name': 'Urea Fertilizer',
-        'category': 'Fertilizer',
-        'quantity': '50 kg',
-        'status': 'In Stock',
-        'color': Colors.green,
-      },
-      {
-        'name': 'Paddy Seeds (BRRI 28)',
-        'category': 'Seeds',
-        'quantity': '5 kg',
-        'status': 'Low Stock',
-        'color': Colors.orange,
-      },
-      {
-        'name': 'Pesticide (Actara)',
-        'category': 'Chemicals',
-        'quantity': '0 L',
-        'status': 'Out of Stock',
-        'color': Colors.red,
-      },
-      {
-        'name': 'Tractor Fuel (Diesel)',
-        'category': 'Fuel',
-        'quantity': '120 L',
-        'status': 'In Stock',
-        'color': Colors.green,
-      },
-    ];
+  State<InventoryScreen> createState() => _InventoryScreenState();
+}
 
+class _InventoryScreenState extends State<InventoryScreen> {
+  final FarmService _farmService = FarmService();
+  late Stream<List<FarmInventoryItem>> _inventoryStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _inventoryStream = _farmService.getInventoryStream();
+  }
+
+  Color _getCategoryColor(String category) {
+    switch (category) {
+      case 'Fertilizer': return Colors.green;
+      case 'Seeds': return Colors.orange;
+      case 'Chemicals': return Colors.red;
+      case 'Fuel': return Colors.brown;
+      case 'Equipment': return Colors.blueGrey;
+      default: return Colors.grey;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
@@ -47,43 +44,72 @@ class InventoryScreen extends StatelessWidget {
           style: GoogleFonts.openSans(fontWeight: FontWeight.bold, color: Colors.white),
         ),
       ),
-      body: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: const BoxDecoration(
-                color: Color(0xFF795548),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(30),
-                  bottomRight: Radius.circular(30),
+      body: StreamBuilder<List<FarmInventoryItem>>(
+        stream: _inventoryStream,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator(color: Color(0xFF795548)));
+          }
+
+          final items = snapshot.data ?? [];
+          
+          final totalItems = items.length;
+          final categories = items.map((i) => i.category).toSet().length;
+          final lowStock = items.where((i) => i.quantity < 10).length;
+
+          return CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF795548),
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(30),
+                      bottomRight: Radius.circular(30),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildStat('Total Items', totalItems.toString()),
+                      _buildStat('Categories', categories.toString()),
+                      _buildStat('Low Stock', lowStock.toString()),
+                    ],
+                  ),
                 ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildStat('Total Items', '120'),
-                  _buildStat('Categories', '5'),
-                  _buildStat('Low Stock', '3'),
-                ],
+              SliverPadding(
+                padding: const EdgeInsets.all(20),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate(
+                    items.isEmpty
+                        ? [
+                            Padding(
+                              padding: const EdgeInsets.all(32.0),
+                              child: Center(
+                                child: Text(
+                                  'No items in inventory',
+                                  style: GoogleFonts.openSans(color: Colors.grey),
+                                ),
+                              ),
+                            )
+                          ]
+                        : items.map((item) => _buildInventoryCard(item)).toList(),
+                  ),
+                ),
               ),
-            ),
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.all(20),
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  return _buildInventoryCard(_inventoryItems[index]);
-                },
-                childCount: _inventoryItems.length,
-              ),
-            ),
-          ),
-        ],
+            ],
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AddEditInventoryItemScreen()),
+          );
+        },
         backgroundColor: const Color(0xFF795548),
         child: const Icon(Icons.add, color: Colors.white),
       ),
@@ -112,7 +138,10 @@ class InventoryScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInventoryCard(Map<String, dynamic> item) {
+  Widget _buildInventoryCard(FarmInventoryItem item) {
+    final status = item.quantity <= 0 ? 'Out of Stock' : (item.quantity < 10 ? 'Low Stock' : 'In Stock');
+    final color = item.quantity <= 0 ? Colors.red : (item.quantity < 10 ? Colors.orange : Colors.green);
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
@@ -143,7 +172,7 @@ class InventoryScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  item['name'],
+                  item.name,
                   style: GoogleFonts.openSans(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
@@ -152,7 +181,7 @@ class InventoryScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  item['category'],
+                  item.category,
                   style: GoogleFonts.openSans(
                     fontSize: 13,
                     color: const Color(0xFF718096),
@@ -165,7 +194,7 @@ class InventoryScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                item['quantity'],
+                '${item.quantity.toStringAsFixed(1)} ${item.unit}',
                 style: GoogleFonts.openSans(
                   fontWeight: FontWeight.bold,
                   fontSize: 18,
@@ -176,15 +205,15 @@ class InventoryScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: (item['color'] as Color).withOpacity(0.1),
+                  color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  item['status'],
+                  status,
                   style: GoogleFonts.openSans(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
-                    color: item['color'],
+                    color: color,
                   ),
                 ),
               ),
