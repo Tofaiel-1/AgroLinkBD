@@ -55,8 +55,29 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Widget build(BuildContext context) {
     return Consumer<AdminProvider>(
       builder: (context, adminProvider, _) {
-        return Scaffold(
-          appBar: AppBar(
+        return WillPopScope(
+          onWillPop: () async {
+            final shouldExit = await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Exit App'),
+                content: const Text('Do you want to exit the app?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: const Text('No'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    child: const Text('Yes', style: TextStyle(color: Colors.red)),
+                  ),
+                ],
+              ),
+            );
+            return shouldExit ?? false;
+          },
+          child: Scaffold(
+            appBar: AppBar(
             title: const Text('Admin Dashboard'),
             elevation: 0,
             actions: [
@@ -120,6 +141,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 label: 'Settings',
               ),
             ],
+          ),
           ),
         );
       },

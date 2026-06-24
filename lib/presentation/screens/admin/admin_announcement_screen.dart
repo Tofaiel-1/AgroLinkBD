@@ -68,45 +68,7 @@ class _AdminAnnouncementScreenState extends State<AdminAnnouncementScreen> {
     }
   }
 
-  // Temporary Dev Tool to Reset All Wallets to 0
-  Future<void> _resetAllWallets() async {
-    setState(() => _isResettingBalances = true);
-    try {
-      final usersSnapshot = await FirebaseFirestore.instance.collection('users').get();
-      
-      WriteBatch batch = FirebaseFirestore.instance.batch();
-      int count = 0;
-      
-      for (var doc in usersSnapshot.docs) {
-        batch.update(doc.reference, {
-          'walletBalance': 0.0,
-          'pendingBalance': 0.0,
-        });
-        count++;
-        
-        // Firestore batches can only have up to 500 operations. If more than 400, commit and create new batch
-        if (count % 400 == 0) {
-          await batch.commit();
-          batch = FirebaseFirestore.instance.batch();
-        }
-      }
-      
-      await batch.commit();
-      
-      if (mounted) {
-        await Provider.of<AdminProvider>(context, listen: false).logAdminAction(
-          'WALLETS_RESET',
-          'Developer Tool: Reset wallet balances to 0 for $count users',
-        );
-      }
-
-      Get.snackbar('Success', 'Successfully reset balances to ৳0.0 for $count users!', backgroundColor: Colors.green.withOpacity(0.8), colorText: Colors.white);
-    } catch (e) {
-      Get.snackbar('Error', 'Failed to reset balances: $e', backgroundColor: Colors.red.withOpacity(0.8), colorText: Colors.white);
-    } finally {
-      setState(() => _isResettingBalances = false);
-    }
-  }
+  // Removed developer tools
 
   @override
   Widget build(BuildContext context) {
@@ -218,57 +180,7 @@ class _AdminAnnouncementScreenState extends State<AdminAnnouncementScreen> {
                                 ],
                               ),
                             ),
-                            const SizedBox(height: 40),
-                            
-                            // DEV TOOLS SECTION
-                            _buildGlassContainer(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
-                                      const SizedBox(width: 10),
-                                      const Text('Developer / Maintenance Tools', style: TextStyle(color: Colors.redAccent, fontSize: 16, fontWeight: FontWeight.bold)),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Text('Warning: These actions are destructive and will alter live database records.', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12)),
-                                  const SizedBox(height: 20),
-                                  SizedBox(
-                                    width: double.infinity,
-                                    height: 50,
-                                    child: ElevatedButton.icon(
-                                      onPressed: _isResettingBalances ? null : () {
-                                        Get.defaultDialog(
-                                          title: 'Are you sure?',
-                                          middleText: 'This will wipe out the wallet and pending balances of EVERY user in the database.',
-                                          backgroundColor: const Color(0xFF1F2937),
-                                          titleStyle: const TextStyle(color: Colors.white),
-                                          middleTextStyle: const TextStyle(color: Colors.white70),
-                                          textConfirm: 'Yes, Reset All',
-                                          textCancel: 'Cancel',
-                                          confirmTextColor: Colors.white,
-                                          buttonColor: Colors.redAccent,
-                                          onConfirm: () {
-                                            Get.back();
-                                            _resetAllWallets();
-                                          }
-                                        );
-                                      },
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.redAccent.withOpacity(0.15),
-                                        foregroundColor: Colors.redAccent,
-                                        side: const BorderSide(color: Colors.redAccent),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                      ),
-                                      icon: _isResettingBalances ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.redAccent, strokeWidth: 2)) : const Icon(Icons.delete_sweep_rounded),
-                                      label: const Text('Reset All User Wallet Balances to 0'),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )
+                            // Developer Tools section removed
                           ],
                         ),
                       ),
@@ -341,6 +253,8 @@ class _AdminAnnouncementScreenState extends State<AdminAnnouncementScreen> {
           labelStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
           prefixIcon: maxLines == 1 ? Icon(icon, color: Colors.white.withOpacity(0.5)) : null,
           border: InputBorder.none,
+          filled: true,
+          fillColor: Colors.transparent,
           contentPadding: const EdgeInsets.all(16),
         ),
       ),

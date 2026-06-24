@@ -211,6 +211,33 @@ class _AppRouterState extends State<AppRouter> {
                   '✅ User authenticated: ${user.name} (${user.userType.toString().split('.').last})',
                 );
                 return RoleBasedNavigationContainer(user: user);
+              } else if (_loadedUserIds.contains(userId)) {
+                // Profile loading finished but no user found in database
+                debugPrint('⚠️ User profile missing from database! Signing out.');
+                Future.microtask(() {
+                  FirebaseAuth.instance.signOut();
+                  _loadedUserIds.remove(userId);
+                });
+                return Scaffold(
+                  backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                  body: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Theme.of(context).primaryColor,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'অসম্পূর্ণ প্রোফাইল। লগআউট করা হচ্ছে...',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
               }
             }
 

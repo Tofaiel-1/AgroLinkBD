@@ -64,9 +64,6 @@ void main() async {
     await FirebaseFirestore.instance.enableNetwork();
     debugPrint('✅ Firestore network enabled');
 
-    // Force sign out to clear any stuck state from the background script
-    await FirebaseAuth.instance.signOut();
-    debugPrint('✅ Forced sign out to show login screen');
   } catch (e) {
     debugPrint('❌❌ Firebase initialization ERROR: $e');
     debugPrint('🔧 Ensure you have:');
