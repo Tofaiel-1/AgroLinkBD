@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:agrolinkbd/core/models/audit_log_model.dart';
 import 'package:agrolinkbd/core/services/audit_service.dart';
+import 'package:agrolinkbd/presentation/screens/admin/user_audit_logs_view.dart';
 
 class AuditLogsViewer extends StatefulWidget {
   const AuditLogsViewer({super.key});
@@ -63,6 +64,30 @@ class _AuditLogsViewerState extends State<AuditLogsViewer> {
 
   @override
   Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Audit Logs'),
+          elevation: 0,
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'Admin Activity', icon: Icon(Icons.admin_panel_settings)),
+              Tab(text: 'User Sessions', icon: Icon(Icons.supervised_user_circle)),
+            ],
+          ),
+        ),
+        body: TabBarView(
+          children: [
+            _buildAdminLogsView(context),
+            const UserAuditLogsView(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAdminLogsView(BuildContext context) {
     var filteredLogs = _auditLogs;
 
     if (_searchQuery.isNotEmpty) {
@@ -75,26 +100,28 @@ class _AuditLogsViewerState extends State<AuditLogsViewer> {
           .toList();
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Audit Logs'),
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.download),
-            tooltip: 'Export as CSV',
-            onPressed: _exportLogs,
+    return Column(
+      children: [
+        // App bar replacement for Admin view actions
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.download),
+                tooltip: 'Export as CSV',
+                onPressed: _exportLogs,
+              ),
+              IconButton(
+                icon: const Icon(Icons.filter_list),
+                tooltip: 'Filters',
+                onPressed: _showFiltersPanel,
+              ),
+            ],
           ),
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            tooltip: 'Filters',
-            onPressed: _showFiltersPanel,
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Search bar
+        ),
+        // Search bar
           Padding(
             padding: const EdgeInsets.all(16),
             child: TextField(
@@ -212,8 +239,7 @@ class _AuditLogsViewerState extends State<AuditLogsViewer> {
                       ),
           ),
         ],
-      ),
-    );
+      );
   }
 
   Widget _buildLogCard(BuildContext context, AuditLogModel log) {

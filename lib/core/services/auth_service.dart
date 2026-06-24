@@ -1,12 +1,17 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io' show Platform;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import '../models/user_model.dart';
+import 'audit_service.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final AuditService _auditService = AuditService();
 
   // Get current user
   User? get currentUser => _auth.currentUser;
@@ -14,17 +19,72 @@ class AuthService {
   // Stream of auth changes
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
+  // Get Device Info
+  Future<String> _getDeviceInfo() async {
+    try {
+      final deviceInfo = DeviceInfoPlugin();
+      if (kIsWeb) {
+        final webInfo = await deviceInfo.webBrowserInfo;
+        return webInfo.userAgent ?? 'Web Browser';
+      } else if (Platform.isAndroid) {
+        final androidInfo = await deviceInfo.androidInfo;
+        return '${androidInfo.brand} ${androidInfo.model}';
+      } else if (Platform.isIOS) {
+        final iosInfo = await deviceInfo.iosInfo;
+        return '${iosInfo.name} ${iosInfo.model}';
+      }
+      return 'Unknown Device';
+    } catch (e) {
+      return 'Unknown Device';
+    }
+  }
+
   // Sign in with email and password
   Future<UserCredential> signInWithEmail({
     required String email,
     required String password,
   }) async {
     try {
-      return await _auth.signInWithEmailAndPassword(
+      final credential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
+
+      // Log successful login
+      if (credential.user != null) {
+        final deviceInfo = await _getDeviceInfo();
+        await _auditService.logUserSessionEvent(
+          userId: credential.user!.uid,
+          userName: email,
+          action: 'login',
+          deviceInfo: deviceInfo,
+        );
+      }
+
+      return credential;
     } on FirebaseAuthException catch (e) {
+      // Log failed login
+      final deviceInfo = await _getDeviceInfo();
+      await _auditService.logUserSessionEvent(
+        userId: 'unknown',
+        userName: email,
+        action: 'failed_login',
+        deviceInfo: deviceInfo,
+        status: 'failed',
+      );
+
+      // Check if suspicious
+      final isSuspicious = await _auditService.isSuspiciousActivity('unknown');
+      if (isSuspicious) {
+        await _auditService.logUserSessionEvent(
+          userId: 'unknown',
+          userName: email,
+          action: 'suspicious_activity',
+          deviceInfo: deviceInfo,
+          status: 'suspicious',
+        );
+      }
+
       throw _handleAuthException(e);
     }
   }
@@ -256,6 +316,25 @@ class AuthService {
   Future<void> signOut() async {
     try {
       debugPrint('🔐 Starting logout process...');
+      final user = _auth.currentUser;
+
+      if (user != null) {
+        // Calculate session duration and log logout
+        final lastLogin = await _auditService.getLastLoginTime(user.uid);
+        int? durationInSeconds;
+        if (lastLogin != null) {
+          durationInSeconds = DateTime.now().difference(lastLogin).inSeconds;
+        }
+
+        final deviceInfo = await _getDeviceInfo();
+        await _auditService.logUserSessionEvent(
+          userId: user.uid,
+          userName: user.email ?? user.phoneNumber ?? 'unknown',
+          action: 'logout',
+          deviceInfo: deviceInfo,
+          sessionDuration: durationInSeconds,
+        );
+      }
 
       // Sign out from Firebase Auth
       await _auth.signOut();
