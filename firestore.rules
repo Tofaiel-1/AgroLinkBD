@@ -276,6 +276,15 @@ service cloud.firestore {
       allow update, delete: if request.auth != null;
     }
 
+    // User Audit Logs (for device tracking and session duration)
+    match /user_audit_logs/{logId} {
+      // Anyone can create a log (even during failed logins where auth might be null or checking)
+      allow create: if true; 
+      // Users can only read/update their own logs, Admins can read all
+      allow read, update: if request.auth != null && (request.auth.uid == resource.data.userId || get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role in ['super_admin', 'admin']);
+      allow delete: if request.auth != null && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'super_admin';
+    }
+
     // Farm Activities
     match /farm_activities/{activityId} {
       allow read: if request.auth != null;

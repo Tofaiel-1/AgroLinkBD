@@ -66,6 +66,87 @@ class AuditService {
     }
   }
 
+  /// Log User Session Event (Login/Logout/Failed)
+  Future<void> logUserSessionEvent({
+    required String userId,
+    required String userName,
+    required String action, // 'login', 'logout', 'failed_login'
+    required String deviceInfo,
+    String ipAddress = '',
+    int? sessionDuration,
+    String status = 'success', // 'success', 'failed', 'suspicious'
+  }) async {
+    try {
+      await _firestore.collection('user_audit_logs').add({
+        'userId': userId,
+        'userName': userName,
+        'action': action,
+        'deviceInfo': deviceInfo,
+        'ipAddress': ipAddress,
+        'sessionDuration': sessionDuration,
+        'status': status,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      debugPrint('Error logging user session event: $e');
+    }
+  }
+
+  /// Get the last login time to calculate session duration
+  Future<DateTime?> getLastLoginTime(String userId) async {
+    try {
+      final snapshot = await _firestore
+          .collection('user_audit_logs')
+          .where('userId', isEqualTo: userId)
+          .where('action', isEqualTo: 'login')
+          .orderBy('timestamp', descending: true)
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        return (snapshot.docs.first.data()['timestamp'] as Timestamp?)?.toDate();
+      }
+    } catch (e) {
+      debugPrint('Error getting last login time: $e');
+    }
+    return null;
+  }
+
+  /// Check for suspicious activity (multiple failed logins)
+  Future<bool> isSuspiciousActivity(String userId) async {
+    try {
+      final cutoffTime = DateTime.now().subtract(const Duration(hours: 1));
+      final snapshot = await _firestore
+          .collection('user_audit_logs')
+          .where('userId', isEqualTo: userId)
+          .where('action', isEqualTo: 'failed_login')
+          .where('timestamp', isGreaterThanOrEqualTo: cutoffTime)
+          .get();
+
+      return snapshot.docs.length >= 3; // 3 or more failed attempts in 1 hour
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Get user audit logs (for Admin Viewer)
+  Future<List<Map<String, dynamic>>> getUserAuditLogs({
+    String? userId,
+    int limit = 100,
+  }) async {
+    try {
+      Query query = _firestore.collection('user_audit_logs');
+      if (userId != null && userId.isNotEmpty) {
+        query = query.where('userId', isEqualTo: userId);
+      }
+      final snapshot = await query.orderBy('timestamp', descending: true).limit(limit).get();
+      return snapshot.docs.map((doc) => {...doc.data() as Map<String, dynamic>, 'id': doc.id}).toList();
+    } catch (e) {
+      debugPrint('Error retrieving user audit logs: $e');
+      return [];
+    }
+  }
+
   /// Get audit logs with filters
   Future<List<Map<String, dynamic>>> getAuditLogs({
     String? adminId,
