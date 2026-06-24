@@ -10,6 +10,7 @@ import 'package:agrolinkbd/core/services/route_guard.dart';
 import 'package:agrolinkbd/presentation/screens/farmer/farmer_dashboard.dart';
 import 'package:agrolinkbd/presentation/screens/dashboard/buyer_dashboard_screen.dart';
 import 'package:agrolinkbd/presentation/screens/driver/driver_dashboard.dart';
+import 'package:agrolinkbd/presentation/screens/driver/load_board/load_board_screen.dart';
 import 'package:agrolinkbd/presentation/screens/service_provider/service_provider_dashboard.dart';
 import 'package:agrolinkbd/presentation/screens/company/company_dashboard.dart';
 import 'package:agrolinkbd/presentation/screens/company/company_orders_screen.dart';
@@ -251,7 +252,7 @@ class _RoleBasedNavigationContainerState
           const DriverDashboard(),
           const DriverDeliveryMapScreen(),
           const DriverAnalyticsScreen(),
-          const BazaarHome(),
+          const LoadBoardScreen(), // New Job Board for Driver
           const ProfileSettings(),
         ];
 

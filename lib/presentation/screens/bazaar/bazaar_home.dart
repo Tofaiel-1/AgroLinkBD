@@ -339,29 +339,43 @@ class _BazaarHomeState extends State<BazaarHome> {
         'name': 'Fresh Chili', 
         'price': '৳120/kg', 
         'rating': '4.8★', 
-        'image': 'https://picsum.photos/id/292/400/300',
+        'image': 'https://images.unsplash.com/photo-1588015408985-780c18d18400?q=80&w=400&auto=format&fit=crop',
         'color': Colors.redAccent
       },
       {
         'name': 'Deshi Mango', 
         'price': '৳80/kg', 
         'rating': '4.9★', 
-        'image': 'https://picsum.photos/id/152/400/300',
+        'image': 'https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?q=80&w=400&auto=format&fit=crop',
         'color': Colors.orangeAccent
       },
       {
         'name': 'Premium Rice', 
         'price': '৳75/kg', 
         'rating': '4.7★', 
-        'image': 'https://picsum.photos/id/312/400/300',
+        'image': 'https://images.unsplash.com/photo-1586201375761-83865001e8ac?q=80&w=400&auto=format&fit=crop',
         'color': Colors.amber
       },
       {
         'name': 'Organic Onion', 
         'price': '৳90/kg', 
         'rating': '4.5★', 
-        'image': 'https://picsum.photos/id/111/400/300',
+        'image': 'https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?q=80&w=400&auto=format&fit=crop',
         'color': Colors.purpleAccent
+      },
+      {
+        'name': 'Fresh Tomato', 
+        'price': '৳60/kg', 
+        'rating': '4.6★', 
+        'image': 'https://images.unsplash.com/photo-1561136594-7f68413baa99?q=80&w=400&auto=format&fit=crop',
+        'color': Colors.red
+      },
+      {
+        'name': 'Bogura Potato', 
+        'price': '৳45/kg', 
+        'rating': '4.8★', 
+        'image': 'https://images.unsplash.com/photo-1518977673343-a4a0c9ebb0e5?q=80&w=400&auto=format&fit=crop',
+        'color': Colors.brown
       },
     ];
 

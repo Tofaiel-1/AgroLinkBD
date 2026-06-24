@@ -524,9 +524,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 8),
 
                       Text(
-                        _useEmailLogin
-                            ? 'Sign in to continue to AgroLinkBD'
-                            : 'Enter your mobile number to sign in',
+                        'Sign in to continue to AgroLinkBD',
                         style: TextStyle(
                           color: subTextColor,
                           fontSize: 15,
@@ -535,78 +533,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 32),
 
-                      // Email/Phone Toggle
-                      Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF1E1E2C) : Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () => setState(() => _useEmailLogin = true),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  decoration: BoxDecoration(
-                                    color: _useEmailLogin ? cardColor : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(12),
-                                    boxShadow: _useEmailLogin
-                                        ? [
-                                            BoxShadow(
-                                              color: Colors.black.withOpacity(0.05),
-                                              blurRadius: 10,
-                                            )
-                                          ]
-                                        : null,
-                                  ),
-                                  child: Text(
-                                    'Email',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontWeight: _useEmailLogin ? FontWeight.bold : FontWeight.normal,
-                                      color: _useEmailLogin ? textColor : subTextColor,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () => setState(() => _useEmailLogin = false),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  decoration: BoxDecoration(
-                                    color: !_useEmailLogin ? cardColor : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(12),
-                                    boxShadow: !_useEmailLogin
-                                        ? [
-                                            BoxShadow(
-                                              color: Colors.black.withOpacity(0.05),
-                                              blurRadius: 10,
-                                            )
-                                          ]
-                                        : null,
-                                  ),
-                                  child: Text(
-                                    'Mobile',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontWeight: !_useEmailLogin ? FontWeight.bold : FontWeight.normal,
-                                      color: !_useEmailLogin ? textColor : subTextColor,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 32),
+                      // Mobile login removed per user request
+                      const SizedBox(height: 16),
 
                       // Email Login Form
-                      if (_useEmailLogin) ...[
                         TextFormField(
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
@@ -697,71 +627,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ],
                         ),
-                      ],
 
-                      // Phone input
-                      if (!_useEmailLogin && !_otpSent) ...[
-                        TextFormField(
-                          controller: _phoneController,
-                          keyboardType: TextInputType.phone,
-                          style: TextStyle(color: textColor),
-                          decoration: inputDecoration.copyWith(
-                            labelText: 'মোবাইল নম্বর',
-                            hintText: '01XXXXXXXXX',
-                            prefixText: '+88 ',
-                            prefixStyle: TextStyle(color: textColor, fontSize: 16),
-                            prefixIcon: Icon(Icons.phone_outlined, color: primaryColor),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'মোবাইল নম্বর লিখুন';
-                            }
-                            if (value.length != 11) {
-                              return '১১ ডিজিটের মোবাইল নম্বর লিখুন';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 32),
-                        _buildPrimaryButton(
-                          onPressed: _isLoading ? null : _sendOTP,
-                          text: 'OTP পাঠান',
-                          isLoading: _isLoading,
-                        ),
-                      ],
-
-                      // OTP input
-                      if (!_useEmailLogin && _otpSent) ...[
-                        TextFormField(
-                          controller: _otpController,
-                          keyboardType: TextInputType.number,
-                          maxLength: 6,
-                          style: TextStyle(color: textColor, letterSpacing: 8, fontSize: 18),
-                          textAlign: TextAlign.center,
-                          decoration: inputDecoration.copyWith(
-                            labelText: 'OTP',
-                            hintText: '------',
-                            prefixIcon: Icon(Icons.lock_outline, color: primaryColor),
-                            counterText: '',
-                          ),
-                        ),
-                        const SizedBox(height: 32),
-                        _buildPrimaryButton(
-                          onPressed: _isLoading ? null : _verifyOTP,
-                          text: 'যাচাই করুন',
-                          isLoading: _isLoading,
-                        ),
-                        const SizedBox(height: 16),
-                        TextButton(
-                          onPressed: () {
-                            setState(() {
-                              _otpSent = false;
-                              _otpController.clear();
-                            });
-                          },
-                          child: const Text('নম্বর পরিবর্তন করুন'),
-                        ),
-                      ],
 
                       const SizedBox(height: 32),
                       const Divider(),

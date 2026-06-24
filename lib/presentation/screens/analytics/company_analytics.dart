@@ -39,6 +39,10 @@ class _CompanyAnalyticsScreenState extends State<CompanyAnalyticsScreen> {
             color: Colors.white,
           ),
         ),
+        leading: IconButton(
+          icon: const Icon(Icons.menu, color: Colors.white),
+          onPressed: () => Scaffold.of(context).openDrawer(),
+        ),
       ),
       body: FutureBuilder<CompanyAnalytics>(
         future: analyticsFuture,

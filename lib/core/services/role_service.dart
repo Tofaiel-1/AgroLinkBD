@@ -100,7 +100,7 @@ class RoleService {
             'labelBN': 'বিশ্লেষণ',
             'icon': Icons.analytics
           },
-          {'label': 'Marketplace', 'labelBN': 'বাজার', 'icon': Icons.shop},
+          {'label': 'Job Board', 'labelBN': 'নতুন কাজ', 'icon': Icons.local_shipping},
           {
             'label': 'Settings',
             'labelBN': 'সেটিংস',
@@ -126,18 +126,18 @@ class RoleService {
       case UserType.company:
         return [
           {
-            'label': 'Dashboard',
+            'label': 'ড্যাশবোর্ড',
             'labelBN': 'ড্যাশবোর্ড',
             'icon': Icons.dashboard
           },
-          {'label': 'Team', 'labelBN': 'টিম', 'icon': Icons.people},
+          {'label': 'টিম', 'labelBN': 'টিম', 'icon': Icons.people},
           {
-            'label': 'Analytics',
+            'label': 'বিশ্লেষণ',
             'labelBN': 'বিশ্লেষণ',
             'icon': Icons.analytics
           },
-          {'label': 'Orders', 'labelBN': 'অর্ডার', 'icon': Icons.shopping_bag},
-          {'label': 'Contracts', 'labelBN': 'চুক্তি', 'icon': Icons.assignment},
+          {'label': 'অর্ডার', 'labelBN': 'অর্ডার', 'icon': Icons.shopping_bag},
+          {'label': 'চুক্তি', 'labelBN': 'চুক্তি', 'icon': Icons.assignment},
         ];
     }
   }

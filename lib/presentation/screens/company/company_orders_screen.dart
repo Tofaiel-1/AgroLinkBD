@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:provider/provider.dart';
+import 'package:agrolinkbd/presentation/screens/company/providers/company_provider.dart';
+
 /// Company Orders Management Screen
 /// Create, manage, and track bulk orders
 class CompanyOrdersScreen extends StatefulWidget {
@@ -30,106 +33,127 @@ class _CompanyOrdersScreenState extends State<CompanyOrdersScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF4169E1),
-        elevation: 0,
-        title: Text(
-          'অর্ডার ব্যবস্থাপনা',
-          style: GoogleFonts.openSans(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add_circle_outline),
-            onPressed: () {
-              // Create new order
-            },
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Search bar
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'অর্ডার অনুসন্ধান করুন...',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                contentPadding:
-                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+    return Consumer<CompanyProvider>(
+      builder: (context, provider, child) {
+        return Scaffold(
+          backgroundColor: const Color(0xFFFAFAFA),
+          appBar: AppBar(
+            backgroundColor: const Color(0xFF4169E1),
+            elevation: 0,
+            title: Text(
+              'অর্ডার ব্যবস্থাপনা',
+              style: GoogleFonts.openSans(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
               ),
             ),
-          ),
-
-          // Tabs
-          TabBar(
-            controller: _tabController,
-            tabs: const [
-              Tab(
-                text: 'সক্রিয়',
-                icon: Icon(Icons.hourglass_empty),
-              ),
-              Tab(
-                text: 'ডেলিভারিযুক্ত',
-                icon: Icon(Icons.check_circle),
-              ),
-              Tab(
-                text: 'বাতিল',
-                icon: Icon(Icons.cancel),
-              ),
-              Tab(
-                text: 'সমস্ত',
-                icon: Icon(Icons.list),
+            leading: IconButton(
+              icon: const Icon(Icons.menu, color: Colors.white),
+              onPressed: () => Scaffold.of(context).openDrawer(),
+            ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.add_circle_outline),
+                onPressed: () {
+                  // Create new order
+                },
               ),
             ],
           ),
+          body: Column(
+            children: [
+              // Search bar
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'অর্ডার অনুসন্ধান করুন...',
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    contentPadding:
+                        const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  ),
+                ),
+              ),
 
-          // Tab content
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildOrdersList(status: 'active'),
-                _buildOrdersList(status: 'delivered'),
-                _buildOrdersList(status: 'cancelled'),
-                _buildOrdersList(status: 'all'),
-              ],
-            ),
+              // Tabs
+              TabBar(
+                controller: _tabController,
+                tabs: const [
+                  Tab(
+                    text: 'সক্রিয়',
+                    icon: Icon(Icons.hourglass_empty),
+                  ),
+                  Tab(
+                    text: 'ডেলিভারিযুক্ত',
+                    icon: Icon(Icons.check_circle),
+                  ),
+                  Tab(
+                    text: 'বাতিল',
+                    icon: Icon(Icons.cancel),
+                  ),
+                  Tab(
+                    text: 'সমস্ত',
+                    icon: Icon(Icons.list),
+                  ),
+                ],
+              ),
+
+              // Tab content
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildOrdersList(provider, status: 'active'),
+                    _buildOrdersList(provider, status: 'delivered'),
+                    _buildOrdersList(provider, status: 'cancelled'),
+                    _buildOrdersList(provider, status: 'all'),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFF4169E1),
-        onPressed: () {
-          // Create new order
-        },
-        child: const Icon(Icons.add),
-      ),
+          floatingActionButton: FloatingActionButton(
+            backgroundColor: const Color(0xFF4169E1),
+            onPressed: () {
+              // Create new order
+            },
+            child: const Icon(Icons.add),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildOrdersList({required String status}) {
+  Widget _buildOrdersList(CompanyProvider provider, {required String status}) {
+    List<CompanyOrder> filteredOrders = provider.orders;
+    if (status != 'all') {
+      filteredOrders = provider.orders.where((o) => o.status == status).toList();
+    }
+
+    if (filteredOrders.isEmpty) {
+      return const Center(child: Text("কোনো অর্ডার পাওয়া যায়নি"));
+    }
+
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: 5,
+      itemCount: filteredOrders.length,
       itemBuilder: (context, index) {
+        final order = filteredOrders[index];
         return _buildOrderCard(
-          orderId: 'ORD-2024-${1000 + index}',
-          farmer: 'রহিম ফার্ম',
-          items: 'চাল, গম, সবজি',
-          amount: '৳ ৫৪,০০০',
-          status: status,
-          date: '২০ এপ্রিল ২০২৪',
+          orderId: order.id,
+          farmer: order.farmerName,
+          items: order.items,
+          amount: order.amount,
+          status: order.status,
+          date: order.date,
+          onComplete: order.status == 'active' ? () {
+            provider.completeOrder(order.id);
+          } : null,
         );
       },
     );
@@ -142,6 +166,7 @@ class _CompanyOrdersScreenState extends State<CompanyOrdersScreen>
     required String amount,
     required String status,
     required String date,
+    VoidCallback? onComplete,
   }) {
     Color statusColor;
     String statusLabel;
@@ -247,6 +272,22 @@ class _CompanyOrdersScreenState extends State<CompanyOrdersScreen>
               ),
             ],
           ),
+          if (onComplete != null) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: onComplete,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2ECC71),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+                child: const Text('ডেলিভারি নিশ্চিত করুন', style: TextStyle(color: Colors.white)),
+              ),
+            ),
+          ],
         ],
       ),
     );

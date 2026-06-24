@@ -7,6 +7,7 @@ import 'package:agrolinkbd/core/providers/user_provider.dart';
 import 'package:agrolinkbd/presentation/screens/farmer/farmer_dashboard.dart';
 import 'package:agrolinkbd/presentation/screens/buyer/buyer_dashboard.dart';
 import 'package:agrolinkbd/presentation/screens/driver/driver_dashboard.dart';
+import 'package:agrolinkbd/presentation/screens/driver/load_board/load_board_screen.dart';
 import 'package:agrolinkbd/presentation/screens/service_provider/service_provider_dashboard.dart';
 
 // Fallback screens
@@ -83,7 +84,7 @@ class _RoleBasedNavigationState extends State<RoleBasedNavigation> {
         return [
           const DriverDashboard(),
           const EnhancedDashboard(), // Trip history/stats
-          const BazaarHome(), // Available trips (temporary)
+          const LoadBoardScreen(), // New Trip Marketplace
           const DriverNotificationsScreen(),
           const ProfileSettings(),
         ];
@@ -150,8 +151,8 @@ class _RoleBasedNavigationState extends State<RoleBasedNavigation> {
         label: _getRoleLabel(role, 1),
       ),
       BottomNavigationBarItem(
-        icon: const Icon(Icons.store_outlined),
-        activeIcon: const Icon(Icons.store),
+        icon: Icon(role.toLowerCase() == 'driver' ? Icons.local_shipping_outlined : Icons.store_outlined),
+        activeIcon: Icon(role.toLowerCase() == 'driver' ? Icons.local_shipping : Icons.store),
         label: _getRoleLabel(role, 2),
       ),
       BottomNavigationBarItem(
@@ -259,7 +260,7 @@ class _RoleBasedNavigationState extends State<RoleBasedNavigation> {
           case 1:
             return 'ইতিহাস';
           case 2:
-            return 'আয়';
+            return 'নতুন কাজ';
           default:
             return '';
         }

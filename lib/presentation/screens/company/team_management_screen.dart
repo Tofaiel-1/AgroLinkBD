@@ -33,6 +33,10 @@ class _TeamManagementScreenState extends State<TeamManagementScreen> {
             color: Colors.white,
           ),
         ),
+        leading: IconButton(
+          icon: const Icon(Icons.menu, color: Colors.white),
+          onPressed: () => Scaffold.of(context).openDrawer(),
+        ),
       ),
       body: FutureBuilder<List<TeamMember>>(
         future: teamFuture,

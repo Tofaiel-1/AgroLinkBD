@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'package:agrolinkbd/presentation/widgets/premium_dashboard_widgets.dart';
+import 'package:agrolinkbd/presentation/screens/company/providers/company_provider.dart';
 
 /// Company Role Dashboard
 /// Displays business overview, active contracts, pending orders, budget stats
@@ -39,132 +41,131 @@ class _CompanyDashboardState extends State<CompanyDashboard>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: CustomScrollView(
-          slivers: [
-            // ============================================
-            // HEADER
-            // ============================================
-            SliverAppBar(
-              backgroundColor: const Color(0xFF4169E1),
-              elevation: 0,
-              floating: true,
-              snap: true,
-              expandedHeight: 200,
-              flexibleSpace: FlexibleSpaceBar(
-                background: Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Color(0xFF4169E1), Color(0xFF315AC1)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+    return Consumer<CompanyProvider>(
+      builder: (context, provider, child) {
+        return Scaffold(
+          backgroundColor: const Color(0xFFFAFAFA),
+          body: FadeTransition(
+            opacity: _fadeAnimation,
+            child: CustomScrollView(
+              slivers: [
+                // ============================================
+                // HEADER
+                // ============================================
+                SliverAppBar(
+                  backgroundColor: const Color(0xFF4169E1),
+                  elevation: 0,
+                  floating: true,
+                  snap: true,
+                  expandedHeight: 200,
+                  leading: IconButton(
+                    icon: const Icon(Icons.menu, color: Colors.white),
+                    onPressed: () => Scaffold.of(context).openDrawer(),
+                  ),
+                  flexibleSpace: FlexibleSpaceBar(
+                    background: Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF4169E1), Color(0xFF315AC1)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.business,
+                            size: 40,
+                            color: Colors.white.withOpacity(0.8),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'ব্যবসায়িক ড্যাশবোর্ড',
+                            style: GoogleFonts.openSans(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'আপনার ব্যবসার সারসংক্ষেপ',
+                            style: GoogleFonts.openSans(
+                              fontSize: 14,
+                              color: Colors.white.withOpacity(0.9),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                      ),
                     ),
                   ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.business,
-                        size: 40,
-                        color: Colors.white.withOpacity(0.8),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'ব্যবসায়িক ড্যাশবোর্ড',
-                        style: GoogleFonts.openSans(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'আপনার ব্যবসার সারসংক্ষেপ',
-                        style: GoogleFonts.openSans(
-                          fontSize: 14,
-                          color: Colors.white.withOpacity(0.9),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                  ),
                 ),
-              ),
-            ),
 
-            // ============================================
-            // STATS CARDS
-            // ============================================
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    GridView.count(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      children: const [
-                        PremiumStatCard(
-                          icon: Icons.handshake_outlined,
-                          color: Color(0xFF1976D2),
-                          label: 'সক্রিয় চুক্তি',
-                          value: '12',
-                          subtitle: 'কৃষকদের সাথে',
+                // ============================================
+                // STATS CARDS
+                // ============================================
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        GridView.count(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          children: [
+                            PremiumStatCard(
+                              icon: Icons.handshake_outlined,
+                              color: const Color(0xFF1976D2),
+                              label: 'সক্রিয় চুক্তি',
+                              value: '${provider.activeContractsCount}',
+                              subtitle: 'কৃষকদের সাথে',
+                            ),
+                            PremiumStatCard(
+                              icon: Icons.shopping_bag_outlined,
+                              color: const Color(0xFFE65100),
+                              label: 'অপেক্ষমাণ অর্ডার',
+                              value: '${provider.pendingOrdersCount}',
+                              subtitle: 'ডেলিভারির অপেক্ষায়',
+                            ),
+                            PremiumStatCard(
+                              icon: Icons.trending_up,
+                              color: const Color(0xFF388E3C),
+                              label: 'বাজেট ব্যবহৃত',
+                              value: '৳ ${(provider.usedBudget / 100000).toStringAsFixed(2)} লাখ',
+                              subtitle: 'মোট ${(provider.totalBudget / 100000).toStringAsFixed(0)} লাখ',
+                            ),
+                            PremiumStatCard(
+                              icon: Icons.calendar_month,
+                              color: const Color(0xFF7B1FA2),
+                              label: 'মাসিক অর্ডার',
+                              value: '${provider.monthlyOrdersCount}',
+                              subtitle: 'এই মাসে',
+                            ),
+                          ],
                         ),
-                        PremiumStatCard(
-                          icon: Icons.shopping_bag_outlined,
-                          color: Color(0xFFE65100),
-                          label: 'অপেক্ষমাণ অর্ডার',
-                          value: '24',
-                          subtitle: 'ডেলিভারির অপেক্ষায়',
+                        const SizedBox(height: 16),
+                        PremiumSectionTitle(
+                          title: 'সাপ্লাই চেইন লেনদেন',
+                          onSeeAll: () {},
                         ),
-                        PremiumStatCard(
-                          icon: Icons.trending_up,
-                          color: Color(0xFF388E3C),
-                          label: 'বাজেট ব্যবহৃত',
-                          value: '৳ ৫.৪৫ লাখ',
-                          subtitle: 'মোট ১০ লাখ',
-                        ),
-                        PremiumStatCard(
-                          icon: Icons.calendar_month,
-                          color: Color(0xFF7B1FA2),
-                          label: 'মাসিক অর্ডার',
-                          value: '১৫৬',
-                          subtitle: 'এই মাসে',
-                        ),
+                        ...provider.transactions.take(3).map((t) => PremiumTransactionCard(
+                          title: t.title,
+                          date: t.date,
+                          amount: t.amount,
+                          isCredit: t.isCredit,
+                          status: t.status,
+                        )).toList(),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    PremiumSectionTitle(
-                      title: 'সাপ্লাই চেইন লেনদেন',
-                      onSeeAll: () {},
-                    ),
-                    const PremiumTransactionCard(
-                      title: 'খামার-A চুক্তি অগ্রিম',
-                      date: 'আজ, সকাল ৯:১৫',
-                      amount: '৳ 50,000',
-                      isCredit: false,
-                      status: 'Completed',
-                    ),
-                    const PremiumTransactionCard(
-                      title: 'ডেলিভারি পেমেন্ট',
-                      date: 'গতকাল, বিকেল ৫:৩০',
-                      amount: '৳ 15,000',
-                      isCredit: false,
-                      status: 'Completed',
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
 
             // ============================================
             // QUICK ACTIONS
@@ -287,6 +288,8 @@ class _CompanyDashboardState extends State<CompanyDashboard>
           ],
         ),
       ),
+    );
+      },
     );
   }
 

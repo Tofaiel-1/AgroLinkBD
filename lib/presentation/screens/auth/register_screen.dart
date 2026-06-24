@@ -7,6 +7,8 @@ import 'package:agrolinkbd/core/controllers/user_controller.dart';
 import 'package:agrolinkbd/core/services/auth_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:agrolinkbd/presentation/screens/auth/login_screen.dart';
+import 'package:agrolinkbd/core/constants/bd_location_data.dart';
+import 'package:agrolinkbd/presentation/widgets/searchable_dropdown.dart';
 
 class RegisterScreen extends StatefulWidget {
   final String userId;
@@ -29,20 +31,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final AuthService _authService = AuthService();
 
   UserType _selectedUserType = UserType.farmer;
+  String? _selectedDivision;
   String? _selectedDistrict;
+  String? _selectedUpazila;
   bool _isLoading = false;
 
-  // Bangladesh districts
-  final List<String> _districts = [
-    'Dhaka',
-    'Chattogram',
-    'Rajshahi',
-    'Khulna',
-    'Barishal',
-    'Sylhet',
-    'Rangpur',
-    'Mymensingh',
-  ];
+  List<String> get _districts {
+    if (_selectedDivision == null) return [];
+    return BDLocationData.districtsByDivision[_selectedDivision] ?? [];
+  }
+
+  List<String> get _upazilas {
+    if (_selectedDistrict == null) return [];
+    return BDLocationData.upazilasByDistrict[_selectedDistrict] ?? [];
+  }
 
   @override
   void dispose() {
@@ -109,6 +111,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
 
       // Create user profile in Firestore
+      
+      String finalAddress = _addressController.text;
+      if (_selectedUpazila != null && _selectedUpazila!.isNotEmpty) {
+        if (finalAddress.isNotEmpty) {
+          finalAddress = '$finalAddress, $_selectedUpazila';
+        } else {
+          finalAddress = _selectedUpazila!;
+        }
+      }
+
       UserModel user = UserModel(
         id: userId,
         name: _nameController.text,
@@ -117,7 +129,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         email: _emailController.text.trim(),
         userType: _selectedUserType,
         status: UserStatus.active,
-        address: _addressController.text,
+        address: finalAddress,
         district: _selectedDistrict,
         createdAt: DateTime.now(),
       );
@@ -514,51 +526,68 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       const SizedBox(height: 24),
 
                       // User Type
-                      Text(
-                        'Who are you?',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: textColor,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          _buildUserTypeChip('Farmer', UserType.farmer, isDark, primaryColor),
-                          _buildUserTypeChip('Buyer', UserType.buyer, isDark, primaryColor),
-                          _buildUserTypeChip('Driver', UserType.driver, isDark, primaryColor),
-                          _buildUserTypeChip('Service Provider', UserType.serviceProvider, isDark, primaryColor),
-                          _buildUserTypeChip('Company', UserType.company, isDark, primaryColor),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-
-                      // District
-                      DropdownButtonFormField<String>(
-                        value: _selectedDistrict,
+                      DropdownButtonFormField<UserType>(
+                        value: _selectedUserType,
                         dropdownColor: cardColor,
                         style: TextStyle(color: textColor, fontSize: 16),
                         decoration: inputDecoration.copyWith(
-                          labelText: 'District',
-                          prefixIcon: Icon(Icons.location_on_outlined, color: primaryColor),
+                          labelText: 'Who are you?',
+                          prefixIcon: Icon(Icons.person_pin_outlined, color: primaryColor),
                         ),
-                        items: _districts.map((district) {
-                          return DropdownMenuItem(
-                            value: district,
-                            child: Text(district),
-                          );
-                        }).toList(),
+                        items: const [
+                          DropdownMenuItem(value: UserType.farmer, child: Text('Farmer')),
+                          DropdownMenuItem(value: UserType.buyer, child: Text('Buyer')),
+                          DropdownMenuItem(value: UserType.driver, child: Text('Driver')),
+                          DropdownMenuItem(value: UserType.serviceProvider, child: Text('Service Provider')),
+                          DropdownMenuItem(value: UserType.company, child: Text('Company')),
+                        ],
                         onChanged: (value) {
-                          setState(() => _selectedDistrict = value);
-                        },
-                        validator: (value) {
-                          if (value == null) {
-                            return 'Please select your district';
+                          if (value != null) {
+                            setState(() => _selectedUserType = value);
                           }
-                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Division
+                      SearchableDropdown(
+                        hint: 'Select Division',
+                        value: _selectedDivision,
+                        items: BDLocationData.divisions,
+                        icon: Icons.map_outlined,
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedDivision = value;
+                            _selectedDistrict = null; // Reset dependent fields
+                            _selectedUpazila = null;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // District
+                      SearchableDropdown(
+                        hint: 'Select District',
+                        value: _selectedDistrict,
+                        items: _districts,
+                        icon: Icons.location_city_outlined,
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedDistrict = value;
+                            _selectedUpazila = null; // Reset dependent field
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Upazila
+                      SearchableDropdown(
+                        hint: 'Select Upazila',
+                        value: _selectedUpazila,
+                        items: _upazilas,
+                        icon: Icons.location_on_outlined,
+                        onChanged: (value) {
+                          setState(() => _selectedUpazila = value);
                         },
                       ),
                       const SizedBox(height: 20),
@@ -633,27 +662,4 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget _buildUserTypeChip(String label, UserType type, bool isDark, Color primaryColor) {
-    bool isSelected = _selectedUserType == type;
-    return ChoiceChip(
-      label: Text(label),
-      selected: isSelected,
-      onSelected: (selected) {
-        setState(() => _selectedUserType = type);
-      },
-      selectedColor: primaryColor,
-      backgroundColor: isDark ? const Color(0xFF1E1E2C) : Colors.grey.shade100,
-      labelStyle: TextStyle(
-        color: isSelected ? Colors.white : (isDark ? Colors.grey.shade300 : Colors.black87),
-        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: isSelected ? primaryColor : (isDark ? Colors.grey.shade800 : Colors.grey.shade300),
-        ),
-      ),
-    );
-  }
 }

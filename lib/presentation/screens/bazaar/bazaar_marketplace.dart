@@ -271,25 +271,25 @@ class _BazaarMarketplaceState extends State<BazaarMarketplace> {
       final name = product['name']?.toString().toLowerCase() ?? '';
 
       if (name.contains('chili') || name.contains('মরিচ')) {
-        imageUrl = 'https://picsum.photos/id/292/400/300';
+        imageUrl = 'https://images.unsplash.com/photo-1588015408985-780c18d18400?q=80&w=400&auto=format&fit=crop';
       } else if (name.contains('mango') || name.contains('আম')) {
-        imageUrl = 'https://picsum.photos/id/152/400/300';
+        imageUrl = 'https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?q=80&w=400&auto=format&fit=crop';
       } else if (name.contains('rice') || name.contains('ধান') || name.contains('চাল')) {
-        imageUrl = 'https://picsum.photos/id/312/400/300';
+        imageUrl = 'https://images.unsplash.com/photo-1586201375761-83865001e8ac?q=80&w=400&auto=format&fit=crop';
       } else if (name.contains('onion') || name.contains('পেঁয়াজ')) {
-        imageUrl = 'https://picsum.photos/id/111/400/300';
+        imageUrl = 'https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?q=80&w=400&auto=format&fit=crop';
       } else if (name.contains('potato') || name.contains('আলু')) {
-        imageUrl = 'https://picsum.photos/id/112/400/300';
+        imageUrl = 'https://images.unsplash.com/photo-1518977673343-a4a0c9ebb0e5?q=80&w=400&auto=format&fit=crop';
       } else if (name.contains('tomato') || name.contains('টমেটো')) {
-        imageUrl = 'https://picsum.photos/id/113/400/300';
+        imageUrl = 'https://images.unsplash.com/photo-1561136594-7f68413baa99?q=80&w=400&auto=format&fit=crop';
       } else if (cat == 'vegetables') {
-        imageUrl = 'https://picsum.photos/id/114/400/300';
+        imageUrl = 'https://images.unsplash.com/photo-1540420773420-3366772f4999?q=80&w=400&auto=format&fit=crop';
       } else if (cat == 'fruits') {
-        imageUrl = 'https://picsum.photos/id/115/400/300';
+        imageUrl = 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?q=80&w=400&auto=format&fit=crop';
       } else if (cat == 'spices') {
-        imageUrl = 'https://picsum.photos/id/116/400/300';
+        imageUrl = 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?q=80&w=400&auto=format&fit=crop';
       } else {
-        imageUrl = 'https://picsum.photos/id/117/400/300';
+        imageUrl = 'https://images.unsplash.com/photo-1464226184884-fa280b87c399?q=80&w=400&auto=format&fit=crop';
       }
     }
 

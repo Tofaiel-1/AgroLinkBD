@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:provider/provider.dart';
+import 'package:agrolinkbd/presentation/screens/company/providers/company_provider.dart';
+
 /// Company Contracts Management Screen
 /// Manage contract farming agreements with farmers
 class CompanyContractsScreen extends StatefulWidget {
@@ -22,98 +25,118 @@ class _CompanyContractsScreenState extends State<CompanyContractsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF4169E1),
-        elevation: 0,
-        title: Text(
-          'চুক্তি ব্যবস্থাপনা',
-          style: GoogleFonts.openSans(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+    return Consumer<CompanyProvider>(
+      builder: (context, provider, child) {
+        // Filter contracts
+        List<CompanyContract> filteredContracts = provider.contracts;
+        if (_selectedFilter != 'all') {
+          filteredContracts = provider.contracts
+              .where((c) => c.status == _selectedFilter)
+              .toList();
+        }
+
+        return Scaffold(
+          backgroundColor: const Color(0xFFFAFAFA),
+          appBar: AppBar(
+            backgroundColor: const Color(0xFF4169E1),
+            elevation: 0,
+            title: Text(
+              'চুক্তি ব্যবস্থাপনা',
+              style: GoogleFonts.openSans(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            leading: IconButton(
+              icon: const Icon(Icons.menu, color: Colors.white),
+              onPressed: () => Scaffold.of(context).openDrawer(),
+            ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.add_circle_outline),
+                onPressed: () {
+                  // Create new contract
+                },
+              ),
+            ],
           ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add_circle_outline),
+          body: Column(
+            children: [
+              // Search bar
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'চুক্তি অনুসন্ধান করুন...',
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    contentPadding:
+                        const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  ),
+                ),
+              ),
+
+              // Filter chips
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _buildFilterChip('সক্রিয়', 'active'),
+                      const SizedBox(width: 8),
+                      _buildFilterChip('সমাপ্ত', 'completed'),
+                      const SizedBox(width: 8),
+                      _buildFilterChip('বাতিল', 'cancelled'),
+                      const SizedBox(width: 8),
+                      _buildFilterChip('সমস্ত', 'all'),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Contracts list
+              Expanded(
+                child: filteredContracts.isEmpty 
+                    ? const Center(child: Text("কোনো চুক্তি পাওয়া যায়নি"))
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: filteredContracts.length,
+                        itemBuilder: (context, index) {
+                          final contract = filteredContracts[index];
+                          return _buildContractCard(
+                            contractId: contract.id,
+                            farmer: contract.farmerName,
+                            crop: contract.crop,
+                            quantity: contract.quantity,
+                            startDate: contract.startDate,
+                            endDate: contract.endDate,
+                            status: contract.status,
+                            progress: contract.progress,
+                            onComplete: contract.status == 'active' ? () {
+                              provider.completeContract(contract.id);
+                            } : null,
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+          floatingActionButton: FloatingActionButton(
+            backgroundColor: const Color(0xFF4169E1),
             onPressed: () {
               // Create new contract
             },
+            child: const Icon(Icons.add),
           ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Search bar
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'চুক্তি অনুসন্ধান করুন...',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                contentPadding:
-                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              ),
-            ),
-          ),
-
-          // Filter chips
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _buildFilterChip('সক্রিয়', 'active'),
-                  const SizedBox(width: 8),
-                  _buildFilterChip('সমাপ্ত', 'completed'),
-                  const SizedBox(width: 8),
-                  _buildFilterChip('বাতিল', 'cancelled'),
-                  const SizedBox(width: 8),
-                  _buildFilterChip('সমস্ত', 'all'),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Contracts list
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: 4,
-              itemBuilder: (context, index) {
-                return _buildContractCard(
-                  contractId: 'CF-2024-${1001 + index}',
-                  farmer: 'রহিম ফার্ম',
-                  crop: 'ধান',
-                  quantity: '১০০ মেট্রিক টন',
-                  startDate: '১ জানুয়ারি ২০২৪',
-                  endDate: '৩০ জুন ২০২৪',
-                  status: index == 0
-                      ? 'active'
-                      : (index == 1 ? 'completed' : 'active'),
-                  progress: (index + 1) * 25,
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFF4169E1),
-        onPressed: () {
-          // Create new contract
-        },
-        child: const Icon(Icons.add),
-      ),
+        );
+      },
     );
   }
 
@@ -150,6 +173,7 @@ class _CompanyContractsScreenState extends State<CompanyContractsScreen> {
     required String endDate,
     required String status,
     required int progress,
+    VoidCallback? onComplete,
   }) {
     Color statusColor = status == 'active'
         ? const Color(0xFF2ECC71)
@@ -266,6 +290,22 @@ class _CompanyContractsScreenState extends State<CompanyContractsScreen> {
               ),
             ],
           ),
+          if (onComplete != null) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: onComplete,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF4169E1),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+                child: const Text('সম্পন্ন করুন', style: TextStyle(color: Colors.white)),
+              ),
+            ),
+          ],
         ],
       ),
     );
