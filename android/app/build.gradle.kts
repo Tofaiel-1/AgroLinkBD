@@ -57,6 +57,10 @@ android {
             isShrinkResources = false
         }
     }
+
+    packaging {
+        jniLibs.keepDebugSymbols.add("**/*.so")
+    }
 }
 
 dependencies {

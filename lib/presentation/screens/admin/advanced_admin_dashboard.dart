@@ -16,7 +16,8 @@ import 'package:provider/provider.dart';
 import 'package:agrolinkbd/core/providers/admin_provider.dart';
 import 'package:agrolinkbd/presentation/screens/admin/admin_create_screen.dart';
 import 'package:agrolinkbd/presentation/screens/admin/admin_transaction_analytics_screen.dart';
-
+import 'package:agrolinkbd/presentation/screens/microfinance/microfinance_credit_hub_screen.dart';
+import 'package:agrolinkbd/presentation/screens/microfinance/microfinance_admin_approval_screen.dart';
 
 import 'package:agrolinkbd/presentation/screens/admin/admin_financial_requests_screen.dart';
 class PulseEffect extends StatefulWidget {
@@ -1087,6 +1088,8 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
       {'icon': Icons.person_add_rounded, 'label': 'User DB', 'color': const Color(0xFF14B8A6), 'route': 'users'},
       {'icon': Icons.campaign_rounded, 'label': 'Announce', 'color': const Color(0xFFF97316), 'route': 'announce'},
       {'icon': Icons.inventory_2_rounded, 'label': 'Inventory', 'color': const Color(0xFF8B5CF6), 'route': 'inventory'},
+      {'icon': Icons.credit_card_rounded, 'label': 'Credit Hub', 'color': const Color(0xFF10B981), 'route': 'credit_hub'},
+      {'icon': Icons.gavel_rounded, 'label': 'Credit Approval', 'color': const Color(0xFFF59E0B), 'route': 'credit_approval'},
     ];
 
     if (adminProvider.isSuperAdmin) {
@@ -1141,6 +1144,8 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
         if (route == 'logs') Get.to(() => const AuditLogsViewer());
         if (route == 'add_admin') Get.to(() => const AdminCreateScreen());
         if (route == 'clear_admins') _confirmClearAdmins(context);
+        if (route == 'credit_hub') Get.to(() => const MicrofinanceCreditHubScreen(userRole: 'admin', userName: 'Admin',));
+        if (route == 'credit_approval') Get.to(() => const MicrofinanceAdminApprovalScreen());
       },
       child: _buildGlassContainer(
         padding: const EdgeInsets.all(8),

@@ -49,7 +49,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '245258508001',
     projectId: 'agrolinkbd-9d09f',
     authDomain: 'agrolinkbd-9d09f.firebaseapp.com',
-    storageBucket: 'agrolinkbd-9d09f.firebasestorage.app',
+    storageBucket: 'agrolinkbd-9d09f.appspot.com',
     measurementId: 'G-JSSQQDF2CY',
   );
 
@@ -58,7 +58,7 @@ class DefaultFirebaseOptions {
     appId: '1:245258508001:android:ddc0654ca6007fb6ebc9a0',
     messagingSenderId: '245258508001',
     projectId: 'agrolinkbd-9d09f',
-    storageBucket: 'agrolinkbd-9d09f.firebasestorage.app',
+    storageBucket: 'agrolinkbd-9d09f.appspot.com',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
@@ -66,7 +66,7 @@ class DefaultFirebaseOptions {
     appId: 'YOUR_IOS_APP_ID',
     messagingSenderId: '245258508001',
     projectId: 'agrolinkbd-9d09f',
-    storageBucket: 'agrolinkbd-9d09f.firebasestorage.app',
+    storageBucket: 'agrolinkbd-9d09f.appspot.com',
     iosBundleId: 'com.agrolinkbd.app',
   );
 

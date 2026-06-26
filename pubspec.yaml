@@ -80,13 +80,13 @@ dependencies:
   fl_chart: ^0.65.0
   
   # PDF & Documents
-  pdf: ^3.10.7
-  printing: ^5.11.1
+  pdf: ^3.12.0
+  printing: ^5.14.3
   google_generative_ai: ^0.4.7
   flutter_dotenv: ^6.0.1
   device_info_plus: ^13.1.0
   csv: ^8.0.0
-  share_plus: ^13.1.0
+  share_plus: ^13.2.0
 
 dev_dependencies:
   flutter_test:

@@ -336,5 +336,16 @@ service cloud.firestore {
       allow read, update, delete: if request.auth != null && 
         exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
+    // ============================================
+    // MICROFINANCE APPLICATIONS
+    // ============================================
+    match /microfinance_applications/{applicationId} {
+      // Users can create their own applications and read their own applications
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      // Admins can manage all applications
+      allow read, update, delete: if request.auth != null && 
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
   }
 }

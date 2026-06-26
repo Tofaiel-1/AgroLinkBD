@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:agrolinkbd/core/providers/admin_provider.dart';
+import 'admin_reports_screen.dart';
 
 /// Comprehensive Super Admin Dashboard
 /// Displays system statistics, admin management, activity logs, and analytics
@@ -126,6 +127,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
       ('Admin Management', Icons.people),
       ('Activity Logs', Icons.history),
       ('Analytics', Icons.analytics),
+      ('Reports', Icons.picture_as_pdf),
     ];
 
     return Container(
@@ -211,6 +213,8 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
           appBar: AppBar(title: const Text('Analytics')),
           body: const Center(child: Text('Analytics Dashboard')),
         );
+      case 4:
+        return const AdminReportsScreen();
       default:
         return Container();
     }

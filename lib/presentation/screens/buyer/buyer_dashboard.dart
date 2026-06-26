@@ -6,6 +6,9 @@ import 'package:agrolinkbd/core/providers/user_provider.dart';
 import 'package:agrolinkbd/presentation/widgets/premium_dashboard_widgets.dart';
 import 'package:agrolinkbd/presentation/screens/analytics/buyer_analytics.dart';
 import 'package:agrolinkbd/presentation/screens/maps/buyer_order_tracking_map.dart';
+import 'package:agrolinkbd/presentation/screens/microfinance/microfinance_kyc_screen.dart';
+import 'package:agrolinkbd/presentation/widgets/report_generation_card.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 /// Buyer Role Dashboard
 /// Displays shopping overview, recent orders, recommendations, and quick access to marketplace
@@ -225,6 +228,26 @@ class _BuyerDashboardState extends State<BuyerDashboard>
                       ],
                     ),
                     const SizedBox(height: 16),
+
+                    // Reports Section
+                    PremiumSectionTitle(
+                      title: 'অ্যাক্টিভিটি রিপোর্ট (Reports)',
+                      onSeeAll: () {},
+                    ),
+                    Consumer<UserProvider>(
+                      builder: (context, userProvider, _) {
+                        return ReportGenerationCard(
+                          userName: userProvider.currentUser?.name ?? 'ক্রেতা',
+                          userId: userProvider.currentUser?.uid ?? FirebaseAuth.instance.currentUser?.uid ?? 'buyer_demo',
+                          userRole: 'buyer',
+                          amount1Label: 'Total Purchases',
+                          amount2Label: 'Total Savings',
+                          color: const Color(0xFF1976D2), // Blue for buyer
+                        );
+                      }
+                    ),
+                    const SizedBox(height: 24),
+
                     // Transactions Section
                     PremiumSectionTitle(
                       title: 'সাম্প্রতিক লেনদেন',
@@ -324,6 +347,26 @@ class _BuyerDashboardState extends State<BuyerDashboard>
                               );
                             },
                           ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildQuickActionButton(
+                            icon: Icons.account_balance_rounded,
+                            label: 'মাইক্রোফাইন্যান্স (ঋণ)',
+                            color: Colors.blue.shade700,
+                            onTap: () {
+                              final userProvider = Provider.of<UserProvider>(context, listen: false);
+                              Get.to(() => MicrofinanceKycScreen(userRole: 'buyer', loanType: 'Buyer Capital Loan'));
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Container(),
                         ),
                       ],
                     ),

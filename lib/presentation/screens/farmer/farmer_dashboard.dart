@@ -7,10 +7,12 @@ import 'package:agrolinkbd/core/providers/user_provider.dart';
 import 'package:agrolinkbd/presentation/screens/disease/disease_detection_screen.dart';
 import 'package:agrolinkbd/presentation/screens/farmer/add_product_screen.dart';
 import 'package:agrolinkbd/presentation/screens/payment/direct_transfer_screen.dart';
+import 'package:agrolinkbd/presentation/screens/microfinance/microfinance_kyc_screen.dart';
 import 'package:agrolinkbd/core/services/transaction_service.dart';
 import 'package:agrolinkbd/presentation/screens/wallet/wallet_screen.dart';
 import 'package:agrolinkbd/core/controllers/user_controller.dart';
 import 'package:agrolinkbd/presentation/widgets/global_announcement_banner.dart';
+import 'package:agrolinkbd/presentation/widgets/report_generation_card.dart';
 
 class FarmerDashboard extends StatefulWidget {
   const FarmerDashboard({super.key});
@@ -282,6 +284,31 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
                     ),
                     const SizedBox(height: 12),
                     _buildMarketPriceTicker(),
+                    const SizedBox(height: 24),
+                    
+                    // 5. Activity Report Generation
+                    Text(
+                      'অ্যাক্টিভিটি রিপোর্ট',
+                      style: GoogleFonts.hindSiliguri(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Consumer<UserProvider>(
+                      builder: (context, userProvider, _) {
+                        return ReportGenerationCard(
+                          userName: userProvider.currentUser?.name ?? 'কৃষক',
+                          userId: _userId,
+                          userRole: 'farmer',
+                          amount1Label: 'Total Income',
+                          amount2Label: 'Total Expense',
+                          color: emeraldGreen,
+                        );
+                      }
+                    ),
+                    
                     const SizedBox(height: 80), // Bottom padding
                   ],
                 ),
@@ -402,6 +429,15 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
           icon: Icons.payment,
           color: Colors.orange.shade700,
           onTap: () => Get.to(() => DirectTransferScreen(senderId: _userId)),
+        ),
+        _ActionCard(
+          title: 'মাইক্রোফাইন্যান্স (ঋণ)',
+          icon: Icons.account_balance_rounded,
+          color: Colors.blue.shade700,
+          onTap: () {
+            final userProvider = Provider.of<UserProvider>(context, listen: false);
+            Get.to(() => MicrofinanceKycScreen(userRole: 'farmer', loanType: 'Farmer Crop Loan'));
+          },
         ),
       ],
     );

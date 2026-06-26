@@ -11,6 +11,8 @@ import 'package:agrolinkbd/presentation/screens/analytics/driver_analytics.dart'
 import 'package:agrolinkbd/presentation/screens/maps/driver_delivery_map.dart';
 import 'package:agrolinkbd/presentation/screens/notifications/driver_notifications.dart';
 import 'package:agrolinkbd/presentation/widgets/global_announcement_banner.dart';
+import 'package:agrolinkbd/presentation/screens/microfinance/microfinance_kyc_screen.dart';
+import 'package:agrolinkbd/presentation/widgets/report_generation_card.dart';
 
 /// Driver Role Dashboard
 /// Displays trip overview, earnings, available jobs, and performance metrics
@@ -264,6 +266,23 @@ class _DriverDashboardState extends ConsumerState<DriverDashboard>
               ),
             ),
 
+            // ============================================
+            // ACTIVITY REPORT
+            // ============================================
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: ReportGenerationCard(
+                  userName: userProvider.currentUser?.name ?? 'চালক',
+                  userId: userId,
+                  userRole: 'driver',
+                  amount1Label: 'Total Earnings',
+                  amount2Label: 'Fuel/Maintenance',
+                  color: const Color(0xFFF57C00), // Orange for driver
+                ),
+              ),
+            ),
+            
             // ============================================
             // ACTIVE TRIP STATUS
             // ============================================
@@ -528,6 +547,67 @@ class _DriverDashboardState extends ConsumerState<DriverDashboard>
                 ),
               ),
             ),
+
+            // ============================================
+            // QUICK ACTIONS
+            // ============================================
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'দ্রুত অ্যাকশন',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Material(
+                            child: InkWell(
+                              onTap: () {
+                                final userProvider = prov.Provider.of<UserProvider>(context, listen: false);
+                                Get.to(() => MicrofinanceKycScreen(userRole: 'driver', loanType: 'Driver Maintenance Loan'));
+                              },
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.shade700.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.blue.shade700.withOpacity(0.3)),
+                                ),
+                                child: Column(
+                                  children: [
+                                    Icon(Icons.account_balance_rounded, color: Colors.blue.shade700, size: 24),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      'মাইক্রোফাইন্যান্স (ঋণ)',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12,
+                                        color: Colors.blue.shade700,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 16)),
 
             // ============================================
             // PERFORMANCE METRICS

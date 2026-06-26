@@ -3,6 +3,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:agrolinkbd/presentation/widgets/premium_dashboard_widgets.dart';
 import 'package:agrolinkbd/presentation/screens/company/providers/company_provider.dart';
+import 'package:agrolinkbd/presentation/screens/microfinance/microfinance_kyc_screen.dart';
+import 'package:agrolinkbd/core/providers/user_provider.dart';
+import 'package:agrolinkbd/presentation/widgets/report_generation_card.dart';
+import 'package:get/get.dart';
 
 /// Company Role Dashboard
 /// Displays business overview, active contracts, pending orders, budget stats
@@ -232,10 +236,51 @@ class _CompanyDashboardState extends State<CompanyDashboard>
                         ),
                       ],
                     ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildQuickActionButton(
+                            icon: Icons.account_balance_rounded,
+                            label: 'মাইক্রোফাইন্যান্স (ঋণ)',
+                            onTap: () {
+                              final userProvider = Provider.of<UserProvider>(context, listen: false);
+                              Get.to(() => MicrofinanceKycScreen(userRole: 'company', loanType: 'Corporate Finance'));
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Container(),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
             ),
+
+            // ============================================
+            // ACTIVITY REPORT
+            // ============================================
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Consumer<UserProvider>(
+                  builder: (context, userProvider, _) {
+                    return ReportGenerationCard(
+                      userName: userProvider.currentUser?.name ?? 'কোম্পানি',
+                      userId: userProvider.currentUser?.uid ?? 'company_demo',
+                      userRole: 'company',
+                      amount1Label: 'Total Procurement',
+                      amount2Label: 'Operating Cost',
+                      color: const Color(0xFF4169E1), // Royal Blue for company
+                    );
+                  }
+                ),
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 16)),
 
             // ============================================
             // RECENT ACTIVITIES
