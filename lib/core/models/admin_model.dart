@@ -5,6 +5,7 @@ class AdminModel {
   final String email;
   final String name;
   final String role; // 'super_admin', 'admin', 'moderator'
+  final String? upazila;
   final DateTime createdAt;
   final DateTime? lastLogin;
   final bool isActive;
@@ -15,6 +16,7 @@ class AdminModel {
     required this.email,
     required this.name,
     required this.role,
+    this.upazila,
     required this.createdAt,
     this.lastLogin,
     this.isActive = true,
@@ -36,6 +38,7 @@ class AdminModel {
       email: map['email'] as String? ?? '',
       name: map['name'] as String? ?? '',
       role: map['role'] as String? ?? 'admin',
+      upazila: map['upazila'] as String?,
       createdAt: _parseDate(map['createdAt']) ?? DateTime.now(),
       lastLogin: _parseDate(map['lastLogin']),
       isActive: map['isActive'] as bool? ?? true,
@@ -49,6 +52,7 @@ class AdminModel {
       'email': email,
       'name': name,
       'role': role,
+      'upazila': upazila,
       'createdAt': createdAt.toIso8601String(),
       'lastLogin': lastLogin?.toIso8601String(),
       'isActive': isActive,

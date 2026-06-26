@@ -16,49 +16,73 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Super Admin Dashboard'),
-        elevation: 0,
-        centerTitle: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications),
-            tooltip: 'Notifications',
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('No new notifications')),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings),
-            tooltip: 'Settings',
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Settings coming soon')),
-              );
-            },
-          ),
-        ],
-      ),
-      body: Consumer<AdminProvider>(
-        builder: (context, adminProvider, _) {
-          if (!adminProvider.isSuperAdmin) {
-            return _buildAccessDeniedScreen();
-          }
-
-          return Column(
-            children: [
-              // Tab buttons
-              _buildTabButtons(),
-              // Content
-              Expanded(
-                child: _buildTabContent(_selectedTabIndex),
+    return WillPopScope(
+      onWillPop: () async {
+        final shouldPop = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Exit App?'),
+            content: const Text('Are you sure you want to exit the application?'),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('No'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('Yes, Exit'),
               ),
             ],
-          );
-        },
+          ),
+        );
+        return shouldPop ?? false;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Super Admin Dashboard'),
+          elevation: 0,
+          centerTitle: false,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.notifications),
+              tooltip: 'Notifications',
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('No new notifications')),
+                );
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.settings),
+              tooltip: 'Settings',
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Settings coming soon')),
+                );
+              },
+            ),
+          ],
+        ),
+        body: Consumer<AdminProvider>(
+          builder: (context, adminProvider, _) {
+            if (!adminProvider.isSuperAdmin) {
+              return _buildAccessDeniedScreen();
+            }
+
+            return Column(
+              children: [
+                // Tab buttons
+                _buildTabButtons(),
+                // Content
+                Expanded(
+                  child: _buildTabContent(_selectedTabIndex),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }

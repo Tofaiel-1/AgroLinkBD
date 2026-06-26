@@ -145,6 +145,7 @@ class AdminProvider with ChangeNotifier {
     required String password,
     required String name,
     required String role, // 'admin', 'moderator'
+    String? upazila,
   }) async {
     if (!isSuperAdmin) {
       _error = 'Only super admin can create new admins';
@@ -167,6 +168,7 @@ class AdminProvider with ChangeNotifier {
         email: email,
         name: name,
         role: role,
+        upazila: upazila,
         createdAt: DateTime.now(),
         isActive: true,
       );
@@ -265,6 +267,42 @@ class AdminProvider with ChangeNotifier {
       return true;
     } catch (e) {
       _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Delete all non-super admins
+  Future<bool> deleteAllRegularAdmins() async {
+    if (!isSuperAdmin) {
+      _error = 'Only super admin can delete admins';
+      notifyListeners();
+      return false;
+    }
+
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final snapshot = await _firestore.collection('admins').where('role', isNotEqualTo: 'super_admin').get();
+      
+      final batch = _firestore.batch();
+      for (var doc in snapshot.docs) {
+        batch.delete(doc.reference);
+      }
+      
+      await batch.commit();
+      
+      await logAdminAction('ADMINS_CLEARED', 'Super admin cleared all legacy regular admins');
+      await loadAllAdmins();
+      
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      _isLoading = false;
       notifyListeners();
       return false;
     }

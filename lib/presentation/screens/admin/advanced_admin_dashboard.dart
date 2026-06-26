@@ -12,10 +12,13 @@ import 'package:agrolinkbd/presentation/screens/admin/admin_announcement_screen.
 import 'package:agrolinkbd/presentation/screens/admin/audit_logs_viewer.dart';
 import 'package:agrolinkbd/presentation/screens/admin/inventory_dashboard_screen.dart';
 import 'package:agrolinkbd/presentation/screens/admin/refund_queue_screen.dart';
+import 'package:provider/provider.dart';
+import 'package:agrolinkbd/core/providers/admin_provider.dart';
+import 'package:agrolinkbd/presentation/screens/admin/admin_create_screen.dart';
 import 'package:agrolinkbd/presentation/screens/admin/admin_transaction_analytics_screen.dart';
-import 'package:agrolinkbd/presentation/screens/admin/admin_financial_requests_screen.dart';
 
-/// Pulse Animation Wrapper for live counters
+
+import 'package:agrolinkbd/presentation/screens/admin/admin_financial_requests_screen.dart';
 class PulseEffect extends StatefulWidget {
   final Widget child;
   const PulseEffect({super.key, required this.child});
@@ -207,50 +210,134 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
       if (mounted) setState(() => _isLoadingData = false);
     }
   }
+  Future<void> _confirmSignOut(BuildContext context) async {
+    final shouldSignOut = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Sign Out?'),
+        content: const Text('Are you sure you want to end your session?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Sign Out'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldSignOut == true) {
+      await FirebaseAuth.instance.signOut();
+      Get.offAll(() => const LoginScreen());
+    }
+  }
+
+  Future<void> _confirmClearAdmins(BuildContext context) async {
+    final shouldClear = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Clear Legacy Admins?'),
+        content: const Text('Are you sure you want to delete all admins except the Super Admin? This cannot be undone.'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Clear All'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldClear == true) {
+      final provider = Provider.of<AdminProvider>(context, listen: false);
+      final success = await provider.deleteAllRegularAdmins();
+      if (mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('All legacy admins cleared'), backgroundColor: Color(0xFF10B981)));
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(provider.error ?? 'Failed to clear admins'), backgroundColor: Colors.red));
+        }
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 768;
 
-    return Scaffold(
-      backgroundColor: _bgColor,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            // Ambient glowing background orbs
-            Positioned(
-              top: -100,
-              left: -100,
-              child: Container(
-                width: 300,
-                height: 300,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFF059669).withOpacity(_isLightMode ? 0.2 : 0.15),
+    return WillPopScope(
+      onWillPop: () async {
+        final shouldPop = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Exit App?'),
+            content: const Text('Are you sure you want to exit the application?'),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('No'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('Yes, Exit'),
+              ),
+            ],
+          ),
+        );
+        return shouldPop ?? false;
+      },
+      child: Scaffold(
+        backgroundColor: _bgColor,
+        body: SafeArea(
+          child: Stack(
+            children: [
+              // Ambient glowing background orbs
+              Positioned(
+                top: -100,
+                left: -100,
+                child: Container(
+                  width: 300,
+                  height: 300,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xFF059669).withOpacity(_isLightMode ? 0.2 : 0.15),
+                  ),
                 ),
               ),
-            ),
-            Positioned(
-              bottom: -150,
-              right: -50,
-              child: Container(
-                width: 400,
-                height: 400,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFF3B82F6).withOpacity(_isLightMode ? 0.2 : 0.1),
+              Positioned(
+                bottom: -150,
+                right: -50,
+                child: Container(
+                  width: 400,
+                  height: 400,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xFF3B82F6).withOpacity(_isLightMode ? 0.2 : 0.1),
+                  ),
                 ),
               ),
-            ),
-            // Backdrop filter
-            BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
-              child: Container(color: Colors.transparent),
-            ),
-            
-            // Main Content
-            isMobile ? _buildMobileLayout() : _buildDesktopLayout(),
-          ],
+              // Backdrop filter
+              BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
+                child: Container(color: Colors.transparent),
+              ),
+              
+              // Main Content
+              isMobile ? _buildMobileLayout() : _buildDesktopLayout(),
+            ],
+          ),
         ),
       ),
     );
@@ -453,9 +540,9 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
             onTap: () {
               setState(() => _selectedMenuIndex = index);
               if (entry.value['action'] == 'users') {
-                Get.to(() => const AdminUserManagementScreen());
+                Get.to(() => AdminUserManagementScreen());
               } else if (entry.value['action'] == 'trans') {
-                Get.to(() => const AdminTransactionAnalyticsScreen());
+                Get.to(() => AdminTransactionAnalyticsScreen());
               }
               // Reset selection after returning
               Future.delayed(const Duration(milliseconds: 500), () {
@@ -550,10 +637,7 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () async {
-                await FirebaseAuth.instance.signOut();
-                Get.offAll(() => const LoginScreen());
-              },
+              onPressed: () => _confirmSignOut(context),
               style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFEF4444).withOpacity(0.15),
                   foregroundColor: const Color(0xFFEF4444),
@@ -622,10 +706,7 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
             const SizedBox(width: 12),
             _buildGlassIconButton(
               icon: Icons.power_settings_new_rounded,
-              onTap: () async {
-                await FirebaseAuth.instance.signOut();
-                Get.offAll(() => const LoginScreen());
-              },
+              onTap: () => _confirmSignOut(context),
             ),
           ],
         ),
@@ -846,10 +927,12 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
                       touchCallback: (FlTouchEvent event, pieTouchResponse) {},
                     ),
                     sections: [
-                      PieChartSectionData(value: 40, color: const Color(0xFF10B981), radius: 25, showTitle: false),
-                      PieChartSectionData(value: 30, color: const Color(0xFF3B82F6), radius: 25, showTitle: false),
-                      PieChartSectionData(value: 20, color: const Color(0xFFF59E0B), radius: 25, showTitle: false),
-                      PieChartSectionData(value: 10, color: const Color(0xFF8B5CF6), radius: 25, showTitle: false),
+                      PieChartSectionData(value: 30, color: const Color(0xFF10B981), radius: 25, showTitle: false),
+                      PieChartSectionData(value: 25, color: const Color(0xFF3B82F6), radius: 25, showTitle: false),
+                      PieChartSectionData(value: 15, color: const Color(0xFFF59E0B), radius: 25, showTitle: false),
+                      PieChartSectionData(value: 15, color: const Color(0xFF06B6D4), radius: 25, showTitle: false),
+                      PieChartSectionData(value: 10, color: const Color(0xFFEAB308), radius: 25, showTitle: false),
+                      PieChartSectionData(value: 5, color: const Color(0xFF8B5CF6), radius: 25, showTitle: false),
                     ],
                   ),
                 ),
@@ -866,8 +949,36 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
               ],
             ),
           ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            alignment: WrapAlignment.center,
+            children: [
+              _buildLegendItem(color: const Color(0xFF10B981), text: 'Farmers'),
+              _buildLegendItem(color: const Color(0xFF3B82F6), text: 'Buyers'),
+              _buildLegendItem(color: const Color(0xFFF59E0B), text: 'Providers'),
+              _buildLegendItem(color: const Color(0xFF06B6D4), text: 'Drivers'),
+              _buildLegendItem(color: const Color(0xFFEAB308), text: 'Companies'),
+              _buildLegendItem(color: const Color(0xFF8B5CF6), text: 'Admins'),
+            ],
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildLegendItem({required Color color, required String text}) {
+    return Row(
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 6),
+        Text(text, style: TextStyle(color: _textColor.withOpacity(0.7), fontSize: 11, fontWeight: FontWeight.w500)),
+      ],
     );
   }
 
@@ -971,18 +1082,26 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
   }
 
   Widget _buildQuickActionsGrid({required int crossAxisCount}) {
+    final adminProvider = Provider.of<AdminProvider>(context, listen: false);
     final actions = [
-      {'icon': Icons.account_balance_wallet_rounded, 'label': 'Deposit', 'color': const Color(0xFF10B981), 'route': 'deposit'},
-      {'icon': Icons.send_rounded, 'label': 'Send Funds', 'color': const Color(0xFF3B82F6), 'route': 'send'},
-      {'icon': Icons.analytics_rounded, 'label': 'Cash Flow', 'color': const Color(0xFF14B8A6), 'route': 'cashflow'},
-      {'icon': Icons.request_quote_rounded, 'label': 'Requests', 'color': const Color(0xFFEAB308), 'route': 'requests'},
-      {'icon': Icons.currency_exchange_rounded, 'label': 'Transfers', 'color': const Color(0xFF06B6D4), 'route': 'transfers'},
-      {'icon': Icons.inventory_2_rounded, 'label': 'Inventory', 'color': const Color(0xFF8B5CF6), 'route': 'inventory'},
-      {'icon': Icons.receipt_long_rounded, 'label': 'Refunds', 'color': const Color(0xFFF59E0B), 'route': 'refunds'},
       {'icon': Icons.person_add_rounded, 'label': 'User DB', 'color': const Color(0xFF14B8A6), 'route': 'users'},
       {'icon': Icons.campaign_rounded, 'label': 'Announce', 'color': const Color(0xFFF97316), 'route': 'announce'},
-      {'icon': Icons.history_edu_rounded, 'label': 'Audit Logs', 'color': const Color(0xFFEF4444), 'route': 'logs'},
+      {'icon': Icons.inventory_2_rounded, 'label': 'Inventory', 'color': const Color(0xFF8B5CF6), 'route': 'inventory'},
     ];
+
+    if (adminProvider.isSuperAdmin) {
+      actions.insertAll(0, [
+        {'icon': Icons.account_balance_wallet_rounded, 'label': 'Deposit', 'color': const Color(0xFF10B981), 'route': 'deposit'},
+        {'icon': Icons.send_rounded, 'label': 'Send Funds', 'color': const Color(0xFF3B82F6), 'route': 'send'},
+        {'icon': Icons.analytics_rounded, 'label': 'Cash Flow', 'color': const Color(0xFF14B8A6), 'route': 'cashflow'},
+        {'icon': Icons.request_quote_rounded, 'label': 'Requests', 'color': const Color(0xFFEAB308), 'route': 'requests'},
+        {'icon': Icons.currency_exchange_rounded, 'label': 'Transfers', 'color': const Color(0xFF06B6D4), 'route': 'transfers'},
+        {'icon': Icons.receipt_long_rounded, 'label': 'Refunds', 'color': const Color(0xFFF59E0B), 'route': 'refunds'},
+        {'icon': Icons.history_edu_rounded, 'label': 'Audit Logs', 'color': const Color(0xFFEF4444), 'route': 'logs'},
+      ]);
+      actions.add({'icon': Icons.admin_panel_settings_rounded, 'label': 'Add Admin', 'color': const Color(0xFF10B981), 'route': 'add_admin'});
+      actions.add({'icon': Icons.cleaning_services_rounded, 'label': 'Clear Admins', 'color': const Color(0xFFEF4444), 'route': 'clear_admins'});
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1012,7 +1131,7 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
       onTap: () {
         if (route == 'deposit') Get.to(() => const AdminDepositApprovalScreen());
         if (route == 'send') Get.to(() => const AdminSendMoneyScreen());
-        if (route == 'cashflow') Get.to(() => const AdminTransactionAnalyticsScreen());
+        if (route == 'cashflow') Get.to(() => AdminTransactionAnalyticsScreen());
         if (route == 'requests') Get.to(() => const AdminFinancialRequestsScreen());
         if (route == 'transfers') Get.to(() => const AdminFinancialRequestsScreen(initialTabIndex: 2));
         if (route == 'inventory') Get.to(() => const InventoryDashboardScreen());
@@ -1020,6 +1139,8 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
         if (route == 'users') Get.to(() => const AdminUserManagementScreen());
         if (route == 'announce') Get.to(() => AdminAnnouncementScreen());
         if (route == 'logs') Get.to(() => const AuditLogsViewer());
+        if (route == 'add_admin') Get.to(() => const AdminCreateScreen());
+        if (route == 'clear_admins') _confirmClearAdmins(context);
       },
       child: _buildGlassContainer(
         padding: const EdgeInsets.all(8),

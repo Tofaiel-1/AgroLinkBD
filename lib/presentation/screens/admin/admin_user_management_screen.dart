@@ -161,8 +161,19 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
   }
 
   Widget _buildUsersList() {
+    final adminProvider = Provider.of<AdminProvider>(context, listen: false);
+    Query query = FirebaseFirestore.instance.collection('users');
+    
+    final bool isFilteredByUpazila = !adminProvider.isSuperAdmin && adminProvider.currentAdmin?.upazila != null;
+    
+    if (isFilteredByUpazila) {
+      query = query.where('upazila', isEqualTo: adminProvider.currentAdmin!.upazila);
+    } else {
+      query = query.orderBy('createdAt', descending: true);
+    }
+
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('users').orderBy('createdAt', descending: true).snapshots(),
+      stream: query.snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return Center(child: Text('Error loading users', style: TextStyle(color: Colors.red)));
@@ -172,7 +183,26 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
           return const Center(child: CircularProgressIndicator(color: Color(0xFF10B981)));
         }
 
-        var users = snapshot.data!.docs;
+        var users = snapshot.data!.docs.toList();
+        
+        // Local sort if we filtered by upazila
+        if (isFilteredByUpazila) {
+          users.sort((a, b) {
+            final aData = a.data() as Map<String, dynamic>;
+            final bData = b.data() as Map<String, dynamic>;
+            
+            DateTime aTime = DateTime.fromMillisecondsSinceEpoch(0);
+            DateTime bTime = DateTime.fromMillisecondsSinceEpoch(0);
+            
+            if (aData['createdAt'] != null) {
+              aTime = (aData['createdAt'] is Timestamp) ? (aData['createdAt'] as Timestamp).toDate() : DateTime.tryParse(aData['createdAt'].toString()) ?? aTime;
+            }
+            if (bData['createdAt'] != null) {
+              bTime = (bData['createdAt'] is Timestamp) ? (bData['createdAt'] as Timestamp).toDate() : DateTime.tryParse(bData['createdAt'].toString()) ?? bTime;
+            }
+            return bTime.compareTo(aTime);
+          });
+        }
 
         // Filter by search query
         if (_searchQuery.isNotEmpty) {
