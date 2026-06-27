@@ -238,7 +238,7 @@ class _BuyerDashboardState extends State<BuyerDashboard>
                       builder: (context, userProvider, _) {
                         return ReportGenerationCard(
                           userName: userProvider.currentUser?.name ?? 'ক্রেতা',
-                          userId: userProvider.currentUser?.uid ?? FirebaseAuth.instance.currentUser?.uid ?? 'buyer_demo',
+                          userId: userProvider.currentUser?.id ?? FirebaseAuth.instance.currentUser?.uid ?? 'buyer_demo',
                           userRole: 'buyer',
                           amount1Label: 'Total Purchases',
                           amount2Label: 'Total Savings',

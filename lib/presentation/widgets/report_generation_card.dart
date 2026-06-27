@@ -31,25 +31,11 @@ class _ReportGenerationCardState extends State<ReportGenerationCard> {
   Future<void> _generateReport() async {
     setState(() => _isGenerating = true);
     try {
-      // In a fully integrated app, fetch real data from Firestore here based on _selectedPeriod and widget.userId
-      // For demonstration, we use placeholder data that adapts to the role
-      
-      double amount1 = widget.userRole == 'buyer' ? 0.0 : 5000.0;
-      double amount2 = widget.userRole == 'buyer' ? 2500.0 : 1200.0;
-      
-      final pdfBytes = await UserReportService.generateActivityReport(
+      final pdfBytes = await UserReportService.fetchAndGenerateUserReport(
         userName: widget.userName,
         userId: widget.userId,
         userRole: widget.userRole,
         period: _selectedPeriod,
-        amount1Label: widget.amount1Label,
-        totalAmount1: amount1,
-        amount2Label: widget.amount2Label,
-        totalAmount2: amount2,
-        transactions: [
-          {'date': '2026-06-25', 'description': 'Sample Transaction 1', 'amount': 1500, 'status': 'Completed'},
-          {'date': '2026-06-26', 'description': 'Sample Transaction 2', 'amount': 500, 'status': 'Completed'},
-        ],
       );
 
       if (!mounted) return;

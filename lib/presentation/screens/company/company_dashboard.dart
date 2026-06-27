@@ -270,7 +270,7 @@ class _CompanyDashboardState extends State<CompanyDashboard>
                   builder: (context, userProvider, _) {
                     return ReportGenerationCard(
                       userName: userProvider.currentUser?.name ?? 'কোম্পানি',
-                      userId: userProvider.currentUser?.uid ?? 'company_demo',
+                      userId: userProvider.currentUser?.id ?? 'company_demo',
                       userRole: 'company',
                       amount1Label: 'Total Procurement',
                       amount2Label: 'Operating Cost',

@@ -1,8 +1,10 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:printing/printing.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/services/pdf/admin_report_service.dart';
 import '../../../core/services/pdf/user_report_service.dart';
-import 'package:flutter/cupertino.dart';
+
 
 class AdminReportsScreen extends StatefulWidget {
   const AdminReportsScreen({super.key});
@@ -14,22 +16,58 @@ class AdminReportsScreen extends StatefulWidget {
 class _AdminReportsScreenState extends State<AdminReportsScreen> {
   bool _isGenerating = false;
   String _selectedRole = 'farmer';
+  String _reportType = 'individual'; // 'individual' or 'role'
   final TextEditingController _userIdController = TextEditingController();
   ReportPeriod _selectedPeriod = ReportPeriod.monthly;
 
   Future<void> _generatePlatformOverview() async {
     setState(() => _isGenerating = true);
     try {
-      // In a real app, these values would be fetched from Firestore
+      // Fetch real data from Firestore
+      int usersCount = 0;
+      double totalRevenue = 0.0;
+      int activeLoans = 0;
+      List<Map<String, dynamic>> recentTransactions = [];
+
+      try {
+        final usersSnap = await FirebaseFirestore.instance.collection('users').get();
+        usersCount = usersSnap.docs.length;
+
+        final txSnap = await FirebaseFirestore.instance
+            .collection('transactions')
+            .orderBy('createdAt', descending: true)
+            .limit(30)
+            .get();
+        for (var doc in txSnap.docs) {
+          final data = doc.data();
+          final commission = (data['commissionAmount'] as num?)?.toDouble() ?? 0.0;
+          totalRevenue += commission;
+          final tsStr = data['createdAt'] as String?;
+          final date = tsStr != null ? DateTime.tryParse(tsStr) : null;
+          final formattedDate = date != null ? '${date.day}/${date.month}/${date.year}' : 'N/A';
+          recentTransactions.add({
+            'date': formattedDate,
+            'user': data['payerName'] ?? data['payerId'] ?? 'Unknown',
+            'amount': (data['amount'] as num?)?.toDouble() ?? 0.0,
+            'type': data['category'] ?? 'Transaction',
+            'status': data['status'] ?? 'N/A',
+          });
+        }
+
+        final loansSnap = await FirebaseFirestore.instance
+            .collection('microfinance_applications')
+            .where('status', isEqualTo: 'approved')
+            .get();
+        activeLoans = loansSnap.docs.length;
+      } catch (fetchError) {
+        print('Error fetching platform overview data: $fetchError');
+      }
+
       final pdfBytes = await AdminReportService.generatePlatformOverviewReport(
-        usersCount: 1542,
-        totalRevenue: 45200.50,
-        activeLoans: 120,
-        recentTransactions: [
-          {'date': '2026-06-25', 'user': 'Arfan (Farmer)', 'amount': 1500, 'type': 'Sale', 'status': 'Completed'},
-          {'date': '2026-06-26', 'user': 'Rahim (Buyer)', 'amount': 500, 'type': 'Deposit', 'status': 'Completed'},
-          {'date': '2026-06-26', 'user': 'Karim (Driver)', 'amount': 250, 'type': 'Fee', 'status': 'Pending'},
-        ],
+        usersCount: usersCount,
+        totalRevenue: totalRevenue,
+        activeLoans: activeLoans,
+        recentTransactions: recentTransactions,
       );
 
       if (!mounted) return;
@@ -61,8 +99,8 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
     }
   }
 
-  Future<void> _generateIndividualReport() async {
-    if (_userIdController.text.trim().isEmpty) {
+  Future<void> _generateTargetedReport() async {
+    if (_reportType == 'individual' && _userIdController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter a User ID'), backgroundColor: Colors.red),
       );
@@ -71,19 +109,20 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
 
     setState(() => _isGenerating = true);
     try {
-      final pdfBytes = await UserReportService.generateActivityReport(
-        userName: 'User ${_userIdController.text}',
-        userId: _userIdController.text,
-        userRole: _selectedRole,
-        period: _selectedPeriod,
-        amount1Label: 'Total Income / Purchases',
-        totalAmount1: 5000.0,
-        amount2Label: 'Total Expenses / Savings',
-        totalAmount2: 1200.0,
-        transactions: [
-          {'date': '2026-06-25', 'description': 'Sample Transaction', 'amount': 1500, 'status': 'Completed'},
-        ],
-      );
+      Uint8List pdfBytes;
+      if (_reportType == 'individual') {
+        pdfBytes = await UserReportService.fetchAndGenerateUserReport(
+          userName: 'User ID: ${_userIdController.text}',
+          userId: _userIdController.text,
+          userRole: _selectedRole,
+          period: _selectedPeriod,
+        );
+      } else {
+        pdfBytes = await UserReportService.fetchAndGenerateRoleReport(
+          userRole: _selectedRole,
+          period: _selectedPeriod,
+        );
+      }
 
       if (!mounted) return;
 
@@ -138,13 +177,13 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
             color: Colors.blue,
           ),
           const SizedBox(height: 16),
-          _buildIndividualUserReportSection(),
+          _buildTargetedReportSection(),
         ],
       ),
     );
   }
 
-  Widget _buildIndividualUserReportSection() {
+  Widget _buildTargetedReportSection() {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -168,24 +207,49 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Individual User Report', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      const Text('User / Role Report', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 4),
-                      Text('Generate a detailed activity report for any specific user.', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                      Text('Generate a detailed activity report for a specific user or an aggregated role.', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
                     ],
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            TextField(
-              controller: _userIdController,
-              decoration: InputDecoration(
-                labelText: 'Enter User ID',
-                prefixIcon: const Icon(Icons.perm_identity),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                isDense: true,
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: RadioListTile<String>(
+                    title: const Text('Specific User', style: TextStyle(fontSize: 13)),
+                    value: 'individual',
+                    groupValue: _reportType,
+                    onChanged: (v) => setState(() => _reportType = v!),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                Expanded(
+                  child: RadioListTile<String>(
+                    title: const Text('Entire Role', style: TextStyle(fontSize: 13)),
+                    value: 'role',
+                    groupValue: _reportType,
+                    onChanged: (v) => setState(() => _reportType = v!),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              ],
             ),
+            if (_reportType == 'individual') ...[
+              const SizedBox(height: 16),
+              TextField(
+                controller: _userIdController,
+                decoration: InputDecoration(
+                  labelText: 'Enter User ID',
+                  prefixIcon: const Icon(Icons.perm_identity),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  isDense: true,
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               value: _selectedRole,
@@ -227,11 +291,11 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: _isGenerating ? null : _generateIndividualReport,
+                onPressed: _isGenerating ? null : _generateTargetedReport,
                 icon: _isGenerating
                     ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
                     : const Icon(Icons.picture_as_pdf),
-                label: Text(_isGenerating ? 'Generating...' : 'Generate User Report'),
+                label: Text(_isGenerating ? 'Generating...' : 'Generate Report'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.orange,
                   foregroundColor: Colors.white,
