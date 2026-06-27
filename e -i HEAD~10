@@ -1,0 +1,47 @@
+[33m335a5ef[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m Remove recent activity
+[33m2016e05[m admin_reports_screen.dart, report_generation_card
+[33mbe3e04b[m icrofinance_credit_hub_screen, microfinance_kyc_screen.dart, and some file chanhes
+[33md1ced5f[m admin_user_management_scree, advanced admin dashboard, admin create dashboard
+[33mba47ab3[m admin_financial_requests_screen, advanced_admin_dashboard, direct_transfer_screen
+[33ma154f11[m trip_card_item, farmer payment
+[33m139d9c3[m ai_disease_service, disease_result_screen
+[33mdcf1a95[m[33m ([m[1;31morigin/main[m[33m)[m ai_disease_service, disease_result_screen
+[33m96a3ebc[m admin announcement, global_announcement_banner
+[33m2912df8[m dashboard announcement, global_announcement_banner
+[33maa009c1[m user_audit_log_model, user_audit_logs_view etc
+[33m105db8e[m farm_management/add_edit_expense_screen, add_edit_revenue_screen.dart have some change
+[33mcb96b53[m transaction_history_screen
+[33m3aac64c[m add money, withdraw_request_model, now work
+[33m221ed11[m deposit_service, admin_deposit_approval_screen,admin_login_screen,admin/admin_send_money_screen,bazaar_home.dart,farmer/farmer_dashboard
+[33m30cbd10[m buyer and services provider  check and find some issues solve
+[33m28db549[m App release function chek and find some issues solve
+[33maeaeb6a[m add admin pannel small size and sign , log in screen light and dark
+[33m2edfd38[m add admin pannel deposit and activity log
+[33m5dbc680[m add admin pannel
+[33mab42ef9[m Add super admin screen update
+[33mc2b48a5[m farmer farm screen update
+[33m285a250[m change farmer analysis screen
+[33m48e907d[m Add ai plant doctor
+[33m31c105a[m change notification to setting for all user
+[33m4ebdcec[m services provider section Upgrate
+[33m45e9dea[m Add files via upload
+[33me3c1a65[m service provider working
+[33m5b1678d[m user and buyer screene
+[33m31fc182[m Add files via upload
+[33m8da5621[m Delete agrolinkbd.iml
+[33mfbcb886[m Delete firebase.json
+[33mc7958a6[m Delete analysis_options.yaml
+[33ma463473[m Delete firebase_options.dart
+[33m666ff18[m Delete LICENSE
+[33mc391b4a[m Delete firestore.rules
+[33m4a42f6e[m Delete firestore.indexes.json
+[33m54cf4e2[m Delete pubspec.lock
+[33m99e182e[m Delete pubspec.yaml
+[33mf7d0088[m Delete storage.rules
+[33m70d433c[m Delete .metadata
+[33m0f75af4[m Delete .flutter-plugins-dependencies
+[33m295a4c3[m Delete .firebaserc
+[33md3f2601[m Delete .gitignore
+[33m8d33dd3[m Add files via upload
+[33mcf74d3f[m Add files via upload
+[33ma6731ac[m Add files via upload
