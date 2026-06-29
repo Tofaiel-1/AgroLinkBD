@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
-import 'package:agrolinkbd/presentation/screens/marketplace/marketplace_screen_new.dart';
+import 'package:agrolinkbd/presentation/screens/bazaar/bazaar_home.dart';
 import 'package:agrolinkbd/presentation/screens/transport/transport_rental_screen.dart';
 import 'package:agrolinkbd/presentation/screens/disease/disease_detection_screen.dart';
 import 'package:agrolinkbd/presentation/screens/wallet/wallet_screen.dart';
@@ -663,7 +663,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case 'marketplace':
       case 'buy':
       case 'sell':
-        Get.to(() => const MarketplaceScreenNew());
+        Get.to(() => const BazaarHome());
         break;
       case 'crops':
         Get.to(() => const CropManagementScreen());
@@ -722,7 +722,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       onTap: (index) {
         setState(() => _selectedIndex = index);
         if (index == 1) {
-          Get.to(() => const MarketplaceScreenNew());
+          Get.to(() => const BazaarHome());
         } else if (index == 2) {
           Get.to(() => const AIAssistantScreen());
         } else if (index == 3) {

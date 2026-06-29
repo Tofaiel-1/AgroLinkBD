@@ -347,5 +347,12 @@ service cloud.firestore {
       allow read, update, delete: if request.auth != null && 
         exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
+    
+    // ============================================
+    // Orders Tracking Buyer 
+    // ============================================
+    match /orders/{orderId} {
+      allow read, write: if true; 
+    }
   }
 }

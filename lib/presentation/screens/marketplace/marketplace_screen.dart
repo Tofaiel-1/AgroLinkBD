@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:agrolinkbd/core/providers/user_provider.dart';
+import 'package:agrolinkbd/core/models/user_model.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import 'package:agrolinkbd/presentation/screens/marketplace/add_product_screen.dart';
+import 'package:agrolinkbd/core/models/order_model.dart';
+import 'package:agrolinkbd/core/services/order_service.dart';
+import 'package:agrolinkbd/core/services/sslcommerz_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:agrolinkbd/presentation/screens/buyer/buyer_orders_screen.dart';
 
 class MarketplaceScreen extends StatefulWidget {
   const MarketplaceScreen({super.key});
@@ -22,110 +31,22 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   ];
 
   final List<Map<String, dynamic>> _categories = [
-    {'label': 'সব', 'icon': Icons.grid_view_rounded},
-    {'label': 'সবজি', 'icon': Icons.grass_rounded},
-    {'label': 'ফলমূল', 'icon': Icons.apple_rounded},
-    {'label': 'চাল', 'icon': Icons.agriculture_rounded},
-    {'label': 'মসলা', 'icon': Icons.local_florist_rounded},
-    {'label': 'মাছ', 'icon': Icons.set_meal_rounded},
-    {'label': 'মাংস', 'icon': Icons.kebab_dining_rounded},
-    {'label': 'দুধ-ডিম', 'icon': Icons.egg_rounded},
+    {'label': 'সব', 'key': 'all', 'icon': Icons.grid_view_rounded},
+    {'label': 'সবজি', 'key': 'vegetables', 'icon': Icons.grass_rounded},
+    {'label': 'ফলমূল', 'key': 'fruits', 'icon': Icons.apple_rounded},
+    {'label': 'চাল', 'key': 'grains', 'icon': Icons.agriculture_rounded},
+    {'label': 'মসলা', 'key': 'spices', 'icon': Icons.local_florist_rounded},
+    {'label': 'মাছ', 'key': 'fish', 'icon': Icons.set_meal_rounded},
+    {'label': 'মাংস', 'key': 'meat', 'icon': Icons.kebab_dining_rounded},
+    {'label': 'দুধ-ডিম', 'key': 'dairy', 'icon': Icons.egg_rounded},
   ];
 
-  final List<Map<String, dynamic>> _products = [
-    {
-      'name': 'তাজা টমেটো (Premium)',
-      'price': 40,
-      'unit': 'কেজি',
-      'farmer': 'করিম ফার্ম',
-      'location': 'বগুড়া',
-      'image': 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?q=80&w=600&auto=format&fit=crop',
-      'rating': 4.8,
-      'category': 'সবজি',
-      'badge': 'Hot',
-      'isVerified': true,
-    },
-    {
-      'name': 'দেশি পেঁয়াজ (Organic)',
-      'price': 70,
-      'unit': 'কেজি',
-      'farmer': 'রহিম এগ্রো',
-      'location': 'পাবনা',
-      'image': 'https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?q=80&w=600&auto=format&fit=crop',
-      'rating': 4.5,
-      'category': 'সবজি',
-      'badge': 'Sale',
-      'isVerified': true,
-    },
-    {
-      'name': 'মিনিকেট চাল (সুপার)',
-      'price': 65,
-      'unit': 'কেজি',
-      'farmer': 'কৃষক সমবায়',
-      'location': 'দিনাজপুর',
-      'image': 'https://images.unsplash.com/photo-1586201375761-83865001e31c?q=80&w=600&auto=format&fit=crop',
-      'rating': 4.9,
-      'category': 'চাল',
-      'badge': null,
-      'isVerified': true,
-    },
-    {
-      'name': 'তাজা আলু (রংপুর)',
-      'price': 25,
-      'unit': 'কেজি',
-      'farmer': 'রংপুর ফার্ম',
-      'location': 'রংপুর',
-      'image': 'https://images.unsplash.com/photo-1518977676601-b53f82aba655?q=80&w=600&auto=format&fit=crop',
-      'rating': 4.3,
-      'category': 'সবজি',
-      'badge': null,
-      'isVerified': false,
-    },
-    {
-      'name': 'আম (হিমসাগর)',
-      'price': 120,
-      'unit': 'কেজি',
-      'farmer': 'রাজশাহী ফ্রুট',
-      'location': 'রাজশাহী',
-      'image': 'https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?q=80&w=600&auto=format&fit=crop',
-      'rating': 4.9,
-      'category': 'ফলমূল',
-      'badge': 'Top Rated',
-      'isVerified': true,
-    },
-    {
-      'name': 'রুই মাছ (হালদা)',
-      'price': 350,
-      'unit': 'কেজি',
-      'farmer': 'মৎস্য খামার',
-      'location': 'ময়মনসিংহ',
-      'image': 'https://images.unsplash.com/photo-1524824267900-2fa9cbf7a506?q=80&w=600&auto=format&fit=crop',
-      'rating': 4.7,
-      'category': 'মাছ',
-      'badge': 'Fresh',
-      'isVerified': true,
-    },
-  ];
-
-  List<Map<String, dynamic>> get _filteredProducts {
-    var products = _selectedCategory == 'সব'
-        ? _products
-        : _products.where((p) => p['category'] == _selectedCategory).toList();
-
-    if (_sortBy == 'price_low') {
-      products.sort((a, b) => (a['price'] as int).compareTo(b['price'] as int));
-    } else if (_sortBy == 'price_high') {
-      products.sort((a, b) => (b['price'] as int).compareTo(a['price'] as int));
-    } else if (_sortBy == 'rating') {
-      products.sort(
-          (a, b) => (b['rating'] as double).compareTo(a['rating'] as double));
-    }
-
-    return products;
-  }
-
+  
   @override
   Widget build(BuildContext context) {
+    final userProvider = Provider.of<UserProvider>(context);
+    final isFarmer = userProvider.currentUser?.userType == UserType.farmer;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       body: CustomScrollView(
@@ -142,7 +63,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             elevation: 0,
             title: Text(
               'এগ্রোলিংক মার্কেট',
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.hindSiliguri(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -157,10 +78,10 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 icon: const Icon(Icons.sort, color: Colors.white),
                 onSelected: (value) => setState(() => _sortBy = value),
                 itemBuilder: (_) => [
-                  PopupMenuItem(value: 'popular', child: Text('জনপ্রিয়', style: GoogleFonts.poppins())),
-                  PopupMenuItem(value: 'price_low', child: Text('দাম: কম → বেশি', style: GoogleFonts.poppins())),
-                  PopupMenuItem(value: 'price_high', child: Text('দাম: বেশি → কম', style: GoogleFonts.poppins())),
-                  PopupMenuItem(value: 'rating', child: Text('সেরা রেটিং', style: GoogleFonts.poppins())),
+                  PopupMenuItem(value: 'popular', child: Text('জনপ্রিয়', style: GoogleFonts.hindSiliguri())),
+                  PopupMenuItem(value: 'price_low', child: Text('দাম: কম → বেশি', style: GoogleFonts.hindSiliguri())),
+                  PopupMenuItem(value: 'price_high', child: Text('দাম: বেশি → কম', style: GoogleFonts.hindSiliguri())),
+                  PopupMenuItem(value: 'rating', child: Text('সেরা রেটিং', style: GoogleFonts.hindSiliguri())),
                 ],
               ),
             ],
@@ -192,7 +113,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                       child: TextField(
                         decoration: InputDecoration(
                           hintText: 'কী খুঁজছেন? (যেমন: টমেটো, আলু)',
-                          hintStyle: GoogleFonts.poppins(color: Colors.grey.shade400, fontSize: 14),
+                          hintStyle: GoogleFonts.hindSiliguri(color: Colors.grey.shade400, fontSize: 14),
                           prefixIcon: const Icon(Icons.search, color: Color(0xFF1B5E20)),
                           border: InputBorder.none,
                           contentPadding: const EdgeInsets.symmetric(vertical: 15),
@@ -245,12 +166,12 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(4)),
-                                  child: Text('HOT DEALS', style: GoogleFonts.poppins(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                                  child: Text('HOT DEALS', style: GoogleFonts.hindSiliguri(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
                                   index == 0 ? 'তাজা শাকসবজি' : index == 1 ? 'সরাসরি কৃষকের থেকে' : 'অর্গানিক ফলমূল',
-                                  style: GoogleFonts.poppins(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                                  style: GoogleFonts.hindSiliguri(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
                                 ),
                               ],
                             ),
@@ -320,7 +241,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                           const SizedBox(height: 8),
                           Text(
                             cat['label'],
-                            style: GoogleFonts.poppins(
+                            style: GoogleFonts.hindSiliguri(
                               color: isSelected ? Colors.white : Colors.grey.shade700,
                               fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                               fontSize: 12,
@@ -336,207 +257,471 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
           ),
 
           // ==========================================
-          // PRODUCT COUNT
-          // ==========================================
+          // PRODUCT GRID WITH FIREBASE
           SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              child: Row(
-                children: [
-                  Text(
-                    '${_filteredProducts.length} টি পণ্য পাওয়া গেছে',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance.collection('bazaar_products').snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Padding(
+                    padding: EdgeInsets.all(32.0),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                }
 
-          // ==========================================
-          // PRODUCT GRID
-          // ==========================================
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            sliver: _filteredProducts.isEmpty
-                ? SliverToBoxAdapter(
-                    child: Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(40.0),
-                        child: Column(
-                          children: [
-                            Icon(Icons.search_off_rounded, size: 80, color: Colors.grey.shade300),
-                            const SizedBox(height: 16),
-                            Text('কোনো পণ্য পাওয়া যায়নি', style: GoogleFonts.poppins(color: Colors.grey.shade600, fontSize: 16)),
-                          ],
+                var docs = snapshot.data?.docs ?? [];
+                
+                List<Map<String, dynamic>> allProducts = [];
+                
+                for(var doc in docs) {
+                  var data = doc.data() as Map<String, dynamic>;
+                  allProducts.add({
+                    'id': doc.id,
+                    'name': data['title'] ?? 'Unknown',
+                    'price': (data['price'] ?? 0).toDouble(),
+                    'unit': data['unit'] ?? 'kg',
+                    'farmer': 'AgroLink Farm',
+                    'farmerId': data['userId'],
+                    'location': data['location'] ?? 'Unknown',
+                    'image': data['imageUrl'] ?? 'https://via.placeholder.com/150',
+                    'rating': 4.5,
+                    'category': data['category'] ?? 'other',
+                    'badge': 'New',
+                    'isVerified': true,
+                  });
+                }
+
+                allProducts.addAll([
+                  {
+                    'name': 'আম (হিমসাগর)',
+                    'price': 120,
+                    'unit': 'কেজি',
+                    'farmer': 'রাজশাহী ফ্রুট',
+                    'location': 'রাজশাহী',
+                    'image': 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782583216/image_sxwwpa.png',
+                    'rating': 4.9,
+                    'category': 'fruits',
+                    'badge': 'Top Rated',
+                    'isVerified': true,
+                  },
+                  {
+                    'name': 'রুই মাছ (হালদা)',
+                    'price': 350,
+                    'unit': 'কেজি',
+                    'farmer': 'মৎস্য খামার',
+                    'location': 'ময়মনসিংহ',
+                    'image': 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782734272/Screenshot_2026-06-29_175728_q4k1bk.png',
+                    'rating': 4.7,
+                    'category': 'fish',
+                    'badge': 'Fresh',
+                    'isVerified': true,
+                  },
+                ]);
+
+                String selectedKey = 'all';
+                for(var c in _categories) {
+                  if(c['label'] == _selectedCategory) {
+                    selectedKey = c['key'];
+                    break;
+                  }
+                }
+
+                var products = selectedKey == 'all' 
+                    ? allProducts 
+                    : allProducts.where((p) => p['category'] == selectedKey).toList();
+
+                if (_sortBy == 'price_low') {
+                  products.sort((a, b) => (a['price'] as num).compareTo(b['price'] as num));
+                } else if (_sortBy == 'price_high') {
+                  products.sort((a, b) => (b['price'] as num).compareTo(a['price'] as num));
+                } else if (_sortBy == 'rating') {
+                  products.sort((a, b) => (b['rating'] as num).compareTo(a['rating'] as num));
+                }
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      child: Text(
+                        '${products.length} টি পণ্য পাওয়া গেছে',
+                        style: GoogleFonts.hindSiliguri(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade700,
                         ),
                       ),
                     ),
-                  )
-                : SliverGrid(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                      childAspectRatio: 0.68,
-                    ),
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        return _buildProductCard(_filteredProducts[index]);
-                      },
-                      childCount: _filteredProducts.length,
-                    ),
-                  ),
+                    if (products.isEmpty)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(40.0),
+                          child: Column(
+                            children: [
+                              Icon(Icons.search_off_rounded, size: 80, color: Colors.grey.shade300),
+                              const SizedBox(height: 16),
+                              Text('কোনো পণ্য পাওয়া যায়নি', style: GoogleFonts.hindSiliguri(color: Colors.grey.shade600, fontSize: 16)),
+                            ],
+                          ),
+                        ),
+                      )
+                    else
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 16,
+                            childAspectRatio: 0.68,
+                          ),
+                          itemCount: products.length,
+                          itemBuilder: (context, index) {
+                            return _buildProductCard(products[index]);
+                          },
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
           ),
           
           const SliverToBoxAdapter(child: SizedBox(height: 80)),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: isFarmer ? FloatingActionButton.extended(
         onPressed: () {
           Get.to(() => const AddProductScreen());
         },
         backgroundColor: const Color(0xFF1B5E20),
         icon: const Icon(Icons.add, color: Colors.white),
-        label: Text('পণ্য যোগ করুন', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold)),
-      ),
+        label: Text('পণ্য যোগ করুন', style: GoogleFonts.hindSiliguri(color: Colors.white, fontWeight: FontWeight.bold)),
+      ) : null,
     );
   }
 
   Widget _buildProductCard(Map<String, dynamic> product) {
+    return GestureDetector(
+      onTap: () {
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (context) => QuickBuyBottomSheet(product: product),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image Area
+            Expanded(
+              flex: 5,
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.network(
+                      product['image'] ?? 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?q=80&w=600&auto=format&fit=crop',
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: Colors.grey.shade200,
+                        child: Icon(Icons.image_not_supported, color: Colors.grey.shade400, size: 40),
+                      ),
+                    ),
+                    if (product['badge'] != null)
+                      Positioned(
+                        top: 10,
+                        left: 10,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: product['badge'] == 'Hot' ? Colors.red : Colors.orange,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            product['badge'],
+                            style: GoogleFonts.hindSiliguri(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            // Info Area
+            Expanded(
+              flex: 5,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.star_rounded, size: 14, color: Colors.amber),
+                        const SizedBox(width: 4),
+                        Text('${product['rating']}', style: GoogleFonts.hindSiliguri(fontSize: 11, fontWeight: FontWeight.bold)),
+                        const Spacer(),
+                        if (product['isVerified'])
+                          const Icon(Icons.verified, size: 14, color: Colors.blue),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      product['name'],
+                      style: GoogleFonts.hindSiliguri(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: const Color(0xFF1E293B),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Icon(Icons.location_on_rounded, size: 12, color: Colors.grey.shade500),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            product['location'],
+                            style: GoogleFonts.hindSiliguri(
+                              fontSize: 11,
+                              color: Colors.grey.shade500,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Spacer(),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '৳${product['price']}',
+                              style: GoogleFonts.hindSiliguri(
+                                color: const Color(0xFF1B5E20),
+                                fontWeight: FontWeight.w800,
+                                fontSize: 16,
+                              ),
+                            ),
+                            Text(
+                              'প্রতি ${product['unit']}',
+                              style: GoogleFonts.hindSiliguri(
+                                color: Colors.grey.shade600,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1B5E20),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            'Order Now',
+                            style: GoogleFonts.hindSiliguri(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class QuickBuyBottomSheet extends StatefulWidget {
+  final Map<String, dynamic> product;
+
+  const QuickBuyBottomSheet({Key? key, required this.product}) : super(key: key);
+
+  @override
+  State<QuickBuyBottomSheet> createState() => _QuickBuyBottomSheetState();
+}
+
+class _QuickBuyBottomSheetState extends State<QuickBuyBottomSheet> {
+  int _quantity = 1;
+
+  @override
+  Widget build(BuildContext context) {
+    final price = (widget.product['price'] as num).toDouble();
+    final totalAmount = price * _quantity;
+
     return Container(
-      decoration: BoxDecoration(
+      padding: const EdgeInsets.all(20),
+      decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Image Area
-          Expanded(
-            flex: 5,
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                image: DecorationImage(
-                  image: NetworkImage(product['image']),
+          Text(
+            'Quick Buy',
+            style: GoogleFonts.hindSiliguri(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  widget.product['image'],
+                  width: 60,
+                  height: 60,
                   fit: BoxFit.cover,
                 ),
               ),
-              child: Stack(
-                children: [
-                  if (product['badge'] != null)
-                    Positioned(
-                      top: 10,
-                      left: 10,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: product['badge'] == 'Hot' ? Colors.red : Colors.orange,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          product['badge'],
-                          style: GoogleFonts.poppins(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                        ),
-                      ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.product['name'],
+                      style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.w600, fontSize: 16),
                     ),
-                ],
+                    Text(
+                      '৳ / ',
+                      style: GoogleFonts.hindSiliguri(color: Colors.green, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ],
           ),
-          // Info Area
-          Expanded(
-            flex: 5,
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.star_rounded, size: 14, color: Colors.amber),
-                      const SizedBox(width: 4),
-                      Text('${product['rating']}', style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold)),
-                      const Spacer(),
-                      if (product['isVerified'])
-                        const Icon(Icons.verified, size: 14, color: Colors.blue),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    product['name'],
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: const Color(0xFF1E293B),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Quantity:',
+                style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.w600),
+              ),
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    IconButton(
+                      onPressed: _quantity > 1 ? () => setState(() => _quantity -= 1) : null,
+                      icon: const Icon(Icons.remove),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(Icons.location_on_rounded, size: 12, color: Colors.grey.shade500),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          product['location'],
-                          style: GoogleFonts.poppins(
-                            fontSize: 11,
-                            color: Colors.grey.shade500,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '৳${product['price']}',
-                            style: GoogleFonts.poppins(
-                              color: const Color(0xFF1B5E20),
-                              fontWeight: FontWeight.w800,
-                              fontSize: 16,
-                            ),
-                          ),
-                          Text(
-                            'প্রতি ${product['unit']}',
-                            style: GoogleFonts.poppins(
-                              color: Colors.grey.shade600,
-                              fontSize: 10,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1B5E20),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(Icons.add_shopping_cart_rounded, color: Colors.white, size: 18),
-                      ),
-                    ],
-                  ),
-                ],
+                    Text(
+                      '',
+                      style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.w600, fontSize: 16),
+                    ),
+                    IconButton(
+                      onPressed: () => setState(() => _quantity += 1),
+                      icon: const Icon(Icons.add),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Total:',
+                style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.w600, fontSize: 16),
+              ),
+              Text(
+                '৳',
+                style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.green),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () async {
+                final success = await SSLCommerzService.initiatePayment(
+                  context: context,
+                  amount: totalAmount,
+                  productName: widget.product['name'],
+                  customerName: 'Buyer User',
+                  customerEmail: 'buyer@example.com',
+                  customerPhone: '01700000000',
+                  customerAddress: 'Dhaka, Bangladesh',
+                );
+
+                if (success) {
+                  final user = FirebaseAuth.instance.currentUser;
+                  if (user != null) {
+                    final newOrder = OrderModel(
+                      id: '',
+                      buyerId: user.uid,
+                      farmerId: widget.product['farmerId'] ?? 'unknown_farmer',
+                      farmerName: widget.product['farmer'] ?? 'AgroLink Farm',
+                      productName: widget.product['name'],
+                      productImageUrl: widget.product['image'],
+                      quantity: _quantity,
+                      totalAmount: totalAmount,
+                      status: 'pending',
+                      statusStep: 1,
+                      transportStatus: 'অর্ডার গৃহীত হয়েছে',
+                      paymentStatus: 'paid',
+                      createdAt: DateTime.now(),
+                      estimatedDeliveryDate: DateTime.now().add(const Duration(days: 3)),
+                    );
+
+                    final orderId = await OrderService().createOrder(newOrder);
+                    if (orderId != null) {
+                      Navigator.pop(context); // close bottom sheet
+                      Get.off(() => BuyerOrdersScreen());
+                    }
+                  }
+                }
+              },
+              child: Text(
+                'Confirm & Pay',
+                style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 16),
               ),
             ),
           ),

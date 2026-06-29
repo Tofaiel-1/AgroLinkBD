@@ -283,11 +283,11 @@ class _BazaarMarketplaceState extends State<BazaarMarketplace> {
       } else if (name.contains('tomato') || name.contains('টমেটো')) {
         imageUrl = 'https://images.unsplash.com/photo-1561136594-7f68413baa99?q=80&w=400&auto=format&fit=crop';
       } else if (cat == 'vegetables') {
-        imageUrl = 'https://images.unsplash.com/photo-1540420773420-3366772f4999?q=80&w=400&auto=format&fit=crop';
+        imageUrl = 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782733628/Screenshot_2026-06-29_174642_sqzkqs.png';
       } else if (cat == 'fruits') {
-        imageUrl = 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?q=80&w=400&auto=format&fit=crop';
+        imageUrl = 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782583216/image_sxwwpa.png';
       } else if (cat == 'spices') {
-        imageUrl = 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?q=80&w=400&auto=format&fit=crop';
+        imageUrl = 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782584281/Screenshot_2026-06-28_001608_krqrup.png';
       } else {
         imageUrl = 'https://images.unsplash.com/photo-1464226184884-fa280b87c399?q=80&w=400&auto=format&fit=crop';
       }

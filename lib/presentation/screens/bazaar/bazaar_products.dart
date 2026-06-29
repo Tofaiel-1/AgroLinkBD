@@ -8,6 +8,7 @@ import 'package:agrolinkbd/core/services/sslcommerz_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:agrolinkbd/core/providers/user_provider.dart';
+import 'package:agrolinkbd/core/models/user_model.dart';
 import 'dart:io';
 
 class BazaarProducts extends StatefulWidget {
@@ -379,6 +380,9 @@ class _BazaarProductsState extends State<BazaarProducts> {
 
   @override
   Widget build(BuildContext context) {
+    final userProvider = Provider.of<UserProvider>(context);
+    final isBuyer = userProvider.currentUser?.userType == UserType.buyer;
+
     return Scaffold(
       backgroundColor: Colors.black, // Dark theme background
       appBar: AppBar(
@@ -667,7 +671,7 @@ class _BazaarProductsState extends State<BazaarProducts> {
                     );
                   },
                 ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: isBuyer ? null : FloatingActionButton(
         onPressed: () {
           _nameController.clear();
           _priceController.clear();

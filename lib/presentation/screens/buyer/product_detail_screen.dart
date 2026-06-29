@@ -2,9 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import 'package:agrolinkbd/core/services/sslcommerz_service.dart';
+import 'package:agrolinkbd/core/models/order_model.dart';
+import 'package:agrolinkbd/core/services/order_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:agrolinkbd/presentation/screens/buyer/buyer_orders_screen.dart';
+
 /// Product Detail Screen - View product details and place order
 class ProductDetailScreen extends StatefulWidget {
-  const ProductDetailScreen({super.key});
+  final Map<String, dynamic> product;
+
+  const ProductDetailScreen({super.key, required this.product});
 
   @override
   State<ProductDetailScreen> createState() => _ProductDetailScreenState();
@@ -29,11 +36,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               width: double.infinity,
               height: 250,
               color: Colors.blue.withOpacity(0.1),
-              child: const Icon(
-                Icons.shopping_basket,
-                color: Colors.blue,
-                size: 80,
-              ),
+              child: widget.product['image'] != null
+                  ? Image.network(
+                      widget.product['image'],
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => const Icon(
+                        Icons.shopping_basket,
+                        color: Colors.blue,
+                        size: 80,
+                      ),
+                    )
+                  : const Icon(
+                      Icons.shopping_basket,
+                      color: Colors.blue,
+                      size: 80,
+                    ),
             ),
 
             Padding(
@@ -43,7 +60,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 children: [
                   // Product Name and Price
                   Text(
-                    'টাটকা টমেটো',
+                    widget.product['name'] ?? 'Product',
                     style: GoogleFonts.poppins(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -55,7 +72,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        '৳ ৪৫/কেজি',
+                        '৳ ${widget.product['price']}/${widget.product['unit'] ?? 'কেজি'}',
                         style: GoogleFonts.poppins(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -67,7 +84,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           const Icon(Icons.star, size: 18, color: Colors.amber),
                           const SizedBox(width: 4),
                           Text(
-                            '4.8 (১২৫)',
+                            '${widget.product['rating'] ?? 0.0}',
                             style: GoogleFonts.poppins(
                               fontSize: 12,
                               color: Colors.grey.shade600,
@@ -107,7 +124,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'করিম ফার্ম',
+                                widget.product['farmer'] ?? 'Unknown Farmer',
                                 style: GoogleFonts.poppins(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
@@ -116,7 +133,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                'জয়পুরহাট',
+                                widget.product['location'] ?? 'Unknown Location',
                                 style: GoogleFonts.poppins(
                                   fontSize: 11,
                                   color: Colors.grey.shade600,
@@ -249,16 +266,43 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             backgroundColor: Colors.blue,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
-                          onPressed: () {
-                            SSLCommerzService.initiatePayment(
+                          onPressed: () async {
+                            final success = await SSLCommerzService.initiatePayment(
                               context: context,
-                              amount: 45.0 * _quantity,
-                              productName: 'টাটকা টমেটো',
+                              amount: (widget.product['price'] as num).toDouble() * _quantity,
+                              productName: widget.product['name'] ?? 'Product',
                               customerName: "Buyer User",
                               customerEmail: "buyer@example.com",
                               customerPhone: "01700000000",
                               customerAddress: "Dhaka, Bangladesh",
                             );
+
+                            if (success) {
+                              final user = FirebaseAuth.instance.currentUser;
+                              if (user != null) {
+                                final newOrder = OrderModel(
+                                  id: '',
+                                  buyerId: user.uid,
+                                  farmerId: widget.product['farmerId'] ?? 'unknown_farmer',
+                                  farmerName: widget.product['farmer'] ?? 'AgroLink Farm',
+                                  productName: widget.product['name'] ?? 'Unknown Product',
+                                  productImageUrl: widget.product['image'] ?? '',
+                                  quantity: _quantity,
+                                  totalAmount: (widget.product['price'] as num).toDouble() * _quantity,
+                                  status: 'pending',
+                                  statusStep: 1,
+                                  transportStatus: 'অর্ডার গৃহীত হয়েছে',
+                                  paymentStatus: 'paid',
+                                  createdAt: DateTime.now(),
+                                  estimatedDeliveryDate: DateTime.now().add(const Duration(days: 3)),
+                                );
+                                
+                                final orderId = await OrderService().createOrder(newOrder);
+                                if (orderId != null) {
+                                  Get.off(() => const BuyerOrdersScreen());
+                                }
+                              }
+                            }
                           },
                           child: Text(
                             'অর্ডার করুন',

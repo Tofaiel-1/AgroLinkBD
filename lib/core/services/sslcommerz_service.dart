@@ -6,7 +6,7 @@ import 'package:flutter_sslcommerz/model/SSLCCustomerInfoInitializer.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class SSLCommerzService {
-  static Future<void> initiatePayment({
+  static Future<bool> initiatePayment({
     required BuildContext context,
     required double amount,
     required String productName,
@@ -23,7 +23,7 @@ class SSLCommerzService {
         const SnackBar(
             content: Text('Payment Gateway is not configured properly.')),
       );
-      return;
+      return false;
     }
 
     SSLCommerzInitialization sslcInitialization = SSLCommerzInitialization(
@@ -60,6 +60,7 @@ class SSLCommerzService {
             backgroundColor: Colors.green,
           ),
         );
+        return true;
       } else if (result.status == 'FAILED') {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -67,6 +68,7 @@ class SSLCommerzService {
             backgroundColor: Colors.red,
           ),
         );
+        return false;
       } else if (result.status == 'CANCELLED') {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -74,12 +76,14 @@ class SSLCommerzService {
             backgroundColor: Colors.orange,
           ),
         );
+        return false;
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Payment Status: ${result.status}'),
           ),
         );
+        return false;
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -88,6 +92,7 @@ class SSLCommerzService {
           backgroundColor: Colors.red,
         ),
       );
+      return false;
     }
   }
 }

@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:agrolinkbd/core/models/order_model.dart';
+import 'package:agrolinkbd/core/services/order_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:math';
 import 'package:get/get.dart';
 
 /// Buyer Orders Screen — Tab-based order management
@@ -13,56 +17,6 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  final List<Map<String, dynamic>> _activeOrders = [
-    {
-      'id': '#ORD-১০১',
-      'date': '১৮ জুন ২০২৬',
-      'items': 'টমেটো ৫০কেজি, পেঁয়াজ ২৫কেজি',
-      'total': '৳২,৫২০',
-      'farmer': 'করিম ফার্ম',
-      'status': 'পাঠানো হয়েছে',
-      'statusStep': 3, // 1=গৃহীত, 2=প্রস্তুতি, 3=পাঠানো, 4=ডেলিভার
-    },
-    {
-      'id': '#ORD-১০২',
-      'date': '১৭ জুন ২০২৬',
-      'items': 'মিনিকেট চাল ২৫কেজি',
-      'total': '৳১,৬২৫',
-      'farmer': 'কৃষক সমবায়',
-      'status': 'প্রস্তুতি চলছে',
-      'statusStep': 2,
-    },
-  ];
-
-  final List<Map<String, dynamic>> _pastOrders = [
-    {
-      'id': '#ORD-১০০',
-      'date': '১৫ জুন ২০২৬',
-      'items': 'আলু ৭৫কেজি',
-      'total': '৳১,৮৭৫',
-      'farmer': 'রংপুর ফার্ম',
-      'status': 'ডেলিভার হয়েছে',
-      'statusStep': 4,
-    },
-    {
-      'id': '#ORD-০৯৯',
-      'date': '১২ জুন ২০২৬',
-      'items': 'আম ১০কেজি, কলা ৫কেজি',
-      'total': '৳১,৭৫০',
-      'farmer': 'রাজশাহী ফ্রুট',
-      'status': 'ডেলিভার হয়েছে',
-      'statusStep': 4,
-    },
-    {
-      'id': '#ORD-০৯৮',
-      'date': '০৮ জুন ২০২৬',
-      'items': 'হলুদ গুঁড়া ৫কেজি, মরিচ গুঁড়া ৩কেজি',
-      'total': '৳২,০০০',
-      'farmer': 'মসলা ঘর',
-      'status': 'ডেলিভার হয়েছে',
-      'statusStep': 4,
-    },
-  ];
 
   @override
   void initState() {
@@ -130,23 +84,7 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen>
                             const Icon(Icons.pending_actions, size: 18),
                             const SizedBox(width: 6),
                             const Text('সক্রিয়'),
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF1976D2),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                '${_activeOrders.length}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
+
                           ],
                         ),
                       ),
@@ -168,37 +106,53 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen>
 
             // Tab content
             Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  // Active orders tab
-                  _activeOrders.isEmpty
-                      ? _buildEmptyState(
-                          isDark, 'কোনো সক্রিয় অর্ডার নেই', Icons.pending_actions)
-                      : ListView.builder(
-                          physics: const BouncingScrollPhysics(),
-                          padding: const EdgeInsets.all(16),
-                          itemCount: _activeOrders.length,
-                          itemBuilder: (context, index) {
-                            return _buildActiveOrderCard(
-                                _activeOrders[index], isDark);
-                          },
-                        ),
+              child: StreamBuilder<List<OrderModel>>(
+                stream: OrderService().getOrdersByBuyerId(FirebaseAuth.instance.currentUser?.uid ?? ''),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  }
+                  
+                  final allOrders = snapshot.data ?? [];
+                  final activeOrders = allOrders.where((o) => o.status == 'pending' || o.status == 'processing' || o.status == 'shipped').toList();
+                  final pastOrders = allOrders.where((o) => o.status == 'delivered' || o.status == 'cancelled').toList();
 
-                  // Past orders tab
-                  _pastOrders.isEmpty
-                      ? _buildEmptyState(
-                          isDark, 'কোনো পূর্ববর্তী অর্ডার নেই', Icons.history)
-                      : ListView.builder(
-                          physics: const BouncingScrollPhysics(),
-                          padding: const EdgeInsets.all(16),
-                          itemCount: _pastOrders.length,
-                          itemBuilder: (context, index) {
-                            return _buildPastOrderCard(
-                                _pastOrders[index], isDark);
-                          },
-                        ),
-                ],
+                  return TabBarView(
+                    controller: _tabController,
+                    children: [
+                      // Active orders tab
+                      activeOrders.isEmpty
+                          ? _buildEmptyState(
+                              isDark, 'কোনো সক্রিয় অর্ডার নেই', Icons.inbox)
+                          : ListView.builder(
+                              physics: const BouncingScrollPhysics(),
+                              padding: const EdgeInsets.all(16),
+                              itemCount: activeOrders.length,
+                              itemBuilder: (context, index) {
+                                return _buildActiveOrderCard(
+                                    activeOrders[index], isDark);
+                              },
+                            ),
+                      
+                      // Past orders tab
+                      pastOrders.isEmpty
+                          ? _buildEmptyState(
+                              isDark, 'কোনো পূর্ববর্তী অর্ডার নেই', Icons.history)
+                          : ListView.builder(
+                              physics: const BouncingScrollPhysics(),
+                              padding: const EdgeInsets.all(16),
+                              itemCount: pastOrders.length,
+                              itemBuilder: (context, index) {
+                                return _buildPastOrderCard(
+                                    pastOrders[index], isDark);
+                              },
+                            ),
+                    ],
+                  );
+                },
               ),
             ),
           ],
@@ -227,8 +181,8 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen>
     );
   }
 
-  Widget _buildActiveOrderCard(Map<String, dynamic> order, bool isDark) {
-    final statusStep = order['statusStep'] as int;
+  Widget _buildActiveOrderCard(OrderModel order, bool isDark) {
+    final statusStep = order.statusStep;
     final steps = ['গৃহীত', 'প্রস্তুতি', 'পাঠানো', 'ডেলিভার'];
 
     return Container(
@@ -258,7 +212,7 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                order['id'],
+                 '#ORD-${order.id.substring(0, min(6, order.id.length))}' ,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
@@ -273,7 +227,7 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen>
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  order['status'],
+                  order.status,
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
@@ -292,7 +246,7 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen>
                   size: 14, color: isDark ? Colors.white38 : Colors.grey.shade400),
               const SizedBox(width: 6),
               Text(
-                order['date'],
+                 '${order.createdAt.day}/${order.createdAt.month}/${order.createdAt.year}' ,
                 style: TextStyle(
                   fontSize: 12,
                   color: isDark ? Colors.white54 : Colors.grey.shade600,
@@ -303,7 +257,7 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen>
                   size: 14, color: isDark ? Colors.white38 : Colors.grey.shade400),
               const SizedBox(width: 4),
               Text(
-                order['farmer'],
+                order.farmerName,
                 style: TextStyle(
                   fontSize: 12,
                   color: isDark ? Colors.white54 : Colors.grey.shade600,
@@ -313,7 +267,7 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen>
           ),
           const SizedBox(height: 8),
           Text(
-            order['items'],
+             '${order.productName} (${order.quantity})' ,
             style: TextStyle(
               fontSize: 13,
               color: isDark ? Colors.white70 : Colors.black87,
@@ -321,16 +275,26 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen>
           ),
           const SizedBox(height: 6),
           Text(
-            order['total'],
+             '৳${order.totalAmount}' ,
             style: const TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 16,
               color: Color(0xFF1976D2),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
+            if (order.estimatedDeliveryDate != null)
+              Text(
+                'ETA: ${order.estimatedDeliveryDate!.day}/${order.estimatedDeliveryDate!.month}/${order.estimatedDeliveryDate!.year}',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white70 : Colors.black87,
+                ),
+              ),
+            const SizedBox(height: 16),
 
-          // Status tracker
+            // Status tracker
           Row(
             children: List.generate(4, (i) {
               final isActive = i < statusStep;
@@ -411,7 +375,7 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen>
     );
   }
 
-  Widget _buildPastOrderCard(Map<String, dynamic> order, bool isDark) {
+  Widget _buildPastOrderCard(OrderModel order, bool isDark) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -441,7 +405,7 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen>
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      order['id'],
+                       '#ORD-${order.id.substring(0, min(6, order.id.length))}' ,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
@@ -449,7 +413,7 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen>
                       ),
                     ),
                     Text(
-                      order['date'],
+                       '${order.createdAt.day}/${order.createdAt.month}/${order.createdAt.year}' ,
                       style: TextStyle(
                         fontSize: 11,
                         color: isDark ? Colors.white38 : Colors.grey.shade400,
@@ -459,7 +423,7 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen>
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  order['items'],
+                   '${order.productName} (${order.quantity})' ,
                   style: TextStyle(
                     fontSize: 12,
                     color: isDark ? Colors.white54 : Colors.grey.shade600,
@@ -472,7 +436,7 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen>
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      order['total'],
+                       '৳${order.totalAmount}' ,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
@@ -481,7 +445,7 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen>
                     ),
                     GestureDetector(
                       onTap: () {
-                        Get.snackbar('পুনরায় অর্ডার', '${order['items']} পুনরায় অর্ডার করুন');
+                        Get.snackbar('পুনরায় অর্ডার', '${ '${order.productName} (${order.quantity})' } পুনরায় অর্ডার করুন');
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(
@@ -506,6 +470,67 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showRatingDialog(BuildContext context, OrderModel order) {
+    double currentRating = 5.0;
+    TextEditingController reviewController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: Text('Rate ' + order.productName),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(5, (index) {
+                    return IconButton(
+                      icon: Icon(
+                        index < currentRating ? Icons.star : Icons.star_border,
+                        color: Colors.amber,
+                        size: 36,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          currentRating = index + 1.0;
+                        });
+                      },
+                    );
+                  }),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: reviewController,
+                  decoration: const InputDecoration(
+                    hintText: 'Write a review (optional)',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 3,
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  await OrderService().updateOrderRating(order.id, currentRating, reviewController.text);
+                  Navigator.pop(context);
+                  Get.snackbar('Success', 'Thank you for your feedback!');
+                },
+                child: const Text('Submit'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

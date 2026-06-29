@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:agrolinkbd/core/providers/user_provider.dart';
+import 'package:agrolinkbd/core/models/user_model.dart';
 import 'bazaar_products.dart';
 import 'bazaar_marketplace.dart';
 import 'add_product_screen.dart';
@@ -81,6 +82,9 @@ class _BazaarHomeState extends State<BazaarHome> {
 
   @override
   Widget build(BuildContext context) {
+    final userProvider = Provider.of<UserProvider>(context);
+    final isBuyer = userProvider.currentUser?.userType == UserType.buyer;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA), // Light theme background
       appBar: AppBar(
@@ -127,62 +131,58 @@ class _BazaarHomeState extends State<BazaarHome> {
                   const SizedBox(height: 20),
 
                   // Add Product Quick Button
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.amber.shade600,
-                          Colors.amber.shade400,
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.amber.withOpacity(0.3),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
+                  if (!isBuyer)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.amber.shade600,
+                            Colors.amber.shade400,
+                          ],
                         ),
-                      ],
-                    ),
-                    child: GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const AddProductScreen(),
-                          ),
-                        ).then((result) {
-                          if (result == true) {
-                            _loadProductCounts();
-                          }
-                        });
-                      },
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.add_circle_outline,
-                            color: Colors.black87,
-                            size: 22,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Add New Product',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
-                                ?.copyWith(
-                                  color: Colors.black87,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.amber.withOpacity(0.3),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
+                      child: GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AddProductScreen(),
+                            ),
+                          ).then((result) {
+                            if (result == true) {
+                              _loadProductCounts();
+                            }
+                          });
+                        },
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.add_circle, color: Colors.white, size: 28),
+                            SizedBox(width: 12),
+                            Text(
+                              'Add New Product',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 28),
+                  if (!isBuyer)
+                    const SizedBox(height: 28),
 
                   // Explore Marketplace Section
                   Text(

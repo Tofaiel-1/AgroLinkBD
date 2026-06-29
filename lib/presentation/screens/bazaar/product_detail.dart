@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:agrolinkbd/core/services/sslcommerz_service.dart';
+import 'package:agrolinkbd/presentation/widgets/quick_buy_bottom_sheet.dart';
 class ProductDetail extends StatefulWidget {
   final Map<String, dynamic> product;
 
@@ -359,14 +360,16 @@ class _ProductDetailState extends State<ProductDetail> {
               child: ElevatedButton(
                 onPressed: quantity > 0
                     ? () {
-                        SSLCommerzService.initiatePayment(
+                        showModalBottomSheet(
                           context: context,
-                          amount: double.tryParse(price) ?? 0.0,
-                          productName: widget.product['name'] ?? 'Unknown',
-                          customerName: "Buyer User",
-                          customerEmail: "buyer@example.com",
-                          customerPhone: "01700000000",
-                          customerAddress: "Dhaka, Bangladesh",
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (context) => Padding(
+                            padding: EdgeInsets.only(
+                              bottom: MediaQuery.of(context).viewInsets.bottom,
+                            ),
+                            child: QuickBuyBottomSheet(product: widget.product),
+                          ),
                         );
                       }
                     : null,

@@ -19,6 +19,7 @@ class _BrowseListingsScreenState extends State<BrowseListingsScreen> {
       'quantity': '১০০ কেজি',
       'rating': '4.8',
       'location': 'জয়পুরহাট',
+      'image': 'https://images.unsplash.com/photo-1561136594-7f68413baa99?q=80&w=400&auto=format&fit=crop',
     },
     {
       'id': 2,
@@ -28,6 +29,7 @@ class _BrowseListingsScreenState extends State<BrowseListingsScreen> {
       'quantity': '৫০ কেজি',
       'rating': '4.6',
       'location': 'রাজশাহী',
+      'image': 'https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?q=80&w=400&auto=format&fit=crop',
     },
   ];
 
@@ -70,11 +72,28 @@ class _BrowseListingsScreenState extends State<BrowseListingsScreen> {
                         bottomLeft: Radius.circular(12),
                       ),
                     ),
-                    child: const Icon(
-                      Icons.shopping_basket,
-                      color: Colors.blue,
-                      size: 40,
-                    ),
+                    child: listing['image'] != null
+                        ? ClipRRect(
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(12),
+                              bottomLeft: Radius.circular(12),
+                            ),
+                            child: Image.network(
+                              listing['image'] as String,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  const Icon(
+                                Icons.shopping_basket,
+                                color: Colors.blue,
+                                size: 40,
+                              ),
+                            ),
+                          )
+                        : const Icon(
+                            Icons.shopping_basket,
+                            color: Colors.blue,
+                            size: 40,
+                          ),
                   ),
                   const SizedBox(width: 12),
                   // Product Details
