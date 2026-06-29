@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
-
+import 'package:agrolinkbd/core/services/sslcommerz_service.dart';
 /// Product Detail Screen - View product details and place order
 class ProductDetailScreen extends StatefulWidget {
   const ProductDetailScreen({super.key});
@@ -217,29 +217,60 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Add to Cart Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                      ),
-                      onPressed: () {
-                        Get.snackbar(
-                          'কার্টে যোগ করা হয়েছে',
-                          '$_quantity কেজি টমেটো যোগ করা হয়েছে',
-                        );
-                      },
-                      child: Text(
-                        'কার্টে যোগ করুন',
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                  // Buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Colors.blue),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          onPressed: () {
+                            Get.snackbar(
+                              'কার্টে যোগ করা হয়েছে',
+                              '$_quantity কেজি টমেটো যোগ করা হয়েছে',
+                            );
+                          },
+                          child: Text(
+                            'কার্টে যোগ করুন',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.blue,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          onPressed: () {
+                            SSLCommerzService.initiatePayment(
+                              context: context,
+                              amount: 45.0 * _quantity,
+                              productName: 'টাটকা টমেটো',
+                              customerName: "Buyer User",
+                              customerEmail: "buyer@example.com",
+                              customerPhone: "01700000000",
+                              customerAddress: "Dhaka, Bangladesh",
+                            );
+                          },
+                          child: Text(
+                            'অর্ডার করুন',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

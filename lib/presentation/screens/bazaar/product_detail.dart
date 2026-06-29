@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-
+import 'package:agrolinkbd/core/services/sslcommerz_service.dart';
 class ProductDetail extends StatefulWidget {
   final Map<String, dynamic> product;
 
@@ -329,26 +329,55 @@ class _ProductDetailState extends State<ProductDetail> {
       ),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(16),
-        child: ElevatedButton.icon(
-          onPressed: quantity > 0
-              ? () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Contact feature coming soon!'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                }
-              : null,
-          icon: const Icon(Icons.phone),
-          label: const Text('Contact Seller'),
-          style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            backgroundColor: quantity > 0
-                ? Theme.of(context).primaryColor
-                : Colors.grey.withOpacity(0.3),
-            disabledBackgroundColor: Colors.grey.withOpacity(0.2),
-          ),
+        child: Row(
+          children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: quantity > 0
+                    ? () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Contact feature coming soon!'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      }
+                    : null,
+                icon: const Icon(Icons.phone),
+                label: const Text('Contact Seller'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  backgroundColor: quantity > 0
+                      ? Theme.of(context).primaryColor
+                      : Colors.grey.withOpacity(0.3),
+                  disabledBackgroundColor: Colors.grey.withOpacity(0.2),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: quantity > 0
+                    ? () {
+                        SSLCommerzService.initiatePayment(
+                          context: context,
+                          amount: double.tryParse(price) ?? 0.0,
+                          productName: widget.product['name'] ?? 'Unknown',
+                          customerName: "Buyer User",
+                          customerEmail: "buyer@example.com",
+                          customerPhone: "01700000000",
+                          customerAddress: "Dhaka, Bangladesh",
+                        );
+                      }
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  backgroundColor: const Color(0xFF1976D2),
+                ),
+                child: const Text('অর্ডার করুন', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
         ),
       ),
     );

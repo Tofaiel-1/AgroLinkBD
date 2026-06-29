@@ -271,15 +271,15 @@ class _BazaarMarketplaceState extends State<BazaarMarketplace> {
       final name = product['name']?.toString().toLowerCase() ?? '';
 
       if (name.contains('chili') || name.contains('মরিচ')) {
-        imageUrl = 'https://images.unsplash.com/photo-1588015408985-780c18d18400?q=80&w=400&auto=format&fit=crop';
+        imageUrl = 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782584281/Screenshot_2026-06-28_001608_krqrup.png';
       } else if (name.contains('mango') || name.contains('আম')) {
-        imageUrl = 'https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?q=80&w=400&auto=format&fit=crop';
+        imageUrl = 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782583216/image_sxwwpa.png';
       } else if (name.contains('rice') || name.contains('ধান') || name.contains('চাল')) {
-        imageUrl = 'https://images.unsplash.com/photo-1586201375761-83865001e8ac?q=80&w=400&auto=format&fit=crop';
+        imageUrl = 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782584453/Screenshot_2026-06-28_002037_e5q6ll.png';
       } else if (name.contains('onion') || name.contains('পেঁয়াজ')) {
         imageUrl = 'https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?q=80&w=400&auto=format&fit=crop';
       } else if (name.contains('potato') || name.contains('আলু')) {
-        imageUrl = 'https://images.unsplash.com/photo-1518977673343-a4a0c9ebb0e5?q=80&w=400&auto=format&fit=crop';
+        imageUrl = 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782584736/Screenshot_2026-06-28_002524_ziwqmo.png';
       } else if (name.contains('tomato') || name.contains('টমেটো')) {
         imageUrl = 'https://images.unsplash.com/photo-1561136594-7f68413baa99?q=80&w=400&auto=format&fit=crop';
       } else if (cat == 'vegetables') {

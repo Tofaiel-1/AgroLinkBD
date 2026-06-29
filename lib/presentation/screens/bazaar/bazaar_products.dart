@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:agrolinkbd/core/services/sslcommerz_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:agrolinkbd/core/providers/user_provider.dart';
@@ -595,28 +597,62 @@ class _BazaarProductsState extends State<BazaarProducts> {
                                             ],
                                           ),
                                         ),
-                                        // Add to Cart Button
-                                        ElevatedButton.icon(
-                                          onPressed: () {
-                                            // Handle add to cart
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(content: Text('Added $selectedQuantity $name to cart')),
-                                            );
-                                          },
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.orange.shade600,
-                                            foregroundColor: Colors.white,
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(30),
-                                            ),
-                                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                                            elevation: 5,
-                                            shadowColor: Colors.orange.withOpacity(0.5),
-                                          ),
-                                          icon: const Icon(Icons.shopping_cart, size: 18),
-                                          label: const Text(
-                                            'Add to Cart',
-                                            style: TextStyle(fontWeight: FontWeight.bold),
+                                        // Buttons Area
+                                        Expanded(
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.end,
+                                            children: [
+                                              ElevatedButton.icon(
+                                                onPressed: () {
+                                                  // Handle add to cart
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    SnackBar(content: Text('Added $selectedQuantity $name to cart')),
+                                                  );
+                                                },
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: Colors.orange.shade600,
+                                                  foregroundColor: Colors.white,
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(30),
+                                                  ),
+                                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                                                  elevation: 5,
+                                                  shadowColor: Colors.orange.withOpacity(0.5),
+                                                ),
+                                                icon: const Icon(Icons.shopping_cart, size: 16),
+                                                label: const Text(
+                                                  'Add',
+                                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              ElevatedButton(
+                                                onPressed: () {
+                                                  SSLCommerzService.initiatePayment(
+                                                    context: context,
+                                                    amount: double.tryParse(price) ?? 0.0 * selectedQuantity,
+                                                    productName: name,
+                                                    customerName: "Buyer User",
+                                                    customerEmail: "buyer@example.com",
+                                                    customerPhone: "01700000000",
+                                                    customerAddress: "Dhaka, Bangladesh",
+                                                  );
+                                                },
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: const Color(0xFF1976D2),
+                                                  foregroundColor: Colors.white,
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(30),
+                                                  ),
+                                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                                                  elevation: 5,
+                                                ),
+                                                child: const Text(
+                                                  'Order',
+                                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
                                       ],
