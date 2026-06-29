@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 // import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 // import 'package:firebase_analytics/firebase_analytics.dart';
@@ -16,6 +17,7 @@ import 'package:agrolinkbd/presentation/buyer/screens/buyer_orders_screen.dart';
 import 'package:agrolinkbd/presentation/buyer/screens/wishlist_screen.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/location_service.dart';
+import 'core/services/app_lifecycle_tracker.dart';
 import 'presentation/screens/app_router.dart';
 import 'presentation/screens/auth/auth_routing_controller.dart';
 import 'presentation/screens/admin/admin_login_screen.dart';
@@ -29,11 +31,21 @@ import 'core/providers/machinery_provider.dart';
 import 'core/providers/transport_provider.dart';
 import 'core/providers/cart_provider.dart';
 import 'core/providers/role_content_provider.dart';
+import 'package:agrolinkbd/presentation/screens/company/providers/company_provider.dart';
 import 'core/config/firebase_options.dart';
 import 'ultimate_automatic_setup.dart';
 
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  try {
+    await dotenv.load(fileName: ".env");
+    debugPrint('✅ dotenv loaded successfully');
+  } catch (e) {
+    debugPrint('❌ Failed to load .env file: $e');
+  }
 
   // Initialize Firebase with proper options
   try {
@@ -53,8 +65,6 @@ void main() async {
     await FirebaseFirestore.instance.enableNetwork();
     debugPrint('✅ Firestore network enabled');
 
-    // Initialize admin on first run
-    await _initializeAdminIfNeeded();
   } catch (e) {
     debugPrint('❌❌ Firebase initialization ERROR: $e');
     debugPrint('🔧 Ensure you have:');
@@ -103,8 +113,10 @@ class AgroLinkBDApp extends StatelessWidget {
           ChangeNotifierProvider(create: (_) => TransportProvider()),
           ChangeNotifierProvider(create: (_) => CartProvider()),
           ChangeNotifierProvider(create: (_) => RoleContentProvider()),
+          ChangeNotifierProvider(create: (_) => CompanyProvider()),
         ],
-        child: GetMaterialApp(
+        child: AppLifecycleTracker(
+          child: GetMaterialApp(
           title: 'AgroLinkBD - কৃষি বাজার',
           debugShowCheckedModeBanner: false,
           theme: AppTheme.lightTheme,
@@ -174,6 +186,7 @@ class AgroLinkBDApp extends StatelessWidget {
             '/buyer/orders': (context) => const BuyerOrdersScreen(),
             '/buyer/wishlist': (context) => const WishlistScreen(),
           },
+        ),
         ),
       ),
     );
