@@ -1,4 +1,4 @@
-﻿import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:agrolinkbd/core/models/order_model.dart';
 import 'package:flutter/foundation.dart';
 
@@ -22,12 +22,13 @@ class OrderService {
     return _firestore
         .collection(_collectionName)
         .where('buyerId', isEqualTo: buyerId)
-        .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) {
+      final list = snapshot.docs.map((doc) {
         return OrderModel.fromMap(doc.data(), doc.id);
       }).toList();
+      list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return list;
     });
   }
 
@@ -36,12 +37,13 @@ class OrderService {
     return _firestore
         .collection(_collectionName)
         .where('farmerId', isEqualTo: farmerId)
-        .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) {
+      final list = snapshot.docs.map((doc) {
         return OrderModel.fromMap(doc.data(), doc.id);
       }).toList();
+      list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return list;
     });
   }
 

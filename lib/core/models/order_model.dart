@@ -1,4 +1,4 @@
-﻿import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class OrderModel {
   final String id;
@@ -7,7 +7,7 @@ class OrderModel {
   final String farmerName;
   final String productName;
   final String productImageUrl;
-  final int quantity;
+  final double quantity;
   final double totalAmount;
   final String status;
   final int statusStep; // 1: Pending, 2: Processing, 3: Shipped, 4: Delivered
@@ -45,7 +45,7 @@ class OrderModel {
       farmerName: data['farmerName'] ?? 'AgroLink Farmer',
       productName: data['productName'] ?? '',
       productImageUrl: data['productImageUrl'] ?? '',
-      quantity: data['quantity'] ?? 1,
+      quantity: (data['quantity'] as num?)?.toDouble() ?? 1.0,
       totalAmount: (data['totalAmount'] as num?)?.toDouble() ?? 0.0,
       status: data['status'] ?? 'pending',
       statusStep: data['statusStep'] ?? 1,

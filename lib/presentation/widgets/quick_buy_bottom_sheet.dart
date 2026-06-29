@@ -17,7 +17,34 @@ class QuickBuyBottomSheet extends StatefulWidget {
 }
 
 class _QuickBuyBottomSheetState extends State<QuickBuyBottomSheet> {
-  int _quantity = 1;
+  double _quantity = 1.0;
+  late TextEditingController _quantityController;
+  bool _allowFraction = true;
+
+  @override
+  void initState() {
+    super.initState();
+    final cat = widget.product['category'] ?? '';
+    final unit = widget.product['unit'] ?? '';
+    if (cat == 'meat' || cat == 'fish' || unit == 'পিছ' || unit == 'ডজন') {
+      _allowFraction = false;
+    }
+    _quantityController = TextEditingController(text: _allowFraction ? '1.0' : '1');
+    _quantityController.addListener(() {
+      final val = double.tryParse(_quantityController.text);
+      if (val != null && val > 0) {
+        setState(() {
+          _quantity = val;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _quantityController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -96,15 +123,33 @@ class _QuickBuyBottomSheetState extends State<QuickBuyBottomSheet> {
                 child: Row(
                   children: [
                     IconButton(
-                      onPressed: _quantity > 1 ? () => setState(() => _quantity--) : null,
+                      onPressed: () {
+                        double step = _allowFraction ? 0.5 : 1.0;
+                        if (_quantity > step) {
+                          _quantityController.text = (_quantity - step).toStringAsFixed(_allowFraction ? 1 : 0);
+                        }
+                      },
                       icon: const Icon(Icons.remove),
                     ),
-                    Text(
-                      '$_quantity',
-                      style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.w600, fontSize: 16),
+                    SizedBox(
+                      width: 60,
+                      child: TextField(
+                        controller: _quantityController,
+                        textAlign: TextAlign.center,
+                        keyboardType: TextInputType.numberWithOptions(decimal: _allowFraction),
+                        style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.w600, fontSize: 16),
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ),
                     ),
                     IconButton(
-                      onPressed: () => setState(() => _quantity++),
+                      onPressed: () {
+                        double step = _allowFraction ? 0.5 : 1.0;
+                        _quantityController.text = (_quantity + step).toStringAsFixed(_allowFraction ? 1 : 0);
+                      },
                       icon: const Icon(Icons.add),
                     ),
                   ],

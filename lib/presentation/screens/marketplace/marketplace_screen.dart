@@ -279,14 +279,18 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 
                 for(var doc in docs) {
                   var data = doc.data() as Map<String, dynamic>;
+                  final title = data['title']?.toString().trim() ?? '';
+                  if (title.isEmpty || title.toLowerCase() == 'unknown') {
+                    continue;
+                  }
                   allProducts.add({
                     'id': doc.id,
-                    'name': data['title'] ?? 'Unknown',
+                    'name': title,
                     'price': (data['price'] ?? 0).toDouble(),
                     'unit': data['unit'] ?? 'kg',
                     'farmer': 'AgroLink Farm',
                     'farmerId': data['userId'],
-                    'location': data['location'] ?? 'Unknown',
+                    'location': data['location'] ?? 'বাংলাদেশ',
                     'image': data['imageUrl'] ?? 'https://via.placeholder.com/150',
                     'rating': 4.5,
                     'category': data['category'] ?? 'other',
@@ -296,6 +300,54 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 }
 
                 allProducts.addAll([
+                  {
+                    'name': 'তাজা টমেটো (Premium)',
+                    'price': 120,
+                    'unit': 'কেজি',
+                    'farmer': 'করিম ফার্ম',
+                    'location': 'বগুড়া',
+                    'image': 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782757091/Tomato_hcjt7o.png',
+                    'rating': 4.8,
+                    'category': 'vegetables',
+                    'badge': 'Hot',
+                    'isVerified': true,
+                  },
+                  {
+                    'name': 'দেশি পেঁয়াজ (Organic)',
+                    'price': 40,
+                    'unit': 'কেজি',
+                    'farmer': 'রহিম এগ্রো',
+                    'location': 'পাবনা',
+                    'image': 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782757375/images_z5w9hg.jpg',
+                    'rating': 4.5,
+                    'category': 'vegetables',
+                    'badge': 'Sale',
+                    'isVerified': true,
+                  },
+                  {
+                    'name': 'মিনিকেট চাল (সুপার)',
+                    'price': 80,
+                    'unit': 'কেজি',
+                    'farmer': 'কৃষক সমবায়',
+                    'location': 'দিনাজপুর',
+                    'image': 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782584453/Screenshot_2026-06-28_002037_e5q6ll.png',
+                    'rating': 4.9,
+                    'category': 'grains',
+                    'badge': null,
+                    'isVerified': true,
+                  },
+                  {
+                    'name': 'তাজা আলু (রংপুর)',
+                    'price': 20,
+                    'unit': 'কেজি',
+                    'farmer': 'রংপুর ফার্ম',
+                    'location': 'রংপুর',
+                    'image': 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782584736/Screenshot_2026-06-28_002524_ziwqmo.png',
+                    'rating': 4.3,
+                    'category': 'vegetables',
+                    'badge': null,
+                    'isVerified': false,
+                  },
                   {
                     'name': 'আম (হিমসাগর)',
                     'price': 120,
@@ -319,6 +371,102 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                     'category': 'fish',
                     'badge': 'Fresh',
                     'isVerified': true,
+                  },
+                  {
+                    'name': 'গরুর মাংস (দেশি)',
+                    'price': 650,
+                    'unit': 'কেজি',
+                    'farmer': 'সততা এগ্রো',
+                    'location': 'ঢাকা',
+                    'image': 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782756123/images_wrgten.webp',
+                    'rating': 4.8,
+                    'category': 'meat',
+                    'badge': null,
+                    'isVerified': true,
+                  },
+                  {
+                    'name': 'ফার্মের ডিম',
+                    'price': 100,
+                    'unit': 'ডজন',
+                    'farmer': 'পোলট্রি ফার্ম',
+                    'location': 'গাজীপুর',
+                    'image': 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782756249/download_ezwxls.jpg',
+                    'rating': 4.6,
+                    'category': 'dairy',
+                    'badge': null,
+                    'isVerified': true,
+                  },
+                                    {
+                    'name': 'খাঁটি মধু (সুন্দরবন)',
+                    'price': 1200,
+                    'unit': 'কেজি',
+                    'farmer': 'মৌয়াল সমবায়',
+                    'location': 'খুলনা',
+                    'image': 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782756674/images_fhqvvm.jpg',
+                    'rating': 4.9,
+                    'category': 'spices',
+                    'badge': 'Premium',
+                    'isVerified': true,
+                  },
+                  {
+                    'name': 'টাটকা বেগুন',
+                    'price': 50,
+                    'unit': 'কেজি',
+                    'farmer': 'সবুজ এগ্রো',
+                    'location': 'নরসিংদী',
+                    'image': 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782757463/images_vqbixx.jpg',
+                    'rating': 4.2,
+                    'category': 'vegetables',
+                    'badge': 'Fresh',
+                    'isVerified': true,
+                  },
+                  {
+                    'name': 'সরিষার তেল (ঘানি ভাঙা)',
+                    'price': 350,
+                    'unit': 'লিটার',
+                    'farmer': 'তৈল কল',
+                    'location': 'জামালপুর',
+                    'image': 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782757514/images_cnlkya.jpg',
+                    'rating': 4.9,
+                    'category': 'spices',
+                    'badge': 'Organic',
+                    'isVerified': true,
+                  },
+                  {
+                    'name': 'দেশি মুরগি',
+                    'price': 600,
+                    'unit': 'পিছ',
+                    'farmer': 'গ্রামের খামার',
+                    'location': 'কুমিল্লা',
+                    'image': 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782757555/images_xgtcyf.jpg',
+                    'rating': 4.7,
+                    'category': 'meat',
+                    'badge': null,
+                    'isVerified': true,
+                  },
+                  {
+                    'name': 'তরমুজ (বরিশাল)',
+                    'price': 200,
+                    'unit': 'পিছ',
+                    'farmer': 'বরিশাল ফ্রুটস',
+                    'location': 'বরিশাল',
+                    'image': 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782757612/images_elzmmv.jpg',
+                    'rating': 4.8,
+                    'category': 'fruits',
+                    'badge': 'Summer Special',
+                    'isVerified': true,
+                  },
+                  {
+                    'name': 'ধনে পাতা (দেশি)',
+                    'price': 20,
+                    'unit': 'আঁটি',
+                    'farmer': 'কৃষক বাজার',
+                    'location': 'সাভার',
+                    'image': 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782757651/images_gnubxi.jpg',
+                    'rating': 4.5,
+                    'category': 'vegetables',
+                    'badge': null,
+                    'isVerified': false,
                   },
                 ]);
 
@@ -574,7 +722,34 @@ class QuickBuyBottomSheet extends StatefulWidget {
 }
 
 class _QuickBuyBottomSheetState extends State<QuickBuyBottomSheet> {
-  int _quantity = 1;
+  double _quantity = 1.0;
+  late TextEditingController _quantityController;
+  bool _allowFraction = true;
+
+  @override
+  void initState() {
+    super.initState();
+    final cat = widget.product['category'] ?? '';
+    final unit = widget.product['unit'] ?? '';
+    if (cat == 'meat' || cat == 'fish' || unit == 'পিছ' || unit == 'ডজন') {
+      _allowFraction = false;
+    }
+    _quantityController = TextEditingController(text: _allowFraction ? '1.0' : '1');
+    _quantityController.addListener(() {
+      final val = double.tryParse(_quantityController.text);
+      if (val != null && val > 0) {
+        setState(() {
+          _quantity = val;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _quantityController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -617,7 +792,7 @@ class _QuickBuyBottomSheetState extends State<QuickBuyBottomSheet> {
                       style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.w600, fontSize: 16),
                     ),
                     Text(
-                      '৳ / ',
+                      '৳$price / ${widget.product['unit']}',
                       style: GoogleFonts.hindSiliguri(color: Colors.green, fontWeight: FontWeight.w600),
                     ),
                   ],
@@ -641,15 +816,33 @@ class _QuickBuyBottomSheetState extends State<QuickBuyBottomSheet> {
                 child: Row(
                   children: [
                     IconButton(
-                      onPressed: _quantity > 1 ? () => setState(() => _quantity -= 1) : null,
+                      onPressed: () {
+                        double step = _allowFraction ? 0.5 : 1.0;
+                        if (_quantity > step) {
+                          _quantityController.text = (_quantity - step).toStringAsFixed(_allowFraction ? 1 : 0);
+                        }
+                      },
                       icon: const Icon(Icons.remove),
                     ),
-                    Text(
-                      '',
-                      style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.w600, fontSize: 16),
+                    SizedBox(
+                      width: 60,
+                      child: TextField(
+                        controller: _quantityController,
+                        textAlign: TextAlign.center,
+                        keyboardType: TextInputType.numberWithOptions(decimal: _allowFraction),
+                        style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.w600, fontSize: 16),
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ),
                     ),
                     IconButton(
-                      onPressed: () => setState(() => _quantity += 1),
+                      onPressed: () {
+                        double step = _allowFraction ? 0.5 : 1.0;
+                        _quantityController.text = (_quantity + step).toStringAsFixed(_allowFraction ? 1 : 0);
+                      },
                       icon: const Icon(Icons.add),
                     ),
                   ],
@@ -666,7 +859,7 @@ class _QuickBuyBottomSheetState extends State<QuickBuyBottomSheet> {
                 style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.w600, fontSize: 16),
               ),
               Text(
-                '৳',
+                '৳$totalAmount',
                 style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.green),
               ),
             ],
