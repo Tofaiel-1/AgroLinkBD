@@ -1,4 +1,6 @@
 import 'dart:ui';
+import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:get/get.dart';
@@ -153,6 +155,10 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
   int _totalTransactions = 0;
   List<Map<String, dynamic>> _recentActivities = [];
 
+  // Dynamic System Status
+  int _systemStatusValue = 82;
+  Timer? _statusTimer;
+
   // Hover States for Glossy Nav
   int _hoveredMenuIndex = -1;
   int _selectedMenuIndex = 0;
@@ -166,6 +172,27 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
   void initState() {
     super.initState();
     _fetchRealData();
+    
+    // Simulate real machine system status fluctuation
+    _statusTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      if (mounted) {
+        setState(() {
+          final random = Random();
+          // Fluctuate by -2 to +3
+          int change = random.nextInt(6) - 2; 
+          _systemStatusValue += change;
+          
+          if (_systemStatusValue > 90) _systemStatusValue = 90;
+          if (_systemStatusValue < 70) _systemStatusValue = 70;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _statusTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _fetchRealData() async {
@@ -750,7 +777,7 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
       {'title': 'Registered Users', 'value': _totalUsers, 'trend': 'Verified', 'icon': Icons.people_outline_rounded, 'color': const Color(0xFF3B82F6)},
       {'title': 'Active Products', 'value': _totalProducts, 'trend': 'Marketplace', 'icon': Icons.inventory_2_outlined, 'color': const Color(0xFF10B981)},
       {'title': 'Total Transactions', 'value': _totalTransactions, 'trend': 'Recorded', 'icon': Icons.receipt_long_outlined, 'color': const Color(0xFFF59E0B)},
-      {'title': 'System Status', 'value': 100, 'isPercentage': true, 'trend': 'Optimal', 'icon': Icons.monitor_heart_outlined, 'color': const Color(0xFF8B5CF6)},
+      {'title': 'System Status', 'value': _systemStatusValue, 'isPercentage': true, 'trend': 'Optimal', 'icon': Icons.monitor_heart_outlined, 'color': const Color(0xFF8B5CF6)},
     ];
 
     return GridView.count(
