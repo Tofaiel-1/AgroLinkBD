@@ -273,6 +273,14 @@ class _RoleBasedNavigationContainerState
           const CompanyOrdersScreen(),
           const CompanyContractsScreen(),
         ];
+      case UserType.seller:
+        return [
+          const CompanyDashboard(),
+          const TeamManagementScreen(),
+          const CompanyAnalyticsScreen(),
+          const CompanyOrdersScreen(),
+          const CompanyContractsScreen(),
+        ];
     }
   }
 

@@ -29,6 +29,8 @@ class RouteGuard {
         return '/service-provider/dashboard';
       case UserType.company:
         return '/company/dashboard';
+      case UserType.seller:
+        return '/company/dashboard';
     }
   }
 
@@ -90,6 +92,15 @@ class RouteGuard {
           '/service-provider/availability',
         };
       case UserType.company:
+        return {
+          '/company/dashboard',
+          '/company/catalog',
+          '/company/sales',
+          '/company/orders',
+          '/company/customers',
+          '/company/analytics',
+        };
+      case UserType.seller:
         return {
           '/company/dashboard',
           '/company/catalog',

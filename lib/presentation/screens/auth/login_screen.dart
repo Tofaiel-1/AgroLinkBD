@@ -157,6 +157,9 @@ class _LoginScreenState extends State<LoginScreen> {
           case UserType.company:
             userRole = UserRole.expert;
             break;
+          case UserType.seller:
+            userRole = UserRole.expert;
+            break;
           default:
             userRole = UserRole.farmer;
         }

@@ -1046,6 +1046,8 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
       actions.add({'icon': Icons.cleaning_services_rounded, 'label': 'Clear Admins', 'color': const Color(0xFFEF4444), 'route': 'clear_admins'});
     }
 
+    actions.sort((a, b) => (a['label'] as String).toLowerCase().compareTo((b['label'] as String).toLowerCase()));
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

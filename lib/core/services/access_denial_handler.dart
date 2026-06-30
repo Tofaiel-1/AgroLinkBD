@@ -125,6 +125,8 @@ class AccessDenialHandler {
         return 'Service Provider';
       case UserType.company:
         return 'Company';
+      case UserType.seller:
+        return 'Seller';
     }
   }
 

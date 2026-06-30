@@ -21,6 +21,8 @@ class ScreenAccessControl {
         return _getServiceProviderScreens();
       case UserType.company:
         return _getCompanyScreens();
+      case UserType.seller:
+        return _getCompanyScreens();
     }
   }
 
@@ -124,6 +126,8 @@ class ScreenAccessControl {
       case UserType.serviceProvider:
         return '/service/manage-services';
       case UserType.company:
+        return '/company/catalog';
+      case UserType.seller:
         return '/company/catalog';
     }
   }

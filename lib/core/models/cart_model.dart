@@ -11,7 +11,7 @@ class CartItem {
   final String title;
   final double price;
   final String unit;
-  int quantity;
+  double quantity;
   final String imageUrl;
   
   // Universal attributes
@@ -61,7 +61,7 @@ class CartItem {
       title: json['title'] ?? '',
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
       unit: json['unit'] ?? '',
-      quantity: json['quantity'] ?? 1,
+      quantity: (json['quantity'] as num?)?.toDouble() ?? 1.0,
       imageUrl: json['imageUrl'] ?? '',
       itemType: json['itemType'] != null 
           ? CartItemType.values.firstWhere((e) => e.toString() == json['itemType'], orElse: () => CartItemType.product)
@@ -78,7 +78,7 @@ class CartItem {
     String? title,
     double? price,
     String? unit,
-    int? quantity,
+    double? quantity,
     String? imageUrl,
     CartItemType? itemType,
     String? sellerId,

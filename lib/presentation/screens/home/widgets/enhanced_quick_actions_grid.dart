@@ -6,6 +6,7 @@ import 'package:agrolinkbd/presentation/screens/auction/auction_screen.dart';
 import 'package:agrolinkbd/presentation/screens/investment/investment_screen.dart';
 import 'package:agrolinkbd/presentation/screens/marketplace/marketplace_screen.dart';
 import 'package:agrolinkbd/presentation/screens/machinery/machinery_rental_screen.dart';
+import 'package:agrolinkbd/presentation/screens/sokol_card/card_preview_screen.dart' as agrolinkbd;
 import 'enhanced_quick_action_card.dart';
 
 class EnhancedQuickActionsGrid extends StatelessWidget {
@@ -84,6 +85,13 @@ class EnhancedQuickActionsGrid extends StatelessWidget {
 
   List<Map<String, dynamic>> _getActions() {
     return [
+      {
+        'icon': Icons.qr_code,
+        'label': 'আমার কার্ড',
+        'subtitle': 'ডিজিটাল কার্ড',
+        'color': const Color(0xFF2E7D32),
+        'onTap': () => Get.to(() => const agrolinkbd.CardPreviewScreen()),
+      },
       {
         'icon': Icons.agriculture,
         'label': 'যন্ত্রপাতি',

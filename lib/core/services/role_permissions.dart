@@ -44,6 +44,8 @@ class RolePermissions {
         return _getServiceProviderPermissions();
       case UserType.company:
         return _getCompanyPermissions();
+      case UserType.seller:
+        return _getCompanyPermissions();
     }
   }
 

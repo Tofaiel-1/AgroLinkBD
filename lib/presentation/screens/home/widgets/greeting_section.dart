@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:agrolinkbd/core/models/user_model.dart';
+import 'package:agrolinkbd/presentation/screens/sokol_card/card_preview_screen.dart' as agrolinkbd;
 
 class GreetingSection extends StatefulWidget {
   final UserModel? user;
@@ -62,52 +63,71 @@ class _GreetingSectionState extends State<GreetingSection>
             ],
           ),
           padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
-          child: Column(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Time-based greeting
-              Text(
-                _getGreeting(),
-                style: GoogleFonts.poppins(
-                  color: Colors.white70,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              const SizedBox(height: 8),
-              // User name
-              Text(
-                '${widget.user?.name ?? 'User'} 👋',
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.3,
-                ),
-              ),
-              const SizedBox(height: 12),
-              // User type with icon
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.3),
-                    width: 1,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Time-based greeting
+                  Text(
+                    _getGreeting(),
+                    style: GoogleFonts.poppins(
+                      color: Colors.white70,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.5,
+                    ),
                   ),
-                ),
-                child: Text(
-                  _getUserTypeText(widget.user?.userType),
-                  style: GoogleFonts.roboto(
-                    color: Colors.white.withValues(alpha: 0.9),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.2,
+                  const SizedBox(height: 8),
+                  // User name
+                  Text(
+                    '${widget.user?.name ?? 'User'} 👋',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.3,
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 12),
+                  // User type with icon
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      _getUserTypeText(widget.user?.userType),
+                      style: GoogleFonts.roboto(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              IconButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const agrolinkbd.CardPreviewScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.qr_code, size: 32),
+                color: Colors.white,
+                tooltip: 'My Card',
               ),
             ],
           ),
@@ -138,6 +158,8 @@ class _GreetingSectionState extends State<GreetingSection>
       case UserType.serviceProvider:
         return '🔧 Service Provider';
       case UserType.company:
+        return '🏢 Company';
+      case UserType.seller:
         return '🏢 Company';
       default:
         return 'User';

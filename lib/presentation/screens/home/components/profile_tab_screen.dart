@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:agrolinkbd/core/providers/user_provider.dart';
+import 'package:agrolinkbd/presentation/screens/sokol_card/card_preview_screen.dart' as agrolinkbd;
 
 class ProfileTabScreen extends StatelessWidget {
   const ProfileTabScreen({super.key});
@@ -176,6 +177,20 @@ class ProfileTabScreen extends StatelessWidget {
                             'প্রোফাইল সম্পাদনা শুরু হচ্ছে...',
                             backgroundColor: const Color(0xFF2E7D32),
                             colorText: Colors.white,
+                          );
+                        },
+                        isMobile: isMobile,
+                      ),
+                      _buildMenuItem(
+                        icon: Icons.qr_code,
+                        title: 'আমার কার্ড',
+                        subtitle: 'ডিজিটাল স্মার্ট কার্ড',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const agrolinkbd.CardPreviewScreen(),
+                            ),
                           );
                         },
                         isMobile: isMobile,

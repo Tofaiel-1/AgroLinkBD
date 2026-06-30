@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
+import 'package:provider/provider.dart';
 import 'package:agrolinkbd/core/models/order_model.dart';
+import 'package:agrolinkbd/core/models/cart_model.dart';
+import 'package:agrolinkbd/core/providers/cart_provider.dart';
 import 'package:agrolinkbd/core/services/order_service.dart';
 import 'package:agrolinkbd/core/services/sslcommerz_service.dart';
 import 'package:agrolinkbd/presentation/screens/buyer/buyer_orders_screen.dart';
@@ -172,58 +175,101 @@ class _QuickBuyBottomSheetState extends State<QuickBuyBottomSheet> {
             ],
           ),
           const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1976D2),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 48,
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFF1976D2)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: () {
+                      final cartProvider = Provider.of<CartProvider>(context, listen: false);
+                      cartProvider.addToCart(CartItem(
+                        id: widget.product['id']?.toString() ?? widget.product['name']?.toString() ?? DateTime.now().toString(),
+                        title: widget.product['name'] ?? 'Product',
+                        price: price,
+                        unit: widget.product['unit'] ?? 'কেজি',
+                        quantity: _quantity,
+                        imageUrl: imageUrl,
+                        itemType: CartItemType.product,
+                        sellerId: widget.product['farmerId'] ?? widget.product['userId'] ?? 'unknown_farmer',
+                        sellerName: widget.product['farmer'] ?? widget.product['seller'] ?? 'AgroLink Farm',
+                        sellerRole: 'farmer',
+                      ));
+                      Navigator.pop(context);
+                      Get.snackbar(
+                        'কার্টে যোগ করা হয়েছে',
+                        '${widget.product['name']} কার্টে যোগ করা হয়েছে।',
+                        backgroundColor: Colors.green.shade100,
+                        colorText: Colors.green.shade900,
+                      );
+                    },
+                    child: Text(
+                      'কার্টে যোগ করুন',
+                      style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, color: const Color(0xFF1976D2), fontSize: 14),
+                    ),
+                  ),
+                ),
               ),
-              onPressed: () async {
-                final success = await SSLCommerzService.initiatePayment(
-                  context: context,
-                  amount: totalAmount,
-                  productName: widget.product['name'] ?? 'Product',
-                  customerName: "Buyer User",
-                  customerEmail: "buyer@example.com",
-                  customerPhone: "01700000000",
-                  customerAddress: "Dhaka, Bangladesh",
-                );
-
-                if (success) {
-                  final user = FirebaseAuth.instance.currentUser;
-                  if (user != null) {
-                    final newOrder = OrderModel(
-                      id: '',
-                      buyerId: user.uid,
-                      farmerId: widget.product['farmerId'] ?? widget.product['userId'] ?? 'unknown_farmer',
-                      farmerName: widget.product['farmer'] ?? widget.product['seller'] ?? 'AgroLink Farm',
-                      productName: widget.product['name'] ?? 'Product',
-                      productImageUrl: imageUrl,
-                      quantity: _quantity,
-                      totalAmount: totalAmount,
-                      status: 'pending',
-                      statusStep: 1,
-                      transportStatus: 'অর্ডার গৃহিত হয়েছে',
-                      paymentStatus: 'paid',
-                      createdAt: DateTime.now(),
-                      estimatedDeliveryDate: DateTime.now().add(const Duration(days: 3)),
-                    );
-
-                    final orderId = await OrderService().createOrder(newOrder);
-                    if (orderId != null) {
-                      Navigator.pop(context); // close bottom sheet
-                      Get.off(() => const BuyerOrdersScreen());
-                    }
-                  }
-                }
-              },
-              child: Text(
-                'পেমেন্ট করুন (SSLCommerz)',
-                style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 16),
+              const SizedBox(width: 12),
+              Expanded(
+                child: SizedBox(
+                  height: 48,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1976D2),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: () async {
+                      final success = await SSLCommerzService.initiatePayment(
+                        context: context,
+                        amount: totalAmount,
+                        productName: widget.product['name'] ?? 'Product',
+                        customerName: "Buyer User",
+                        customerEmail: "buyer@example.com",
+                        customerPhone: "01700000000",
+                        customerAddress: "Dhaka, Bangladesh",
+                      );
+      
+                      if (success) {
+                        final user = FirebaseAuth.instance.currentUser;
+                        if (user != null) {
+                          final newOrder = OrderModel(
+                            id: '',
+                            buyerId: user.uid,
+                            farmerId: widget.product['farmerId'] ?? widget.product['userId'] ?? 'unknown_farmer',
+                            farmerName: widget.product['farmer'] ?? widget.product['seller'] ?? 'AgroLink Farm',
+                            productName: widget.product['name'] ?? 'Product',
+                            productImageUrl: imageUrl,
+                            quantity: _quantity,
+                            totalAmount: totalAmount,
+                            status: 'pending',
+                            statusStep: 1,
+                            transportStatus: 'অর্ডার গৃহিত হয়েছে',
+                            paymentStatus: 'paid',
+                            createdAt: DateTime.now(),
+                            estimatedDeliveryDate: DateTime.now().add(const Duration(days: 3)),
+                          );
+      
+                          final orderId = await OrderService().createOrder(newOrder);
+                          if (orderId != null) {
+                            Navigator.pop(context); // close bottom sheet
+                            Get.off(() => const BuyerOrdersScreen());
+                          }
+                        }
+                      }
+                    },
+                    child: Text(
+                      'অর্ডার করুন',
+                      style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 14),
+                    ),
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
         ],
       ),

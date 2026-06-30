@@ -71,4 +71,18 @@ class OrderService {
       debugPrint('Error updating order rating: $e');
     }
   }
+
+  // Stream a single order by ID
+  Stream<OrderModel?> getOrderByIdStream(String orderId) {
+    return _firestore
+        .collection(_collectionName)
+        .doc(orderId)
+        .snapshots()
+        .map((doc) {
+      if (doc.exists && doc.data() != null) {
+        return OrderModel.fromMap(doc.data()!, doc.id);
+      }
+      return null;
+    });
+  }
 }

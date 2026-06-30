@@ -4,6 +4,7 @@ import 'package:agrolinkbd/core/services/order_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:math';
 import 'package:get/get.dart';
+import 'package:agrolinkbd/presentation/screens/buyer/order_details_screen.dart';
 
 /// Buyer Orders Screen — Tab-based order management
 class BuyerOrdersScreen extends StatefulWidget {
@@ -185,9 +186,11 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen>
     final statusStep = order.statusStep;
     final steps = ['গৃহীত', 'প্রস্তুতি', 'পাঠানো', 'ডেলিভার'];
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
+    return GestureDetector(
+      onTap: () => Get.to(() => OrderDetailsScreen(order: order)),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -372,13 +375,16 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen>
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildPastOrderCard(OrderModel order, bool isDark) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+    return GestureDetector(
+      onTap: () => Get.to(() => OrderDetailsScreen(order: order)),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -436,33 +442,59 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen>
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                       '৳${order.totalAmount}' ,
+                      '৳${order.totalAmount}',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                         color: Color(0xFF1976D2),
                       ),
                     ),
-                    GestureDetector(
-                      onTap: () {
-                        Get.snackbar('পুনরায় অর্ডার', '${ '${order.productName} (${order.quantity})' } পুনরায় অর্ডার করুন');
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1976D2).withOpacity(isDark ? 0.2 : 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Text(
-                          'পুনরায় অর্ডার',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF1976D2),
+                    Row(
+                      children: [
+                        if (order.status == 'delivered' && order.rating == null) ...[
+                          GestureDetector(
+                            onTap: () => _showRatingDialog(context, order),
+                            child: Container(
+                              margin: const EdgeInsets.only(right: 8),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.withOpacity(isDark ? 0.2 : 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Text(
+                                'রেটিং দিন',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.orange,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                        GestureDetector(
+                          onTap: () {
+                            Get.snackbar('পুনরায় অর্ডার', '${order.productName} (${order.quantity}) পুনরায় অর্ডার করুন');
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1976D2).withOpacity(isDark ? 0.2 : 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text(
+                              'পুনরায় অর্ডার',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF1976D2),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
                   ],
                 ),
@@ -471,8 +503,9 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen>
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   void _showRatingDialog(BuildContext context, OrderModel order) {
     double currentRating = 5.0;

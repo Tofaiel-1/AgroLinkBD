@@ -41,6 +41,8 @@ class RoleService {
         return _getServiceProviderFeatures();
       case UserType.company:
         return _getCompanyFeatures();
+      case UserType.seller:
+        return _getCompanyFeatures();
     }
   }
 
@@ -139,6 +141,22 @@ class RoleService {
           {'label': 'অর্ডার', 'labelBN': 'অর্ডার', 'icon': Icons.shopping_bag},
           {'label': 'চুক্তি', 'labelBN': 'চুক্তি', 'icon': Icons.assignment},
         ];
+      case UserType.seller:
+        return [
+          {
+            'label': 'ড্যাশবোর্ড',
+            'labelBN': 'ড্যাশবোর্ড',
+            'icon': Icons.dashboard
+          },
+          {'label': 'টিম', 'labelBN': 'টিম', 'icon': Icons.people},
+          {
+            'label': 'বিশ্লেষণ',
+            'labelBN': 'বিশ্লেষণ',
+            'icon': Icons.analytics
+          },
+          {'label': 'অর্ডার', 'labelBN': 'অর্ডার', 'icon': Icons.shopping_bag},
+          {'label': 'চুক্তি', 'labelBN': 'চুক্তি', 'icon': Icons.assignment},
+        ];
     }
   }
 
@@ -155,6 +173,8 @@ class RoleService {
         return 'Service Provider';
       case UserType.company:
         return 'Company';
+      case UserType.seller:
+        return 'Seller';
     }
   }
 
@@ -171,6 +191,8 @@ class RoleService {
         return 'সেবা প্রদানকারী';
       case UserType.company:
         return 'কোম্পানি';
+      case UserType.seller:
+        return 'বিক্রেতা';
     }
   }
 
@@ -186,6 +208,8 @@ class RoleService {
       case UserType.serviceProvider:
         return const Color(0xFF7B1FA2); // Purple
       case UserType.company:
+        return const Color(0xFF0D47A1); // Dark Blue
+      case UserType.seller:
         return const Color(0xFF0D47A1); // Dark Blue
     }
   }

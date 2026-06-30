@@ -35,10 +35,10 @@ class CartProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateQuantity(String id, int quantity) {
+  void updateQuantity(String id, double quantity) {
     final index = _cartItems.indexWhere((i) => i.id == id);
     if (index >= 0) {
-      if (quantity <= 0) {
+      if (quantity <= 0.0) {
         removeFromCart(id);
       } else {
         _cartItems[index] = _cartItems[index].copyWith(quantity: quantity);
@@ -53,11 +53,11 @@ class CartProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  int getQuantity(String id) {
+  double getQuantity(String id) {
     try {
       return _cartItems.firstWhere((i) => i.id == id).quantity;
     } catch (e) {
-      return 0;
+      return 0.0;
     }
   }
 

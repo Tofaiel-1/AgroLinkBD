@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -86,6 +87,73 @@ class AuthService {
       }
 
       throw _handleAuthException(e);
+    }
+  }
+
+  // Sign in with Google
+  Future<UserCredential?> signInWithGoogle() async {
+    try {
+      final GoogleSignIn googleSignIn = GoogleSignIn();
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+
+      if (googleUser == null) {
+        return null; // User canceled the sign-in
+      }
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final UserCredential userCredential = await _auth.signInWithCredential(credential);
+
+      // Log successful login
+      if (userCredential.user != null) {
+        final deviceInfo = await _getDeviceInfo();
+        await _auditService.logUserSessionEvent(
+          userId: userCredential.user!.uid,
+          userName: userCredential.user!.email ?? 'Google User',
+          action: 'login',
+          deviceInfo: deviceInfo,
+        );
+      }
+
+      return userCredential;
+    } on FirebaseAuthException catch (e) {
+      throw _handleAuthException(e);
+    } catch (e) {
+      throw Exception('Failed to sign in with Google: $e');
+    }
+  }
+
+  // Create user profile in Firestore
+  Future<void> createUserProfile({
+    required String userId,
+    required String email,
+    String? name,
+    String? phone,
+    String? userType,
+    bool emailVerified = false,
+  }) async {
+    try {
+      final Map<String, dynamic> data = {
+        'id': userId,
+        'email': email,
+        'createdAt': FieldValue.serverTimestamp(),
+        'emailVerified': emailVerified,
+        'isPremium': false,
+        'isActive': true,
+      };
+      if (name != null) data['name'] = name;
+      if (phone != null) data['phone'] = phone;
+      if (userType != null) data['userType'] = userType;
+
+      await _firestore.collection('users').doc(userId).set(data, SetOptions(merge: true));
+      debugPrint('✅ User profile created in Firestore for $email');
+    } catch (e) {
+      debugPrint('⚠️ Warning - could not create profile: $e');
+      throw Exception('Failed to create profile: $e');
     }
   }
 

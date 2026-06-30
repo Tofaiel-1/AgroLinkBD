@@ -228,3 +228,60 @@ exports.triggerLowStockAlert = functions.firestore
       }
     }
   });
+
+/**
+ * 5. processPayment (Callable)
+ * Sokol Card Payment Processing
+ */
+exports.processPayment = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'User must be logged in.');
+  }
+
+  const { receiverUid, amount, paymentMethod } = data;
+  const senderUid = context.auth.uid;
+
+  if (!receiverUid || !amount || amount <= 0) {
+    throw new functions.https.HttpsError('invalid-argument', 'Valid receiver and amount are required.');
+  }
+
+  const senderWalletRef = db.collection('wallets').doc(senderUid);
+  const receiverWalletRef = db.collection('wallets').doc(receiverUid);
+  const transactionRef = db.collection('transactions').doc();
+
+  try {
+    await db.runTransaction(async (t) => {
+      const senderWalletSnap = await t.get(senderWalletRef);
+      const receiverWalletSnap = await t.get(receiverWalletRef);
+
+      const senderBalance = senderWalletSnap.exists ? (senderWalletSnap.data().balance || 0) : 0;
+      const receiverBalance = receiverWalletSnap.exists ? (receiverWalletSnap.data().balance || 0) : 0;
+
+      if (senderBalance < amount) {
+        throw new functions.https.HttpsError('failed-precondition', 'Insufficient balance.');
+      }
+
+      // Deduct from sender
+      t.set(senderWalletRef, { balance: senderBalance - amount }, { merge: true });
+      
+      // Add to receiver
+      t.set(receiverWalletRef, { balance: receiverBalance + amount }, { merge: true });
+
+      // Record transaction
+      t.set(transactionRef, {
+        senderUid: senderUid,
+        receiverUid: receiverUid,
+        amount: amount,
+        paymentMethod: paymentMethod || 'SokolWallet',
+        status: 'success',
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        description: 'Sokol Card QR Payment'
+      });
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Payment Error:', error);
+    throw new functions.https.HttpsError('internal', error.message || 'Payment failed.');
+  }
+});

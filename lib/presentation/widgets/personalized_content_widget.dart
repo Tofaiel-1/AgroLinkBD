@@ -325,6 +325,14 @@ class RoleDataProvider extends ChangeNotifier {
           'companyName': user.companyName,
           'license': user.tradeLicense,
         };
+      case UserType.seller:
+        return {
+          'totalProducts': 234,
+          'monthlyRevenue': 5650000,
+          'activeOrders': 127,
+          'companyName': user.companyName,
+          'license': user.tradeLicense,
+        };
     }
   }
 

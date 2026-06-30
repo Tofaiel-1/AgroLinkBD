@@ -1,4 +1,4 @@
-enum UserType { farmer, buyer, driver, serviceProvider, company }
+enum UserType { farmer, buyer, driver, serviceProvider, company, seller }
 
 enum UserStatus { active, inactive, suspended, verified }
 
