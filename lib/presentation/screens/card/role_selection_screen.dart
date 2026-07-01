@@ -22,7 +22,7 @@ class RoleSelectionScreen extends StatelessWidget {
         child: Column(
           children: [
             const Text(
-              'Choose how you want to use the Sokol Card ecosystem.',
+              'Choose how you want to use the Card ecosystem.',
               style: TextStyle(fontSize: 18),
               textAlign: TextAlign.center,
             ),

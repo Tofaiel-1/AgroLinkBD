@@ -10,7 +10,7 @@ import 'package:agrolinkbd/presentation/screens/ai/ai_assistant_screen.dart';
 import 'package:agrolinkbd/presentation/screens/crops/crop_management_screen.dart';
 import 'package:agrolinkbd/core/controllers/user_controller.dart';
 import 'package:agrolinkbd/core/providers/admin_provider.dart';
-import 'package:agrolinkbd/presentation/screens/sokol_card/card_preview_screen.dart' as agrolinkbd;
+import 'package:agrolinkbd/presentation/screens/card/card_preview_screen.dart' as agrolinkbd;
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});

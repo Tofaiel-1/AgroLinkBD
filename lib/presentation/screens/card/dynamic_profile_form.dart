@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/models/user_model.dart';
 import '../../core/models/card_model.dart';
-import '../../core/services/sokol_card_service.dart';
+import '../../core/services/card_service.dart';
 import 'card_preview_screen.dart';
 
 class DynamicProfileForm extends StatefulWidget {
@@ -86,7 +86,7 @@ class _DynamicProfileFormState extends State<DynamicProfileForm> {
       );
 
       // 2. Save to cards collection
-      final cardService = SokolCardService();
+      final cardService = CardService();
       final qrToken = cardService.generatePaymentToken(uid);
       
       final cardModel = CardModel(

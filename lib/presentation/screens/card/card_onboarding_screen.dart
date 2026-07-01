@@ -80,7 +80,7 @@ class _SokolOnboardingScreenState extends State<SokolOnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Welcome to Sokol Card')),
+      appBar: AppBar(title: const Text('Welcome to Card')),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(

@@ -7,7 +7,12 @@ import 'package:agrolinkbd/presentation/screens/transport/transport_screen.dart'
 import 'package:agrolinkbd/presentation/screens/disease/disease_detection_screen.dart';
 import 'package:agrolinkbd/presentation/screens/ai/ai_assistant_screen.dart';
 import 'package:agrolinkbd/presentation/screens/profile/profile_screen.dart';
-import 'package:agrolinkbd/presentation/screens/wallet/wallet_screen.dart';
+import 'package:agrolinkbd/presentation/widgets/secure_balance_widget.dart';
+import 'package:agrolinkbd/presentation/widgets/global_announcement_banner.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:agrolinkbd/core/services/card_service.dart';
+import 'package:agrolinkbd/presentation/screens/card/card_preview_screen.dart' as agrolinkbd;
 
 class FarmerDashboardScreen extends StatelessWidget {
   const FarmerDashboardScreen({super.key});
@@ -40,7 +45,7 @@ class FarmerDashboardScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Welcome Banner
+            // Welcome Banner with Profile and Balance
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -49,25 +54,102 @@ class FarmerDashboardScreen extends StatelessWidget {
                   colors: [Colors.green.shade700, Colors.green.shade500],
                 ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Obx(() => Text(
-                        'Welcome, ${userController.userName.isEmpty ? "Farmer" : userController.userName}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
+                  // Left Side: Profile Image, Name, and Role
+                  Expanded(
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          Get.to(() => const agrolinkbd.CardPreviewScreen());
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 24,
+                              backgroundColor: Colors.white,
+                              child: Obx(() => Text(
+                                userController.userName.isEmpty ? 'F' : userController.userName.value[0].toUpperCase(),
+                                style: TextStyle(color: Colors.green.shade700, fontSize: 20, fontWeight: FontWeight.bold),
+                              )),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Obx(() => Text(
+                                    userController.userName.isEmpty ? "Farmer" : userController.userName.value,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  )),
+                                  const SizedBox(height: 4),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Text(
+                                      'কৃষক (Farmer)',
+                                      style: TextStyle(color: Colors.white, fontSize: 12),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                      )),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'আপনার কৃষি ব্যবসা পরিচালনা করুন',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 16,
+                      ),
                     ),
                   ),
+                  
+                  // Right Side: Main Balance
+                  if (FirebaseAuth.instance.currentUser != null)
+                    StreamBuilder<DocumentSnapshot>(
+                      stream: FirebaseFirestore.instance.collection('users').doc(FirebaseAuth.instance.currentUser!.uid).snapshots(),
+                      builder: (context, snapshot) {
+                        double balance = 0.0;
+                        String? mainBalancePin;
+                        if (snapshot.hasData && snapshot.data!.data() != null) {
+                          final data = snapshot.data!.data() as Map<String, dynamic>;
+                          balance = (data['mainBalance'] ?? 0.0).toDouble();
+                          mainBalancePin = data['mainBalancePin'];
+                        }
+                        
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.account_balance_wallet, color: Colors.green, size: 20),
+                              const SizedBox(width: 8),
+                              SecureBalanceWidget(
+                                balance: balance,
+                                pin: mainBalancePin,
+                                pinFieldType: 'mainBalance',
+                                textColor: Colors.green.shade700,
+                                fontSize: 14.0,
+                                label: 'Tap for Balance',
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
                 ],
               ),
             ),

@@ -22,6 +22,8 @@ class UserModel {
   final int totalRatings;
   final DateTime createdAt;
   final DateTime? lastLoginAt;
+  final double mainBalance;
+  final String? mainBalancePin;
 
   // Farmer specific
   final double? totalLand; // in acres
@@ -61,6 +63,8 @@ class UserModel {
     this.totalRatings = 0,
     required this.createdAt,
     this.lastLoginAt,
+    this.mainBalance = 500.0, // Giving 500 default balance for testing
+    this.mainBalancePin,
     this.totalLand,
     this.cropTypes,
     this.machineryTypes,
@@ -94,6 +98,8 @@ class UserModel {
       'totalRatings': totalRatings,
       'createdAt': createdAt.toIso8601String(),
       'lastLoginAt': lastLoginAt?.toIso8601String(),
+      'mainBalance': mainBalance,
+      'mainBalancePin': mainBalancePin,
       'totalLand': totalLand,
       'cropTypes': cropTypes,
       'machineryTypes': machineryTypes,
@@ -169,6 +175,8 @@ class UserModel {
       totalRatings: json['totalRatings'] ?? 0,
       createdAt: parsedCreatedAt,
       lastLoginAt: parsedLastLogin,
+      mainBalance: (json['mainBalance'] ?? 0.0).toDouble(),
+      mainBalancePin: json['mainBalancePin'],
       totalLand: json['totalLand']?.toDouble(),
       cropTypes: json['cropTypes'] != null
           ? List<String>.from(json['cropTypes'])
@@ -206,6 +214,8 @@ class UserModel {
     int? totalRatings,
     DateTime? createdAt,
     DateTime? lastLoginAt,
+    double? mainBalance,
+    String? mainBalancePin,
     double? totalLand,
     List<String>? cropTypes,
     List<String>? machineryTypes,
@@ -237,6 +247,8 @@ class UserModel {
       totalRatings: totalRatings ?? this.totalRatings,
       createdAt: createdAt ?? this.createdAt,
       lastLoginAt: lastLoginAt ?? this.lastLoginAt,
+      mainBalance: mainBalance ?? this.mainBalance,
+      mainBalancePin: mainBalancePin ?? this.mainBalancePin,
       totalLand: totalLand ?? this.totalLand,
       cropTypes: cropTypes ?? this.cropTypes,
       machineryTypes: machineryTypes ?? this.machineryTypes,

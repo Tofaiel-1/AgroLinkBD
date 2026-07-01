@@ -8,6 +8,8 @@ import 'package:agrolinkbd/core/services/route_guard.dart';
 
 // Role-specific navigation stacks
 import 'package:agrolinkbd/presentation/screens/farmer/farmer_dashboard.dart';
+import 'package:agrolinkbd/presentation/screens/service_provider/service_provider_dashboard.dart';
+import 'package:agrolinkbd/presentation/screens/card/card_preview_screen.dart' as agrolinkbd;
 import 'package:agrolinkbd/presentation/screens/dashboard/buyer_dashboard_screen.dart';
 import 'package:agrolinkbd/presentation/screens/driver/driver_dashboard.dart';
 import 'package:agrolinkbd/presentation/screens/driver/load_board/load_board_screen.dart';
@@ -134,12 +136,19 @@ class _RoleBasedNavigationContainerState
               '$roleDisplay | ${user.phone ?? ""}',
               style: const TextStyle(fontSize: 14),
             ),
-            currentAccountPicture: CircleAvatar(
-              backgroundColor: Colors.white,
-              backgroundImage: const NetworkImage('https://randomuser.me/api/portraits/men/44.jpg'),
-              child: user.name == null || user.name!.isEmpty
-                  ? Text(roleDisplay[0], style: const TextStyle(fontSize: 24, color: Colors.green))
-                  : null,
+            currentAccountPicture: GestureDetector(
+              onTap: () {
+                // Import if not already imported, but we can use Get.to if Get is available
+                // Let's use Navigator to be safe, but Get.to is already imported in this file
+                Get.to(() => const agrolinkbd.CardPreviewScreen());
+              },
+              child: CircleAvatar(
+                backgroundColor: Colors.white,
+                backgroundImage: const NetworkImage('https://randomuser.me/api/portraits/men/44.jpg'),
+                child: user.name == null || user.name!.isEmpty
+                    ? Text(roleDisplay[0], style: const TextStyle(fontSize: 24, color: Colors.green))
+                    : null,
+              ),
             ),
           ),
           

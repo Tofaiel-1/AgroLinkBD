@@ -23,6 +23,8 @@ import 'package:agrolinkbd/presentation/screens/microfinance/microfinance_admin_
 
 import 'package:agrolinkbd/presentation/screens/admin/admin_financial_requests_screen.dart';
 import 'package:agrolinkbd/presentation/screens/admin/admin_reports_screen.dart';
+import 'package:agrolinkbd/presentation/screens/admin/admin_pin_reset_screen.dart';
+
 class PulseEffect extends StatefulWidget {
   final Widget child;
   const PulseEffect({super.key, required this.child});
@@ -552,6 +554,7 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
     final menuItems = [
       {'icon': Icons.dashboard_rounded, 'label': 'Dashboard', 'action': 'dashboard'},
       {'icon': Icons.people_rounded, 'label': 'Users DB', 'action': 'users'},
+      {'icon': Icons.lock_reset, 'label': 'PIN Resets', 'action': 'pin_resets'},
       {'icon': Icons.inventory_2_rounded, 'label': 'Marketplace', 'action': 'market'},
       {'icon': Icons.receipt_long_rounded, 'label': 'Transactions', 'action': 'trans'},
     ];
@@ -570,6 +573,8 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
               setState(() => _selectedMenuIndex = index);
               if (entry.value['action'] == 'users') {
                 Get.to(() => AdminUserManagementScreen());
+              } else if (entry.value['action'] == 'pin_resets') {
+                Get.to(() => const AdminPinResetScreen());
               } else if (entry.value['action'] == 'trans') {
                 Get.to(() => AdminTransactionAnalyticsScreen());
               }
@@ -1077,11 +1082,11 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
         if (route == 'deposit') Get.to(() => const AdminDepositApprovalScreen());
         if (route == 'send') Get.to(() => const AdminSendMoneyScreen());
         if (route == 'cashflow') Get.to(() => AdminTransactionAnalyticsScreen());
-        if (route == 'requests') Get.to(() => const AdminFinancialRequestsScreen());
-        if (route == 'transfers') Get.to(() => const AdminFinancialRequestsScreen(initialTabIndex: 2));
+        if (route == 'requests') Get.to(() => AdminFinancialRequestsScreen());
+        if (route == 'transfers') Get.to(() => AdminFinancialRequestsScreen(initialTabIndex: 2));
         if (route == 'inventory') Get.to(() => const InventoryDashboardScreen());
         if (route == 'refunds') Get.to(() => const RefundQueueScreen());
-        if (route == 'users') Get.to(() => const AdminUserManagementScreen());
+        if (route == 'users') Get.to(() => AdminUserManagementScreen());
         if (route == 'announce') Get.to(() => AdminAnnouncementScreen());
         if (route == 'logs') Get.to(() => const AuditLogsViewer());
         if (route == 'add_admin') Get.to(() => const AdminCreateScreen());

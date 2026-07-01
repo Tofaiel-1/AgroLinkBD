@@ -4,7 +4,9 @@ import 'package:agrolinkbd/core/controllers/user_controller.dart';
 import 'package:agrolinkbd/presentation/screens/marketplace/marketplace_screen.dart';
 import 'package:agrolinkbd/presentation/screens/profile/profile_screen.dart';
 import 'package:agrolinkbd/presentation/widgets/global_announcement_banner.dart';
-
+import 'package:agrolinkbd/presentation/widgets/secure_balance_widget.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:agrolinkbd/core/services/transaction_service.dart';
 
 class BuyerDashboardScreen extends StatefulWidget {
@@ -31,7 +33,7 @@ class _BuyerDashboardScreenState extends State<BuyerDashboardScreen> {
     final userController = Get.isRegistered<UserController>()
         ? Get.find<UserController>()
         : Get.put(UserController());
-    String uid = userController.userId.isNotEmpty ? userController.userId : 'buyer_demo';
+    String uid = userController.userId.isNotEmpty ? userController.userId : FirebaseAuth.instance.currentUser?.uid ?? 'buyer_demo';
     final balance = await _transactionService.getWalletBalance(uid);
     if (mounted) {
       setState(() {
@@ -182,13 +184,29 @@ class _BuyerDashboardScreenState extends State<BuyerDashboardScreen> {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildStatCard(
-                      context,
-                      icon: Icons.account_balance_wallet_outlined,
-                      iconColor: Colors.green,
-                      value: '৳${_balance.toStringAsFixed(0)}',
-                      label: 'ওয়ালেট ব্যালেন্স',
-                      isDark: isDark,
+                    child: StreamBuilder<DocumentSnapshot>(
+                      stream: FirebaseFirestore.instance.collection('cards').doc(FirebaseAuth.instance.currentUser?.uid).snapshots(),
+                      builder: (context, snapshot) {
+                        String? walletPin;
+                        if (snapshot.hasData && snapshot.data!.data() != null) {
+                          walletPin = (snapshot.data!.data() as Map<String, dynamic>)['walletPin'];
+                        }
+                        
+                        return _buildStatCard(
+                          context,
+                          icon: Icons.account_balance_wallet_outlined,
+                          iconColor: Colors.green,
+                          valueWidget: SecureBalanceWidget(
+                            balance: _balance,
+                            pin: walletPin,
+                            pinFieldType: 'walletBalance',
+                            textColor: isDark ? Colors.white : Colors.black87,
+                            fontSize: 22.0,
+                          ),
+                          label: 'ওয়ালেট ব্যালেন্স',
+                          isDark: isDark,
+                        );
+                      }
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -356,44 +374,33 @@ class _BuyerDashboardScreenState extends State<BuyerDashboardScreen> {
     );
   }
 
-  Widget _buildStatCard(
-    BuildContext context, {
-    required IconData icon,
-    required Color iconColor,
-    required String value,
-    required String label,
-    required bool isDark,
-  }) {
+  Widget _buildStatCard(BuildContext context,
+      {required IconData icon, required Color iconColor, String? value, Widget? valueWidget, required String label, required bool isDark}) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: isDark
-            ? []
-            : [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: iconColor.withOpacity(isDark ? 0.2 : 0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: iconColor, size: 20),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: iconColor.withOpacity(0.1), shape: BoxShape.circle),
+            child: Icon(icon, color: iconColor, size: 28),
           ),
-          const SizedBox(height: 10),
-          Text(
-            value,
+          const SizedBox(height: 12),
+          valueWidget ?? Text(
+            value ?? '',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 22,
               fontWeight: FontWeight.bold,
               color: isDark ? Colors.white : Colors.black87,
             ),
@@ -402,8 +409,9 @@ class _BuyerDashboardScreenState extends State<BuyerDashboardScreen> {
           Text(
             label,
             style: TextStyle(
-              fontSize: 11,
-              color: isDark ? Colors.white54 : Colors.grey.shade500,
+              fontSize: 12,
+              color: isDark ? Colors.white70 : Colors.black54,
+              fontWeight: FontWeight.w500,
             ),
             textAlign: TextAlign.center,
           ),

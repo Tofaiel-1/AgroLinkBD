@@ -12,6 +12,8 @@ import 'package:agrolinkbd/presentation/screens/service_provider/service_provide
 
 // Fallback screens
 import 'package:agrolinkbd/presentation/screens/dashboard/enhanced_dashboard.dart';
+import 'package:agrolinkbd/presentation/screens/service_provider/service_provider_dashboard.dart';
+import 'package:agrolinkbd/presentation/screens/card/card_preview_screen.dart' as agrolinkbd;
 import 'package:agrolinkbd/presentation/screens/profile/profile_settings.dart';
 import 'package:agrolinkbd/presentation/screens/notifications/notification_center.dart';
 import 'package:agrolinkbd/presentation/screens/notifications/driver_notifications.dart';
@@ -326,12 +328,17 @@ class _RoleBasedNavigationState extends State<RoleBasedNavigation> {
               '$roleDisplay | ${user.phone ?? ""}',
               style: const TextStyle(fontSize: 14),
             ),
-            currentAccountPicture: CircleAvatar(
-              backgroundColor: Colors.white,
-              backgroundImage: const NetworkImage('https://randomuser.me/api/portraits/men/44.jpg'),
-              child: user.name == null
-                  ? Text(roleDisplay[0], style: const TextStyle(fontSize: 24, color: Colors.green))
-                  : null,
+            currentAccountPicture: GestureDetector(
+              onTap: () {
+                Get.to(() => const agrolinkbd.CardPreviewScreen());
+              },
+              child: CircleAvatar(
+                backgroundColor: Colors.white,
+                backgroundImage: const NetworkImage('https://randomuser.me/api/portraits/men/44.jpg'),
+                child: user.name == null
+                    ? Text(roleDisplay[0], style: const TextStyle(fontSize: 24, color: Colors.green))
+                    : null,
+              ),
             ),
           ),
           

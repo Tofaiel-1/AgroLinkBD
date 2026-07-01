@@ -3,13 +3,16 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:agrolinkbd/core/providers/user_provider.dart';
 import 'package:agrolinkbd/presentation/screens/disease/disease_detection_screen.dart';
 import 'package:agrolinkbd/presentation/screens/farmer/add_product_screen.dart';
+import 'package:agrolinkbd/presentation/screens/card/card_preview_screen.dart' as agrolinkbd;
 import 'package:agrolinkbd/presentation/screens/payment/direct_transfer_screen.dart';
 import 'package:agrolinkbd/presentation/screens/microfinance/microfinance_kyc_screen.dart';
 import 'package:agrolinkbd/core/services/transaction_service.dart';
 import 'package:agrolinkbd/presentation/screens/wallet/wallet_screen.dart';
+import 'package:agrolinkbd/presentation/widgets/secure_balance_widget.dart';
 import 'package:agrolinkbd/core/controllers/user_controller.dart';
 import 'package:agrolinkbd/presentation/widgets/global_announcement_banner.dart';
 import 'package:agrolinkbd/presentation/widgets/report_generation_card.dart';
@@ -130,46 +133,52 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: emeraldGreen, width: 2),
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    Get.to(() => const agrolinkbd.CardPreviewScreen());
+                  },
+                  child: Row(
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: emeraldGreen, width: 2),
+                        ),
+                        child: const CircleAvatar(
+                          radius: 20,
+                          backgroundImage: NetworkImage('https://randomuser.me/api/portraits/men/44.jpg'),
+                        ),
                       ),
-                      child: const CircleAvatar(
-                        radius: 20,
-                        backgroundImage: NetworkImage('https://randomuser.me/api/portraits/men/44.jpg'),
+                      const SizedBox(width: 12),
+                      Consumer<UserProvider>(
+                        builder: (context, userProvider, _) {
+                          final userName = userProvider.currentUser?.name ?? 'কৃষক';
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'শুভ সকাল,',
+                                style: GoogleFonts.hindSiliguri(
+                                  fontSize: 13,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                              Text(
+                                userName,
+                                style: GoogleFonts.hindSiliguri(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Consumer<UserProvider>(
-                      builder: (context, userProvider, _) {
-                        final userName = userProvider.currentUser?.name ?? 'কৃষক';
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'শুভ সকাল,',
-                              style: GoogleFonts.hindSiliguri(
-                                fontSize: 13,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                            Text(
-                              userName,
-                              style: GoogleFonts.hindSiliguri(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 Row(
                   children: [
@@ -188,13 +197,23 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
                           children: [
                             const Icon(Icons.account_balance_wallet, size: 16, color: emeraldGreen),
                             const SizedBox(width: 4),
-                            Text(
-                              '৳ $_balance',
-                              style: GoogleFonts.hindSiliguri(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: emeraldGreen,
-                              ),
+                            StreamBuilder<DocumentSnapshot>(
+                              stream: FirebaseFirestore.instance.collection('cards').doc(_userId).snapshots(),
+                              builder: (context, snapshot) {
+                                String? walletPin;
+                                if (snapshot.hasData && snapshot.data!.data() != null) {
+                                  walletPin = (snapshot.data!.data() as Map<String, dynamic>)['walletPin'];
+                                }
+                                
+                                return SecureBalanceWidget(
+                                  balance: _balance,
+                                  pin: walletPin,
+                                  pinFieldType: 'walletBalance',
+                                  textColor: emeraldGreen,
+                                  fontSize: 14.0,
+                                  label: 'Tap to view',
+                                );
+                              }
                             ),
                           ],
                         ),

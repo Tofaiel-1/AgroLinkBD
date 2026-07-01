@@ -7,6 +7,8 @@ class CardModel {
   final double averageRating;
   final bool verificationStatus;
   final int cardVersion;
+  final double walletBalance;
+  final String? walletPin;
 
   CardModel({
     required this.uid,
@@ -15,6 +17,8 @@ class CardModel {
     this.averageRating = 0.0,
     this.verificationStatus = false,
     this.cardVersion = 1,
+    this.walletBalance = 0.0,
+    this.walletPin,
   });
 
   Map<String, dynamic> toJson() {
@@ -25,6 +29,8 @@ class CardModel {
       'averageRating': averageRating,
       'verificationStatus': verificationStatus,
       'cardVersion': cardVersion,
+      'walletBalance': walletBalance,
+      'walletPin': walletPin,
     };
   }
 
@@ -38,6 +44,8 @@ class CardModel {
       averageRating: (json['averageRating'] ?? 0.0).toDouble(),
       verificationStatus: json['verificationStatus'] ?? false,
       cardVersion: json['cardVersion'] ?? 1,
+      walletBalance: (json['walletBalance'] ?? 0.0).toDouble(),
+      walletPin: json['walletPin'],
     );
   }
 
@@ -48,6 +56,8 @@ class CardModel {
     double? averageRating,
     bool? verificationStatus,
     int? cardVersion,
+    double? walletBalance,
+    String? walletPin,
   }) {
     return CardModel(
       uid: uid ?? this.uid,
@@ -56,6 +66,8 @@ class CardModel {
       averageRating: averageRating ?? this.averageRating,
       verificationStatus: verificationStatus ?? this.verificationStatus,
       cardVersion: cardVersion ?? this.cardVersion,
+      walletBalance: walletBalance ?? this.walletBalance,
+      walletPin: walletPin ?? this.walletPin,
     );
   }
 }

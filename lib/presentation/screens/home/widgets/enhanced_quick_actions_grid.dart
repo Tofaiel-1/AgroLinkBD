@@ -6,7 +6,7 @@ import 'package:agrolinkbd/presentation/screens/auction/auction_screen.dart';
 import 'package:agrolinkbd/presentation/screens/investment/investment_screen.dart';
 import 'package:agrolinkbd/presentation/screens/marketplace/marketplace_screen.dart';
 import 'package:agrolinkbd/presentation/screens/machinery/machinery_rental_screen.dart';
-import 'package:agrolinkbd/presentation/screens/sokol_card/card_preview_screen.dart' as agrolinkbd;
+import 'package:agrolinkbd/presentation/screens/card/card_preview_screen.dart' as agrolinkbd;
 import 'enhanced_quick_action_card.dart';
 
 class EnhancedQuickActionsGrid extends StatelessWidget {

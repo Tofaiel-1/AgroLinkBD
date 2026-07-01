@@ -4,6 +4,9 @@ import 'package:agrolinkbd/core/services/transaction_service.dart';
 import 'package:agrolinkbd/core/models/payment_model.dart';
 import 'package:agrolinkbd/presentation/screens/wallet/add_money_screen.dart';
 import 'package:agrolinkbd/presentation/screens/wallet/withdraw_money_screen.dart';
+import 'package:agrolinkbd/presentation/widgets/secure_balance_widget.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:agrolinkbd/presentation/screens/wallet/transaction_history_screen.dart';
 import 'package:intl/intl.dart';
 
@@ -90,13 +93,23 @@ class _WalletScreenState extends State<WalletScreen> {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  Text(
-                    '$_balance Taka',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  StreamBuilder<DocumentSnapshot>(
+                    stream: FirebaseFirestore.instance.collection('cards').doc(FirebaseAuth.instance.currentUser?.uid).snapshots(),
+                    builder: (context, snapshot) {
+                      String? walletPin;
+                      if (snapshot.hasData && snapshot.data!.data() != null) {
+                        walletPin = (snapshot.data!.data() as Map<String, dynamic>)['walletPin'];
+                      }
+                      
+                      return SecureBalanceWidget(
+                        balance: _balance,
+                        pin: walletPin,
+                        pinFieldType: 'walletBalance',
+                        textColor: Colors.white,
+                        fontSize: 32.0,
+                        label: 'Tap to view',
+                      );
+                    }
                   ),
                   const SizedBox(height: 16),
                   Row(

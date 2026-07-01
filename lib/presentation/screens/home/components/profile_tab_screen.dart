@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:agrolinkbd/core/providers/user_provider.dart';
-import 'package:agrolinkbd/presentation/screens/sokol_card/card_preview_screen.dart' as agrolinkbd;
+import 'package:agrolinkbd/presentation/screens/card/card_preview_screen.dart' as agrolinkbd;
 
 class ProfileTabScreen extends StatelessWidget {
   const ProfileTabScreen({super.key});

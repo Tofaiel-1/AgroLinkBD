@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import '../../core/services/sokol_card_service.dart';
+import 'package:agrolinkbd/core/services/card_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class QrScannerScreen extends StatefulWidget {
   const QrScannerScreen({super.key});
@@ -19,24 +20,24 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     final List<Barcode> barcodes = capture.barcodes;
     for (final barcode in barcodes) {
       final rawValue = barcode.rawValue;
-      if (rawValue != null && rawValue.startsWith('sokol://pay')) {
+      if (rawValue != null && (rawValue.startsWith('sokol://pay') || rawValue.startsWith('agrolinkbd://pay'))) {
         setState(() => _isProcessing = true);
         _scannerController.stop();
         
         final uri = Uri.parse(rawValue);
-        final receiverUid = uri.queryParameters['uid'];
+        final payerUid = uri.queryParameters['uid'];
         
-        if (receiverUid != null) {
-          _showPaymentSheet(receiverUid);
+        if (payerUid != null) {
+          _showRequestMoneySheet(payerUid);
           return;
         }
       }
     }
   }
 
-  void _showPaymentSheet(String receiverUid) {
+  void _showRequestMoneySheet(String payerUid) {
     final amountController = TextEditingController();
-    String selectedMethod = 'SokolWallet';
+    final noteController = TextEditingController();
 
     showModalBottomSheet(
       context: context,
@@ -56,9 +57,9 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text('Payment Confirmation', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+                  const Text('Request Money', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
                   const SizedBox(height: 16),
-                  Text('Paying to UID: $receiverUid', style: const TextStyle(color: Colors.grey)), // Ideally fetch name
+                  Text('Requesting from UID: $payerUid', style: const TextStyle(color: Colors.grey)), // Ideally fetch name
                   const SizedBox(height: 24),
                   TextField(
                     controller: amountController,
@@ -70,11 +71,13 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    value: selectedMethod,
-                    items: ['SokolWallet', 'BKash', 'Nagad', 'Bank'].map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
-                    onChanged: (v) => setSheetState(() => selectedMethod = v!),
-                    decoration: const InputDecoration(labelText: 'Payment Method', border: OutlineInputBorder()),
+                  TextField(
+                    controller: noteController,
+                    decoration: const InputDecoration(
+                      labelText: 'Note (Optional)',
+                      prefixIcon: Icon(Icons.note),
+                      border: OutlineInputBorder(),
+                    ),
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton(
@@ -85,27 +88,40 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
                       setSheetState(() => isPaying = true);
                       
-                      final success = await SokolCardService().processPayment(
-                        receiverUid: receiverUid,
+                      final currentUid = FirebaseAuth.instance.currentUser?.uid;
+                      if (currentUid == null) return;
+
+                      final success = await CardService().requestPayment(
+                        requesterUid: currentUid,
+                        payerUid: payerUid,
                         amount: amount,
-                        paymentMethod: selectedMethod,
+                        note: noteController.text.isNotEmpty ? noteController.text : null,
                       );
                       
-                      if (mounted) {
+                      if (success) {
                         Navigator.pop(context); // close sheet
                         Navigator.pop(context); // close scanner
-                        
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(success ? 'Payment Successful!' : 'Payment Failed'),
-                            backgroundColor: success ? Colors.green : Colors.red,
-                          )
+                          const SnackBar(
+                            content: Text('Payment request sent successfully!'),
+                            backgroundColor: Colors.green,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      } else {
+                        setSheetState(() => isPaying = false);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Failed to send request. Please try again.'),
+                            backgroundColor: Colors.red,
+                            behavior: SnackBarBehavior.floating,
+                          ),
                         );
                       }
                     },
                     child: isPaying
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text('Confirm Payment', style: TextStyle(color: Colors.white, fontSize: 18)),
+                        ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : const Text('Send Request', style: TextStyle(color: Colors.white, fontSize: 16)),
                   ),
                   const SizedBox(height: 24),
                 ],
@@ -126,7 +142,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Scan Sokol Card')),
+      appBar: AppBar(title: const Text('Scan Card')),
       body: MobileScanner(
         controller: _scannerController,
         onDetect: _onDetect,
