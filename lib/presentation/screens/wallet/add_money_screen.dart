@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:agrolinkbd/core/services/deposit_service.dart';
+import 'package:flutter_sslcommerz/model/SSLCSdkType.dart';
+import 'package:flutter_sslcommerz/model/SSLCTransactionInfoModel.dart';
+import 'package:flutter_sslcommerz/model/SSLCommerzInitialization.dart';
+import 'package:flutter_sslcommerz/sslcommerz.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AddMoneyScreen extends StatefulWidget {
   final String userId;
@@ -13,13 +17,9 @@ class AddMoneyScreen extends StatefulWidget {
 
 class _AddMoneyScreenState extends State<AddMoneyScreen> {
   final TextEditingController _amountController = TextEditingController();
-  final TextEditingController _txnIdController = TextEditingController();
-  final DepositService _depositService = DepositService();
-  
-  String _selectedMethod = 'bkash';
   bool _isLoading = false;
 
-  void _submitRequest() async {
+  void _submitPayment() async {
     final amountText = _amountController.text.trim();
     if (amountText.isEmpty) {
       Get.snackbar('Error', 'Please enter an amount', backgroundColor: Colors.red.shade100);
@@ -35,26 +35,76 @@ class _AddMoneyScreenState extends State<AddMoneyScreen> {
     setState(() => _isLoading = true);
 
     try {
-      await _depositService.createDepositRequest(
-        userId: widget.userId,
-        amount: amount,
-        paymentMethod: _selectedMethod,
-        transactionId: _txnIdController.text.trim().isNotEmpty ? _txnIdController.text.trim() : null,
+      // 1. Initialize SSLCommerz
+      Sslcommerz sslcommerz = Sslcommerz(
+        initializer: SSLCommerzInitialization(
+          multi_card_name: 'internetbank',
+          currency: 'BDT',
+          product_category: 'Wallet Deposit',
+          sdkType: SSLCSdkType.TESTBOX, 
+          store_id: 'testbox', 
+          store_passwd: 'testpassword',
+          total_amount: amount,
+          tran_id: 'TXN_${DateTime.now().millisecondsSinceEpoch}',
+        ),
       );
 
-      Get.back();
-      Get.snackbar(
-        'Success', 
-        'Deposit request submitted successfully. Awaiting admin approval.',
-        backgroundColor: Colors.green.shade100,
-        colorText: Colors.green.shade900,
-        duration: const Duration(seconds: 4),
-      );
+      // 2. Launch SSLCommerz Payment UI
+      var result = await sslcommerz.payNow();
+
+      if (result.status == 'VALID' || result.status == 'VALIDATED') {
+        // Payment successful - securely update balance
+        await _processSuccessfulPayment(amount, result.tranId ?? 'UNKNOWN_TXN');
+        
+        Get.back();
+        Get.snackbar(
+          'Success', 
+          'Money added successfully via SSLCommerz!',
+          backgroundColor: Colors.green.shade100,
+          colorText: Colors.green.shade900,
+          duration: const Duration(seconds: 4),
+        );
+      } else {
+        // Payment failed or cancelled
+        Get.snackbar('Payment Failed', 'Transaction was cancelled or failed.', backgroundColor: Colors.red.shade100);
+      }
     } catch (e) {
-      Get.snackbar('Error', 'Failed to submit request', backgroundColor: Colors.red.shade100);
+      Get.snackbar('Error', 'Could not initiate payment: $e', backgroundColor: Colors.red.shade100);
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
+  }
+
+  Future<void> _processSuccessfulPayment(double amount, String txnId) async {
+    final db = FirebaseFirestore.instance;
+    final batch = db.batch();
+
+    // 1. Log transaction
+    final txRef = db.collection('wallet_transactions').doc();
+    batch.set(txRef, {
+      'userId': widget.userId,
+      'amount': amount,
+      'type': 'credit',
+      'title': 'Deposit via SSLCommerz',
+      'status': 'completed',
+      'transactionId': txnId,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    // 2. Update wallet/main balance (assuming cards collection holds wallet data)
+    final cardRef = db.collection('cards').doc(widget.userId);
+    final userRef = db.collection('users').doc(widget.userId);
+    
+    // We increment both places or just cards depending on app logic
+    // Using increment ensures atomic update
+    batch.set(cardRef, {'walletBalance': FieldValue.increment(amount)}, SetOptions(merge: true));
+    
+    // Also updating mainBalance in user profile if they share it
+    batch.set(userRef, {'mainBalance': FieldValue.increment(amount)}, SetOptions(merge: true));
+
+    await batch.commit();
   }
 
   @override
@@ -100,32 +150,24 @@ class _AddMoneyScreenState extends State<AddMoneyScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            Text(
-              'Select Payment Method',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor),
-            ),
-            const SizedBox(height: 12),
-            _buildMethodOption('bkash', 'bKash', Colors.pink),
-            _buildMethodOption('nagad', 'Nagad', Colors.orange),
-            _buildMethodOption('bank', 'Bank Transfer', Colors.blue),
-            const SizedBox(height: 24),
-            Text(
-              'Transaction ID (Optional)',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _txnIdController,
-              style: TextStyle(color: textColor),
-              decoration: InputDecoration(
-                hintText: 'e.g. 8KDF93HDK',
-                hintStyle: TextStyle(color: hintColor),
-                filled: true,
-                fillColor: cardColor,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.blue.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.security, color: Colors.blue),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Secured by SSLCommerz. You can pay via Cards, Mobile Banking (bKash, Nagad), and Net Banking.',
+                      style: TextStyle(color: isDark ? Colors.blue.shade200 : Colors.blue.shade800, fontSize: 13),
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 40),
@@ -133,7 +175,7 @@ class _AddMoneyScreenState extends State<AddMoneyScreen> {
               width: double.infinity,
               height: 54,
               child: ElevatedButton(
-                onPressed: _isLoading ? null : _submitRequest,
+                onPressed: _isLoading ? null : _submitPayment,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2E7D32),
                   shape: RoundedRectangleBorder(
@@ -143,47 +185,11 @@ class _AddMoneyScreenState extends State<AddMoneyScreen> {
                 child: _isLoading 
                   ? const CircularProgressIndicator(color: Colors.white)
                   : const Text(
-                      'Submit Request',
+                      'Proceed to Pay',
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMethodOption(String id, String name, Color color) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-    final textColor = isDark ? Colors.white : Colors.black87;
-    final borderColor = isDark ? Colors.grey.shade800 : Colors.grey.shade300;
-
-    final isSelected = _selectedMethod == id;
-    return GestureDetector(
-      onTap: () => setState(() => _selectedMethod = id),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: cardColor,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? color : borderColor,
-            width: isSelected ? 2 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.account_balance_wallet, color: color),
-            const SizedBox(width: 16),
-            Text(
-              name,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: textColor),
-            ),
-            const Spacer(),
-            if (isSelected) Icon(Icons.check_circle, color: color),
           ],
         ),
       ),

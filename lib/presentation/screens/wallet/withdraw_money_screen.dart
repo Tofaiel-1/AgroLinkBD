@@ -169,6 +169,27 @@ class _WithdrawMoneyScreenState extends State<WithdrawMoneyScreen> {
                 ],
               ),
             ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.blue.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.security, color: Colors.blue, size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'All withdrawal requests are securely processed and verified by Admin before payout.',
+                      style: TextStyle(color: isDark ? Colors.blue.shade200 : Colors.blue.shade800, fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 24),
             Text(
               'Enter Amount',

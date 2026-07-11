@@ -168,41 +168,6 @@ class _WalletScreenState extends State<WalletScreen> {
               ),
             ),
 
-            // Payment Methods
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1E1E) : Colors.white,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Payment Methods',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildPaymentMethod(
-                      'bKash', 'assets/images/bkash.png', Icons.phone_android),
-                  const Divider(height: 12),
-                  _buildPaymentMethod('Nagad', 'assets/images/nagad.png',
-                      Icons.account_balance_wallet),
-                  const Divider(height: 12),
-                  _buildPaymentMethod('Rocket', 'assets/images/rocket.png',
-                      Icons.rocket_launch),
-                  const Divider(height: 12),
-                  _buildPaymentMethod('Bank Transfer', 'assets/images/bank.png',
-                      Icons.account_balance),
-                ],
-              ),
-            ),
-
             const SizedBox(height: 8),
 
             // Recent Transactions
@@ -295,30 +260,6 @@ class _WalletScreenState extends State<WalletScreen> {
       ),
     );
   }
-
-  Widget _buildPaymentMethod(String name, String imagePath, IconData icon) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? Colors.white : Colors.black87;
-    return SizedBox(
-      height: 48,
-      child: ListTile(
-        contentPadding: EdgeInsets.zero,
-        minLeadingWidth: 40,
-        leading: CircleAvatar(
-          radius: 20,
-          backgroundColor: Colors.green.shade50,
-          child: Icon(icon, color: Colors.green.shade700, size: 20),
-        ),
-        title: Text(
-          name,
-          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: textColor),
-        ),
-        trailing: Icon(Icons.arrow_forward_ios, size: 14, color: textColor),
-        onTap: () {},
-      ),
-    );
-  }
-
   Widget _buildTransaction(
       String title, String amount, String time, bool isCredit) {
     final isDark = Theme.of(context).brightness == Brightness.dark;

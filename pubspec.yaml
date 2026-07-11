@@ -60,7 +60,7 @@ dependencies:
   
   # Payment Gateway
   flutterwave_standard: ^1.0.7
-  url_launcher: ^6.2.2
+  url_launcher: ^6.3.2
   
   # Storage
   shared_preferences: ^2.2.2

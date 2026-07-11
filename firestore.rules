@@ -5,19 +5,14 @@ service cloud.firestore {
     // ============================================
     // ADMIN COLLECTIONS (Strict Access Control)
     // ============================================
-    
-    // Admin collection - only admins can access
     match /admins/{adminId} {
-      // Allow authenticated users to read their own admin document (for login verification)
-      // This is the most permissive rule to allow initial login without circular dependencies
-      allow read: if request.auth != null && adminId == request.auth.uid;
+      // Merged: Allow read if user is reading their own admin doc OR if they are a super_admin
+      allow read: if request.auth != null && (
+        adminId == request.auth.uid || 
+        (exists(/databases/$(database)/documents/admins/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'super_admin')
+      );
       
-      // Allow super admins to read all admin documents  
-      allow read: if request.auth != null && 
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'super_admin';
-      
-      // Allow creating super_admin (first time) OR other admins by existing super admin
       allow create: if request.auth != null && (
         request.resource.data.role == 'super_admin' ||
         (exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
@@ -25,18 +20,11 @@ service cloud.firestore {
          request.resource.data.role in ['admin', 'moderator'])
       );
       
-      // Only super admin can update admins
-      allow update: if request.auth != null && 
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'super_admin';
-      
-      // Only super admin can delete admins
-      allow delete: if request.auth != null && 
+      allow update, delete: if request.auth != null && 
         exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'super_admin';
     }
 
-    // Admin logs - only admins can access
     match /admin_logs/{logId} {
       allow read, write: if request.auth != null && 
         exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
@@ -46,91 +34,47 @@ service cloud.firestore {
     // ============================================
     // USER PRIVATE DATA (Strict Isolation)
     // ============================================
-    
-    // User profiles - ONLY user can read/write their own profile
     match /users/{userId} {
-      // ✅ Allow authenticated users to read user profiles (needed for searching recipients)
       allow read: if request.auth != null;
-      
-      // ✅ User can ONLY create their own profile (during registration)
-      allow create: if request.auth != null && request.auth.uid == userId;
-      
-      // ✅ User can ONLY update their own profile
-      allow update: if request.auth != null && request.auth.uid == userId;
-      
-      // ✅ User can delete their own profile
-      allow delete: if request.auth != null && request.auth.uid == userId;
-      
-      // ✅ Admins can read, create, and manage all users (for admin panel)
+      allow create, update, delete: if request.auth != null && request.auth.uid == userId;
+      // Admins override
       allow read, create, update, delete: if request.auth != null && 
         exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
-    // User wallets - ONLY user can read/write their own wallet
     match /wallets/{userId} {
-      // ✅ User can ONLY read their own wallet (balance, income, earnings)
-      allow read: if request.auth != null && request.auth.uid == userId;
-      
-      // ✅ User can create their own wallet (during registration)
-      allow create: if request.auth != null && request.auth.uid == userId;
-      
-      // ✅ System (backend function) can update wallet on purchases
-      allow update: if request.auth != null && request.auth.uid == userId;
-      
-      // ✅ User can delete their wallet (on account deletion)
-      allow delete: if request.auth != null && request.auth.uid == userId;
+      allow read, create, update, delete: if request.auth != null && request.auth.uid == userId;
     }
 
-    // User transactions - ONLY user can see their own transactions
     match /transactions/{transactionId} {
-      // ✅ Read a single transaction if own or admin
-      allow get: if request.auth != null && 
+      allow get, list: if request.auth != null && 
         (resource.data.userId == request.auth.uid || 
          resource.data.senderUid == request.auth.uid ||
          resource.data.receiverUid == request.auth.uid ||
          exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
-
-      // ✅ Query transactions if own or admin
-      allow list: if request.auth != null && 
-        (
-          (resource.data.userId == request.auth.uid) || 
-          (resource.data.senderUid == request.auth.uid) ||
-          (resource.data.receiverUid == request.auth.uid) ||
-          exists(/databases/$(database)/documents/admins/$(request.auth.uid))
-        );
       
-      // ✅ Create own transactions or if admin
       allow create: if request.auth != null && 
         (request.resource.data.userId == request.auth.uid || 
          request.resource.data.senderUid == request.auth.uid ||
          exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
       
-      // ✅ Cannot update transactions (immutable)
       allow update: if false;
-      
-      // ✅ Can delete own transactions
       allow delete: if request.auth != null && 
         (resource.data.userId == request.auth.uid || resource.data.senderUid == request.auth.uid);
     }
     
     // ============================================
-    // SOKOL CARD & PAYMENTS
+    // SOKOL CARD ECOSYSTEM & PAYMENTS
     // ============================================
-    
     match /cards/{userId} {
-      // Users can read any card (needed for QR payment scans)
       allow read: if request.auth != null;
-      // Users can create/update only their own card
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow create, update, delete: if request.auth != null && request.auth.uid == userId;
     }
     
     match /payment_requests/{requestId} {
-      // Sender or receiver can read the request
       allow read: if request.auth != null && 
         (resource.data.senderId == request.auth.uid || resource.data.receiverId == request.auth.uid);
-      // Sender can create the request
       allow create: if request.auth != null && request.resource.data.senderId == request.auth.uid;
-      // Receiver can update the request (e.g. to accept/reject)
       allow update: if request.auth != null && 
         (resource.data.receiverId == request.auth.uid || resource.data.senderId == request.auth.uid);
       allow delete: if false;
@@ -139,93 +83,63 @@ service cloud.firestore {
     // ============================================
     // ORDERS & SALES (Privacy Protected)
     // ============================================
-    
-    // Orders - ONLY buyer and seller can see their orders
     match /orders/{orderId} {
-      // ✅ Read only if you're the buyer or seller
+      // Merged: Read only if buyer, seller, or admin
       allow read: if request.auth != null && 
         (resource.data.buyerId == request.auth.uid || 
-         resource.data.sellerId == request.auth.uid);
+         resource.data.sellerId == request.auth.uid ||
+         exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
       
-      // ✅ Create if you're the buyer
-      allow create: if request.auth != null && 
-        request.resource.data.buyerId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.buyerId == request.auth.uid;
       
-      // ✅ Update if you're buyer or seller
       allow update: if request.auth != null && 
-        (resource.data.buyerId == request.auth.uid || 
-         resource.data.sellerId == request.auth.uid);
-      
-      // ✅ Admins can read all orders
-      allow read: if request.auth != null && 
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+        (resource.data.buyerId == request.auth.uid || resource.data.sellerId == request.auth.uid);
     }
     
     // ============================================
     // PRODUCTS (Public Read, Private Write)
     // ============================================
-    
-    // Products (marketplace)
     match /products/{productId} {
-      // Public read (anyone can see products)
       allow read: if request.auth != null;
-      
-      // Authenticated users can create
-      allow create: if request.auth != null && 
-        request.resource.data.userId == request.auth.uid;
-      
-      // Only owner can edit/delete their products
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
       allow update, delete: if request.auth != null && 
-        resource.data.userId == request.auth.uid;
-      
-      // Admins can manage all products
-      allow update, delete: if request.auth != null && 
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+        (resource.data.userId == request.auth.uid || exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
     }
     
     // ============================================
-    // PHASE 4: INVENTORY & REFUNDS
+    // INVENTORY, REFUNDS, TRANSFERS & WITHDRAWS
     // ============================================
-
-    // Inventory Products
     match /inventory_products/{productId} {
-      // Public can read to see available stock and pricing
       allow read: if request.auth != null;
-      
-      // ONLY Admins can create/update/delete inventory products
       allow create, update, delete: if request.auth != null && 
         exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
-    // Refund Requests
     match /refund_requests/{requestId} {
-      // Users can only read their own refund requests
       allow read: if request.auth != null && 
-        (resource.data.userId == request.auth.uid || 
-         exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
-         
-      // Users can create a refund request for their transactions
-      allow create: if request.auth != null && 
-        request.resource.data.userId == request.auth.uid;
-        
-      // Only admins can update refund status
+        (resource.data.userId == request.auth.uid || exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
       allow update, delete: if request.auth != null && 
         exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
-    // Deposit Requests
     match /deposit_requests/{requestId} {
-      // Allow read/write for testing purposes
+      // NOTE: Warning! Left completely open as requested for testing.
       allow read, write: if true;
     }
 
-    // Withdraw Requests
     match /withdraw_requests/{requestId} {
       allow read: if request.auth != null && 
-        (resource.data.userId == request.auth.uid || 
-         exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
-      allow create: if request.auth != null && 
-        request.resource.data.userId == request.auth.uid;
+        (resource.data.userId == request.auth.uid || exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if request.auth != null && 
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    match /transfer_requests/{requestId} {
+      allow create: if request.auth != null && request.resource.data.senderId == request.auth.uid;
+      allow read: if request.auth != null && 
+        (resource.data.senderId == request.auth.uid || resource.data.receiverId == request.auth.uid || exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
       allow update, delete: if request.auth != null && 
         exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
@@ -233,179 +147,103 @@ service cloud.firestore {
     // ============================================
     // MARKETPLACE COLLECTIONS (Public Read)
     // ============================================
-    
-    // Auctions - public but user-owned
     match /auctions/{auctionId} {
       allow read: if request.auth != null;
-      allow create: if request.auth != null && 
-        request.resource.data.userId == request.auth.uid;
-      allow update, delete: if request.auth != null && 
-        resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
     
-    // Machinery rental
     match /machinery/{machineryId} {
       allow read: if request.auth != null;
-      allow create: if request.auth != null && 
-        request.resource.data.userId == request.auth.uid;
-      allow update, delete: if request.auth != null && 
-        resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
     
-    // Transport services
     match /transport/{transportId} {
       allow read: if request.auth != null;
-      allow create: if request.auth != null && 
-        request.resource.data.userId == request.auth.uid;
-      allow update, delete: if request.auth != null && 
-        resource.data.userId == request.auth.uid;
-    }
-
-    // Bazaar Products - Users can fully edit their own products
-    match /bazaar_products/{productId} {
-      // Authenticated users can read all bazaar products
-      allow read: if request.auth != null;
-      
-      // Authenticated users can create their own products
-      allow create: if request.auth != null && 
-        request.resource.data.userId == request.auth.uid;
-      
-      // Users can fully update/edit their own products (name, price, quantity, image)
-      allow update: if request.auth != null && 
-        resource.data.userId == request.auth.uid;
-      
-      // Users can delete only their own products
-      allow delete: if request.auth != null && 
-        resource.data.userId == request.auth.uid;
-      
-      // Admins can read, update and delete all products
-      allow read, update, delete: if request.auth != null && 
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
-    }
-    // ============================================
-    // FARM MANAGEMENT (Phase 2)
-    // ============================================
-
-    // Farms
-    match /farms/{farmId} {
-      allow read: if request.auth != null; // Client already filters by userId
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
       allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
 
-    // Crop Plantings
-    match /crop_plantings/{plantingId} {
-      // For read, we might fetch by farmId. The farmer should own the crop (or we just use userId in crop?).
-      // Wait, we didn't add userId to crop_plantings. Let's rely on farmId or just allow read if authenticated for now.
+    match /bazaar_products/{productId} {
       allow read: if request.auth != null;
-      allow create: if request.auth != null;
-      allow update, delete: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if request.auth != null && 
+        (resource.data.userId == request.auth.uid || exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+    }
+    
+    // ============================================
+    // FARM MANAGEMENT
+    // ============================================
+    match /farms/{farmId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
 
-    // User Audit Logs (for device tracking and session duration)
+    match /crop_plantings/{plantingId} {
+      allow read, create, update, delete: if request.auth != null;
+    }
+
     match /user_audit_logs/{logId} {
-      // Anyone can create a log (even during failed logins where auth might be null or checking)
       allow create: if true; 
-      // Users can only read/update their own logs, Admins can read all
-      allow read, update: if request.auth != null && (request.auth.uid == resource.data.userId || get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role in ['super_admin', 'admin']);
+      allow read, update: if request.auth != null && 
+        (request.auth.uid == resource.data.userId || get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role in ['super_admin', 'admin']);
       allow delete: if request.auth != null && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'super_admin';
     }
 
-    // Farm Activities
     match /farm_activities/{activityId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null;
-      allow update, delete: if request.auth != null;
+      allow read, create, update, delete: if request.auth != null;
     }
 
-    // Farm Expenses
     match /farm_expenses/{expenseId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null;
-      allow update, delete: if request.auth != null;
+      allow read, create, update, delete: if request.auth != null;
     }
 
-    // Farm Revenues
     match /farm_revenues/{revenueId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null;
-      allow update, delete: if request.auth != null;
+      allow read, create, update, delete: if request.auth != null;
     }
 
-    // Farm Inventory
     match /farm_inventory/{itemId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null;
-      allow update, delete: if request.auth != null;
+      allow read, create, update, delete: if request.auth != null;
     }
 
     // ============================================
-    // GLOBAL ANNOUNCEMENTS
+    // MICROFINANCE & ANNOUNCEMENTS
     // ============================================
     match /announcements/{announcementId} {
-      // Anyone authenticated can read announcements
       allow read: if request.auth != null;
-      // Only admins can manage announcements
-      allow write: if request.auth != null && 
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+      allow write: if request.auth != null && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
-    // ============================================
-    // TRANSFER REQUESTS
-    // ============================================
-    match /transfer_requests/{requestId} {
-      // Senders can create requests and read their own requests
-      allow create: if request.auth != null && request.resource.data.senderId == request.auth.uid;
-      // Participants (sender or receiver) can read the request
-      allow read: if request.auth != null && 
-        (resource.data.senderId == request.auth.uid || resource.data.receiverId == request.auth.uid);
-      // Admins can manage all requests
-      allow read, update, delete: if request.auth != null && 
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
-    }
-    // ============================================
-    // MICROFINANCE APPLICATIONS
-    // ============================================
+
     match /microfinance_applications/{applicationId} {
-      // Users can create their own applications and read their own applications
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
-      // Admins can manage all applications
-      allow read, update, delete: if request.auth != null && 
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+      allow read: if request.auth != null && 
+        (resource.data.userId == request.auth.uid || exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+      allow update, delete: if request.auth != null && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
     
     // ============================================
-    // Orders Tracking Buyer 
+    // RATINGS & PIN REQUESTS
     // ============================================
-    match /orders/{orderId} {
-      allow read, write: if true; 
-    }
-    
-    // ============================================
-    // SOKOL CARD ECOSYSTEM
-    // ============================================
-    match /cards/{userId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null && request.auth.uid == userId;
-      // Allow user to update their own card. Allow updating qrData specifically.
-      allow update: if request.auth != null && request.auth.uid == userId;
-      allow delete: if request.auth != null && request.auth.uid == userId;
-    }
-    
     match /ratings/{ratingId} {
-      // Anyone authenticated can read ratings
       allow read: if request.auth != null;
-      // Users can create a rating if they are the rater
       allow create: if request.auth != null && request.resource.data.raterUid == request.auth.uid;
-      // Only rater can update/delete their rating
       allow update, delete: if request.auth != null && resource.data.raterUid == request.auth.uid;
     }
     
     match /pin_reset_requests/{requestId} {
-      // Admins can read/update all requests. Users can only create their own.
       allow read: if request.auth != null;
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if request.auth != null; // Typically restricted to admin, simplified here
+      allow update, delete: if request.auth != null; 
     }
+
+    // ============================================
+    // CATCH-ALL (CRITICAL FIX)
+    // ============================================
+    match /{document=**} {
+      // Denies access to any document not explicitly defined above
+      allow read, write: if false; 
+    }  
   }
 }

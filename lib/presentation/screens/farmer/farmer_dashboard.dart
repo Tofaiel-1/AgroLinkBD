@@ -10,12 +10,15 @@ import 'package:agrolinkbd/presentation/screens/farmer/add_product_screen.dart';
 import 'package:agrolinkbd/presentation/screens/card/card_preview_screen.dart' as agrolinkbd;
 import 'package:agrolinkbd/presentation/screens/payment/direct_transfer_screen.dart';
 import 'package:agrolinkbd/presentation/screens/microfinance/microfinance_kyc_screen.dart';
+import 'package:agrolinkbd/presentation/screens/transport/upazila_transport_screen.dart';
 import 'package:agrolinkbd/core/services/transaction_service.dart';
 import 'package:agrolinkbd/presentation/screens/wallet/wallet_screen.dart';
 import 'package:agrolinkbd/presentation/widgets/secure_balance_widget.dart';
 import 'package:agrolinkbd/core/controllers/user_controller.dart';
 import 'package:agrolinkbd/presentation/widgets/global_announcement_banner.dart';
 import 'package:agrolinkbd/presentation/widgets/report_generation_card.dart';
+import 'package:agrolinkbd/presentation/screens/agri_info/agri_info_hub_screen.dart';
+import 'package:agrolinkbd/presentation/screens/agri_info/saved_agri_data_screen.dart';
 
 class FarmerDashboard extends StatefulWidget {
   const FarmerDashboard({super.key});
@@ -265,6 +268,10 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
                     // 1. Weather Alert Card
                     _buildWeatherAlertCard(),
                     const SizedBox(height: 24),
+
+                    // Transport Booking Banner
+                    _buildTransportBookingBanner(emeraldGreen),
+                    const SizedBox(height: 24),
                     
                     // 2. Quick Actions Grid
                     Text(
@@ -414,47 +421,85 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
     return GridView.count(
       physics: const NeverScrollableScrollPhysics(),
       shrinkWrap: true,
-      crossAxisCount: 2,
-      mainAxisSpacing: 16,
-      crossAxisSpacing: 16,
-      childAspectRatio: 1.2,
+      crossAxisCount: 4,
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      childAspectRatio: 0.85,
       children: [
+        // Row 1
         _ActionCard(
           title: 'ফসল বিক্রি',
-          icon: Icons.eco,
+          icon: Icons.storefront,
           color: emeraldGreen,
           onTap: () => Get.to(() => const AddProductScreen()),
         ),
         _ActionCard(
-          title: 'এআই প্ল্যান্ট ডাক্তার',
-          icon: Icons.camera_alt,
+          title: 'এআই ডাক্তার',
+          icon: Icons.health_and_safety,
           color: Colors.teal.shade700,
           onTap: () => Get.to(() => const DiseaseDetectionScreen()),
         ),
         _ActionCard(
-          title: 'বিশেষজ্ঞ পরামর্শ',
+          title: 'ফসল উপযোগিতা',
+          icon: Icons.agriculture,
+          color: Colors.green.shade600,
+          onTap: () => Get.to(() => const AgriInfoHubScreen(initialFeature: 'suitability')),
+        ),
+        _ActionCard(
+          title: 'সার সুপারিশ',
+          icon: Icons.science,
+          color: Colors.lightGreen.shade700,
+          onTap: () => Get.to(() => const AgriInfoHubScreen(initialFeature: 'fertilizer')),
+        ),
+        // Row 2
+        _ActionCard(
+          title: 'ফসল জোন',
+          icon: Icons.map,
+          color: Colors.blue.shade600,
+          onTap: () => Get.to(() => const AgriInfoHubScreen(initialFeature: 'zone')),
+        ),
+        _ActionCard(
+          title: 'ফসল বিন্যাস',
+          icon: Icons.view_module,
+          color: Colors.orange.shade600,
+          onTap: () => Get.to(() => const AgriInfoHubScreen(initialFeature: 'pattern')),
+        ),
+        _ActionCard(
+          title: 'সংরক্ষিত',
+          icon: Icons.bookmark,
+          color: Colors.indigo.shade500,
+          onTap: () => Get.to(() => const SavedAgriDataScreen()),
+        ),
+        _ActionCard(
+          title: 'মাটির গুণাগুণ',
+          icon: Icons.landscape,
+          color: earthyBrown,
+          onTap: () => Get.to(() => const AgriInfoHubScreen(initialFeature: 'soil')),
+        ),
+        // Row 3
+        _ActionCard(
+          title: 'বিশেষজ্ঞ',
           icon: Icons.support_agent,
           color: Colors.indigo.shade600,
           onTap: () => Get.snackbar('বিশেষজ্ঞ পরামর্শ', 'শীঘ্রই যুক্ত করা হবে!'),
         ),
         _ActionCard(
-          title: 'পরিবহন (Transport)',
+          title: 'পরিবহন',
           icon: Icons.local_shipping,
           color: earthyBrown,
-          onTap: () => Get.snackbar('পরিবহন সেবা', 'ট্রাক বুকিং শীঘ্রই আসছে!'),
+          onTap: () => Get.to(() => const UpazilaTransportScreen()),
         ),
         _ActionCard(
-          title: 'পেমেন্ট (Payment)',
+          title: 'পেমেন্ট',
           icon: Icons.payment,
           color: Colors.orange.shade700,
           onTap: () => Get.to(() => DirectTransferScreen(senderId: _userId)),
         ),
         _ActionCard(
-          title: 'মাইক্রোফাইন্যান্স (ঋণ)',
+          title: 'লোন/ঋণ',
           icon: Icons.account_balance_rounded,
           color: Colors.blue.shade700,
           onTap: () {
-            final userProvider = Provider.of<UserProvider>(context, listen: false);
             Get.to(() => MicrofinanceKycScreen(userRole: 'farmer', loanType: 'Farmer Crop Loan'));
           },
         ),
@@ -580,6 +625,67 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
       ),
     );
   }
+
+  Widget _buildTransportBookingBanner(Color primaryColor) {
+    return GestureDetector(
+      onTap: () {
+        Get.to(() => const UpazilaTransportScreen());
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: primaryColor.withOpacity(0.3)),
+          boxShadow: [
+            BoxShadow(
+              color: primaryColor.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: primaryColor.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.local_shipping, color: primaryColor, size: 28),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Hire a Truck/Pickup',
+                    style: GoogleFonts.hindSiliguri(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Direct Driver Directory',
+                    style: GoogleFonts.hindSiliguri(
+                      fontSize: 14,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios, size: 16, color: primaryColor),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _ActionCard extends StatefulWidget {
@@ -633,12 +739,12 @@ class _ActionCardState extends State<_ActionCard> with SingleTickerProviderState
         child: Container(
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
                 color: widget.color.withOpacity(0.15),
-                blurRadius: 15,
-                offset: const Offset(0, 6),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
@@ -646,21 +752,27 @@ class _ActionCardState extends State<_ActionCard> with SingleTickerProviderState
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: widget.color.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(widget.icon, size: 36, color: widget.color),
+                child: Icon(widget.icon, size: 26, color: widget.color),
               ),
-              const SizedBox(height: 12),
-              Text(
-                widget.title,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.hindSiliguri(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Text(
+                  widget.title,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.hindSiliguri(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                    height: 1.1,
+                  ),
                 ),
               ),
             ],
