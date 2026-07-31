@@ -267,7 +267,15 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
                     const SizedBox(height: 16),
                     
                     // 1. Live Real-time Location Weather Card
-                    const WeatherCardWidget(),
+                    Consumer<UserProvider>(
+                      builder: (context, userProvider, _) {
+                        final user = userProvider.currentUser;
+                        return WeatherCardWidget(
+                          customDistrict: user?.district,
+                          customUpazila: user?.upazila,
+                        );
+                      },
+                    ),
                     const SizedBox(height: 24),
 
                     // Transport Booking Banner

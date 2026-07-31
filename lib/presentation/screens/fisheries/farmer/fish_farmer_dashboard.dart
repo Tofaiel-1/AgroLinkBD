@@ -228,7 +228,16 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                       // Weather & Water Alert Card
                       FadeTransition(
                         opacity: _fadeAnimation,
-                        child: const WeatherCardWidget(isFisheriesTheme: true),
+                        child: Consumer<UserProvider>(
+                          builder: (context, userProvider, _) {
+                            final user = userProvider.currentUser;
+                            return WeatherCardWidget(
+                              isFisheriesTheme: true,
+                              customDistrict: user?.district,
+                              customUpazila: user?.upazila,
+                            );
+                          },
+                        ),
                       ),
 
                       const SizedBox(height: 24),

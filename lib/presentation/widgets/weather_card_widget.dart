@@ -61,7 +61,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _weather = WeatherModel.defaultFallback(dist ?? 'গাজীপুর');
+          _weather = WeatherModel.defaultFallback(upa ?? dist ?? 'গুরুদাসপুর, নাটোর');
           _isLoading = false;
         });
       }
@@ -115,7 +115,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  
+
                   // Division Dropdown
                   DropdownButtonFormField<String>(
                     initialValue: tempDiv,
@@ -197,6 +197,256 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
     );
   }
 
+  void _showDetailedWeatherBottomSheet(WeatherModel weather) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: isDark ? const Color(0xFF1E1E2C) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.82,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Sheet Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'বিস্তারিত আবহাওয়া পূর্বাভাস',
+                        style: GoogleFonts.hindSiliguri(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                      Text(
+                        weather.locationName,
+                        style: GoogleFonts.hindSiliguri(
+                          fontSize: 14,
+                          color: Colors.green.shade600,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 24-Hour Forecast Section
+                      Text(
+                        '২৪ ঘণ্টার পূর্বাভাস',
+                        style: GoogleFonts.hindSiliguri(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        height: 110,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: weather.hourlyForecast.length,
+                          itemBuilder: (context, index) {
+                            final h = weather.hourlyForecast[index];
+                            return Container(
+                              width: 80,
+                              margin: const EdgeInsets.only(right: 12),
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: isDark ? const Color(0xFF2A2A3C) : Colors.green.shade50,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: isDark ? Colors.grey.shade800 : Colors.green.shade200,
+                                ),
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    h.time,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12,
+                                      color: isDark ? Colors.grey.shade300 : Colors.grey.shade700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Icon(_getWeatherIcon(h.weatherCode), size: 22, color: Colors.amber.shade700),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${h.temperature.toStringAsFixed(0)}°C',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: isDark ? Colors.white : Colors.black87,
+                                    ),
+                                  ),
+                                  if (h.rainProbability > 0)
+                                    Text(
+                                      '🌧️${h.rainProbability}%',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 10,
+                                        color: Colors.blue.shade700,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // 7-Day Extended Forecast Section
+                      Text(
+                        '৭ দিনের আবহাওয়া পূর্বাভাস',
+                        style: GoogleFonts.hindSiliguri(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Column(
+                        children: weather.dailyForecast.map((d) {
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF2A2A3C) : Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                SizedBox(
+                                  width: 60,
+                                  child: Text(
+                                    d.dayName,
+                                    style: GoogleFonts.hindSiliguri(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                      color: isDark ? Colors.white : Colors.black87,
+                                    ),
+                                  ),
+                                ),
+                                Row(
+                                  children: [
+                                    Icon(_getWeatherIcon(d.weatherCode), size: 20, color: Colors.amber.shade700),
+                                    const SizedBox(width: 8),
+                                    if (d.rainProbability > 0)
+                                      Text(
+                                        '${d.rainProbability}% বৃষ্টি',
+                                        style: GoogleFonts.hindSiliguri(
+                                          fontSize: 12,
+                                          color: Colors.blue.shade600,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                                Row(
+                                  children: [
+                                    Text(
+                                      '${d.maxTemp.toStringAsFixed(0)}°',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold,
+                                        color: isDark ? Colors.white : Colors.black87,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      '${d.minTemp.toStringAsFixed(0)}°',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 13,
+                                        color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Extra Weather Metrics Breakdown
+                      Text(
+                        'পরিবেশ ও বায়ুমণ্ডলীয় মেট্রিক্স',
+                        style: GoogleFonts.hindSiliguri(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      GridView.count(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        crossAxisCount: 2,
+                        childAspectRatio: 2.5,
+                        mainAxisSpacing: 10,
+                        crossAxisSpacing: 10,
+                        children: [
+                          _buildDetailGridCard('☀️ UV Index', '${weather.uvIndex.toStringAsFixed(1)}', isDark),
+                          _buildDetailGridCard('💨 বাতাসের দিক', weather.windDirectionText, isDark),
+                          _buildDetailGridCard('⏲️ বায়ুচাপ', '${weather.pressureHpa.toStringAsFixed(0)} hPa', isDark),
+                          _buildDetailGridCard('☁️ মেঘের ঘনত্ব', '${weather.cloudCoverPercent}%', isDark),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDetailGridCard(String label, String val, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF2A2A3C) : Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(label, style: GoogleFonts.hindSiliguri(fontSize: 12, color: isDark ? Colors.grey.shade400 : Colors.grey.shade700)),
+          Text(val, style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
+        ],
+      ),
+    );
+  }
+
   IconData _getWeatherIcon(int code) {
     if (code >= 95) return Icons.thunderstorm;
     if (code >= 80) return Icons.grain;
@@ -222,7 +472,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
     if (_isLoading) {
       return Container(
         width: double.infinity,
-        height: 180,
+        height: 190,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24),
           gradient: LinearGradient(colors: gradientColors),
@@ -233,168 +483,172 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
       );
     }
 
-    final weather = _weather ?? WeatherModel.defaultFallback('গাজীপুর');
+    final weather = _weather ?? WeatherModel.defaultFallback('গুরুদাসপুর, নাটোর');
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: LinearGradient(
-          colors: gradientColors,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: gradientColors.first.withValues(alpha: 0.3),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
+    return GestureDetector(
+      onTap: () => _showDetailedWeatherBottomSheet(weather),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          gradient: LinearGradient(
+            colors: gradientColors,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header: Location Name & Picker Trigger
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              GestureDetector(
-                onTap: _showLocationPicker,
-                child: Row(
+          boxShadow: [
+            BoxShadow(
+              color: gradientColors.first.withValues(alpha: 0.3),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header: Location Name & Picker Trigger
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                GestureDetector(
+                  onTap: _showLocationPicker,
+                  child: Row(
+                    children: [
+                      const Icon(Icons.location_on, color: Colors.white, size: 18),
+                      const SizedBox(width: 6),
+                      Text(
+                        weather.locationName,
+                        style: GoogleFonts.hindSiliguri(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(Icons.keyboard_arrow_down, color: Colors.white70, size: 18),
+                    ],
+                  ),
+                ),
+                Row(
                   children: [
-                    const Icon(Icons.location_on, color: Colors.white, size: 18),
-                    const SizedBox(width: 6),
+                    IconButton(
+                      icon: const Icon(Icons.refresh, color: Colors.white, size: 20),
+                      onPressed: _loadWeather,
+                      tooltip: 'আবহাওয়া রিফ্রেশ করুন',
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // Temperature & Condition
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${weather.temperature.toStringAsFixed(1)}°',
+                          style: GoogleFonts.poppins(
+                            fontSize: 42,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            height: 1.0,
+                          ),
+                        ),
+                        Text(
+                          'C',
+                          style: GoogleFonts.poppins(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white70,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
                     Text(
-                      weather.locationName,
+                      '${weather.condition} • অনুভব: ${weather.feelsLike.toStringAsFixed(1)}°C',
                       style: GoogleFonts.hindSiliguri(
-                        fontSize: 16,
+                        fontSize: 14,
+                        color: Colors.white.withValues(alpha: 0.9),
+                      ),
+                    ),
+                  ],
+                ),
+                Icon(
+                  _getWeatherIcon(weather.weatherCode),
+                  size: 64,
+                  color: Colors.white,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Weather Metrics Grid (Rain, Wind & Direction, Humidity, UV)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildMetricItem(
+                    icon: Icons.umbrella,
+                    label: 'বৃষ্টির সম্ভাবনা',
+                    value: '${weather.rainProbability}%',
+                  ),
+                  Container(height: 24, width: 1, color: Colors.white24),
+                  _buildMetricItem(
+                    icon: Icons.air,
+                    label: 'বাতাস (${weather.windDirectionText})',
+                    value: '${weather.windSpeedKmH.toStringAsFixed(1)} km/h',
+                  ),
+                  Container(height: 24, width: 1, color: Colors.white24),
+                  _buildMetricItem(
+                    icon: Icons.water_drop,
+                    label: 'আর্দ্রতা',
+                    value: '${weather.humidity}%',
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            // Agricultural Advice Alert Banner
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      weather.agriAdvice,
+                      style: GoogleFonts.hindSiliguri(
+                        fontSize: 13,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(width: 4),
-                    const Icon(Icons.keyboard_arrow_down, color: Colors.white70, size: 18),
-                  ],
-                ),
-              ),
-              Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.refresh, color: Colors.white, size: 20),
-                    onPressed: _loadWeather,
-                    tooltip: 'আবহাওয়া রিফ্রেশ করুন',
                   ),
+                  const Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 14),
                 ],
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // Temperature & Condition
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${weather.temperature.toStringAsFixed(1)}°',
-                        style: GoogleFonts.poppins(
-                          fontSize: 42,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          height: 1.0,
-                        ),
-                      ),
-                      Text(
-                        'C',
-                        style: GoogleFonts.poppins(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white70,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${weather.condition} • অনুভব: ${weather.feelsLike.toStringAsFixed(1)}°C',
-                    style: GoogleFonts.hindSiliguri(
-                      fontSize: 14,
-                      color: Colors.white.withValues(alpha: 0.9),
-                    ),
-                  ),
-                ],
-              ),
-              Icon(
-                _getWeatherIcon(weather.weatherCode),
-                size: 64,
-                color: Colors.white,
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Weather Metrics Grid (Rain, Wind, Humidity)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(16),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildMetricItem(
-                  icon: Icons.water_drop,
-                  label: 'বৃষ্টি',
-                  value: weather.rainMm > 0 ? '${weather.rainMm.toStringAsFixed(1)} mm' : '${weather.rainProbability}%',
-                ),
-                Container(height: 24, width: 1, color: Colors.white24),
-                _buildMetricItem(
-                  icon: Icons.air,
-                  label: 'বাতাসের গতি',
-                  value: '${weather.windSpeedKmH.toStringAsFixed(1)} km/h',
-                ),
-                Container(height: 24, width: 1, color: Colors.white24),
-                _buildMetricItem(
-                  icon: Icons.water,
-                  label: 'আর্দ্রতা',
-                  value: '${weather.humidity}%',
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-
-          // Agricultural Advice Alert
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    weather.agriAdvice,
-                    style: GoogleFonts.hindSiliguri(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
