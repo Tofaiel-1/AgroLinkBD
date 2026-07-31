@@ -807,12 +807,15 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: () {
+                          final currentUser = Provider.of<UserProvider>(context, listen: false).currentUser;
                           UserRatingService.showUniversalRateModal(
                             context: context,
                             targetUserId: user?.id ?? 'demo_id',
                             targetUserName: user?.name ?? 'সদস্য',
-                            reviewerId: 'current_user_id',
-                            reviewerName: 'সক্রিয় সদস্য',
+                            reviewerId: currentUser?.id ?? 'current_user_id',
+                            reviewerName: currentUser?.name ?? 'সক্রিয় সদস্য',
+                            reviewerRole: currentUser?.userType.name,
+                            targetUserRole: user?.userType.name,
                             onRatingSubmitted: () {
                               setState(() {});
                               if (user?.id != null) {

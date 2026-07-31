@@ -186,6 +186,7 @@ class UniversalTrustBadgeWidget extends StatelessWidget {
   final int totalRatings;
   final String currentUserId;
   final String currentUserName;
+  final String? reviewerRole;
 
   const UniversalTrustBadgeWidget({
     super.key,
@@ -196,6 +197,7 @@ class UniversalTrustBadgeWidget extends StatelessWidget {
     this.totalRatings = 0,
     required this.currentUserId,
     required this.currentUserName,
+    this.reviewerRole,
   });
 
   @override
@@ -203,9 +205,10 @@ class UniversalTrustBadgeWidget extends StatelessWidget {
     const Color primaryGreen = Color(0xFF2E7D32);
 
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.star, size: 16, color: Colors.amber[700]),
             const SizedBox(width: 4),
@@ -229,6 +232,8 @@ class UniversalTrustBadgeWidget extends StatelessWidget {
               targetUserName: targetUserName,
               reviewerId: currentUserId,
               reviewerName: currentUserName,
+              reviewerRole: reviewerRole,
+              targetUserRole: targetUserType,
               onRatingSubmitted: () {},
             );
           },

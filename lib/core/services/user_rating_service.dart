@@ -230,15 +230,109 @@ class UserRatingService {
     }
   }
 
-  // Show Universal 360° Cross-Role Rating Modal (supports any role combination)
+  // Matrix verification helper: Who can rate whom
+  static bool canUserRate({
+    required String reviewerId,
+    required String targetUserId,
+    String? reviewerRole,
+    String? targetUserRole,
+  }) {
+    // 1. Cannot rate yourself
+    if (reviewerId.isNotEmpty && targetUserId.isNotEmpty && reviewerId == targetUserId) {
+      return false;
+    }
+
+    if (reviewerRole == null || targetUserRole == null || reviewerRole.isEmpty || targetUserRole.isEmpty) {
+      return true; // fallback if roles are not explicitly passed
+    }
+
+    final String rev = _normalizeRole(reviewerRole);
+    final String tar = _normalizeRole(targetUserRole);
+
+    // 2. "same user ekjon onno jonke dite parbe na" -> Same role cannot rate same role
+    if (rev == tar) {
+      return false;
+    }
+
+    // 3. Exact user matrix:
+    // rating farmer theke pabe = buyer, service provider, driver, company
+    // rating fish farmer theke pabe = fish buyer, service provider, driver, company
+    // service provider theke pabe = farmer, fish farmer
+    // driver theke pabe = buyer, fish buyer, service provider, company
+    // company theke pabe = farmer, fish farmer, service provider
+    switch (rev) {
+      case 'farmer':
+        return ['buyer', 'serviceprovider', 'driver', 'company'].contains(tar);
+      case 'fishfarmer':
+        return ['fishbuyer', 'serviceprovider', 'driver', 'company'].contains(tar);
+      case 'serviceprovider':
+        return ['farmer', 'fishfarmer'].contains(tar);
+      case 'driver':
+        return ['buyer', 'fishbuyer', 'serviceprovider', 'company'].contains(tar);
+      case 'company':
+        return ['farmer', 'fishfarmer', 'serviceprovider'].contains(tar);
+      case 'buyer':
+        return ['farmer', 'driver', 'serviceprovider', 'company'].contains(tar);
+      case 'fishbuyer':
+        return ['fishfarmer', 'driver', 'serviceprovider', 'company'].contains(tar);
+      default:
+        return true;
+    }
+  }
+
+  static String _normalizeRole(String role) {
+    return role.toLowerCase().replaceAll(' ', '').replaceAll('_', '').replaceAll('-', '');
+  }
+
+  // Show Universal 360° Cross-Role Rating Modal (supports any role combination with matrix enforcement)
   static void showUniversalRateModal({
     required BuildContext context,
     required String targetUserId,
     required String targetUserName,
     required String reviewerId,
     required String reviewerName,
+    String? reviewerRole,
+    String? targetUserRole,
     required VoidCallback onRatingSubmitted,
   }) {
+    // Check rating permission rules first
+    if (reviewerId == targetUserId && reviewerId.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚠️ আপনি নিজেকে রেটিং দিতে পারবেন না!'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+    if (reviewerRole != null &&
+        targetUserRole != null &&
+        reviewerRole.isNotEmpty &&
+        targetUserRole.isNotEmpty &&
+        _normalizeRole(reviewerRole) == _normalizeRole(targetUserRole)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚠️ একই পেশার বা রোলের ব্যবহারকারী একে অপরকে রেটিং দিতে পারবেন না!'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+    if (!canUserRate(
+      reviewerId: reviewerId,
+      targetUserId: targetUserId,
+      reviewerRole: reviewerRole,
+      targetUserRole: targetUserRole,
+    )) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚠️ আপনার রোল থেকে এই ব্যবহারকারীকে রেটিং দেওয়ার অনুমতি নেই!'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
     double farmerRating = 5.0;
     double paymentScore = 5.0;
     double transportScore = 5.0;
@@ -264,10 +358,12 @@ class UserRatingService {
               '$targetUserName-কে মূল্যায়ন করুন',
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
             ),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+            content: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 450),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
                     padding: const EdgeInsets.all(8),
@@ -410,6 +506,7 @@ class UserRatingService {
                   ),
                 ],
               ),
+            ),
             ),
             actions: [
               TextButton(
