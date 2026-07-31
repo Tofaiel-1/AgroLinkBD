@@ -186,21 +186,37 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                                             pinFieldType: 'walletBalance',
                                             textColor: oceanBlue,
                                             fontSize: 14.0,
-                                            label: 'Tap to view',
-                                          );
-                                        }
-                                      ),
-                                    ],
+                        children: [
+                          Consumer<UserProvider>(
+                            builder: (context, userProvider, _) {
+                              final user = userProvider.currentUser;
+                              final name = user?.name ?? 'মৎস্য চাষী';
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'স্বাগতম, $name 👋',
+                                    style: GoogleFonts.hindSiliguri(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                      color: isDark ? Colors.white : Colors.black87,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
+                                  Text(
+                                    'মাছ চাষের আপডেট এবং পরামর্শ',
+                                    style: GoogleFonts.hindSiliguri(
+                                      fontSize: 14,
+                                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
                           ),
-                          const SizedBox(width: 12),
                           Stack(
                             clipBehavior: Clip.none,
                             children: [
-                              const Icon(Icons.notifications_outlined, color: Colors.black87, size: 28),
+                              Icon(Icons.notifications_outlined, color: isDark ? Colors.white : Colors.black87, size: 28),
                               Positioned(
                                 right: -2,
                                 top: -2,
@@ -240,7 +256,7 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                             style: GoogleFonts.hindSiliguri(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: Colors.black87,
+                              color: isDark ? Colors.white : Colors.black87,
                             ),
                           ),
                         ],
@@ -263,7 +279,7 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                             style: GoogleFonts.hindSiliguri(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: Colors.black87,
+                              color: isDark ? Colors.white : Colors.black87,
                             ),
                           ),
                           TextButton(
@@ -293,7 +309,7 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                         style: GoogleFonts.hindSiliguri(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black87,
+                          color: isDark ? Colors.white : Colors.black87,
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -475,12 +491,13 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
   }
 
   Widget _buildTaskItem(String title, bool completed, Color activeColor) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -505,7 +522,7 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
           style: GoogleFonts.hindSiliguri(
             fontSize: 15,
             decoration: completed ? TextDecoration.lineThrough : null,
-            color: completed ? Colors.grey : Colors.black87,
+            color: completed ? Colors.grey : (isDark ? Colors.white : Colors.black87),
           ),
         ),
         trailing: Icon(Icons.more_vert, color: Colors.grey.shade400),
@@ -529,6 +546,8 @@ class _ActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -538,7 +557,7 @@ class _ActionCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: isDark ? 0.2 : 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: color, size: 28),
@@ -551,7 +570,7 @@ class _ActionCard extends StatelessWidget {
             style: GoogleFonts.hindSiliguri(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: Colors.black87,
+              color: isDark ? Colors.white70 : Colors.black87,
               height: 1.2,
             ),
           ),

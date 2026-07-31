@@ -44,6 +44,7 @@ class DriverCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     const Color primaryGreen = Color(0xFF2E7D32);
 
     return Card(
@@ -58,12 +59,12 @@ class DriverCard extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 30,
-                  backgroundColor: Colors.grey.shade200,
+                  backgroundColor: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
                   backgroundImage: profileImageUrl != null && profileImageUrl!.isNotEmpty
                       ? NetworkImage(profileImageUrl!)
                       : null,
                   child: profileImageUrl == null || profileImageUrl!.isEmpty
-                      ? const Icon(Icons.person, size: 30, color: Colors.grey)
+                      ? Icon(Icons.person, size: 30, color: isDark ? Colors.grey.shade400 : Colors.grey)
                       : null,
                 ),
                 const SizedBox(width: 16),
@@ -80,7 +81,7 @@ class DriverCard extends StatelessWidget {
                               style: GoogleFonts.hindSiliguri(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.black87,
+                                color: isDark ? Colors.white : Colors.black87,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -90,21 +91,21 @@ class DriverCard extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: Colors.orange.shade50,
+                                color: isDark ? Colors.orange.shade900.withValues(alpha: 0.3) : Colors.orange.shade50,
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.orange.shade200),
+                                border: Border.all(color: Colors.orange.shade300),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.location_on, size: 12, color: Colors.orange.shade800),
+                                  Icon(Icons.location_on, size: 12, color: Colors.orange.shade400),
                                   const SizedBox(width: 4),
                                   Text(
                                     '${distanceInKm!.toStringAsFixed(1)} km',
                                     style: GoogleFonts.poppins(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
-                                      color: Colors.orange.shade800,
+                                      color: Colors.orange.shade400,
                                     ),
                                   ),
                                 ],
@@ -115,13 +116,13 @@ class DriverCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          Icon(Icons.local_shipping, size: 16, color: Colors.grey.shade600),
+                          Icon(Icons.local_shipping, size: 16, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600),
                           const SizedBox(width: 4),
                           Text(
                             '$vehicleType • $capacity',
                             style: GoogleFonts.hindSiliguri(
                               fontSize: 14,
-                              color: Colors.grey.shade700,
+                              color: isDark ? Colors.grey.shade300 : Colors.grey.shade700,
                             ),
                           ),
                         ],
@@ -129,13 +130,13 @@ class DriverCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          Icon(Icons.pin, size: 16, color: Colors.grey.shade600),
+                          Icon(Icons.pin, size: 16, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600),
                           const SizedBox(width: 4),
                           Text(
                             vehicleNumber,
                             style: GoogleFonts.hindSiliguri(
                               fontSize: 14,
-                              color: Colors.grey.shade700,
+                              color: isDark ? Colors.grey.shade300 : Colors.grey.shade700,
                             ),
                           ),
                         ],

@@ -69,6 +69,8 @@ class _ReportGenerationCardState extends State<ReportGenerationCard> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -82,7 +84,7 @@ class _ReportGenerationCardState extends State<ReportGenerationCard> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: widget.color.withOpacity(0.1),
+                    color: widget.color.withValues(alpha: isDark ? 0.2 : 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(Icons.analytics, color: widget.color, size: 28),
@@ -92,25 +94,25 @@ class _ReportGenerationCardState extends State<ReportGenerationCard> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Activity Report', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      Text('Activity Report', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
                       const SizedBox(height: 4),
                       Text('Generate a detailed PDF ledger of your account activity.', 
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                        style: TextStyle(fontSize: 12, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600)),
                     ],
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 20),
-            Text('Select Period', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey.shade800)),
+            Text('Select Period', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: isDark ? Colors.grey.shade300 : Colors.grey.shade800)),
             const SizedBox(height: 8),
             Row(
               children: [
-                _buildPeriodChip('Today', ReportPeriod.daily),
+                _buildPeriodChip('Today', ReportPeriod.daily, isDark),
                 const SizedBox(width: 8),
-                _buildPeriodChip('This Week', ReportPeriod.weekly),
+                _buildPeriodChip('This Week', ReportPeriod.weekly, isDark),
                 const SizedBox(width: 8),
-                _buildPeriodChip('This Month', ReportPeriod.monthly),
+                _buildPeriodChip('This Month', ReportPeriod.monthly, isDark),
               ],
             ),
             const SizedBox(height: 20),
@@ -136,7 +138,7 @@ class _ReportGenerationCardState extends State<ReportGenerationCard> {
     );
   }
 
-  Widget _buildPeriodChip(String label, ReportPeriod period) {
+  Widget _buildPeriodChip(String label, ReportPeriod period, bool isDark) {
     final isSelected = _selectedPeriod == period;
     return ChoiceChip(
       label: Text(label),
@@ -144,9 +146,9 @@ class _ReportGenerationCardState extends State<ReportGenerationCard> {
       onSelected: (selected) {
         if (selected) setState(() => _selectedPeriod = period);
       },
-      selectedColor: widget.color.withOpacity(0.2),
+      selectedColor: widget.color.withValues(alpha: isDark ? 0.3 : 0.2),
       labelStyle: TextStyle(
-        color: isSelected ? widget.color : Colors.grey.shade700,
+        color: isSelected ? widget.color : (isDark ? Colors.grey.shade300 : Colors.grey.shade700),
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
       ),
     );
