@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:agrolinkbd/core/providers/user_provider.dart';
 import 'package:agrolinkbd/core/models/user_model.dart';
-import 'package:agrolinkbd/core/services/role_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ProfileSettings extends StatefulWidget {
@@ -139,6 +138,8 @@ class _ProfileSettingsState extends State<ProfileSettings> {
     final userName = user?.name ?? 'User';
     final userEmail = user?.email ?? 'No email';
     final primaryColor = _getRolePrimaryColor(context);
+    final isFishBuyerOrBuyer = user?.userType == UserType.fishBuyer ||
+        user?.userType == UserType.buyer;
 
     return Scaffold(
       body: CustomScrollView(
@@ -178,30 +179,29 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                               width: 3,
                             ),
                           ),
-                          child: CircleAvatar(
-                            radius: 50,
-                            backgroundColor:
-                                Theme.of(context).colorScheme.surface,
+                          child: const CircleAvatar(
+                            radius: 40,
+                            backgroundColor: Colors.white24,
                             child: Icon(
                               Icons.person,
-                              size: 50,
-                              color: primaryColor,
+                              size: 40,
+                              color: Colors.white,
                             ),
                           ),
                         ),
                         Positioned(
-                          bottom: 0,
                           right: 0,
+                          bottom: 0,
                           child: Container(
                             padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surface,
+                              color: Theme.of(context).primaryColor,
                               shape: BoxShape.circle,
                             ),
-                            child: Icon(
+                            child: const Icon(
                               Icons.camera_alt,
-                              size: 20,
-                              color: primaryColor,
+                              size: 16,
+                              color: Colors.white,
                             ),
                           ),
                         ),
@@ -211,7 +211,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                     Text(
                       userName,
                       style: TextStyle(
-                        fontSize: 24,
+                        fontSize: 22,
                         fontWeight: FontWeight.bold,
                         color: Theme.of(context).brightness == Brightness.dark
                             ? Colors.white
@@ -253,24 +253,46 @@ class _ProfileSettingsState extends State<ProfileSettings> {
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildStatItem('52', 'Products', Icons.inventory_2),
-                  Container(
-                    width: 1,
-                    height: 40,
-                    color: Theme.of(context).dividerColor,
-                  ),
-                  _buildStatItem('34', 'Orders', Icons.shopping_bag),
-                  Container(
-                    width: 1,
-                    height: 40,
-                    color: Theme.of(context).dividerColor,
-                  ),
-                  _buildStatItem('4.8', 'Rating', Icons.star),
-                ],
+                children: isFishBuyerOrBuyer
+                    ? [
+                        _buildStatItem('২৪ বার', 'মাছ ক্রয়', Icons.shopping_bag),
+                        Container(
+                          width: 1,
+                          height: 40,
+                          color: Theme.of(context).dividerColor,
+                        ),
+                        _buildStatItem('৳ ৪২.৫হাজার', 'পরিশোধিত', Icons.payments),
+                        Container(
+                          width: 1,
+                          height: 40,
+                          color: Theme.of(context).dividerColor,
+                        ),
+                        _buildStatItem('৯৮%', 'সফল পেমেন্ট', Icons.verified_user),
+                      ]
+                    : [
+                        _buildStatItem('52', 'Products', Icons.inventory_2),
+                        Container(
+                          width: 1,
+                          height: 40,
+                          color: Theme.of(context).dividerColor,
+                        ),
+                        _buildStatItem('34', 'Orders', Icons.shopping_bag),
+                        Container(
+                          width: 1,
+                          height: 40,
+                          color: Theme.of(context).dividerColor,
+                        ),
+                        _buildStatItem('4.8', 'Rating', Icons.star),
+                      ],
               ),
             ),
           ),
+
+          // Buyer Activity & Credibility Card (Fish Buyer / Buyer specific)
+          if (isFishBuyerOrBuyer)
+            SliverToBoxAdapter(
+              child: _buildBuyerActivityCard(context, user, primaryColor),
+            ),
 
           // Settings Section
           const SliverToBoxAdapter(
@@ -530,10 +552,10 @@ class _ProfileSettingsState extends State<ProfileSettings> {
           const SizedBox(height: 8),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: Theme.of(context).textTheme.titleLarge?.color ?? Colors.black87,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -550,6 +572,235 @@ class _ProfileSettingsState extends State<ProfileSettings> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildBuyerActivityCard(
+      BuildContext context, UserModel? user, Color primaryColor) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E2E) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: primaryColor.withOpacity(0.35),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: primaryColor.withOpacity(0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Badge Strip
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  primaryColor.withOpacity(0.18),
+                  primaryColor.withOpacity(0.05),
+                ],
+              ),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(15)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.verified, color: primaryColor, size: 24),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'গোল্ড ফিশ বায়ার - বিশ্বস্ত ক্রেতা',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: primaryColor,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'নিয়মিত মাছ ক্রয় ও সময়মতো পেমেন্ট প্রদানকারী ক্রেতা',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: isDark ? Colors.grey[300] : Colors.grey[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.green, width: 1),
+                  ),
+                  child: const Text(
+                    'VERIFIED BUYER',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const Divider(height: 1),
+
+          // Activity Details & Reliability Metrics
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'লেনদেন ও ক্রয়ের বিশ্বস্ততা বিবরণী',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _buildActivityDetailRow(
+                  context,
+                  Icons.shopping_cart_checkout,
+                  'মোট মাছ ক্রয় (Completed Orders)',
+                  '২৪ টি সফল ক্রয় (সর্বশেষ ক্রয়: ২ দিন আগে)',
+                  Colors.blue,
+                ),
+                const SizedBox(height: 10),
+                _buildActivityDetailRow(
+                  context,
+                  Icons.payments_outlined,
+                  'বাস্তব পরিশোধিত পেমেন্ট (Real Payments)',
+                  '৳ ৪২,৫০০ (১০০% নিরাপদ ও সময়মতো লেনদেন)',
+                  Colors.green,
+                ),
+                const SizedBox(height: 10),
+                _buildActivityDetailRow(
+                  context,
+                  Icons.speed,
+                  'পেমেন্ট দ্রুততা ও রেকর্ড (Payment Record)',
+                  'সফল পেমেন্ট হার ৯৮% • ডেলিভারি পাওয়ার দ্রুততম সময়ে পরিশোধ',
+                  Colors.orange,
+                ),
+                const SizedBox(height: 10),
+                _buildActivityDetailRow(
+                  context,
+                  Icons.set_meal,
+                  'পছন্দের মাছের ক্যাটাগরি (Favorite Fish)',
+                  'রুই, ইলিশ, বাগদা চিংড়ি ও পাঙ্গাশ',
+                  Colors.teal,
+                ),
+                const SizedBox(height: 10),
+                _buildActivityDetailRow(
+                  context,
+                  Icons.thumb_up_alt_outlined,
+                  'খামারিদের মূল্যায়ন (Farmer Endorsement)',
+                  '১৮ জন মাছ খামারি কর্তৃক বিশ্বস্ত ক্রেতা হিসেবে স্বীকৃত (৪.৯/৫.০)',
+                  Colors.purple,
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.of(context).pushNamed('/buyer-orders');
+                        },
+                        icon: const Icon(Icons.history, size: 18),
+                        label: const Text('ক্রয়ের ইতিহাস'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: primaryColor,
+                          side: BorderSide(color: primaryColor),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.of(context).pushNamed('/buyer-payment-history');
+                        },
+                        icon: const Icon(Icons.receipt_long, size: 18),
+                        label: const Text('পেমেন্ট রিপোর্ট'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryColor,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActivityDetailRow(
+    BuildContext context,
+    IconData icon,
+    String title,
+    String value,
+    Color iconColor,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: iconColor.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: iconColor, size: 18),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.grey[300] : Colors.grey[800],
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
