@@ -11,7 +11,7 @@ class WeatherService {
   WeatherService._internal();
 
   /// Latitude & Longitude map for major Bangladesh Districts
-  static const Map<String, Map<String, double>> _districtCoordinates = {
+  static const Map<String, Map<String, dynamic>> _districtCoordinates = {
     'Dhaka': {'lat': 23.8103, 'lng': 90.4125, 'name': 'ঢাকা'},
     'Gazipur': {'lat': 23.9999, 'lng': 90.4203, 'name': 'গাজীপুর'},
     'Rajshahi': {'lat': 24.3745, 'lng': 88.6042, 'name': 'রাজশাহী'},
