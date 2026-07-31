@@ -10,6 +10,7 @@ import 'package:agrolinkbd/core/models/order_model.dart';
 import 'package:agrolinkbd/core/services/order_service.dart';
 import 'package:agrolinkbd/core/services/sslcommerz_service.dart';
 import 'package:agrolinkbd/presentation/screens/buyer/fish_buyer_orders_screen.dart';
+import 'package:agrolinkbd/core/utils/responsive_helper.dart';
 
 class FishMarketplaceScreen extends StatefulWidget {
   const FishMarketplaceScreen({super.key});
@@ -283,9 +284,9 @@ class _FishMarketplaceScreenState extends State<FishMarketplaceScreen> {
           SliverPadding(
             padding: const EdgeInsets.all(16),
             sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 0.7,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: ResponsiveHelper.getGridColumns(context),
+                childAspectRatio: ResponsiveHelper.isDesktop(context) ? 0.85 : 0.7,
                 crossAxisSpacing: 16,
                 mainAxisSpacing: 16,
               ),

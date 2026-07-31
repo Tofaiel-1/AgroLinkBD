@@ -8,6 +8,7 @@ import 'package:agrolinkbd/presentation/widgets/premium_dashboard_widgets.dart';
 import 'package:agrolinkbd/presentation/screens/marketplace/fish_marketplace_screen.dart';
 import 'package:agrolinkbd/presentation/screens/buyer/shopping_cart_screen.dart';
 import 'package:agrolinkbd/presentation/screens/buyer/fish_buyer_orders_screen.dart';
+import 'package:agrolinkbd/core/utils/responsive_helper.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 /// Fish Buyer Dashboard - Ultra Pro Edition
@@ -182,7 +183,7 @@ class _FishBuyerDashboardState extends State<FishBuyerDashboard>
 
                     // Stats Grid
                     GridView.count(
-                      crossAxisCount: 2,
+                      crossAxisCount: ResponsiveHelper.isPhone(context) ? 2 : 4,
                       crossAxisSpacing: 16,
                       mainAxisSpacing: 16,
                       shrinkWrap: true,

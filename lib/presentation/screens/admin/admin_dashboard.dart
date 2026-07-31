@@ -8,6 +8,7 @@ import 'admin_edit_user.dart';
 import 'admin_edit_product.dart';
 import 'admin_financial_requests_screen.dart';
 import 'admin_transaction_analytics_screen.dart';
+import 'package:agrolinkbd/presentation/widgets/responsive_web_wrapper.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -108,7 +109,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               ),
             ],
           ),
-          body: _buildBody(),
+          body: ResponsiveWebWrapper.content(child: _buildBody()),
           bottomNavigationBar: BottomNavigationBar(
             currentIndex: _selectedIndex,
             onTap: (index) => setState(() => _selectedIndex = index),

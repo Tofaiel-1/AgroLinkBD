@@ -5,6 +5,8 @@ import 'package:agrolinkbd/core/providers/user_provider.dart';
 import 'package:agrolinkbd/core/models/user_model.dart';
 import 'package:agrolinkbd/core/services/role_service.dart';
 import 'package:agrolinkbd/core/services/route_guard.dart';
+import 'package:agrolinkbd/core/utils/responsive_helper.dart';
+import 'package:agrolinkbd/presentation/widgets/responsive_web_wrapper.dart';
 
 // Role-specific navigation stacks
 import 'package:agrolinkbd/presentation/screens/farmer/farmer_dashboard.dart';
@@ -107,9 +109,11 @@ class _RoleBasedNavigationContainerState
       onWillPop: _handleBackPress,
       child: Scaffold(
         drawer: _buildDrawer(context, widget.user),
-        body: IndexedStack(
-          index: _currentIndex,
-          children: navigationStack,
+        body: ResponsiveWebWrapper.content(
+          child: IndexedStack(
+            index: _currentIndex,
+            children: navigationStack,
+          ),
         ),
         bottomNavigationBar: _buildRoleSpecificBottomNav(navigationItems),
       ),

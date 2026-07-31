@@ -19,6 +19,8 @@ import 'package:agrolinkbd/presentation/screens/fisheries/farmer/expert_advice/e
 import 'package:agrolinkbd/presentation/screens/fisheries/farmer/transport/fish_transport_screen.dart';
 import 'package:agrolinkbd/presentation/screens/fisheries/farmer/market_price/fish_market_price_screen.dart';
 import 'package:agrolinkbd/presentation/screens/card/card_preview_screen.dart' as agrolinkbd;
+import 'package:agrolinkbd/core/utils/responsive_helper.dart';
+import 'package:agrolinkbd/presentation/widgets/responsive_web_wrapper.dart';
 
 class FishFarmerDashboard extends StatefulWidget {
   const FishFarmerDashboard({super.key});
@@ -412,10 +414,10 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
     return GridView.count(
       physics: const NeverScrollableScrollPhysics(),
       shrinkWrap: true,
-      crossAxisCount: 4,
+      crossAxisCount: ResponsiveHelper.isPhone(context) ? 4 : (ResponsiveHelper.isTablet(context) ? 6 : 8),
       mainAxisSpacing: 12,
       crossAxisSpacing: 12,
-      childAspectRatio: 0.85,
+      childAspectRatio: ResponsiveHelper.isPhone(context) ? 0.85 : 1.1,
       children: [
         // Row 1
         _ActionCard(
