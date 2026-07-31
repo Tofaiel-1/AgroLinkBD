@@ -491,7 +491,6 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
       margin: const EdgeInsets.only(bottom: 8),
       child: Material(
         color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(12),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
           side: BorderSide(color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
