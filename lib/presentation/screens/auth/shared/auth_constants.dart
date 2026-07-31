@@ -26,42 +26,110 @@ class AuthConstants {
   static const double textFieldHeight = 56.0;
   static const double buttonHeight = 48.0;
 
-  // Role configurations
-  static const Map<String, Map<String, dynamic>> roleConfig = {
-    'farmer': {
-      'color': farmerPrimary,
-      'icon': '🌾',
-      'label': 'কৃষক',
-      'label_en': 'Farmer',
-      'description': 'শস্য চাষ এবং বিক্রয়',
+  // Role configurations organized by domain
+  static const Map<String, Map<String, Map<String, dynamic>>> domainRoles = {
+    'agriculture': {
+      'farmer': {
+        'color': farmerPrimary,
+        'icon': '🌾',
+        'label': 'কৃষক',
+        'label_en': 'Farmer',
+        'description': 'শস্য চাষ এবং বিক্রয়',
+      },
+      'buyer': {
+        'color': buyerPrimary,
+        'icon': '🛒',
+        'label': 'ক্রেতা',
+        'label_en': 'Buyer',
+        'description': 'কৃষি পণ্য ক্রয়',
+      },
+      'driver': {
+        'color': driverPrimary,
+        'icon': '🚛',
+        'label': 'চালক',
+        'label_en': 'Driver',
+        'description': 'পণ্য পরিবহন সেবা',
+      },
+      'service_provider': {
+        'color': serviceProviderPrimary,
+        'icon': '🔧',
+        'label': 'সেবা প্রদানকারী',
+        'label_en': 'Service Provider',
+        'description': 'কৃষি সম্পর্কিত সেবা',
+      },
+      'company': {
+        'color': companyPrimary,
+        'icon': '🏢',
+        'label': 'কোম্পানি',
+        'label_en': 'Company',
+        'description': 'কর্পোরেট সংস্থা',
+      },
+      'expert': {
+        'color': Color(0xFF6A1B9A), // Purple
+        'icon': '👨‍🔬',
+        'label': 'বিশেষজ্ঞ',
+        'label_en': 'Expert',
+        'description': 'কৃষি পরামর্শদাতা',
+      },
     },
-    'buyer': {
-      'color': buyerPrimary,
-      'icon': '🛒',
-      'label': 'ক্রেতা',
-      'label_en': 'Buyer',
-      'description': 'কৃষি পণ্য ক্রয়',
-    },
-    'driver': {
-      'color': driverPrimary,
-      'icon': '🚛',
-      'label': 'চালক',
-      'label_en': 'Driver',
-      'description': 'পণ্য পরিবহন সেবা',
-    },
-    'service_provider': {
-      'color': serviceProviderPrimary,
-      'icon': '🔧',
-      'label': 'সেবা প্রদানকারী',
-      'label_en': 'Service Provider',
-      'description': 'কৃষি সম্পর্কিত সেবা',
-    },
-    'company': {
-      'color': companyPrimary,
-      'icon': '🏢',
-      'label': 'কোম্পানি',
-      'label_en': 'Company',
-      'description': 'কর্পোরেট সংস্থা',
-    },
+    'fisheries': {
+      'fish_farmer': {
+        'color': Color(0xFF0288D1), // Light Blue
+        'icon': '👨‍🌾',
+        'label': 'মৎস্য চাষী',
+        'label_en': 'Fish Farmer',
+        'description': 'মাছ চাষ এবং খামার পরিচালনা',
+      },
+      'fish_buyer': {
+        'color': Color(0xFF0097A7), // Cyan
+        'icon': '🛒',
+        'label': 'মৎস্য ক্রেতা',
+        'label_en': 'Fish Buyer',
+        'description': 'মাছ ক্রয় (পাইকারি ও খুচরা)',
+      },
+      'fish_driver': {
+        'color': Color(0xFFF57C00), // Orange
+        'icon': '🚚',
+        'label': 'চালক',
+        'label_en': 'Driver',
+        'description': 'মাছ পরিবহন সেবা',
+      },
+      'fish_service_provider': {
+        'color': Color(0xFF00796B), // Teal
+        'icon': '🔧',
+        'label': 'সেবা প্রদানকারী',
+        'label_en': 'Service Provider',
+        'description': 'পুকুর পরিষ্কার, পানি পরীক্ষা ইত্যাদি',
+      },
+      'fish_company': {
+        'color': Color(0xFF303F9F), // Indigo
+        'icon': '🏢',
+        'label': 'কোম্পানি',
+        'label_en': 'Company',
+        'description': 'মৎস্য ফিড ও মেডিসিন কোম্পানি',
+      },
+      'fish_expert': {
+        'color': Color(0xFF512DA8), // Deep Purple
+        'icon': '👨‍🔬',
+        'label': 'মৎস্য বিশেষজ্ঞ',
+        'label_en': 'Fisheries Expert',
+        'description': 'মৎস্য রোগ ও চিকিৎসা পরামর্শ',
+      },
+      'hatchery': {
+        'color': Color(0xFF009688), // Teal
+        'icon': '🏭',
+        'label': 'হ্যাচারি মালিক',
+        'label_en': 'Hatchery Owner',
+        'description': 'পোনা উৎপাদন এবং বিক্রয়',
+      },
+    }
   };
+
+  // Backwards compatibility for old code assuming roleConfig
+  static Map<String, Map<String, dynamic>> get roleConfig {
+    final Map<String, Map<String, dynamic>> combined = {};
+    combined.addAll(domainRoles['agriculture']!);
+    combined.addAll(domainRoles['fisheries']!);
+    return combined;
+  }
 }

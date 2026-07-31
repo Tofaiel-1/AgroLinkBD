@@ -333,6 +333,8 @@ class RoleDataProvider extends ChangeNotifier {
           'companyName': user.companyName,
           'license': user.tradeLicense,
         };
+      default:
+        return {};
     }
   }
 

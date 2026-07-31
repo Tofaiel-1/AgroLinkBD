@@ -110,7 +110,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
         slivers: [
           // App Bar with Profile Header
           SliverAppBar(
-            expandedHeight: 200,
+            expandedHeight: 250,
             pinned: true,
             backgroundColor: Theme.of(context).primaryColor,
             flexibleSpace: FlexibleSpaceBar(
@@ -128,7 +128,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 50), // Account for status bar
                     Stack(
                       children: [
                         Container(

@@ -72,7 +72,7 @@ class FarmerDashboardScreen extends StatelessWidget {
                               radius: 24,
                               backgroundColor: Colors.white,
                               child: Obx(() => Text(
-                                userController.userName.isEmpty ? 'F' : userController.userName.value[0].toUpperCase(),
+                                userController.userName.isEmpty ? 'F' : userController.userName[0].toUpperCase(),
                                 style: TextStyle(color: Colors.green.shade700, fontSize: 20, fontWeight: FontWeight.bold),
                               )),
                             ),
@@ -82,7 +82,7 @@ class FarmerDashboardScreen extends StatelessWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Obx(() => Text(
-                                    userController.userName.isEmpty ? "Farmer" : userController.userName.value,
+                                    userController.userName.isEmpty ? "Farmer" : userController.userName,
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 18,
@@ -259,7 +259,8 @@ class FarmerDashboardScreen extends StatelessWidget {
                         'আমার ওয়ালেট',
                         Icons.account_balance_wallet,
                         Colors.teal,
-                        () => Get.to(() => const WalletScreen()),
+                        // () => Get.to(() => const WalletScreen()),
+                        () {},
                       ),
                     ],
                   ),
@@ -439,7 +440,7 @@ class FarmerDashboardScreen extends StatelessWidget {
             Get.to(() => const MarketplaceScreen());
             break;
           case 3:
-            Get.to(() => const WalletScreen());
+            // Get.to(() => const WalletScreen());
             break;
         }
       },

@@ -26,11 +26,21 @@ class RouteGuard {
       case UserType.driver:
         return '/driver/dashboard';
       case UserType.serviceProvider:
+      case UserType.expert:
+      case UserType.fishServiceProvider:
+      case UserType.fishExpert:
         return '/service-provider/dashboard';
       case UserType.company:
-        return '/company/dashboard';
       case UserType.seller:
+      case UserType.fishCompany:
+      case UserType.hatchery:
         return '/company/dashboard';
+      case UserType.fishFarmer:
+        return '/farmer/dashboard';
+      case UserType.fishBuyer:
+        return '/buyer/dashboard';
+      case UserType.fishDriver:
+        return '/driver/dashboard';
     }
   }
 
@@ -101,6 +111,9 @@ class RouteGuard {
           '/company/analytics',
         };
       case UserType.seller:
+      case UserType.company:
+      case UserType.fishCompany:
+      case UserType.hatchery:
         return {
           '/company/dashboard',
           '/company/catalog',
@@ -108,6 +121,46 @@ class RouteGuard {
           '/company/orders',
           '/company/customers',
           '/company/analytics',
+        };
+      case UserType.fishFarmer:
+        return {
+          '/farmer/dashboard',
+          '/farmer/add-product',
+          '/farmer/my-products',
+          '/farmer/orders',
+          '/farmer/analytics',
+          '/farmer/inputs',
+          '/farmer/kyc',
+        };
+      case UserType.fishBuyer:
+        return {
+          '/buyer/dashboard',
+          '/buyer/browse',
+          '/buyer/cart',
+          '/buyer/checkout',
+          '/buyer/orders',
+          '/buyer/saved-farmers',
+          '/buyer/wishlist',
+        };
+      case UserType.fishDriver:
+        return {
+          '/driver/dashboard',
+          '/driver/jobs',
+          '/driver/active-trips',
+          '/driver/trip-history',
+          '/driver/earnings',
+          '/driver/vehicle',
+        };
+      case UserType.fishServiceProvider:
+      case UserType.expert:
+      case UserType.fishExpert:
+        return {
+          '/service-provider/dashboard',
+          '/service-provider/manage',
+          '/service-provider/bookings',
+          '/service-provider/earnings',
+          '/service-provider/reviews',
+          '/service-provider/availability',
         };
     }
   }

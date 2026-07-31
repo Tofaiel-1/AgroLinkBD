@@ -5,16 +5,17 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:math';
 import 'package:get/get.dart';
 import 'package:agrolinkbd/presentation/screens/buyer/order_details_screen.dart';
+import 'package:agrolinkbd/presentation/screens/buyer/fish_order_tracking_screen.dart';
 
 /// Buyer Orders Screen — Tab-based order management
-class BuyerOrdersScreen extends StatefulWidget {
-  const BuyerOrdersScreen({super.key});
+class FishBuyerOrdersScreen extends StatefulWidget {
+  const FishBuyerOrdersScreen({super.key});
 
   @override
-  State<BuyerOrdersScreen> createState() => _BuyerOrdersScreenState();
+  State<FishBuyerOrdersScreen> createState() => _FishBuyerOrdersScreenState();
 }
 
-class _BuyerOrdersScreenState extends State<BuyerOrdersScreen>
+class _FishBuyerOrdersScreenState extends State<FishBuyerOrdersScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
@@ -56,13 +57,29 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'আমার অর্ডার 📦',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : Colors.black87,
-                    ),
+                  Row(
+                    children: [
+                      if (Navigator.canPop(context))
+                        Padding(
+                          padding: const EdgeInsets.only(right: 12.0),
+                          child: InkWell(
+                            onTap: () => Navigator.pop(context),
+                            child: Icon(
+                              Icons.arrow_back,
+                              size: 24,
+                              color: isDark ? Colors.white : Colors.black87,
+                            ),
+                          ),
+                        ),
+                      Text(
+                        'আমার অর্ডার 📦',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
                   // Tab Bar
@@ -295,6 +312,50 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen>
                   color: isDark ? Colors.white70 : Colors.black87,
                 ),
               ),
+            if (order.specialInstructions != null) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(isDark ? 0.2 : 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline, size: 14, color: Colors.blue),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'নির্দেশনা: ${order.specialInstructions}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? Colors.white70 : Colors.black87,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Get.to(() => FishOrderTrackingScreen(order: order));
+                  },
+                  icon: const Icon(Icons.local_shipping, size: 16),
+                  label: const Text('মাছের অর্ডার ট্র্যাকিং'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF0277BD),
+                    side: const BorderSide(color: Color(0xFF0277BD)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
 
             // Status tracker

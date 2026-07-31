@@ -5,7 +5,9 @@ import 'shared/auth_constants.dart';
 /// Role Selection Screen - First screen users see
 /// Allows users to choose their role before login/register
 class RoleSelectionScreen extends StatefulWidget {
-  const RoleSelectionScreen({super.key});
+  final String domain; // 'agriculture' or 'fisheries'
+
+  const RoleSelectionScreen({super.key, this.domain = 'agriculture'});
 
   @override
   State<RoleSelectionScreen> createState() => _RoleSelectionScreenState();
@@ -32,13 +34,15 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: LinearGradient(
-                      colors: [Colors.green.shade600, Colors.green.shade400],
+                      colors: widget.domain == 'fisheries' 
+                        ? [Colors.blue.shade600, Colors.blue.shade400]
+                        : [Colors.green.shade600, Colors.green.shade400],
                     ),
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Text(
-                      '🌾',
-                      style: TextStyle(fontSize: 50),
+                      widget.domain == 'fisheries' ? '🐟' : '🌾',
+                      style: const TextStyle(fontSize: 50),
                     ),
                   ),
                 ),
@@ -64,9 +68,11 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                 const SizedBox(height: 12),
 
                 // Subtitle
-                const Text(
-                  'কৃষি ব্যবসার জন্য ডিজিটাল প্ল্যাটফর্ম',
-                  style: TextStyle(
+                Text(
+                  widget.domain == 'fisheries' 
+                    ? 'মৎস্য ব্যবসার জন্য ডিজিটাল প্ল্যাটফর্ম'
+                    : 'কৃষি ব্যবসার জন্য ডিজিটাল প্ল্যাটফর্ম',
+                  style: const TextStyle(
                     fontSize: 16,
                     color: AuthConstants.textLight,
                     height: 1.5,
@@ -100,7 +106,9 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                         ? null
                         : () => _navigateToAuth(selectedRole!),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green.shade600,
+                      backgroundColor: widget.domain == 'fisheries' 
+                        ? Colors.blue.shade600 
+                        : Colors.green.shade600,
                       disabledBackgroundColor: Colors.grey[300],
                       shape: RoundedRectangleBorder(
                         borderRadius:
@@ -127,7 +135,9 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
   }
 
   List<Widget> _buildRoleCards() {
-    return AuthConstants.roleConfig.entries.map((entry) {
+    final roles = AuthConstants.domainRoles[widget.domain] ?? AuthConstants.roleConfig;
+    
+    return roles.entries.map((entry) {
       final roleKey = entry.key;
       final roleData = entry.value;
       final roleColor = roleData['color'] as Color;

@@ -57,6 +57,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
+  @override
+  void initState() {
+    super.initState();
+    
+    // Check if role was passed via arguments
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (Get.arguments != null && Get.arguments['role'] != null) {
+        final role = Get.arguments['role'] as String;
+        setState(() {
+          switch (role) {
+            case 'farmer': _selectedUserType = UserType.farmer; break;
+            case 'buyer': _selectedUserType = UserType.buyer; break;
+            case 'driver': _selectedUserType = UserType.driver; break;
+            case 'service_provider': _selectedUserType = UserType.serviceProvider; break;
+            case 'company': _selectedUserType = UserType.company; break;
+            // Fisheries
+            case 'fish_farmer': _selectedUserType = UserType.fishFarmer; break;
+            case 'fish_buyer': _selectedUserType = UserType.fishBuyer; break;
+            case 'fish_driver': _selectedUserType = UserType.fishDriver; break;
+            case 'fish_service_provider': _selectedUserType = UserType.fishServiceProvider; break;
+            case 'fish_company': _selectedUserType = UserType.fishCompany; break;
+            case 'fish_expert': _selectedUserType = UserType.fishExpert; break;
+            case 'hatchery': _selectedUserType = UserType.hatchery; break;
+            case 'expert': _selectedUserType = UserType.expert; break;
+          }
+        });
+      }
+    });
+  }
+
   // Navigation is handled by AppRouter via authStateChanges stream
   // No manual navigation needed after registration
 
@@ -106,6 +136,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
         case UserType.serviceProvider:
           userRole = UserRole.expert;
           break;
+        case UserType.fishFarmer:
+          userRole = UserRole.fishFarmer;
+          break;
+        case UserType.fishBuyer:
+          userRole = UserRole.fishBuyer;
+          break;
+        case UserType.fishDriver:
+          userRole = UserRole.fishDriver;
+          break;
+        case UserType.fishServiceProvider:
+          userRole = UserRole.fishServiceProvider;
+          break;
+        case UserType.fishCompany:
+          userRole = UserRole.fishCompany;
+          break;
+        case UserType.fishExpert:
+          userRole = UserRole.fishExpert;
+          break;
+        case UserType.hatchery:
+          userRole = UserRole.hatchery;
+          break;
+        case UserType.expert:
+          userRole = UserRole.expert;
+          break;
         default:
           userRole = UserRole.farmer;
       }
@@ -121,6 +175,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
         }
       }
 
+      // Get domain from arguments or infer from role
+      String userDomain = 'agriculture';
+      if (_selectedUserType.toString().toLowerCase().contains('fish') || 
+          _selectedUserType == UserType.hatchery) {
+        userDomain = 'fisheries';
+      }
+
       UserModel user = UserModel(
         id: userId,
         name: _nameController.text,
@@ -132,11 +193,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
         address: finalAddress,
         district: _selectedDistrict,
         createdAt: DateTime.now(),
+        domain: userDomain,
       );
 
       debugPrint('📝 Creating user profile in Firestore...');
       debugPrint(
-          '   Fields to save: id, name, email, phone, userType, address, district, status, createdAt');
+          '   Fields to save: id, name, email, phone, userType, domain, address, district, status, createdAt');
 
       await _authService.createOrUpdateUser(user);
       debugPrint('✅ User profile created: $userId');
@@ -525,29 +587,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       const SizedBox(height: 24),
 
-                      // User Type
-                      DropdownButtonFormField<UserType>(
-                        value: _selectedUserType,
-                        dropdownColor: cardColor,
-                        style: TextStyle(color: textColor, fontSize: 16),
-                        decoration: inputDecoration.copyWith(
-                          labelText: 'Who are you?',
-                          prefixIcon: Icon(Icons.person_pin_outlined, color: primaryColor),
+                      // User Type (Only show if not pre-selected via arguments)
+                      if (Get.arguments?['role'] == null)
+                        DropdownButtonFormField<UserType>(
+                          value: _selectedUserType,
+                          dropdownColor: cardColor,
+                          style: TextStyle(color: textColor, fontSize: 16),
+                          decoration: inputDecoration.copyWith(
+                            labelText: 'Who are you?',
+                            prefixIcon: Icon(Icons.person_pin_outlined, color: primaryColor),
+                          ),
+                          items: const [
+                            DropdownMenuItem(value: UserType.farmer, child: Text('Farmer (Agriculture)')),
+                            DropdownMenuItem(value: UserType.buyer, child: Text('Buyer (Agriculture)')),
+                            DropdownMenuItem(value: UserType.driver, child: Text('Driver (Agriculture)')),
+                            DropdownMenuItem(value: UserType.serviceProvider, child: Text('Service Provider')),
+                            DropdownMenuItem(value: UserType.company, child: Text('Company')),
+                            DropdownMenuItem(value: UserType.fishFarmer, child: Text('Fish Farmer')),
+                            DropdownMenuItem(value: UserType.fishBuyer, child: Text('Fish Buyer')),
+                            DropdownMenuItem(value: UserType.hatchery, child: Text('Hatchery Owner')),
+                            DropdownMenuItem(value: UserType.fishExpert, child: Text('Fisheries Expert')),
+                          ],
+                          onChanged: (value) {
+                            if (value != null) {
+                              setState(() => _selectedUserType = value);
+                            }
+                          },
                         ),
-                        items: const [
-                          DropdownMenuItem(value: UserType.farmer, child: Text('Farmer')),
-                          DropdownMenuItem(value: UserType.buyer, child: Text('Buyer')),
-                          DropdownMenuItem(value: UserType.driver, child: Text('Driver')),
-                          DropdownMenuItem(value: UserType.serviceProvider, child: Text('Service Provider')),
-                          DropdownMenuItem(value: UserType.company, child: Text('Company')),
-                        ],
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() => _selectedUserType = value);
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 24),
+                      if (Get.arguments?['role'] == null)
+                        const SizedBox(height: 24),
 
                       // Division
                       SearchableDropdown(

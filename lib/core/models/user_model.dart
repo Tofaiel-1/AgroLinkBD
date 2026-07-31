@@ -1,4 +1,20 @@
-enum UserType { farmer, buyer, driver, serviceProvider, company, seller }
+enum UserType {
+  farmer,
+  buyer,
+  driver,
+  serviceProvider,
+  company,
+  seller,
+  expert,
+  // Fisheries specific roles
+  fishFarmer,
+  fishBuyer,
+  fishDriver,
+  fishServiceProvider,
+  fishCompany,
+  fishExpert,
+  hatchery
+}
 
 enum UserStatus { active, inactive, suspended, verified }
 
@@ -24,6 +40,7 @@ class UserModel {
   final DateTime? lastLoginAt;
   final double mainBalance;
   final String? mainBalancePin;
+  final String domain; // 'agriculture' or 'fisheries'
 
   // Farmer specific
   final double? totalLand; // in acres
@@ -65,6 +82,7 @@ class UserModel {
     this.lastLoginAt,
     this.mainBalance = 500.0, // Giving 500 default balance for testing
     this.mainBalancePin,
+    this.domain = 'agriculture',
     this.totalLand,
     this.cropTypes,
     this.machineryTypes,
@@ -100,6 +118,7 @@ class UserModel {
       'lastLoginAt': lastLoginAt?.toIso8601String(),
       'mainBalance': mainBalance,
       'mainBalancePin': mainBalancePin,
+      'domain': domain,
       'totalLand': totalLand,
       'cropTypes': cropTypes,
       'machineryTypes': machineryTypes,
@@ -177,6 +196,7 @@ class UserModel {
       lastLoginAt: parsedLastLogin,
       mainBalance: (json['mainBalance'] ?? 0.0).toDouble(),
       mainBalancePin: json['mainBalancePin'],
+      domain: json['domain'] ?? 'agriculture',
       totalLand: json['totalLand']?.toDouble(),
       cropTypes: json['cropTypes'] != null
           ? List<String>.from(json['cropTypes'])
@@ -216,6 +236,7 @@ class UserModel {
     DateTime? lastLoginAt,
     double? mainBalance,
     String? mainBalancePin,
+    String? domain,
     double? totalLand,
     List<String>? cropTypes,
     List<String>? machineryTypes,
@@ -249,6 +270,7 @@ class UserModel {
       lastLoginAt: lastLoginAt ?? this.lastLoginAt,
       mainBalance: mainBalance ?? this.mainBalance,
       mainBalancePin: mainBalancePin ?? this.mainBalancePin,
+      domain: domain ?? this.domain,
       totalLand: totalLand ?? this.totalLand,
       cropTypes: cropTypes ?? this.cropTypes,
       machineryTypes: machineryTypes ?? this.machineryTypes,

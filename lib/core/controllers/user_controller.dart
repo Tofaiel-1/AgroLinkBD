@@ -5,6 +5,14 @@ enum UserRole {
   buyer, // ক্রেতা/ব্যবসায়ী
   expert, // বিশেষজ্ঞ
   guest, // অতিথি
+  // Fisheries roles
+  fishFarmer,
+  fishBuyer,
+  fishDriver,
+  fishServiceProvider,
+  fishCompany,
+  fishExpert,
+  hatchery,
 }
 
 class UserData {
@@ -188,6 +196,14 @@ class UserController extends GetxController {
         return 'Buyer Dashboard';
       case UserRole.expert:
         return 'Expert Dashboard';
+      case UserRole.fishFarmer:
+        return 'Fish Farmer Dashboard';
+      case UserRole.fishBuyer:
+        return 'Fish Buyer Dashboard';
+      case UserRole.fishExpert:
+        return 'Fisheries Expert Dashboard';
+      case UserRole.hatchery:
+        return 'Hatchery Dashboard';
       default:
         return 'Dashboard';
     }

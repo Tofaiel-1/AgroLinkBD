@@ -8,6 +8,11 @@ import 'package:agrolinkbd/core/services/route_guard.dart';
 
 // Role-specific navigation stacks
 import 'package:agrolinkbd/presentation/screens/farmer/farmer_dashboard.dart';
+import 'package:agrolinkbd/presentation/screens/fisheries/farmer/fish_farmer_dashboard.dart';
+import 'package:agrolinkbd/presentation/screens/fisheries/farmer/marketplace/fish_marketplace_tab.dart';
+import 'package:agrolinkbd/presentation/screens/fisheries/farmer/analytics/fisheries_analytics_tab.dart';
+import 'package:agrolinkbd/presentation/screens/fisheries/farmer/orders/fish_orders_tab.dart';
+import 'package:agrolinkbd/presentation/screens/fisheries/farmer/pond_management/pond_management_screen.dart';
 import 'package:agrolinkbd/presentation/screens/service_provider/service_provider_dashboard.dart';
 import 'package:agrolinkbd/presentation/screens/card/card_preview_screen.dart' as agrolinkbd;
 import 'package:agrolinkbd/presentation/screens/dashboard/buyer_dashboard_screen.dart';
@@ -26,8 +31,11 @@ import 'package:agrolinkbd/presentation/screens/profile/profile_settings.dart';
 // Buyer-specific screens
 import 'package:agrolinkbd/presentation/screens/marketplace/marketplace_screen.dart';
 import 'package:agrolinkbd/presentation/screens/buyer/shopping_cart_screen.dart';
-import 'package:agrolinkbd/presentation/screens/buyer/buyer_orders_screen.dart';
+import 'package:agrolinkbd/presentation/screens/buyer/fish_buyer_orders_screen.dart';
+import 'package:agrolinkbd/presentation/buyer/screens/buyer_orders_screen.dart';
 import 'package:agrolinkbd/presentation/screens/buyer/buyer_profile_screen.dart';
+import 'package:agrolinkbd/presentation/screens/buyer/fish_buyer_dashboard.dart';
+import 'package:agrolinkbd/presentation/screens/marketplace/fish_marketplace_screen.dart';
 
 // Phase 2 Screens - Maps
 import 'package:agrolinkbd/presentation/screens/maps/driver_delivery_map.dart';
@@ -289,6 +297,43 @@ class _RoleBasedNavigationContainerState
           const CompanyAnalyticsScreen(),
           const CompanyOrdersScreen(),
           const CompanyContractsScreen(),
+        ];
+      case UserType.fishFarmer:
+        return [
+          const FishFarmerDashboard(), // 0: Home
+          const PondManagementScreen(), // 1: Farms
+          const FisheriesAnalyticsTab(), // 2: Analytics
+          const FishMarketplaceTab(), // 3: Marketplace
+          const ProfileSettings(), // 4: Settings
+        ];
+      case UserType.fishBuyer:
+        return [
+          const FishBuyerDashboard(),
+          const FishMarketplaceScreen(),
+          const ShoppingCartScreen(),
+          const FishBuyerOrdersScreen(),
+          const ProfileSettings(),
+        ];
+      case UserType.fishDriver:
+      case UserType.fishServiceProvider:
+      case UserType.fishCompany:
+      case UserType.fishExpert:
+      case UserType.hatchery:
+      case UserType.expert:
+        return [
+          Scaffold(body: Center(child: Text('Fisheries Dashboard (${widget.user.userType.name})'))),
+          const Scaffold(body: Center(child: Text('Marketplace/Catalog'))),
+          const Scaffold(body: Center(child: Text('Analytics'))),
+          const Scaffold(body: Center(child: Text('Orders/Bookings'))),
+          const ProfileSettings(),
+        ];
+      default:
+        return [
+          const Scaffold(body: Center(child: Text('Dashboard'))),
+          const Scaffold(body: Center(child: Text('Feature 1'))),
+          const Scaffold(body: Center(child: Text('Feature 2'))),
+          const Scaffold(body: Center(child: Text('Feature 3'))),
+          const ProfileSettings(),
         ];
     }
   }

@@ -8,7 +8,7 @@ import 'package:agrolinkbd/core/models/cart_model.dart';
 import 'package:agrolinkbd/core/models/order_model.dart';
 import 'package:agrolinkbd/core/services/order_service.dart';
 import 'package:agrolinkbd/core/services/sslcommerz_service.dart';
-import 'package:agrolinkbd/presentation/screens/buyer/buyer_orders_screen.dart';
+import 'package:agrolinkbd/presentation/screens/buyer/fish_buyer_orders_screen.dart';
 
 /// Shopping Cart Screen — Modern cart UI for buyer linked to CartProvider
 class ShoppingCartScreen extends StatefulWidget {
@@ -19,6 +19,13 @@ class ShoppingCartScreen extends StatefulWidget {
 }
 
 class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
+  final TextEditingController _specialInstructionsController = TextEditingController();
+
+  @override
+  void dispose() {
+    _specialInstructionsController.dispose();
+    super.dispose();
+  }
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -111,6 +118,31 @@ class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
                     ),
                     child: Column(
                       children: [
+                        // Special Instructions
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          margin: const EdgeInsets.only(bottom: 16),
+                          decoration: BoxDecoration(
+                            color: isDark ? Colors.white12 : Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: isDark ? Colors.white24 : Colors.grey.shade200),
+                          ),
+                          child: TextField(
+                            controller: _specialInstructionsController,
+                            style: GoogleFonts.hindSiliguri(
+                              fontSize: 14,
+                              color: isDark ? Colors.white : Colors.black87,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: 'বিশেষ নির্দেশনা (যেমন: বরফ দিয়ে প্যাক করবেন)',
+                              hintStyle: GoogleFonts.hindSiliguri(
+                                color: isDark ? Colors.white54 : Colors.grey.shade400,
+                              ),
+                              border: InputBorder.none,
+                              icon: Icon(Icons.info_outline, color: const Color(0xFF1976D2), size: 20),
+                            ),
+                          ),
+                        ),
                         _buildSummaryRow('মূল্য', '৳${subtotal.toStringAsFixed(0)}', isDark),
                         const SizedBox(height: 8),
                         _buildSummaryRow('ডেলিভারি চার্জ', '৳${shipping.toStringAsFixed(0)}', isDark),
@@ -431,6 +463,9 @@ class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
           paymentStatus: 'paid',
           createdAt: DateTime.now(),
           estimatedDeliveryDate: DateTime.now().add(const Duration(days: 3)),
+          specialInstructions: _specialInstructionsController.text.trim().isEmpty 
+              ? null 
+              : _specialInstructionsController.text.trim(),
         );
         await OrderService().createOrder(newOrder);
       }
@@ -444,7 +479,7 @@ class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
       );
 
       // Navigate to My Orders
-      Get.off(() => const BuyerOrdersScreen());
+      Get.to(() => const FishBuyerOrdersScreen());
     } else {
       Get.snackbar(
         'পেমেন্ট ব্যর্থ',

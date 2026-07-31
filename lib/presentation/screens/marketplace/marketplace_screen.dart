@@ -10,7 +10,7 @@ import 'package:agrolinkbd/core/models/order_model.dart';
 import 'package:agrolinkbd/core/services/order_service.dart';
 import 'package:agrolinkbd/core/services/sslcommerz_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:agrolinkbd/presentation/screens/buyer/buyer_orders_screen.dart';
+import 'package:agrolinkbd/presentation/screens/buyer/fish_buyer_orders_screen.dart';
 import 'package:agrolinkbd/presentation/widgets/quick_buy_bottom_sheet.dart';
 
 class MarketplaceScreen extends StatefulWidget {

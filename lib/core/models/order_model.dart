@@ -17,6 +17,7 @@ class OrderModel {
   final DateTime? estimatedDeliveryDate;
   final double? rating;
   final String? reviewText;
+  final String? specialInstructions;
 
   OrderModel({
     required this.id,
@@ -35,6 +36,7 @@ class OrderModel {
     this.estimatedDeliveryDate,
     this.rating,
     this.reviewText,
+    this.specialInstructions,
   });
 
   factory OrderModel.fromMap(Map<String, dynamic> data, String documentId) {
@@ -55,6 +57,7 @@ class OrderModel {
       estimatedDeliveryDate: (data['estimatedDeliveryDate'] as Timestamp?)?.toDate(),
       rating: (data['rating'] as num?)?.toDouble(),
       reviewText: data['reviewText'],
+      specialInstructions: data['specialInstructions'],
     );
   }
 
@@ -75,6 +78,7 @@ class OrderModel {
       if (estimatedDeliveryDate != null) 'estimatedDeliveryDate': Timestamp.fromDate(estimatedDeliveryDate!),
       if (rating != null) 'rating': rating,
       if (reviewText != null) 'reviewText': reviewText,
+      if (specialInstructions != null) 'specialInstructions': specialInstructions,
     };
   }
 }

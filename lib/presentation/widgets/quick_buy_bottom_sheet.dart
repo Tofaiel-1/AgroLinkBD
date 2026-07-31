@@ -8,7 +8,7 @@ import 'package:agrolinkbd/core/models/cart_model.dart';
 import 'package:agrolinkbd/core/providers/cart_provider.dart';
 import 'package:agrolinkbd/core/services/order_service.dart';
 import 'package:agrolinkbd/core/services/sslcommerz_service.dart';
-import 'package:agrolinkbd/presentation/screens/buyer/buyer_orders_screen.dart';
+import 'package:agrolinkbd/presentation/screens/buyer/fish_buyer_orders_screen.dart';
 
 class QuickBuyBottomSheet extends StatefulWidget {
   final Map<String, dynamic> product;
@@ -257,7 +257,7 @@ class _QuickBuyBottomSheetState extends State<QuickBuyBottomSheet> {
                           final orderId = await OrderService().createOrder(newOrder);
                           if (orderId != null) {
                             Navigator.pop(context); // close bottom sheet
-                            Get.off(() => const BuyerOrdersScreen());
+                            Get.to(() => const FishBuyerOrdersScreen());
                           }
                         }
                       }

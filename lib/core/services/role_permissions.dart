@@ -41,11 +41,21 @@ class RolePermissions {
       case UserType.driver:
         return _getDriverPermissions();
       case UserType.serviceProvider:
+      case UserType.expert:
+      case UserType.fishServiceProvider:
+      case UserType.fishExpert:
         return _getServiceProviderPermissions();
       case UserType.company:
-        return _getCompanyPermissions();
       case UserType.seller:
+      case UserType.fishCompany:
+      case UserType.hatchery:
         return _getCompanyPermissions();
+      case UserType.fishFarmer:
+        return _getFarmerPermissions();
+      case UserType.fishBuyer:
+        return _getBuyerPermissions();
+      case UserType.fishDriver:
+        return _getDriverPermissions();
     }
   }
 

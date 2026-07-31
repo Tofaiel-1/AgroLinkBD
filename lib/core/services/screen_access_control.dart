@@ -18,11 +18,21 @@ class ScreenAccessControl {
       case UserType.driver:
         return _getDriverScreens();
       case UserType.serviceProvider:
+      case UserType.expert:
+      case UserType.fishServiceProvider:
+      case UserType.fishExpert:
         return _getServiceProviderScreens();
       case UserType.company:
-        return _getCompanyScreens();
       case UserType.seller:
+      case UserType.fishCompany:
+      case UserType.hatchery:
         return _getCompanyScreens();
+      case UserType.fishFarmer:
+        return _getFarmerScreens();
+      case UserType.fishBuyer:
+        return _getBuyerScreens();
+      case UserType.fishDriver:
+        return _getDriverScreens();
     }
   }
 
@@ -124,11 +134,21 @@ class ScreenAccessControl {
       case UserType.driver:
         return '/driver/jobs';
       case UserType.serviceProvider:
+      case UserType.expert:
+      case UserType.fishServiceProvider:
+      case UserType.fishExpert:
         return '/service/manage-services';
       case UserType.company:
-        return '/company/catalog';
       case UserType.seller:
+      case UserType.fishCompany:
+      case UserType.hatchery:
         return '/company/catalog';
+      case UserType.fishFarmer:
+        return '/farmer/my-products';
+      case UserType.fishBuyer:
+        return '/buyer/browse';
+      case UserType.fishDriver:
+        return '/driver/jobs';
     }
   }
 

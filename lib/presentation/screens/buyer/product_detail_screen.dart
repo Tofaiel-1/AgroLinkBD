@@ -5,7 +5,7 @@ import 'package:agrolinkbd/core/services/sslcommerz_service.dart';
 import 'package:agrolinkbd/core/models/order_model.dart';
 import 'package:agrolinkbd/core/services/order_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:agrolinkbd/presentation/screens/buyer/buyer_orders_screen.dart';
+import 'package:agrolinkbd/presentation/screens/buyer/fish_buyer_orders_screen.dart';
 
 /// Product Detail Screen - View product details and place order
 class ProductDetailScreen extends StatefulWidget {
@@ -287,7 +287,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   farmerName: widget.product['farmer'] ?? 'AgroLink Farm',
                                   productName: widget.product['name'] ?? 'Unknown Product',
                                   productImageUrl: widget.product['image'] ?? '',
-                                  quantity: _quantity,
+                                  quantity: _quantity.toDouble(),
                                   totalAmount: (widget.product['price'] as num).toDouble() * _quantity,
                                   status: 'pending',
                                   statusStep: 1,
@@ -299,7 +299,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 
                                 final orderId = await OrderService().createOrder(newOrder);
                                 if (orderId != null) {
-                                  Get.off(() => const BuyerOrdersScreen());
+                                  Get.to(() => const FishBuyerOrdersScreen());
                                 }
                               }
                             }

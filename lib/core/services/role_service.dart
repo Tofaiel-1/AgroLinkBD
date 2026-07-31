@@ -32,16 +32,23 @@ class RoleService {
   static List<RoleFeature> getFeaturesByRole(UserType userType) {
     switch (userType) {
       case UserType.farmer:
+      case UserType.fishFarmer:
         return _getFarmerFeatures();
       case UserType.buyer:
+      case UserType.fishBuyer:
         return _getBuyerFeatures();
       case UserType.driver:
+      case UserType.fishDriver:
         return _getDriverFeatures();
       case UserType.serviceProvider:
+      case UserType.fishServiceProvider:
+      case UserType.fishExpert:
+      case UserType.expert:
         return _getServiceProviderFeatures();
       case UserType.company:
-        return _getCompanyFeatures();
       case UserType.seller:
+      case UserType.fishCompany:
+      case UserType.hatchery:
         return _getCompanyFeatures();
     }
   }
@@ -50,6 +57,7 @@ class RoleService {
   static List<Map<String, dynamic>> getNavigationItems(UserType userType) {
     switch (userType) {
       case UserType.farmer:
+      case UserType.fishFarmer:
         return [
           {'label': 'Home', 'labelBN': 'হোম', 'icon': Icons.home},
           {'label': 'Farms', 'labelBN': 'খামার', 'icon': Icons.agriculture},
@@ -66,6 +74,7 @@ class RoleService {
           },
         ];
       case UserType.buyer:
+      case UserType.fishBuyer:
         return [
           {'label': 'Home', 'labelBN': 'হোম', 'icon': Icons.home},
           {
@@ -90,6 +99,7 @@ class RoleService {
           },
         ];
       case UserType.driver:
+      case UserType.fishDriver:
         return [
           {'label': 'Home', 'labelBN': 'হোম', 'icon': Icons.home},
           {
@@ -110,6 +120,9 @@ class RoleService {
           },
         ];
       case UserType.serviceProvider:
+      case UserType.fishServiceProvider:
+      case UserType.fishExpert:
+      case UserType.expert:
         return [
           {'label': 'Home', 'labelBN': 'হোম', 'icon': Icons.home},
           {'label': 'Portfolio', 'labelBN': 'পোর্টফোলিও', 'icon': Icons.image},
@@ -126,22 +139,9 @@ class RoleService {
           },
         ];
       case UserType.company:
-        return [
-          {
-            'label': 'ড্যাশবোর্ড',
-            'labelBN': 'ড্যাশবোর্ড',
-            'icon': Icons.dashboard
-          },
-          {'label': 'টিম', 'labelBN': 'টিম', 'icon': Icons.people},
-          {
-            'label': 'বিশ্লেষণ',
-            'labelBN': 'বিশ্লেষণ',
-            'icon': Icons.analytics
-          },
-          {'label': 'অর্ডার', 'labelBN': 'অর্ডার', 'icon': Icons.shopping_bag},
-          {'label': 'চুক্তি', 'labelBN': 'চুক্তি', 'icon': Icons.assignment},
-        ];
       case UserType.seller:
+      case UserType.fishCompany:
+      case UserType.hatchery:
         return [
           {
             'label': 'ড্যাশবোর্ড',
@@ -175,6 +175,14 @@ class RoleService {
         return 'Company';
       case UserType.seller:
         return 'Seller';
+      case UserType.fishFarmer: return 'Fish Farmer';
+      case UserType.fishBuyer: return 'Fish Buyer';
+      case UserType.fishDriver: return 'Fish Transport';
+      case UserType.fishServiceProvider: return 'Fish Service Provider';
+      case UserType.fishCompany: return 'Fish Company';
+      case UserType.fishExpert: return 'Fisheries Expert';
+      case UserType.hatchery: return 'Hatchery Owner';
+      case UserType.expert: return 'Expert';
     }
   }
 
@@ -193,6 +201,14 @@ class RoleService {
         return 'কোম্পানি';
       case UserType.seller:
         return 'বিক্রেতা';
+      case UserType.fishFarmer: return 'মৎস্য চাষী';
+      case UserType.fishBuyer: return 'মৎস্য ক্রেতা';
+      case UserType.fishDriver: return 'মৎস্য পরিবহন';
+      case UserType.fishServiceProvider: return 'মৎস্য সেবা প্রদানকারী';
+      case UserType.fishCompany: return 'মৎস্য কোম্পানি';
+      case UserType.fishExpert: return 'মৎস্য বিশেষজ্ঞ';
+      case UserType.hatchery: return 'হ্যাচারি মালিক';
+      case UserType.expert: return 'বিশেষজ্ঞ';
     }
   }
 
@@ -208,9 +224,18 @@ class RoleService {
       case UserType.serviceProvider:
         return const Color(0xFF7B1FA2); // Purple
       case UserType.company:
-        return const Color(0xFF0D47A1); // Dark Blue
       case UserType.seller:
         return const Color(0xFF0D47A1); // Dark Blue
+      case UserType.fishFarmer:
+      case UserType.fishBuyer:
+      case UserType.fishDriver:
+      case UserType.fishServiceProvider:
+      case UserType.fishCompany:
+      case UserType.fishExpert:
+      case UserType.hatchery:
+        return const Color(0xFF0288D1); // Light Blue for fisheries
+      case UserType.expert:
+        return const Color(0xFF7B1FA2);
     }
   }
 

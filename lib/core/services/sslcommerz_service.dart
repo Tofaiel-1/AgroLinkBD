@@ -4,6 +4,7 @@ import 'package:flutter_sslcommerz/model/SSLCommerzInitialization.dart';
 import 'package:flutter_sslcommerz/model/SSLCSdkType.dart';
 import 'package:flutter_sslcommerz/model/SSLCCustomerInfoInitializer.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter/foundation.dart';
 
 class SSLCommerzService {
   static Future<bool> initiatePayment({
@@ -24,6 +25,17 @@ class SSLCommerzService {
             content: Text('Payment Gateway is not configured properly.')),
       );
       return false;
+    }
+
+    if (kIsWeb) {
+      // Mock payment success on Web since flutter_sslcommerz does not support Web
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Mock Payment Successful (Web Environment)'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      return true;
     }
 
     SSLCommerzInitialization sslcInitialization = SSLCommerzInitialization(

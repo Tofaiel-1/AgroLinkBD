@@ -8,6 +8,10 @@ import 'service_provider/service_provider_auth_screens.dart';
 import 'company/company_auth_screens.dart';
 import 'role_selection_screen.dart';
 
+import 'package:agrolinkbd/presentation/screens/auth/domain_selection_screen.dart';
+import 'package:agrolinkbd/presentation/screens/auth/login_screen.dart';
+import 'package:agrolinkbd/presentation/screens/auth/register_screen.dart';
+
 /// Auth Routing Controller - Manages navigation across all role-based auth flows
 class AuthRoutingController extends GetxController {
   static const String routeRoleSelection = '/auth/role-selection';
@@ -61,6 +65,14 @@ class AuthRoutingController extends GetxController {
   /// Navigate to role-specific login based on selected role
   void goToRoleLogin(String role) {
     _currentRole.value = role;
+    
+    // Check if it's a fisheries role
+    if (role.startsWith('fish_') || role == 'hatchery' || role == 'expert') {
+      // Create a unified route for fisheries
+      Get.offNamed('/auth/fisheries/login', arguments: {'role': role});
+      return;
+    }
+    
     final routeMap = {
       'farmer': routeFarmerLogin,
       'buyer': routeBuyerLogin,
@@ -77,6 +89,13 @@ class AuthRoutingController extends GetxController {
   /// Navigate to role-specific register based on selected role
   void goToRoleRegister(String role) {
     _currentRole.value = role;
+    
+    // Check if it's a fisheries role
+    if (role.startsWith('fish_') || role == 'hatchery' || role == 'expert') {
+      Get.offNamed('/auth/fisheries/register', arguments: {'role': role});
+      return;
+    }
+
     final routeMap = {
       'farmer': routeFarmerRegister,
       'buyer': routeBuyerRegister,
@@ -93,12 +112,20 @@ class AuthRoutingController extends GetxController {
   /// Navigate to role-specific dashboard after successful login
   void goToDashboard(String role) {
     _currentRole.value = role;
+    
+    // Check if it's a fisheries role
+    if (role.startsWith('fish_') || role == 'hatchery') {
+      Get.offAllNamed('/fisheries/$role/dashboard');
+      return;
+    }
+
     final dashboardRoutes = {
       'farmer': '/farmer/dashboard',
       'buyer': '/buyer/dashboard',
       'driver': '/driver/dashboard',
       'service_provider': '/service_provider/dashboard',
       'company': '/company/dashboard',
+      'expert': '/expert/dashboard',
     };
     final route = dashboardRoutes[role];
     if (route != null) {
@@ -106,14 +133,13 @@ class AuthRoutingController extends GetxController {
     }
   }
 
-
   /// Logout and return to role selection
   Future<void> logout() async {
     try {
       await _auth.signOut();
       _isLoggedIn.value = false;
       _currentRole.value = '';
-      goToRoleSelection();
+      Get.offAllNamed('/domain-selection'); // Go back to domain selection
     } catch (e) {
       Get.snackbar(
         'লগআউট ত্রুটি',
@@ -135,7 +161,7 @@ class AuthFlowHandler {
 
   /// Start auth flow from app
   static void startAuthFlow() {
-    _controller.goToRoleSelection();
+    Get.offAllNamed('/domain-selection');
   }
 
   /// Get current auth controller
@@ -153,10 +179,30 @@ class AuthRouteBindings extends Bindings {
 /// Role Selection Route - Initial role selection screen
 List<GetPage> get authPages => [
       GetPage(
-        name: AuthRoutingController.routeRoleSelection,
-        page: () => const RoleSelectionScreen(),
+        name: '/domain-selection',
+        page: () => const DomainSelectionScreen(),
         transition: Transition.fadeIn,
       ),
+      GetPage(
+        name: AuthRoutingController.routeRoleSelection,
+        page: () {
+          final domain = Get.arguments?['domain'] ?? 'agriculture';
+          return RoleSelectionScreen(domain: domain);
+        },
+        transition: Transition.fadeIn,
+      ),
+      // Fisheries Generic Auth Routes
+      GetPage(
+        name: '/auth/fisheries/login',
+        page: () => const LoginScreen(),
+        transition: Transition.rightToLeft,
+      ),
+      GetPage(
+        name: '/auth/fisheries/register',
+        page: () => const RegisterScreen(userId: '', phone: ''), // Uses generic
+        transition: Transition.rightToLeft,
+      ),
+      // Agriculture Routes
       GetPage(
         name: AuthRoutingController.routeFarmerLogin,
         page: () => const FarmerLoginScreen(),

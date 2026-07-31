@@ -38,7 +38,7 @@ allprojects {
 
 val newBuildDir: Directory =
     rootProject.layout.buildDirectory
-        .dir("../../build")
+        .dir("D:/b")
         .get()
 rootProject.layout.buildDirectory.value(newBuildDir)
 

@@ -127,6 +127,8 @@ class AccessDenialHandler {
         return 'Company';
       case UserType.seller:
         return 'Seller';
+      default:
+        return userType.toString().split('.').last;
     }
   }
 

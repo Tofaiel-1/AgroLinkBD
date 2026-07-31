@@ -172,20 +172,6 @@ class AgroLinkBDApp extends StatelessWidget {
               transition: Transition.rightToLeft,
             ),
           ],
-          // Fallback routes dictionary for named route navigation
-          routes: {
-            // ========== ADMIN ROUTES ==========
-            '/admin-login': (context) => const AdminLoginScreen(),
-            '/admin-dashboard': (context) => const AdminDashboard(),
-
-            // ========== BUYER MODULE ROUTES ==========
-            '/buyer/dashboard': (context) => const BuyerDashboardScreen(),
-            '/buyer/browse': (context) => const BrowseProductsScreen(),
-            '/buyer/cart': (context) => const CartScreen(),
-            '/buyer/checkout': (context) => const CheckoutScreen(),
-            '/buyer/orders': (context) => const BuyerOrdersScreen(),
-            '/buyer/wishlist': (context) => const WishlistScreen(),
-          },
         ),
         ),
       ),
