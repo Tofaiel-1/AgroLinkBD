@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:agrolinkbd/core/providers/user_provider.dart';
 import 'package:agrolinkbd/core/models/user_model.dart';
+import 'package:agrolinkbd/core/services/user_rating_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ProfileSettings extends StatefulWidget {
@@ -255,19 +256,33 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: isFishBuyerOrBuyer
                     ? [
-                        _buildStatItem('২৪ বার', 'মাছ ক্রয়', Icons.shopping_bag),
+                        _buildStatItem(
+                          '${user?.totalOrders ?? 0} বার',
+                          'মাছ ক্রয়',
+                          Icons.shopping_bag,
+                        ),
                         Container(
                           width: 1,
                           height: 40,
                           color: Theme.of(context).dividerColor,
                         ),
-                        _buildStatItem('৳ ৪২.৫হাজার', 'পরিশোধিত', Icons.payments),
+                        _buildStatItem(
+                          '৳ ${(user?.totalSpent ?? 0.0).toStringAsFixed(0)}',
+                          'পরিশোধিত',
+                          Icons.payments,
+                        ),
                         Container(
                           width: 1,
                           height: 40,
                           color: Theme.of(context).dividerColor,
                         ),
-                        _buildStatItem('৯৮%', 'সফল পেমেন্ট', Icons.verified_user),
+                        _buildStatItem(
+                          (user?.totalRatings ?? 0) == 0
+                              ? 'নতুন'
+                              : '${(user?.rating ?? 0.0).toStringAsFixed(1)} ⭐️',
+                          'রেটিং (${user?.totalRatings ?? 0} জন)',
+                          Icons.star,
+                        ),
                       ]
                     : [
                         _buildStatItem('52', 'Products', Icons.inventory_2),
@@ -578,6 +593,15 @@ class _ProfileSettingsState extends State<ProfileSettings> {
   Widget _buildBuyerActivityCard(
       BuildContext context, UserModel? user, Color primaryColor) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final int totalOrders = user?.totalOrders ?? 0;
+    final double totalSpent = user?.totalSpent ?? 0.0;
+    final double farmerRating = user?.farmerRating ?? 0.0;
+    final double paymentScore = user?.paymentScore ?? 0.0;
+    final double transportScore = user?.transportScore ?? 0.0;
+    final double rating = user?.rating ?? 0.0;
+    final int totalRatings = user?.totalRatings ?? 0;
+    final bool isNewBuyer = totalRatings == 0;
+
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       decoration: BoxDecoration(
@@ -613,14 +637,22 @@ class _ProfileSettingsState extends State<ProfileSettings> {
             ),
             child: Row(
               children: [
-                Icon(Icons.verified, color: primaryColor, size: 24),
+                Icon(
+                  isNewBuyer ? Icons.person_outline : Icons.verified,
+                  color: primaryColor,
+                  size: 24,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'গোল্ড ফিশ বায়ার - বিশ্বস্ত ক্রেতা',
+                        isNewBuyer
+                            ? 'নতুন ফিশ বায়ার (New Buyer)'
+                            : (rating >= 4.5
+                                ? 'গোল্ড ফিশ বায়ার - বিশ্বস্ত ক্রেতা'
+                                : 'রেজিস্টার্ড ফিশ বায়ার'),
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
@@ -629,7 +661,11 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'নিয়মিত মাছ ক্রয় ও সময়মতো পেমেন্ট প্রদানকারী ক্রেতা',
+                        isNewBuyer
+                            ? 'এখনও কোনো খামারি রেটিং দেননি • লেনদেনের পর রেটিং যুক্ত হবে'
+                            : (rating >= 4.5
+                                ? 'নিয়মিত মাছ ক্রয় ও সময়মতো পেমেন্ট প্রদানকারী ক্রেতা'
+                                : 'মাছ ক্রয় ও লেনদেনকারী সদস্য'),
                         style: TextStyle(
                           fontSize: 11,
                           color: isDark ? Colors.grey[300] : Colors.grey[700],
@@ -642,16 +678,21 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.15),
+                    color: (isNewBuyer ? Colors.blue : Colors.green)
+                        .withOpacity(0.15),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.green, width: 1),
+                    border: Border.all(
+                        color: isNewBuyer ? Colors.blue : Colors.green,
+                        width: 1),
                   ),
-                  child: const Text(
-                    'VERIFIED BUYER',
+                  child: Text(
+                    isNewBuyer
+                        ? 'NEW BUYER'
+                        : (rating >= 4.5 ? 'VERIFIED GOLD' : 'ACTIVE BUYER'),
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
-                      color: Colors.green,
+                      color: isNewBuyer ? Colors.blue : Colors.green,
                     ),
                   ),
                 ),
@@ -661,14 +702,14 @@ class _ProfileSettingsState extends State<ProfileSettings> {
 
           const Divider(height: 1),
 
-          // Activity Details & Reliability Metrics
+          // Activity Details & Reliability Metrics (Real Firebase multi-criteria data)
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'লেনদেন ও ক্রয়ের বিশ্বস্ততা বিবরণী',
+                  'লেনদেন ও ক্রয়ের বিশ্বস্ততা বিবরণী (Firebase Verified)',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -680,40 +721,60 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                   context,
                   Icons.shopping_cart_checkout,
                   'মোট মাছ ক্রয় (Completed Orders)',
-                  '২৪ টি সফল ক্রয় (সর্বশেষ ক্রয়: ২ দিন আগে)',
+                  totalOrders == 0
+                      ? 'এখনও কোনো মাছ ক্রয় সম্পন্ন হয়নি'
+                      : '$totalOrders টি সফল ক্রয় সম্পন্ন',
                   Colors.blue,
                 ),
                 const SizedBox(height: 10),
                 _buildActivityDetailRow(
                   context,
                   Icons.payments_outlined,
-                  'বাস্তব পরিশোধিত পেমেন্ট (Real Payments)',
-                  '৳ ৪২,৫০০ (১০০% নিরাপদ ও সময়মতো লেনদেন)',
+                  'মোট পরিশোধিত খরচ (Total Spent)',
+                  totalSpent == 0
+                      ? '৳ ০ (কোনো লেনদেন হয়নি)'
+                      : '৳ ${totalSpent.toStringAsFixed(0)} (নিরাপদ ও সময়মতো পরিশোধ)',
                   Colors.green,
                 ),
                 const SizedBox(height: 10),
                 _buildActivityDetailRow(
                   context,
-                  Icons.speed,
-                  'পেমেন্ট দ্রুততা ও রেকর্ড (Payment Record)',
-                  'সফল পেমেন্ট হার ৯৮% • ডেলিভারি পাওয়ার দ্রুততম সময়ে পরিশোধ',
+                  Icons.thumb_up_alt_outlined,
+                  'খামারিদের দেওয়া রেটিং (Farmer Rating)',
+                  isNewBuyer
+                      ? 'মূল্যায়ন নেই (খামারিদের রেটিং প্রয়োজন)'
+                      : '${farmerRating.toStringAsFixed(1)} / 5.0 ⭐️ ($totalRatings জন খামারি কর্তৃক মূল্যায়িত)',
+                  Colors.purple,
+                ),
+                const SizedBox(height: 10),
+                _buildActivityDetailRow(
+                  context,
+                  Icons.verified_user_outlined,
+                  'পেমেন্ট সম্পূর্ণ করার রেটিং (Payment Score)',
+                  isNewBuyer
+                      ? 'মূল্যায়ন নেই (পেমেন্ট দ্রুততা মূল্যায়ন)'
+                      : '${paymentScore.toStringAsFixed(1)} / 5.0 ⭐️ (সময়মতো পরিশোধ মূল্যায়ন)',
                   Colors.orange,
                 ),
                 const SizedBox(height: 10),
                 _buildActivityDetailRow(
                   context,
-                  Icons.set_meal,
-                  'পছন্দের মাছের ক্যাটাগরি (Favorite Fish)',
-                  'রুই, ইলিশ, বাগদা চিংড়ি ও পাঙ্গাশ',
+                  Icons.local_shipping_outlined,
+                  'ট্রান্সপোর্ট ও রিসিভ রেটিং (Transport Score)',
+                  isNewBuyer
+                      ? 'মূল্যায়ন নেই (পরিবহন ও গ্রহণ মূল্যায়ন)'
+                      : '${transportScore.toStringAsFixed(1)} / 5.0 ⭐️ (মাছ পরিবহন ও গ্রহণ মূল্যায়ন)',
                   Colors.teal,
                 ),
                 const SizedBox(height: 10),
                 _buildActivityDetailRow(
                   context,
-                  Icons.thumb_up_alt_outlined,
-                  'খামারিদের মূল্যায়ন (Farmer Endorsement)',
-                  '১৮ জন মাছ খামারি কর্তৃক বিশ্বস্ত ক্রেতা হিসেবে স্বীকৃত (৪.৯/৫.০)',
-                  Colors.purple,
+                  Icons.star,
+                  'সামগ্রিক রেটিং ও মূল্যায়নকারী সংখ্যা',
+                  isNewBuyer
+                      ? 'এখনও রেটিং দেওয়া হয়নি (০ জন মূল্যায়নকারী)'
+                      : '${rating.toStringAsFixed(1)} / 5.0 ⭐️ (মোট $totalRatings জন মূল্যায়ন করেছেন)',
+                  Colors.amber,
                 ),
                 const SizedBox(height: 16),
                 Row(
@@ -747,6 +808,33 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      UserRatingService.showRateUserDialog(
+                        context: context,
+                        targetUserId: user?.id ?? 'buyer_demo_id',
+                        targetUserName: user?.name ?? 'ফিশ বায়ার',
+                        reviewerId: 'farmer_sample_id',
+                        reviewerName: 'মাছ খামারি',
+                        onRatingSubmitted: () {
+                          setState(() {});
+                          Provider.of<UserProvider>(context, listen: false)
+                              .loadUser(user?.id ?? '');
+                        },
+                      );
+                    },
+                    icon: const Icon(Icons.rate_review, size: 18),
+                    label: const Text('ক্রেতাকে রেটিং দিন (Rate Buyer across 3 Criteria)'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.purple,
+                      side: const BorderSide(color: Colors.purple),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                    ),
+                  ),
                 ),
               ],
             ),

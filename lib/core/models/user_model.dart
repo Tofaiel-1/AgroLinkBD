@@ -36,6 +36,11 @@ class UserModel {
   final DateTime? premiumExpiryDate;
   final double rating;
   final int totalRatings;
+  final double farmerRating; // খামারিদের দেওয়া রেটিং (1-5)
+  final double paymentScore; // পেমেন্ট সম্পূর্ণ করার রেটিং (1-5)
+  final double transportScore; // ট্রান্সপোর্ট ও রিসিভ রেটিং (1-5)
+  final int totalOrders; // মোট সম্পন্ন ক্রয়/অর্ডার সংখ্যা
+  final double totalSpent; // মোট পরিশোধিত খরচ
   final DateTime createdAt;
   final DateTime? lastLoginAt;
   final double mainBalance;
@@ -78,6 +83,11 @@ class UserModel {
     this.premiumExpiryDate,
     this.rating = 0.0,
     this.totalRatings = 0,
+    this.farmerRating = 0.0,
+    this.paymentScore = 0.0,
+    this.transportScore = 0.0,
+    this.totalOrders = 0,
+    this.totalSpent = 0.0,
     required this.createdAt,
     this.lastLoginAt,
     this.mainBalance = 500.0, // Giving 500 default balance for testing
@@ -114,6 +124,11 @@ class UserModel {
       'premiumExpiryDate': premiumExpiryDate?.toIso8601String(),
       'rating': rating,
       'totalRatings': totalRatings,
+      'farmerRating': farmerRating,
+      'paymentScore': paymentScore,
+      'transportScore': transportScore,
+      'totalOrders': totalOrders,
+      'totalSpent': totalSpent,
       'createdAt': createdAt.toIso8601String(),
       'lastLoginAt': lastLoginAt?.toIso8601String(),
       'mainBalance': mainBalance,
@@ -192,6 +207,11 @@ class UserModel {
           : null,
       rating: (json['rating'] ?? 0.0).toDouble(),
       totalRatings: json['totalRatings'] ?? 0,
+      farmerRating: (json['farmerRating'] ?? 0.0).toDouble(),
+      paymentScore: (json['paymentScore'] ?? 0.0).toDouble(),
+      transportScore: (json['transportScore'] ?? 0.0).toDouble(),
+      totalOrders: json['totalOrders'] ?? 0,
+      totalSpent: (json['totalSpent'] ?? 0.0).toDouble(),
       createdAt: parsedCreatedAt,
       lastLoginAt: parsedLastLogin,
       mainBalance: (json['mainBalance'] ?? 0.0).toDouble(),
@@ -232,6 +252,11 @@ class UserModel {
     DateTime? premiumExpiryDate,
     double? rating,
     int? totalRatings,
+    double? farmerRating,
+    double? paymentScore,
+    double? transportScore,
+    int? totalOrders,
+    double? totalSpent,
     DateTime? createdAt,
     DateTime? lastLoginAt,
     double? mainBalance,
@@ -266,6 +291,11 @@ class UserModel {
       premiumExpiryDate: premiumExpiryDate ?? this.premiumExpiryDate,
       rating: rating ?? this.rating,
       totalRatings: totalRatings ?? this.totalRatings,
+      farmerRating: farmerRating ?? this.farmerRating,
+      paymentScore: paymentScore ?? this.paymentScore,
+      transportScore: transportScore ?? this.transportScore,
+      totalOrders: totalOrders ?? this.totalOrders,
+      totalSpent: totalSpent ?? this.totalSpent,
       createdAt: createdAt ?? this.createdAt,
       lastLoginAt: lastLoginAt ?? this.lastLoginAt,
       mainBalance: mainBalance ?? this.mainBalance,
