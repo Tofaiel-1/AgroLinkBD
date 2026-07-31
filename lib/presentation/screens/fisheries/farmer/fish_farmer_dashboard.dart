@@ -489,12 +489,14 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
+      child: Material(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
-      ),
-      child: ListTile(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
+        ),
+        child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: Container(
           padding: const EdgeInsets.all(2),
@@ -522,7 +524,8 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
         ),
         trailing: Icon(Icons.more_vert, color: Colors.grey.shade400),
       ),
-    );
+    ),
+  );
   }
 }
 

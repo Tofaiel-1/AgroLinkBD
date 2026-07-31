@@ -535,24 +535,27 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
           Map<String, dynamic> task = entry.value;
           return Column(
             children: [
-              CheckboxListTile(
-                value: task['completed'],
-                activeColor: emeraldGreen,
-                checkboxShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                title: AnimatedDefaultTextStyle(
-                  duration: const Duration(milliseconds: 300),
-                  style: GoogleFonts.hindSiliguri(
-                    fontSize: 16,
-                    color: task['completed'] ? Colors.grey : Colors.black87,
-                    decoration: task['completed'] ? TextDecoration.lineThrough : TextDecoration.none,
+              Material(
+                color: Colors.transparent,
+                child: CheckboxListTile(
+                  value: task['completed'],
+                  activeColor: emeraldGreen,
+                  checkboxShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                  title: AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 300),
+                    style: GoogleFonts.hindSiliguri(
+                      fontSize: 16,
+                      color: task['completed'] ? Colors.grey : Colors.black87,
+                      decoration: task['completed'] ? TextDecoration.lineThrough : TextDecoration.none,
+                    ),
+                    child: Text(task['title']),
                   ),
-                  child: Text(task['title']),
+                  onChanged: (bool? val) {
+                    setState(() {
+                      _tasks[index]['completed'] = val ?? false;
+                    });
+                  },
                 ),
-                onChanged: (bool? val) {
-                  setState(() {
-                    _tasks[index]['completed'] = val ?? false;
-                  });
-                },
               ),
               if (index < _tasks.length - 1)
                 Divider(height: 1, color: Colors.grey.shade200, indent: 16, endIndent: 16),

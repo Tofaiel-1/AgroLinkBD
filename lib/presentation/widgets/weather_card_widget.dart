@@ -34,6 +34,15 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
     _loadWeather();
   }
 
+  @override
+  void didUpdateWidget(covariant WeatherCardWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.customDistrict != widget.customDistrict ||
+        oldWidget.customUpazila != widget.customUpazila) {
+      _loadWeather();
+    }
+  }
+
   Future<void> _loadWeather() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
