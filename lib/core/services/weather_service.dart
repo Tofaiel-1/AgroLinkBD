@@ -99,35 +99,101 @@ class WeatherService {
     'Sherpur': {'lat': 25.0205, 'lng': 90.0153, 'name': 'শেরপুর', 'division': 'ময়মনসিংহ'},
   };
 
+  /// Helper to get Bengali script name for Upazilas
+  static String getBanglaUpazilaName(String upa) {
+    if (upa.isEmpty) return 'গুরুদাসপুর';
+    final query = upa.trim().toLowerCase();
+    const map = {
+      'gurudaspur': 'গুরুদাসপুর',
+      'natore sadar': 'নাটোর সদর',
+      'singra': 'সিংড়া',
+      'baraigram': 'বড়াইগ্রাম',
+      'bagatipara': 'বাগাতিপাড়া',
+      'lalpur': 'লালপুর',
+      'naldanga': 'নলডাঙ্গা',
+      'rajshahi sadar': 'রাজশাহী সদর',
+      'paba': 'পবা',
+      'godagari': 'গোদাগাড়ী',
+      'tanore': 'তানোর',
+      'bagmara': 'বাগমারা',
+      'charghat': 'চারঘাট',
+      'bagha': 'বাঘা',
+      'durgapur': 'দুর্গাপুর',
+      'mohonpur': 'মোহনপুর',
+      'bogra sadar': 'বগুড়া সদর',
+      'dhaka': 'ঢাকা',
+      'savar': 'সাভার',
+      'gazipur sadar': 'গাজীপুর সদর',
+      'kaliakair': 'কালিয়াকৈর',
+      'kapasia': 'কাপাসিয়া',
+      'sreepur': 'শ্রীপুর',
+    };
+    if (map.containsKey(query)) {
+      return map[query]!;
+    }
+    // If already in Bangla characters, return as is
+    if (RegExp(r'[\u0980-\u09FF]').hasMatch(upa)) {
+      return upa;
+    }
+    return upa;
+  }
+
   /// Resolve Upazila/District string to matching District key in _districtCoordinates
   static String resolveDistrictFromUpazila(String upazilaOrDistrict) {
     if (upazilaOrDistrict.isEmpty) return 'Natore';
     final query = upazilaOrDistrict.trim().toLowerCase();
 
-    // 1. Check if input matches District key directly or Bengali name
-    for (var dKey in _districtCoordinates.keys) {
-      if (dKey.toLowerCase() == query || (_districtCoordinates[dKey]?['name'] as String?) == upazilaOrDistrict) {
-        return dKey;
-      }
+    // 0. Known Upazila mappings (Highest Priority)
+    if (query.contains('gurudaspur') ||
+        query.contains('গুরুদাসপুর') ||
+        query.contains('singra') ||
+        query.contains('সিংড়া') ||
+        query.contains('baraigram') ||
+        query.contains('বড়াইগ্রাম') ||
+        query.contains('lalpur') ||
+        query.contains('লালপুর') ||
+        query.contains('bagatipara') ||
+        query.contains('বাগাতিপাড়া') ||
+        query.contains('naldanga') ||
+        query.contains('নলডাঙ্গা') ||
+        query.contains('natore') ||
+        query.contains('নাটোর')) {
+      return 'Natore';
+    }
+    if (query.contains('gazipur') ||
+        query.contains('গাজীপুর') ||
+        query.contains('kaliakair') ||
+        query.contains('কালিয়াকৈর') ||
+        query.contains('kapasia') ||
+        query.contains('কাপাসিয়া') ||
+        query.contains('sreepur') ||
+        query.contains('শ্রীপুর')) {
+      return 'Gazipur';
+    }
+    if (query.contains('savar') ||
+        query.contains('সাভার') ||
+        query.contains('dhamrai')) {
+      return 'Dhaka';
     }
 
-    // 2. Upazila lookup in BDLocationData.upazilasByDistrict
+    // 1. Upazila lookup in BDLocationData.upazilasByDistrict
     for (var entry in BDLocationData.upazilasByDistrict.entries) {
       String distName = entry.key;
       List<String> upazilas = entry.value;
       for (var upa in upazilas) {
-        if (upa.toLowerCase() == query) {
+        if (upa.toLowerCase() == query || query.contains(upa.toLowerCase())) {
           return distName;
         }
       }
     }
 
-    // 3. Known Upazila aliases
-    if (query.contains('gurudaspur') || query.contains('গুরুদাসপুর') || query.contains('natore') || query.contains('নাটোর')) {
-      return 'Natore';
-    }
-    if (query.contains('savar') || query.contains('সাভার') || query.contains('dhamrai')) {
-      return 'Dhaka';
+    // 2. Check if input matches District key directly or Bengali name
+    for (var dKey in _districtCoordinates.keys) {
+      if (dKey.toLowerCase() == query ||
+          (_districtCoordinates[dKey]?['name'] as String?) ==
+              upazilaOrDistrict) {
+        return dKey;
+      }
     }
 
     return 'Natore';
@@ -146,41 +212,45 @@ class WeatherService {
     String locationDisplayName = 'গুরুদাসপুর, নাটোর (রাজশাহী)';
 
     try {
-      // 1. If user explicitly provided lat & lng
-      if (userLat != null && userLng != null) {
-        lat = userLat;
-        lng = userLng;
-        locationDisplayName = userDistrict ?? 'আপনার স্থান (GPS)';
-      } 
-      // 2. If forceGps is true (user tapped GPS button explicitly)
-      else if (forceGps) {
+      // 1. If forceGps is true (user tapped GPS button explicitly)
+      if (forceGps) {
         Position? position = await LocationService().getCurrentPosition();
         if (position != null) {
           lat = position.latitude;
           lng = position.longitude;
           locationDisplayName = 'আপনার জিপিএস অবস্থান';
         }
-      } 
-      // 3. Prioritize User's Profile Configured Location (Upazila & District)
+      }
+      // 2. Prioritize User's Profile / Configured Location (Upazila & District)
       else {
-        String rawUpazila = (userUpazila != null && userUpazila.isNotEmpty) ? userUpazila : 'Gurudaspur';
-        String rawDistrict = (userDistrict != null && userDistrict.isNotEmpty) ? userDistrict : 'Natore';
+        String rawUpazila = (userUpazila != null && userUpazila.isNotEmpty)
+            ? userUpazila
+            : 'Gurudaspur';
+        String rawDistrict = (userDistrict != null && userDistrict.isNotEmpty)
+            ? userDistrict
+            : 'Natore';
 
-        // Resolve District key from Upazila or District
+        // Resolve District key from Upazila FIRST
         String resolvedDistrictKey = resolveDistrictFromUpazila(rawUpazila);
-        if (resolvedDistrictKey == 'Natore' && userDistrict != null && userDistrict.isNotEmpty) {
+        // Only fallback to userDistrict if upazila was not explicitly provided
+        if ((userUpazila == null || userUpazila.isEmpty) &&
+            userDistrict != null &&
+            userDistrict.isNotEmpty) {
           resolvedDistrictKey = resolveDistrictFromUpazila(rawDistrict);
         }
 
-        final mapped = _districtCoordinates[resolvedDistrictKey] ?? _districtCoordinates['Natore']!;
+        final mapped = _districtCoordinates[resolvedDistrictKey] ??
+            _districtCoordinates['Natore']!;
         lat = mapped['lat'] as double;
         lng = mapped['lng'] as double;
 
-        String banglaUpa = (userUpazila != null && userUpazila.isNotEmpty) ? userUpazila : 'গুরুদাসপুর';
+        String banglaUpa = getBanglaUpazilaName(rawUpazila);
         String banglaDist = mapped['name'] as String;
         String divText = mapped['division'] as String? ?? 'রাজশাহী';
 
         locationDisplayName = '$banglaUpa, $banglaDist ($divText)';
+        debugPrint(
+            '📍 Weather location resolved: $locationDisplayName ($lat, $lng)');
       }
     } catch (e) {
       debugPrint('📍 Weather location resolution warning: $e');

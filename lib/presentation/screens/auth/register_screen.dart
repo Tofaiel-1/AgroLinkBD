@@ -192,6 +192,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         status: UserStatus.active,
         address: finalAddress,
         district: _selectedDistrict,
+        upazila: _selectedUpazila,
         createdAt: DateTime.now(),
         domain: userDomain,
       );

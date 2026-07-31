@@ -53,12 +53,31 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
     String? dist = _selectedDistrict ?? widget.customDistrict ?? user?.district;
     String? upa = _selectedUpazila ?? widget.customUpazila ?? user?.upazila;
 
+    // Address fallback if upazila is missing from user profile
+    if ((upa == null || upa.isEmpty) && user?.address != null) {
+      final addr = user!.address!.toLowerCase();
+      if (addr.contains('gurudaspur') || addr.contains('গুরুদাসপুর')) {
+        upa = 'Gurudaspur';
+        dist = 'Natore';
+      } else if (addr.contains('singra') || addr.contains('সিংড়া')) {
+        upa = 'Singra';
+        dist = 'Natore';
+      } else if (addr.contains('baraigram') || addr.contains('বড়াইগ্রাম')) {
+        upa = 'Baraigram';
+        dist = 'Natore';
+      } else if (addr.contains('natore') || addr.contains('নাটোর')) {
+        upa = 'Natore Sadar';
+        dist = 'Natore';
+      } else if (addr.contains('gazipur') || addr.contains('গাজীপুর')) {
+        dist = 'Gazipur';
+      }
+    }
+
     try {
       final weather = await WeatherService().fetchCurrentWeather(
         userDistrict: dist,
         userUpazila: upa,
-        userLat: user?.latitude,
-        userLng: user?.longitude,
+        forceGps: false,
       );
 
       if (mounted) {
@@ -70,7 +89,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _weather = WeatherModel.defaultFallback(upa ?? dist ?? 'গুরুদাসপুর, নাটোর');
+          _weather = WeatherModel.defaultFallback(upa ?? dist ?? 'গুরুদাসপুর, নাটোর (রাজশাহী)');
           _isLoading = false;
         });
       }
@@ -421,8 +440,10 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                         mainAxisSpacing: 10,
                         crossAxisSpacing: 10,
                         children: [
-                          _buildDetailGridCard('☀️ UV Index', '${weather.uvIndex.toStringAsFixed(1)}', isDark),
+                          _buildDetailGridCard('☀️ UV Index', weather.uvIndex.toStringAsFixed(1), isDark),
+                          _buildDetailGridCard('🌧️ বৃষ্টিপাত', '${weather.rainMm.toStringAsFixed(1)} mm', isDark),
                           _buildDetailGridCard('💨 বাতাসের দিক', weather.windDirectionText, isDark),
+                          _buildDetailGridCard('🌡️ অনুভব তাপমাত্রা', '${weather.feelsLike.toStringAsFixed(1)}°C', isDark),
                           _buildDetailGridCard('⏲️ বায়ুচাপ', '${weather.pressureHpa.toStringAsFixed(0)} hPa', isDark),
                           _buildDetailGridCard('☁️ মেঘের ঘনত্ব', '${weather.cloudCoverPercent}%', isDark),
                         ],
@@ -543,6 +564,20 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                 Row(
                   children: [
                     IconButton(
+                      icon: const Icon(Icons.my_location, color: Colors.white, size: 20),
+                      onPressed: () async {
+                        setState(() => _isLoading = true);
+                        final w = await WeatherService().fetchCurrentWeather(forceGps: true);
+                        if (mounted) {
+                          setState(() {
+                            _weather = w;
+                            _isLoading = false;
+                          });
+                        }
+                      },
+                      tooltip: 'জিপিএস অবস্থান ব্যবহার করুন',
+                    ),
+                    IconButton(
                       icon: const Icon(Icons.refresh, color: Colors.white, size: 20),
                       onPressed: _loadWeather,
                       tooltip: 'আবহাওয়া রিফ্রেশ করুন',
@@ -653,6 +688,91 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                     ),
                   ),
                   const Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 14),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Next 3-Hour Rain & Temp Mini Forecast Strip
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.22),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'পরবর্তী ৩ ঘণ্টার বৃষ্টির সম্ভাবনা',
+                        style: GoogleFonts.hindSiliguri(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white70,
+                        ),
+                      ),
+                      Text(
+                        'বিস্তারিত দেখুন →',
+                        style: GoogleFonts.hindSiliguri(
+                          fontSize: 11,
+                          color: Colors.amber.shade300,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: weather.hourlyForecast.take(3).map((h) {
+                      final isHighRain = h.rainProbability >= 40;
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: isHighRain
+                              ? Colors.blue.shade900.withValues(alpha: 0.6)
+                              : Colors.white.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: isHighRain
+                                ? Colors.cyanAccent.withValues(alpha: 0.5)
+                                : Colors.white12,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              h.time,
+                              style: GoogleFonts.poppins(
+                                fontSize: 11,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Icon(
+                              _getWeatherIcon(h.weatherCode),
+                              size: 14,
+                              color: isHighRain ? Colors.cyanAccent : Colors.amber,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${h.rainProbability}%',
+                              style: GoogleFonts.poppins(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: isHighRain ? Colors.cyanAccent : Colors.white70,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
                 ],
               ),
             ),

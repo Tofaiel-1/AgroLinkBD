@@ -128,14 +128,19 @@ class _RoleBasedNavigationContainerState
     if (roleString.toLowerCase() == 'driver') roleDisplay = 'চালক';
     if (roleString.toLowerCase() == 'serviceprovider') roleDisplay = 'সেবা প্রদানকারী';
 
+    final roleColor = RoleService.getRoleColor(user.userType);
+    final darkRoleColor = HSLColor.fromColor(roleColor)
+        .withLightness((HSLColor.fromColor(roleColor).lightness - 0.15).clamp(0.0, 1.0))
+        .toColor();
+
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
           UserAccountsDrawerHeader(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFF2E7D32), Color(0xFF1B5E20)],
+                colors: [roleColor, darkRoleColor],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -158,7 +163,7 @@ class _RoleBasedNavigationContainerState
                 backgroundColor: Colors.white,
                 backgroundImage: const NetworkImage('https://randomuser.me/api/portraits/men/44.jpg'),
                 child: user.name == null || user.name!.isEmpty
-                    ? Text(roleDisplay[0], style: const TextStyle(fontSize: 24, color: Colors.green))
+                    ? Text(roleDisplay[0], style: TextStyle(fontSize: 24, color: roleColor))
                     : null,
               ),
             ),

@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:agrolinkbd/core/providers/user_provider.dart';
+import 'package:agrolinkbd/core/models/user_model.dart';
+import 'package:agrolinkbd/core/services/role_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ProfileSettings extends StatefulWidget {
@@ -45,6 +47,38 @@ class _ProfileSettingsState extends State<ProfileSettings> {
     }
   }
 
+  Color _getRolePrimaryColor(BuildContext context) {
+    try {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final user = userProvider.currentUser;
+      if (user != null) {
+        switch (user.userType) {
+          case UserType.buyer:
+            return const Color(0xFF1976D2); // Blue
+          case UserType.fishBuyer:
+          case UserType.fishFarmer:
+          case UserType.fishDriver:
+          case UserType.fishServiceProvider:
+          case UserType.fishCompany:
+          case UserType.fishExpert:
+          case UserType.hatchery:
+            return const Color(0xFF0277BD); // Deep water blue
+          case UserType.driver:
+            return const Color(0xFFF57C00); // Orange
+          case UserType.serviceProvider:
+            return const Color(0xFF7B1FA2); // Purple
+          case UserType.company:
+          case UserType.seller:
+            return const Color(0xFF0D47A1); // Dark Blue
+          case UserType.farmer:
+          default:
+            return const Color(0xFF2E7D32); // Agriculture Green
+        }
+      }
+    } catch (_) {}
+    return Theme.of(context).primaryColor;
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -65,7 +99,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                 Icon(
                   Icons.person_outline,
                   size: 80,
-                  color: Theme.of(context).primaryColor.withOpacity(0.5),
+                  color: _getRolePrimaryColor(context).withOpacity(0.5),
                 ),
                 const SizedBox(height: 24),
                 Text(
@@ -104,6 +138,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
     final user = userProvider.currentUser;
     final userName = user?.name ?? 'User';
     final userEmail = user?.email ?? 'No email';
+    final primaryColor = _getRolePrimaryColor(context);
 
     return Scaffold(
       body: CustomScrollView(
@@ -112,7 +147,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
           SliverAppBar(
             expandedHeight: 250,
             pinned: true,
-            backgroundColor: Theme.of(context).primaryColor,
+            backgroundColor: primaryColor,
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
                 decoration: BoxDecoration(
@@ -120,8 +155,8 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Theme.of(context).primaryColor,
-                      Theme.of(context).primaryColor.withOpacity(0.8),
+                      primaryColor,
+                      primaryColor.withOpacity(0.8),
                     ],
                   ),
                 ),
@@ -150,7 +185,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                             child: Icon(
                               Icons.person,
                               size: 50,
-                              color: Theme.of(context).primaryColor,
+                              color: primaryColor,
                             ),
                           ),
                         ),
@@ -166,7 +201,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                             child: Icon(
                               Icons.camera_alt,
                               size: 20,
-                              color: Theme.of(context).primaryColor,
+                              color: primaryColor,
                             ),
                           ),
                         ),
@@ -526,33 +561,37 @@ class _ProfileSettingsState extends State<ProfileSettings> {
     Function(bool) onChanged,
     BuildContext context,
   ) {
-    return ListTile(
-      dense: false,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: Theme.of(context).primaryColor.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(10),
+    final roleColor = _getRolePrimaryColor(context);
+    return Material(
+      color: Colors.transparent,
+      child: ListTile(
+        dense: false,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: roleColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: roleColor, size: 20),
         ),
-        child: Icon(icon, color: Theme.of(context).primaryColor, size: 20),
-      ),
-      title: Text(
-        title,
-        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      subtitle: Text(
-        subtitle,
-        style: const TextStyle(fontSize: 12),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      trailing: Switch(
-        value: value,
-        onChanged: onChanged,
-        activeThumbColor: Theme.of(context).primaryColor,
+        title: Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Text(
+          subtitle,
+          style: const TextStyle(fontSize: 12),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        trailing: Switch(
+          value: value,
+          onChanged: onChanged,
+          activeThumbColor: roleColor,
+        ),
       ),
     );
   }
@@ -564,31 +603,35 @@ class _ProfileSettingsState extends State<ProfileSettings> {
     VoidCallback onTap,
     BuildContext context,
   ) {
-    return ListTile(
-      dense: false,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: Theme.of(context).primaryColor.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(10),
+    final roleColor = _getRolePrimaryColor(context);
+    return Material(
+      color: Colors.transparent,
+      child: ListTile(
+        dense: false,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: roleColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: roleColor, size: 20),
         ),
-        child: Icon(icon, color: Theme.of(context).primaryColor, size: 20),
+        title: Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Text(
+          subtitle,
+          style: const TextStyle(fontSize: 12),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        trailing: const Icon(Icons.chevron_right, size: 20),
+        onTap: onTap,
       ),
-      title: Text(
-        title,
-        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      subtitle: Text(
-        subtitle,
-        style: const TextStyle(fontSize: 12),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      trailing: const Icon(Icons.chevron_right, size: 20),
-      onTap: onTap,
     );
   }
 
@@ -682,56 +725,54 @@ class _ProfileSettingsState extends State<ProfileSettings> {
 
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: Theme.of(dialogContext).colorScheme.surface,
-        title: Text(
-          'Edit Profile',
-          style: Theme.of(dialogContext).textTheme.headlineSmall,
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: InputDecoration(
-                  labelText: 'Full Name',
-                  prefixIcon: Icon(Icons.person,
-                      color: Theme.of(dialogContext).primaryColor),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: emailController,
-                enabled: false,
-                decoration: InputDecoration(
-                  labelText: 'Email (Cannot change)',
-                  prefixIcon: Icon(Icons.email,
-                      color: Theme.of(dialogContext).primaryColor),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: phoneController,
-                decoration: InputDecoration(
-                  labelText: 'Phone',
-                  prefixIcon: Icon(Icons.phone,
-                      color: Theme.of(dialogContext).primaryColor),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: locationController,
-                decoration: InputDecoration(
-                  labelText: 'Location',
-                  prefixIcon: Icon(Icons.location_on,
-                      color: Theme.of(dialogContext).primaryColor),
-                ),
-                maxLines: 2,
-              ),
-            ],
+      builder: (dialogContext) {
+        final roleColor = _getRolePrimaryColor(dialogContext);
+        return AlertDialog(
+          backgroundColor: Theme.of(dialogContext).colorScheme.surface,
+          title: Text(
+            'Edit Profile',
+            style: Theme.of(dialogContext).textTheme.headlineSmall,
           ),
-        ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    labelText: 'Full Name',
+                    prefixIcon: Icon(Icons.person, color: roleColor),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: emailController,
+                  enabled: false,
+                  decoration: InputDecoration(
+                    labelText: 'Email (Cannot change)',
+                    prefixIcon: Icon(Icons.email, color: roleColor),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: phoneController,
+                  decoration: InputDecoration(
+                    labelText: 'Phone',
+                    prefixIcon: Icon(Icons.phone, color: roleColor),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: locationController,
+                  decoration: InputDecoration(
+                    labelText: 'Location',
+                    prefixIcon: Icon(Icons.location_on, color: roleColor),
+                  ),
+                  maxLines: 2,
+                ),
+              ],
+            ),
+          ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
@@ -754,7 +795,8 @@ class _ProfileSettingsState extends State<ProfileSettings> {
             child: const Text('Save Changes'),
           ),
         ],
-      ),
+      );
+      },
     );
   }
 
@@ -762,45 +804,44 @@ class _ProfileSettingsState extends State<ProfileSettings> {
   void _showChangePasswordDialog() {
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: Theme.of(dialogContext).colorScheme.surface,
-        title: Text(
-          'Change Password',
-          style: Theme.of(dialogContext).textTheme.headlineSmall,
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                decoration: InputDecoration(
-                  labelText: 'Current Password',
-                  prefixIcon: Icon(Icons.lock,
-                      color: Theme.of(dialogContext).primaryColor),
-                ),
-                obscureText: true,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                decoration: InputDecoration(
-                  labelText: 'New Password',
-                  prefixIcon: Icon(Icons.lock,
-                      color: Theme.of(dialogContext).primaryColor),
-                ),
-                obscureText: true,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                decoration: InputDecoration(
-                  labelText: 'Confirm New Password',
-                  prefixIcon: Icon(Icons.lock,
-                      color: Theme.of(dialogContext).primaryColor),
-                ),
-                obscureText: true,
-              ),
-            ],
+      builder: (dialogContext) {
+        final roleColor = _getRolePrimaryColor(dialogContext);
+        return AlertDialog(
+          backgroundColor: Theme.of(dialogContext).colorScheme.surface,
+          title: Text(
+            'Change Password',
+            style: Theme.of(dialogContext).textTheme.headlineSmall,
           ),
-        ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  decoration: InputDecoration(
+                    labelText: 'Current Password',
+                    prefixIcon: Icon(Icons.lock, color: roleColor),
+                  ),
+                  obscureText: true,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  decoration: InputDecoration(
+                    labelText: 'New Password',
+                    prefixIcon: Icon(Icons.lock, color: roleColor),
+                  ),
+                  obscureText: true,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  decoration: InputDecoration(
+                    labelText: 'Confirm New Password',
+                    prefixIcon: Icon(Icons.lock, color: roleColor),
+                  ),
+                  obscureText: true,
+                ),
+              ],
+            ),
+          ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
@@ -814,7 +855,8 @@ class _ProfileSettingsState extends State<ProfileSettings> {
             child: const Text('Change Password'),
           ),
         ],
-      ),
+      );
+      },
     );
   }
 
@@ -839,7 +881,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
               const SizedBox(height: 8),
               ListTile(
                 leading: Icon(Icons.add_circle,
-                    color: Theme.of(dialogContext).primaryColor),
+                    color: _getRolePrimaryColor(dialogContext)),
                 title: const Text('Add Payment Method'),
                 onTap: () {
                   Navigator.pop(dialogContext);
@@ -982,7 +1024,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                   labelText: 'Describe the issue',
                   hintText: 'Tell us what problem you faced...',
                   prefixIcon: Icon(Icons.edit,
-                      color: Theme.of(dialogContext).primaryColor),
+                      color: _getRolePrimaryColor(dialogContext)),
                   border: const OutlineInputBorder(),
                 ),
                 maxLines: 4,
@@ -1030,7 +1072,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
               Icon(
                 Icons.agriculture,
                 size: 64,
-                color: Theme.of(dialogContext).primaryColor,
+                color: _getRolePrimaryColor(dialogContext),
               ),
               const SizedBox(height: 16),
               Text(
@@ -1080,11 +1122,12 @@ class _ProfileSettingsState extends State<ProfileSettings> {
 
   // Helper: Payment Method Tile
   Widget _buildPaymentMethodTile(String method, String detail) {
+    final roleColor = _getRolePrimaryColor(context);
     return ListTile(
-      leading: Icon(Icons.payment, color: Theme.of(context).primaryColor),
+      leading: Icon(Icons.payment, color: roleColor),
       title: Text(method),
       subtitle: Text(detail),
-      trailing: Icon(Icons.check_circle, color: Theme.of(context).primaryColor),
+      trailing: Icon(Icons.check_circle, color: roleColor),
     );
   }
 
@@ -1114,7 +1157,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
       SnackBar(
         content: Text(message),
         duration: const Duration(seconds: 2),
-        backgroundColor: Theme.of(context).primaryColor,
+        backgroundColor: _getRolePrimaryColor(context),
       ),
     );
   }

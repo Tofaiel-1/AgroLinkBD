@@ -157,7 +157,27 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
                       const SizedBox(width: 12),
                       Consumer<UserProvider>(
                         builder: (context, userProvider, _) {
-                          final userName = userProvider.currentUser?.name ?? 'কৃষক';
+                          final user = userProvider.currentUser;
+                          final userName = user?.name ?? 'কৃষক';
+                          String upa = user?.upazila ?? '';
+                          String dist = user?.district ?? '';
+                          if (upa.isEmpty && user?.address != null) {
+                            final addr = user!.address!.toLowerCase();
+                            if (addr.contains('gurudaspur') || addr.contains('গুরুদাসপুর')) {
+                              upa = 'গুরুদাসপুর';
+                              dist = 'নাটোর';
+                            } else if (addr.contains('singra') || addr.contains('সিংড়া')) {
+                              upa = 'সিংড়া';
+                              dist = 'নাটোর';
+                            } else if (addr.contains('natore') || addr.contains('নাটোর')) {
+                              upa = 'নাটোর সদর';
+                              dist = 'নাটোর';
+                            }
+                          }
+                          final locText = upa.isNotEmpty
+                              ? '$upa, $dist'
+                              : (dist.isNotEmpty ? dist : 'গুরুদাসপুর, নাটোর');
+
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -165,7 +185,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
                               Text(
                                 'শুভ সকাল,',
                                 style: GoogleFonts.hindSiliguri(
-                                  fontSize: 13,
+                                  fontSize: 12,
                                   color: Colors.grey.shade600,
                                 ),
                               ),
@@ -175,7 +195,22 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.black87,
+                                  height: 1.1,
                                 ),
+                              ),
+                              Row(
+                                children: [
+                                  Icon(Icons.location_on, size: 12, color: emeraldGreen),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    locText,
+                                    style: GoogleFonts.hindSiliguri(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: emeraldGreen,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           );
