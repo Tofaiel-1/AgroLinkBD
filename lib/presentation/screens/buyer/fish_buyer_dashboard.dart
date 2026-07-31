@@ -388,111 +388,118 @@ class _FishBuyerDashboardState extends State<FishBuyerDashboard>
 
   Widget _buildTrendCard(String name, String price, String change, bool isUp, bool isDark) {
     final color = isUp ? Colors.green : Colors.red;
-    return Container(
-      width: 130,
-      margin: const EdgeInsets.only(right: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isDark ? Colors.white12 : Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            name,
-            style: GoogleFonts.hindSiliguri(
-              fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : Colors.black87,
+    return GestureDetector(
+      onTap: () => Get.to(() => const FishMarketplaceScreen()),
+      child: Container(
+        width: 130,
+        margin: const EdgeInsets.only(right: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: isDark ? Colors.white12 : Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
             ),
-          ),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                price,
-                style: GoogleFonts.hindSiliguri(
-                  fontSize: 13,
-                  color: isDark ? Colors.grey.shade300 : Colors.grey.shade700,
-                ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              name,
+              style: GoogleFonts.hindSiliguri(
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.black87,
               ),
-              Row(
-                children: [
-                  Icon(isUp ? Icons.arrow_drop_up : Icons.arrow_drop_down, color: color, size: 16),
-                  Text(
-                    change,
-                    style: GoogleFonts.poppins(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: color,
-                    ),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  price,
+                  style: GoogleFonts.hindSiliguri(
+                    fontSize: 13,
+                    color: isDark ? Colors.grey.shade300 : Colors.grey.shade700,
                   ),
-                ],
-              ),
-            ],
-          ),
-        ],
+                ),
+                Row(
+                  children: [
+                    Icon(isUp ? Icons.arrow_drop_up : Icons.arrow_drop_down, color: color, size: 16),
+                    Text(
+                      change,
+                      style: GoogleFonts.poppins(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: color,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildAICategoryCard(String name, String subtitle, IconData icon, bool isDark) {
-    return Container(
-      width: 140,
-      margin: const EdgeInsets.only(right: 12),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? Colors.white12 : Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF0277BD).withOpacity(isDark ? 0.2 : 0.1),
-              shape: BoxShape.circle,
+    return GestureDetector(
+      onTap: () => Get.to(() => const FishMarketplaceScreen()),
+      child: Container(
+        width: 140,
+        margin: const EdgeInsets.only(right: 12),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: isDark ? Colors.white12 : Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
-            child: Icon(icon, color: const Color(0xFF0277BD), size: 28),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            name,
-            style: GoogleFonts.hindSiliguri(
-              fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : Colors.black87,
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0277BD).withOpacity(isDark ? 0.2 : 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: const Color(0xFF0277BD), size: 28),
             ),
-            textAlign: TextAlign.center,
-          ),
-          Text(
-            subtitle,
-            style: GoogleFonts.hindSiliguri(
-              fontSize: 11,
-              color: const Color(0xFF0277BD),
-              fontWeight: FontWeight.w500,
+            const SizedBox(height: 12),
+            Text(
+              name,
+              style: GoogleFonts.hindSiliguri(
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.black87,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+            Text(
+              subtitle,
+              style: GoogleFonts.hindSiliguri(
+                fontSize: 11,
+                color: const Color(0xFF0277BD),
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }
 }
+
