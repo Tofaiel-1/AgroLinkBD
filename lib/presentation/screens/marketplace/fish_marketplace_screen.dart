@@ -25,8 +25,8 @@ class _FishMarketplaceScreenState extends State<FishMarketplaceScreen> {
   int _currentBannerIndex = 0;
 
   final List<String> _banners = [
-    'https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Fish_Market_-_Kolkata_2011-10-22_6104.JPG/1200px-Fish_Market_-_Kolkata_2011-10-22_6104.JPG', // Fish market
-    'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Fishing_boats_at_Cox%27s_Bazar.jpg/1200px-Fishing_boats_at_Cox%27s_Bazar.jpg', // Fishing boats
+    'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=1000&auto=format&fit=crop&q=80', // Fresh fish market
+    'https://images.unsplash.com/photo-1516815231560-8f41ec531527?w=1000&auto=format&fit=crop&q=80', // Fishing boats
   ];
 
   final List<Map<String, dynamic>> _categories = [
@@ -39,10 +39,10 @@ class _FishMarketplaceScreenState extends State<FishMarketplaceScreen> {
   ];
 
   final List<String> _fishImages = [
-    'https://upload.wikimedia.org/wikipedia/commons/thumb/7/74/Labeo_rohita_1.jpg/600px-Labeo_rohita_1.jpg', // Rui
-    'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Tenualosa_ilisha_Bangladesh.jpg/600px-Tenualosa_ilisha_Bangladesh.jpg', // Ilish
-    'https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Penaeus_monodon.jpg/600px-Penaeus_monodon.jpg', // Prawn
-    'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Catla_catla_-_Kolkata_2011-10-22_6081.JPG/600px-Catla_catla_-_Kolkata_2011-10-22_6081.JPG', // Katla
+    'https://images.unsplash.com/photo-1534483509719-3feaee7c30da?w=600&auto=format&fit=crop&q=80', // Rui / Fresh fish
+    'https://images.unsplash.com/photo-1510130387422-82ebdeffd616?w=600&auto=format&fit=crop&q=80', // Ilish / Silver fish
+    'https://images.unsplash.com/photo-1565680018434-b513d5e5fd47?w=600&auto=format&fit=crop&q=80', // Prawn / Shrimp
+    'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=600&auto=format&fit=crop&q=80', // Katla / Fish market
   ];
 
   @override
