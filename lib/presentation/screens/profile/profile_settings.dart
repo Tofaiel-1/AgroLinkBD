@@ -256,32 +256,38 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: isFishBuyerOrBuyer
                     ? [
-                        _buildStatItem(
-                          '${user?.totalOrders ?? 0} বার',
-                          'মাছ ক্রয়',
-                          Icons.shopping_bag,
+                        Expanded(
+                          child: _buildStatItem(
+                            '${user?.totalOrders ?? 0} বার',
+                            'মাছ ক্রয়',
+                            Icons.shopping_bag,
+                          ),
                         ),
                         Container(
                           width: 1,
-                          height: 40,
+                          height: 36,
                           color: Theme.of(context).dividerColor,
                         ),
-                        _buildStatItem(
-                          '৳ ${(user?.totalSpent ?? 0.0).toStringAsFixed(0)}',
-                          'পরিশোধিত',
-                          Icons.payments,
+                        Expanded(
+                          child: _buildStatItem(
+                            '৳ ${(user?.totalSpent ?? 0.0).toStringAsFixed(0)}',
+                            'পরিশোধিত',
+                            Icons.payments,
+                          ),
                         ),
                         Container(
                           width: 1,
-                          height: 40,
+                          height: 36,
                           color: Theme.of(context).dividerColor,
                         ),
-                        _buildStatItem(
-                          (user?.totalRatings ?? 0) == 0
-                              ? 'নতুন'
-                              : '${(user?.rating ?? 0.0).toStringAsFixed(1)} ⭐️',
-                          'রেটিং (${user?.totalRatings ?? 0} জন)',
-                          Icons.star,
+                        Expanded(
+                          child: _buildStatItem(
+                            (user?.totalRatings ?? 0) == 0
+                                ? 'নতুন'
+                                : '${(user?.rating ?? 0.0).toStringAsFixed(1)} ⭐️',
+                            'রেটিং (${user?.totalRatings ?? 0})',
+                            Icons.star,
+                          ),
                         ),
                       ]
                     : [
@@ -563,22 +569,24 @@ class _ProfileSettingsState extends State<ProfileSettings> {
       builder: (context) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: Theme.of(context).primaryColor, size: 28),
-          const SizedBox(height: 8),
+          Icon(icon, color: Theme.of(context).primaryColor, size: 24),
+          const SizedBox(height: 6),
           Text(
             value,
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 16,
               fontWeight: FontWeight.bold,
               color: Theme.of(context).textTheme.titleLarge?.color ?? Colors.black87,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
           ),
+          const SizedBox(height: 2),
           Text(
             label,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 11,
               color: Theme.of(context).textTheme.bodySmall?.color,
             ),
             maxLines: 1,
@@ -785,7 +793,10 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                           Navigator.of(context).pushNamed('/buyer-orders');
                         },
                         icon: const Icon(Icons.history, size: 18),
-                        label: const Text('ক্রয়ের ইতিহাস'),
+                        label: const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text('ক্রয়ের ইতিহাস'),
+                        ),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: primaryColor,
                           side: BorderSide(color: primaryColor),
@@ -799,7 +810,10 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                           Navigator.of(context).pushNamed('/buyer-payment-history');
                         },
                         icon: const Icon(Icons.receipt_long, size: 18),
-                        label: const Text('পেমেন্ট রিপোর্ট'),
+                        label: const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text('পেমেন্ট রিপোর্ট'),
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: primaryColor,
                           foregroundColor: Colors.white,
@@ -828,7 +842,10 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                       );
                     },
                     icon: const Icon(Icons.rate_review, size: 18),
-                    label: const Text('ক্রেতাকে রেটিং দিন (Rate Buyer across 3 Criteria)'),
+                    label: const FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text('ক্রেতাকে রেটিং দিন (মূল্যায়ন করুন)'),
+                    ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.purple,
                       side: const BorderSide(color: Colors.purple),
