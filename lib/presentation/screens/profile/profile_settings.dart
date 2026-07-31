@@ -582,12 +582,8 @@ class _ProfileSettingsState extends State<ProfileSettings> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final int totalOrders = user?.totalOrders ?? 0;
     final double totalSpent = user?.totalSpent ?? 0.0;
-    final double farmerRating = user?.farmerRating ?? 0.0;
-    final double paymentScore = user?.paymentScore ?? 0.0;
-    final double transportScore = user?.transportScore ?? 0.0;
     final double rating = user?.rating ?? 0.0;
     final int totalRatings = user?.totalRatings ?? 0;
-    final int accountDays = DateTime.now().difference(user?.createdAt ?? DateTime.now()).inDays;
 
     final double trustScore = UserRatingService.calculateTrustScore(
         user ?? UserModel(id: "", name: "", phone: "", email: "", userType: UserType.farmer, status: UserStatus.active, createdAt: DateTime.now()));
@@ -693,76 +689,115 @@ class _ProfileSettingsState extends State<ProfileSettings> {
 
           const Divider(height: 1),
 
-          // Activity Details & Reliability Metrics (Universal 360° Data)
+          // Root Rating & Clean Verified Summary (কোনো হাবিজাবি তথ্য ছাড়া ১টি রুট রেটিং ও ৩টি ব্যাজ)
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'রেটিং ও ট্রাস্ট স্কোর বৃদ্ধির সূচক (Positive Boosters)',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : Colors.black87,
+                // Clean Root Rating Summary Bar
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: primaryColor.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: primaryColor.withValues(alpha: 0.2)),
                   ),
-                ),
-                const SizedBox(height: 12),
-                _buildActivityDetailRow(
-                  context,
-                  Icons.payments_outlined,
-                  'পেমেন্ট ও লেনদেন নির্ভরযোগ্যতা (Payment Score)',
-                  totalSpent == 0
-                      ? '৳ ০ (কোনো লেনদেন হয়নি)'
-                      : '৳ ${totalSpent.toStringAsFixed(0)} পরিশোধিত • সময়মতো নিরাপদ লেনদেন (+স্কোর বৃদ্ধি)',
-                  Colors.green,
-                ),
-                const SizedBox(height: 10),
-                _buildActivityDetailRow(
-                  context,
-                  Icons.verified,
-                  'অ্যাপ ব্যবহারের সময়কাল ও সক্রিয়তা (App Tenure)',
-                  'অ্যাকাউন্ট বয়স: $accountDays দিন যাবৎ সক্রিয় সদস্য • ভেরিফাইড প্রোফাইল (+স্কোর বৃদ্ধি)',
-                  Colors.blue,
-                ),
-                const SizedBox(height: 10),
-                _buildActivityDetailRow(
-                  context,
-                  Icons.shopping_cart_checkout,
-                  'মোট লেনদেন ও অর্ডার সংখ্যা (Trade Volume)',
-                  totalOrders == 0
-                      ? 'এখনও কোনো লেনদেন সম্পন্ন হয়নি'
-                      : 'মোট $totalOrders টি সফল লেনদেন ও অর্ডার সম্পন্ন (+স্কোর বৃদ্ধি)',
-                  Colors.orange,
-                ),
-                const SizedBox(height: 10),
-                _buildActivityDetailRow(
-                  context,
-                  Icons.star,
-                  '৩৬০° পিয়ার-টু-পিয়ার রেটিং (Peer Evaluation)',
-                  totalRatings == 0
-                      ? 'এখনও কোনো রেটিং দেওয়া হয়নি (০ জন মূল্যায়নকারী)'
-                      : '${rating.toStringAsFixed(1)} / 5.0 ⭐️ ($totalRatings জন মূল্যায়ন করেছেন: মান ${farmerRating.toStringAsFixed(1)} • পেমেন্ট ${paymentScore.toStringAsFixed(1)} • আচরণ ${transportScore.toStringAsFixed(1)})',
-                  Colors.amber,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'মূল রেটিং (Root Trust Rating)',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? Colors.grey[400] : Colors.grey[600],
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            totalRatings == 0
+                                ? '৫.০ / ৫.০ ⭐️ (১০০% বিশ্বস্ততা)'
+                                : '${rating.toStringAsFixed(1)} / 5.0 ⭐️ (${trustScore.toStringAsFixed(0)}% বিশ্বস্ততা)',
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.bold,
+                              color: primaryColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.verified,
+                                color: Colors.green, size: 15),
+                            SizedBox(width: 4),
+                            Text(
+                              'ভেরিফাইড',
+                              style: TextStyle(
+                                  color: Colors.green,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 14),
-                Text(
-                  'প্রতারণা ও নিয়ম ভঙ্গের স্ট্যাটাস (Fraud & Penalty Record)',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                _buildActivityDetailRow(
-                  context,
-                  totalPenalties == 0 ? Icons.shield_outlined : Icons.warning_amber_rounded,
-                  'প্রতারণা ও অনিয়ম রেকর্ড (Trust Deductions)',
-                  totalPenalties == 0
-                      ? '✅ ০ টি প্রতারণা রিপোর্ট • ১০০% ক্লিন রেকর্ড (কোনো জরিমানা নেই)'
-                      : '⚠️ রিপোর্ট: $totalPenalties টি • জরিমানা কর্তন: -${fraudReports * 15 + cancelledOrders * 5 + paymentDefaults * 10 + lateDeliveries * 3} পয়েন্ট',
-                  totalPenalties == 0 ? Colors.teal : Colors.red,
+
+                // 3 Clean Verified Summary Chips/Pills (habijabi information user er kase thakbe na)
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildCleanTrustBadge(
+                        Icons.work_outline,
+                        'ভেরিফাইড কাজ',
+                        totalOrders == 0
+                            ? '০ টি সম্পন্ন'
+                            : '$totalOrders টি সফল কাজ',
+                        Colors.blue,
+                        isDark,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildCleanTrustBadge(
+                        Icons.payments_outlined,
+                        'নিরাপদ লেনদেন',
+                        totalSpent == 0
+                            ? '৳ ০ লেনদেন'
+                            : '৳ ${totalSpent.toStringAsFixed(0)} সফল',
+                        Colors.green,
+                        isDark,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildCleanTrustBadge(
+                        totalPenalties == 0
+                            ? Icons.verified_user_outlined
+                            : Icons.warning_amber_rounded,
+                        'রেকর্ড স্ট্যাটাস',
+                        totalPenalties == 0
+                            ? '১০০% ক্লিন রেকর্ড'
+                            : '$totalPenalties টি রিপোর্ট',
+                        totalPenalties == 0 ? Colors.teal : Colors.red,
+                        isDark,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 16),
 

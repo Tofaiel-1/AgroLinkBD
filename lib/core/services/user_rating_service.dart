@@ -10,6 +10,8 @@ class UserRatingReview {
   final double paymentScore; // পেমেন্ট ও লেনদেন নির্ভরযোগ্যতা (1-5)
   final double transportScore; // সময়নিষ্ঠতা ও পেশাদার আচরণ (1-5)
   final String? comment;
+  final String? workType; // 'order', 'transport', 'service', 'contract'
+  final String? workReference;
   final DateTime createdAt;
 
   UserRatingReview({
@@ -20,6 +22,8 @@ class UserRatingReview {
     required this.paymentScore,
     required this.transportScore,
     this.comment,
+    this.workType,
+    this.workReference,
     required this.createdAt,
   });
 
@@ -34,6 +38,8 @@ class UserRatingReview {
       'transportScore': transportScore,
       'overallScore': overallScore,
       'comment': comment,
+      'workType': workType ?? 'order',
+      'workReference': workReference ?? 'TRD-VERIFIED',
       'createdAt': createdAt.toIso8601String(),
     };
   }
@@ -47,6 +53,8 @@ class UserRatingReview {
       paymentScore: (map['paymentScore'] ?? 0.0).toDouble(),
       transportScore: (map['transportScore'] ?? 0.0).toDouble(),
       comment: map['comment'],
+      workType: map['workType'] ?? 'order',
+      workReference: map['workReference'],
       createdAt: map['createdAt'] != null
           ? DateTime.tryParse(map['createdAt'].toString()) ?? DateTime.now()
           : DateTime.now(),
@@ -88,6 +96,8 @@ class UserRatingService {
     required double paymentScore,
     required double transportScore,
     String? comment,
+    String? workType,
+    String? workReference,
   }) async {
     try {
       final ratingsRef = _firestore
@@ -103,6 +113,8 @@ class UserRatingService {
         paymentScore: paymentScore,
         transportScore: transportScore,
         comment: comment,
+        workType: workType ?? 'order',
+        workReference: workReference ?? 'TRD-VERIFIED-${DateTime.now().millisecondsSinceEpoch}',
         createdAt: DateTime.now(),
       );
 
@@ -232,6 +244,14 @@ class UserRatingService {
     double transportScore = 5.0;
     final TextEditingController commentController = TextEditingController();
 
+    final List<Map<String, String>> workTypes = [
+      {'id': 'order', 'label': '📦 মাছ/পণ্য ক্রয়-বিক্রয় লেনদেন (Order / Trade)'},
+      {'id': 'transport', 'label': '🚚 মাছ/পণ্য পরিবহন ও ডেলিভারি (Trip)'},
+      {'id': 'service', 'label': '⚙️ কৃষি/মৎস্য সেবা বা যন্ত্রাংশ ভাড়া (Service)'},
+      {'id': 'contract', 'label': '🤝 চুক্তিবদ্ধ সাপ্লাই ও বাল্ক ক্রয় (Contract)'},
+    ];
+    String selectedWorkType = 'order';
+
     showDialog(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
@@ -249,6 +269,63 @@ class UserRatingService {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.green, width: 1),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.verified, color: Colors.green, size: 18),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '১০০% ভেরিফাইড কাজের মূল্যায়ন (কোনো ভিত্তিহীন রেটিং গ্রহণযোগ্য নয়)',
+                            style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.green),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'সম্পন্ন কাজের ধরন নির্বাচন করুন (বাধ্যতামূলক):',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  ),
+                  const SizedBox(height: 6),
+                  DropdownButtonFormField<String>(
+                    value: selectedWorkType,
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                    ),
+                    items: workTypes.map((item) {
+                      return DropdownMenuItem<String>(
+                        value: item['id']!,
+                        child: Text(
+                          item['label']!,
+                          style: const TextStyle(
+                              fontSize: 12, fontWeight: FontWeight.w600),
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        setState(() {
+                          selectedWorkType = val;
+                        });
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 14),
                   const Text(
                     'পণ্যের মান ও সেবার দক্ষতা (Quality / Expertise):',
                     style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
@@ -350,6 +427,8 @@ class UserRatingService {
                     paymentScore: paymentScore,
                     transportScore: transportScore,
                     comment: commentController.text.trim(),
+                    workType: selectedWorkType,
+                    workReference: 'TRD-$selectedWorkType-${DateTime.now().millisecondsSinceEpoch}',
                   );
                   onRatingSubmitted();
                   if (context.mounted) {
