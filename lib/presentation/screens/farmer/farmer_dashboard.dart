@@ -19,6 +19,7 @@ import 'package:agrolinkbd/presentation/widgets/global_announcement_banner.dart'
 import 'package:agrolinkbd/presentation/widgets/report_generation_card.dart';
 import 'package:agrolinkbd/presentation/screens/agri_info/agri_info_hub_screen.dart';
 import 'package:agrolinkbd/presentation/screens/agri_info/saved_agri_data_screen.dart';
+import 'package:agrolinkbd/presentation/widgets/weather_card_widget.dart';
 
 class FarmerDashboard extends StatefulWidget {
   const FarmerDashboard({super.key});
@@ -265,8 +266,8 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
                     const GlobalAnnouncementBanner(),
                     const SizedBox(height: 16),
                     
-                    // 1. Weather Alert Card
-                    _buildWeatherAlertCard(),
+                    // 1. Live Real-time Location Weather Card
+                    const WeatherCardWidget(),
                     const SizedBox(height: 24),
 
                     // Transport Booking Banner

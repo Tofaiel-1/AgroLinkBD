@@ -21,6 +21,7 @@ import 'package:agrolinkbd/presentation/screens/fisheries/farmer/market_price/fi
 import 'package:agrolinkbd/presentation/screens/card/card_preview_screen.dart' as agrolinkbd;
 import 'package:agrolinkbd/core/utils/responsive_helper.dart';
 import 'package:agrolinkbd/presentation/widgets/responsive_web_wrapper.dart';
+import 'package:agrolinkbd/presentation/widgets/weather_card_widget.dart';
 
 class FishFarmerDashboard extends StatefulWidget {
   const FishFarmerDashboard({super.key});
@@ -111,11 +112,12 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     const Color oceanBlue = Color(0xFF0288D1); // Primary Fisheries Color
     const Color deepAqua = Color(0xFF006064);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA), // Soft cool background
+      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF5F7FA),
       body: SafeArea(
         child: Column(
           children: [
@@ -147,7 +149,7 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                                       style: GoogleFonts.hindSiliguri(
                                         fontSize: 24,
                                         fontWeight: FontWeight.bold,
-                                        color: deepAqua,
+                                        color: isDark ? Colors.white : deepAqua,
                                       ),
                                       overflow: TextOverflow.ellipsis,
                                     );
@@ -157,11 +159,11 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                   decoration: BoxDecoration(
-                                    color: Colors.white,
+                                    color: Theme.of(context).cardColor,
                                     borderRadius: BorderRadius.circular(20),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.grey.withOpacity(0.1),
+                                        color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
                                         spreadRadius: 1,
                                         blurRadius: 5,
                                       )
@@ -186,33 +188,17 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                                             pinFieldType: 'walletBalance',
                                             textColor: oceanBlue,
                                             fontSize: 14.0,
-                        children: [
-                          Consumer<UserProvider>(
-                            builder: (context, userProvider, _) {
-                              final user = userProvider.currentUser;
-                              final name = user?.name ?? 'মৎস্য চাষী';
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'স্বাগতম, $name 👋',
-                                    style: GoogleFonts.hindSiliguri(
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.bold,
-                                      color: isDark ? Colors.white : Colors.black87,
-                                    ),
+                                            label: 'Tap to view',
+                                          );
+                                        }
+                                      ),
+                                    ],
                                   ),
-                                  Text(
-                                    'মাছ চাষের আপডেট এবং পরামর্শ',
-                                    style: GoogleFonts.hindSiliguri(
-                                      fontSize: 14,
-                                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
+                                ),
+                              ],
+                            ),
                           ),
+                          const SizedBox(width: 12),
                           Stack(
                             clipBehavior: Clip.none,
                             children: [
@@ -239,10 +225,10 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                       
                       const SizedBox(height: 24),
 
-                      // Water Quality Alert Card
+                      // Weather & Water Alert Card
                       FadeTransition(
                         opacity: _fadeAnimation,
-                        child: _buildWaterQualityAlertCard(),
+                        child: const WeatherCardWidget(isFisheriesTheme: true),
                       ),
 
                       const SizedBox(height: 24),
