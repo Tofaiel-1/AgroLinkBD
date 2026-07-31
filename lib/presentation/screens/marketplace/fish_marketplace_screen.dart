@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:agrolinkbd/core/providers/user_provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import 'package:agrolinkbd/presentation/screens/buyer/shopping_cart_screen.dart';
@@ -11,6 +9,8 @@ import 'package:agrolinkbd/core/services/order_service.dart';
 import 'package:agrolinkbd/core/services/sslcommerz_service.dart';
 import 'package:agrolinkbd/presentation/screens/buyer/fish_buyer_orders_screen.dart';
 import 'package:agrolinkbd/core/utils/responsive_helper.dart';
+import 'package:agrolinkbd/core/providers/cart_provider.dart';
+import 'package:agrolinkbd/core/models/cart_model.dart';
 
 class FishMarketplaceScreen extends StatefulWidget {
   const FishMarketplaceScreen({super.key});
@@ -72,10 +72,45 @@ class _FishMarketplaceScreenState extends State<FishMarketplaceScreen> {
               ),
             ),
             actions: [
-              IconButton(
-                icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white),
-                onPressed: () {
-                  Get.to(() => const ShoppingCartScreen());
+              Consumer<CartProvider>(
+                builder: (context, cartProvider, child) {
+                  return Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white),
+                        onPressed: () {
+                          Get.to(() => const ShoppingCartScreen());
+                        },
+                      ),
+                      if (cartProvider.itemCount > 0)
+                        Positioned(
+                          right: 6,
+                          top: 8,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.amber,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 1.5),
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 18,
+                              minHeight: 18,
+                            ),
+                            child: Text(
+                              '${cartProvider.itemCount}',
+                              style: GoogleFonts.poppins(
+                                color: Colors.black87,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
                 },
               ),
               PopupMenuButton<String>(
@@ -426,15 +461,7 @@ class _FishMarketplaceScreenState extends State<FishMarketplaceScreen> {
                         child: SizedBox(
                           height: 32,
                           child: ElevatedButton(
-                            onPressed: () {
-                              Get.snackbar(
-                                'সাফল্য',
-                                '$title কার্টে যোগ করা হয়েছে',
-                                backgroundColor: Colors.green,
-                                colorText: Colors.white,
-                                snackPosition: SnackPosition.BOTTOM,
-                              );
-                            },
+                            onPressed: () => _addToCart(title, price, seller, location, imageUrl),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: isDark ? const Color(0xFF1976D2).withOpacity(0.2) : const Color(0xFFE3F2FD),
                               foregroundColor: const Color(0xFF0277BD),
@@ -480,6 +507,57 @@ class _FishMarketplaceScreenState extends State<FishMarketplaceScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _addToCart(String title, String priceStr, String seller, String location, String imageUrl) {
+    final double price = double.tryParse(priceStr) ?? 0.0;
+    final String id = 'fish_${title.hashCode}_${seller.hashCode}';
+    final String nowIso = DateTime.now().toIso8601String();
+
+    final item = CartItem(
+      id: id,
+      title: title,
+      price: price,
+      unit: 'কেজি',
+      quantity: 1.0,
+      imageUrl: imageUrl,
+      itemType: CartItemType.product,
+      sellerId: 'seller_${seller.hashCode}',
+      sellerName: seller,
+      sellerRole: 'fishFarmer',
+      metadata: {
+        'addedAt': nowIso,
+        'location': location,
+        'category': 'fish',
+        'history': [nowIso],
+      },
+    );
+
+    Provider.of<CartProvider>(context, listen: false).addToCart(item);
+
+    Get.snackbar(
+      'কার্টে যোগ করা হয়েছে 🛒',
+      '$title (১ কেজি) আপনার কার্টে যোগ করা হয়েছে।',
+      backgroundColor: const Color(0xFF0277BD),
+      colorText: Colors.white,
+      snackPosition: SnackPosition.BOTTOM,
+      margin: const EdgeInsets.all(12),
+      borderRadius: 12,
+      duration: const Duration(seconds: 3),
+      mainButton: TextButton(
+        onPressed: () {
+          Get.to(() => const ShoppingCartScreen());
+        },
+        child: Text(
+          'কার্ট দেখুন',
+          style: GoogleFonts.hindSiliguri(
+            color: Colors.amber,
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ),
+        ),
       ),
     );
   }

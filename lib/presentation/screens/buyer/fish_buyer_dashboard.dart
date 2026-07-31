@@ -10,6 +10,7 @@ import 'package:agrolinkbd/presentation/screens/buyer/shopping_cart_screen.dart'
 import 'package:agrolinkbd/presentation/screens/buyer/fish_buyer_orders_screen.dart';
 import 'package:agrolinkbd/core/utils/responsive_helper.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:agrolinkbd/core/providers/cart_provider.dart';
 
 /// Fish Buyer Dashboard - Ultra Pro Edition
 /// Special dashboard for buyers looking specifically for fish with smart features.
@@ -65,6 +66,50 @@ class _FishBuyerDashboardState extends State<FishBuyerDashboard>
               pinned: true,
               backgroundColor: isDark ? const Color(0xFF1E1E1E) : const Color(0xFF0277BD),
               elevation: 0,
+              actions: [
+                Consumer<CartProvider>(
+                  builder: (context, cartProvider, child) {
+                    return Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white),
+                          onPressed: () {
+                            Get.to(() => const ShoppingCartScreen());
+                          },
+                        ),
+                        if (cartProvider.itemCount > 0)
+                          Positioned(
+                            right: 6,
+                            top: 8,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Colors.amber,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 1.5),
+                              ),
+                              constraints: const BoxConstraints(
+                                minWidth: 18,
+                                minHeight: 18,
+                              ),
+                              child: Text(
+                                '${cartProvider.itemCount}',
+                                style: GoogleFonts.poppins(
+                                  color: Colors.black87,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+                const SizedBox(width: 8),
+              ],
               flexibleSpace: FlexibleSpaceBar(
                 background: Stack(
                   fit: StackFit.expand,

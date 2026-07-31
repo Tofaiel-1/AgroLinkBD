@@ -67,21 +67,31 @@ class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
                             color: isDark ? Colors.white : Colors.black87,
                           ),
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF1976D2).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            '${cartItems.length}টি আইটেম',
-                            style: GoogleFonts.hindSiliguri(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF1976D2),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF1976D2).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                '${cartItems.length}টি আইটেম',
+                                style: GoogleFonts.hindSiliguri(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF1976D2),
+                                ),
+                              ),
                             ),
-                          ),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              icon: Icon(Icons.delete_sweep_outlined, color: Colors.red.shade400),
+                              tooltip: 'কার্ট খালি করুন',
+                              onPressed: () => _showClearCartConfirmDialog(context, cartProvider),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -246,69 +256,141 @@ class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
 
   Widget _buildCartItem(CartItem item, CartProvider cartProvider, bool isDark) {
     final bool allowFraction = !(item.unit == 'পিছ' || item.unit == 'ডজন' || item.itemType == CartItemType.transport);
+
+    final List<dynamic> history = (item.metadata['history'] is List)
+        ? (item.metadata['history'] as List)
+        : [item.metadata['addedAt'] ?? DateTime.now().toIso8601String()];
+    final String latestTimeStr = history.isNotEmpty ? history.last.toString() : '';
+    final String formattedTime = _formatBanglaDateTime(latestTimeStr);
     
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? Colors.white12 : Colors.grey.shade100,
+    return Dismissible(
+      key: ValueKey('${item.id}_${item.title}'),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        alignment: Alignment.centerRight,
+        decoration: BoxDecoration(
+          color: Colors.red.shade400,
+          borderRadius: BorderRadius.circular(16),
         ),
-        boxShadow: isDark
-            ? []
-            : [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-      ),
-      child: Row(
-        children: [
-          // Product Image
-          ClipRRect(
-            borderRadius: BorderRadius.circular(14),
-            child: Container(
-              width: 56,
-              height: 56,
-              color: Colors.grey.shade100,
-              child: item.imageUrl.isNotEmpty && item.imageUrl.startsWith('http')
-                  ? Image.network(
-                      item.imageUrl,
-                      width: 56,
-                      height: 56,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => const Icon(Icons.shopping_basket, color: Colors.grey),
-                    )
-                  : const Icon(Icons.shopping_basket, color: Colors.grey),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Text(
+              'মুছে ফেলুন',
+              style: GoogleFonts.hindSiliguri(color: Colors.white, fontWeight: FontWeight.bold),
             ),
+            const SizedBox(width: 8),
+            const Icon(Icons.delete_outline, color: Colors.white),
+          ],
+        ),
+      ),
+      onDismissed: (_) {
+        cartProvider.removeFromCart(item.id);
+        Get.snackbar(
+          'সরানো হয়েছে',
+          '${item.title} কার্ট থেকে সরানো হয়েছে',
+          backgroundColor: Colors.red.shade100,
+          colorText: Colors.red.shade900,
+          duration: const Duration(seconds: 2),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDark ? Colors.white12 : Colors.grey.shade100,
           ),
-          const SizedBox(width: 14),
-          // Product info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.title,
-                  style: GoogleFonts.hindSiliguri(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: isDark ? Colors.white : Colors.black87,
+          boxShadow: isDark
+              ? []
+              : [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  item.sellerName,
-                  style: GoogleFonts.hindSiliguri(
-                    fontSize: 11,
-                    color: isDark ? Colors.white38 : Colors.grey.shade500,
+                ],
+        ),
+        child: Row(
+          children: [
+            // Product Image
+            ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                width: 56,
+                height: 56,
+                color: Colors.grey.shade100,
+                child: item.imageUrl.isNotEmpty && item.imageUrl.startsWith('http')
+                    ? Image.network(
+                        item.imageUrl,
+                        width: 56,
+                        height: 56,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => const Icon(Icons.shopping_basket, color: Colors.grey),
+                      )
+                    : const Icon(Icons.shopping_basket, color: Colors.grey),
+              ),
+            ),
+            const SizedBox(width: 14),
+            // Product info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.title,
+                    style: GoogleFonts.hindSiliguri(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
+                  const SizedBox(height: 2),
+                  Text(
+                    item.sellerName,
+                    style: GoogleFonts.hindSiliguri(
+                      fontSize: 11,
+                      color: isDark ? Colors.white38 : Colors.grey.shade500,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  InkWell(
+                    onTap: () => _showAddHistoryDialog(context, item, isDark),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1976D2).withOpacity(0.2) : const Color(0xFFE3F2FD),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFF1976D2).withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.access_time, size: 12, color: Color(0xFF1976D2)),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              'যোগ: $formattedTime${history.length > 1 ? ' (${history.length} বার)' : ''}',
+                              style: GoogleFonts.hindSiliguri(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF1976D2),
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.info_outline, size: 12, color: Color(0xFF1976D2)),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                 // Quantity controls
                 Row(
                   children: [
@@ -382,8 +464,9 @@ class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildQtyButton(IconData icon, bool isDark, VoidCallback onTap) {
     return GestureDetector(
@@ -488,5 +571,176 @@ class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
         colorText: Colors.red.shade900,
       );
     }
+  }
+
+  String _formatBanglaDateTime(String? isoStr) {
+    if (isoStr == null || isoStr.isEmpty) return 'সময় পাওয়া যায়নি';
+    try {
+      final dt = DateTime.parse(isoStr).toLocal();
+      final List<String> months = [
+        '', 'জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন',
+        'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'
+      ];
+      final String month = months[dt.month];
+      
+      int hour = dt.hour;
+      final String period = hour < 12 ? 'সকাল' : (hour < 16 ? 'দুপুর' : (hour < 18 ? 'বিকাল' : 'রাত'));
+      if (hour == 0) hour = 12;
+      if (hour > 12) hour -= 12;
+
+      String toBanglaDigits(String str) {
+        const en = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+        const bn = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+        String res = str;
+        for (int i = 0; i < en.length; i++) {
+          res = res.replaceAll(en[i], bn[i]);
+        }
+        return res;
+      }
+
+      final dayBn = toBanglaDigits('${dt.day}');
+      final yearBn = toBanglaDigits('${dt.year}');
+      final hourBn = toBanglaDigits('$hour');
+      final minuteBn = toBanglaDigits(dt.minute.toString().padLeft(2, '0'));
+
+      return '$dayBn $month $yearBn, $period $hourBn:$minuteBn';
+    } catch (e) {
+      return 'সাম্প্রতিক';
+    }
+  }
+
+  void _showAddHistoryDialog(BuildContext context, CartItem item, bool isDark) {
+    final List<dynamic> history = (item.metadata['history'] is List)
+        ? (item.metadata['history'] as List)
+        : [item.metadata['addedAt'] ?? DateTime.now().toIso8601String()];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.history, color: Color(0xFF1976D2), size: 24),
+                  const SizedBox(width: 8),
+                  Text(
+                    'কার্টে যোগ করার ইতিহাস 🕒',
+                    style: GoogleFonts.hindSiliguri(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'আইটেম: ${item.title} (${item.sellerName})',
+                style: GoogleFonts.hindSiliguri(
+                  fontSize: 13,
+                  color: isDark ? Colors.white60 : Colors.grey.shade600,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Divider(),
+              const SizedBox(height: 8),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 250),
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: history.length,
+                  itemBuilder: (context, idx) {
+                    final String timeStr = history[idx].toString();
+                    return ListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      leading: CircleAvatar(
+                        radius: 14,
+                        backgroundColor: const Color(0xFF1976D2).withOpacity(0.15),
+                        child: Text(
+                          '${idx + 1}',
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF1976D2),
+                          ),
+                        ),
+                      ),
+                      title: Text(
+                        _formatBanglaDateTime(timeStr),
+                        style: GoogleFonts.hindSiliguri(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                      subtitle: Text(
+                        idx == 0 ? 'প্রথমবার কার্টে যোগ করা হয়েছে' : 'পরিমাণ বৃদ্ধি করা হয়েছে',
+                        style: GoogleFonts.hindSiliguri(
+                          fontSize: 12,
+                          color: isDark ? Colors.white38 : Colors.grey.shade500,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1976D2),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: Text(
+                    'ঠিক আছে',
+                    style: GoogleFonts.hindSiliguri(color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showClearCartConfirmDialog(BuildContext context, CartProvider cartProvider) {
+    Get.defaultDialog(
+      title: 'কার্ট খালি করুন',
+      titleStyle: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 18),
+      content: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Text(
+          'আপনি কি নিশ্চিত যে কার্টের সব আইটেম মুছে ফেলতে চান?',
+          style: GoogleFonts.hindSiliguri(fontSize: 15),
+          textAlign: TextAlign.center,
+        ),
+      ),
+      textConfirm: 'হ্যাঁ, খালি করুন',
+      textCancel: 'না',
+      confirmTextColor: Colors.white,
+      buttonColor: Colors.red.shade600,
+      onConfirm: () {
+        cartProvider.clearCart();
+        Get.back();
+        Get.snackbar(
+          'কার্ট খালি হয়েছে',
+          'আপনার কার্টের সব আইটেম সরানো হয়েছে',
+          backgroundColor: Colors.red.shade100,
+          colorText: Colors.red.shade900,
+        );
+      },
+    );
   }
 }

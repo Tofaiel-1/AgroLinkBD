@@ -16,13 +16,42 @@ class CartProvider extends ChangeNotifier {
     final existingIndex =
         _cartItems.indexWhere((i) => i.id == item.id);
 
+    final String nowIso = DateTime.now().toIso8601String();
+
     if (existingIndex >= 0) {
-      // Increase quantity if item exists
-      _cartItems[existingIndex] = _cartItems[existingIndex].copyWith(
-          quantity: _cartItems[existingIndex].quantity + item.quantity);
+      // Increase quantity and record timestamp in history ("kobe kobe add koresi")
+      final existingItem = _cartItems[existingIndex];
+      final Map<String, dynamic> updatedMetadata =
+          Map<String, dynamic>.from(existingItem.metadata);
+
+      List<String> history = [];
+      if (updatedMetadata['history'] is List) {
+        history = List<String>.from(updatedMetadata['history'] as List);
+      } else if (updatedMetadata['addedAt'] != null) {
+        history.add(updatedMetadata['addedAt'].toString());
+      }
+      history.add(nowIso);
+
+      updatedMetadata['history'] = history;
+      updatedMetadata['lastAddedAt'] = nowIso;
+
+      _cartItems[existingIndex] = existingItem.copyWith(
+        quantity: existingItem.quantity + item.quantity,
+        metadata: updatedMetadata,
+      );
     } else {
-      // Add new item
-      _cartItems.add(item);
+      // Add new item with initial history timestamp
+      final Map<String, dynamic> updatedMetadata =
+          Map<String, dynamic>.from(item.metadata);
+      if (updatedMetadata['addedAt'] == null) {
+        updatedMetadata['addedAt'] = nowIso;
+      }
+      if (updatedMetadata['history'] == null) {
+        updatedMetadata['history'] = [updatedMetadata['addedAt'] ?? nowIso];
+      }
+      updatedMetadata['lastAddedAt'] = nowIso;
+
+      _cartItems.add(item.copyWith(metadata: updatedMetadata));
     }
 
     debugPrint('✅ Added to cart: ${item.title} (Quantity: ${item.quantity})');
