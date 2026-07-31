@@ -1,13 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:agrolinkbd/core/models/user_model.dart';
 
 class UserRatingReview {
   final String id;
   final String reviewerId;
   final String reviewerName;
-  final double farmerRating; // খামারি রেটিং (1-5)
-  final double paymentScore; // পেমেন্ট সম্পূর্ণ করার রেটিং (1-5)
-  final double transportScore; // ট্রান্সপোর্ট ও রিসিভ করার রেটিং (1-5)
+  final double farmerRating; // পণ্যের মান / দক্ষতা রেটিং (1-5)
+  final double paymentScore; // পেমেন্ট ও লেনদেন নির্ভরযোগ্যতা (1-5)
+  final double transportScore; // সময়নিষ্ঠতা ও পেশাদার আচরণ (1-5)
   final String? comment;
   final DateTime createdAt;
 
@@ -56,7 +57,29 @@ class UserRatingReview {
 class UserRatingService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Submit a multi-criteria review for a user and automatically update their aggregate Firebase scores
+  // Calculate 0–100% Universal Trust Score dynamically combining:
+  // Peer reviews (50 max) + Payment booster (15 max) + App Tenure (15 max) + Trade Volume (20 max) - Fraud penalties
+  static double calculateTrustScore(UserModel user) {
+    double peerPoints = (user.totalRatings > 0 ? (user.rating / 5.0) * 50.0 : 50.0);
+    double paymentPoints = (user.totalOrders * 1.5).clamp(0.0, 15.0);
+    double tenureMonths = DateTime.now().difference(user.createdAt).inDays / 30.0;
+    double tenurePoints = (tenureMonths * 2.0 + 5.0).clamp(0.0, 15.0);
+    double volumePoints = (user.totalOrders * 2.0).clamp(0.0, 20.0);
+
+    double fraudPenalty = user.fraudReports * 15.0;
+    double cancelPenalty = user.cancelledOrders * 5.0;
+    double defaultPenalty = user.paymentDefaults * 10.0;
+    double latePenalty = user.lateDeliveries * 3.0;
+
+    double score = peerPoints +
+        paymentPoints +
+        tenurePoints +
+        volumePoints -
+        (fraudPenalty + cancelPenalty + defaultPenalty + latePenalty);
+    return score.clamp(0.0, 100.0);
+  }
+
+  // Submit a multi-criteria review for a user and automatically update their aggregate Firebase scores & trust score
   Future<void> submitUserRating({
     required String targetUserId,
     required String reviewerId,
@@ -123,6 +146,58 @@ class UserRatingService {
     }
   }
 
+  // Submit a fraud report or penalty deduction to decrease the user's trust score
+  Future<void> submitFraudReportOrPenalty({
+    required String targetUserId,
+    required String reporterId,
+    required String reporterName,
+    required int penaltyType, // 1=fake weight (-15), 2=cancel (-5), 3=payment default (-10), 4=late (-5), 5=misbehavior (-10)
+    required String reason,
+  }) async {
+    try {
+      final userRef = _firestore.collection('users').doc(targetUserId);
+      final penaltyCollection = userRef.collection('penalties');
+
+      await penaltyCollection.add({
+        'reporterId': reporterId,
+        'reporterName': reporterName,
+        'penaltyType': penaltyType,
+        'reason': reason,
+        'createdAt': DateTime.now().toIso8601String(),
+      });
+
+      await _firestore.runTransaction((transaction) async {
+        final snapshot = await transaction.get(userRef);
+        if (snapshot.exists) {
+          final data = snapshot.data() ?? {};
+          int fraudReports = data['fraudReports'] ?? 0;
+          int cancelledOrders = data['cancelledOrders'] ?? 0;
+          int paymentDefaults = data['paymentDefaults'] ?? 0;
+          int lateDeliveries = data['lateDeliveries'] ?? 0;
+
+          if (penaltyType == 1 || penaltyType == 5) {
+            fraudReports += 1;
+          } else if (penaltyType == 2) {
+            cancelledOrders += 1;
+          } else if (penaltyType == 3) {
+            paymentDefaults += 1;
+          } else if (penaltyType == 4) {
+            lateDeliveries += 1;
+          }
+
+          transaction.update(userRef, {
+            'fraudReports': fraudReports,
+            'cancelledOrders': cancelledOrders,
+            'paymentDefaults': paymentDefaults,
+            'lateDeliveries': lateDeliveries,
+          });
+        }
+      });
+    } catch (e) {
+      debugPrint('Error submitting fraud/penalty report: $e');
+    }
+  }
+
   // Helper method to record completed purchase & spent amount in Firestore
   Future<void> recordCompletedPurchase(String userId, double spentAmount) async {
     try {
@@ -143,8 +218,8 @@ class UserRatingService {
     }
   }
 
-  // Show a beautiful interactive modal dialog for rating any buyer / user across the 3 criteria
-  static void showRateUserDialog({
+  // Show Universal 360° Cross-Role Rating Modal (supports any role combination)
+  static void showUniversalRateModal({
     required BuildContext context,
     required String targetUserId,
     required String targetUserName,
@@ -167,7 +242,7 @@ class UserRatingService {
             ),
             title: Text(
               '$targetUserName-কে মূল্যায়ন করুন',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
             ),
             content: SingleChildScrollView(
               child: Column(
@@ -175,7 +250,7 @@ class UserRatingService {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'মাছ খামারিদের দেওয়া রেটিং (Farmer Rating):',
+                    'পণ্যের মান ও সেবার দক্ষতা (Quality / Expertise):',
                     style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                   ),
                   Row(
@@ -187,7 +262,7 @@ class UserRatingService {
                               ? Icons.star
                               : Icons.star_border,
                           color: Colors.amber,
-                          size: 30,
+                          size: 28,
                         ),
                         onPressed: () {
                           setState(() {
@@ -199,7 +274,7 @@ class UserRatingService {
                   ),
                   const SizedBox(height: 10),
                   const Text(
-                    'পেমেন্ট সম্পূর্ণ করার রেটিং (Payment Score):',
+                    'পেমেন্ট ও লেনদেনের নির্ভরযোগ্যতা (Payment Score):',
                     style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                   ),
                   Row(
@@ -211,7 +286,7 @@ class UserRatingService {
                               ? Icons.star
                               : Icons.star_border,
                           color: Colors.amber,
-                          size: 30,
+                          size: 28,
                         ),
                         onPressed: () {
                           setState(() {
@@ -223,7 +298,7 @@ class UserRatingService {
                   ),
                   const SizedBox(height: 10),
                   const Text(
-                    'ট্রান্সপোর্ট ও রিসিভ রেটিং (Transport & Delivery):',
+                    'সময়নিষ্ঠতা ও পেশাদার আচরণ (Punctuality & Behavior):',
                     style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                   ),
                   Row(
@@ -235,7 +310,7 @@ class UserRatingService {
                               ? Icons.star
                               : Icons.star_border,
                           color: Colors.amber,
-                          size: 30,
+                          size: 28,
                         ),
                         onPressed: () {
                           setState(() {
@@ -287,6 +362,170 @@ class UserRatingService {
                   }
                 },
                 child: const Text('সাবমিট করুন'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  // Backward compatibility wrapper
+  static void showRateUserDialog({
+    required BuildContext context,
+    required String targetUserId,
+    required String targetUserName,
+    required String reviewerId,
+    required String reviewerName,
+    required VoidCallback onRatingSubmitted,
+  }) {
+    showUniversalRateModal(
+      context: context,
+      targetUserId: targetUserId,
+      targetUserName: targetUserName,
+      reviewerId: reviewerId,
+      reviewerName: reviewerName,
+      onRatingSubmitted: onRatingSubmitted,
+    );
+  }
+
+  // Show Fraud & Penalty Deduction Modal ("fraud activity er jonne rating decrease hobe... add more decrease option")
+  static void showFraudPenaltyDialog({
+    required BuildContext context,
+    required String targetUserId,
+    required String targetUserName,
+    required String reporterId,
+    required String reporterName,
+    required VoidCallback onPenaltySubmitted,
+  }) {
+    int selectedPenaltyType = 1;
+    final TextEditingController reasonController = TextEditingController();
+
+    final List<Map<String, dynamic>> penaltyOptions = [
+      {
+        'id': 1,
+        'label': '🚫 ভুয়া ওজন বা ভেজাল পণ্য (Quality Fraud)',
+        'deduction': '-১৫ পয়েন্ট',
+      },
+      {
+        'id': 2,
+        'label': '❌ অর্ডার নিশ্চিত করার পর বাতিল/গ্রহণ না করা',
+        'deduction': '-৫ পয়েন্ট',
+      },
+      {
+        'id': 3,
+        'label': '💸 পেমেন্ট বকেয়া বা বিলম্ব (Payment Default)',
+        'deduction': '-১০ পয়েন্ট',
+      },
+      {
+        'id': 4,
+        'label': '⏰ নির্ধারিত সময়ে উপস্থিত না হওয়া (No-Show)',
+        'deduction': '-৫ পয়েন্ট',
+      },
+      {
+        'id': 5,
+        'label': '⚠️ অসদাচরণ বা ভুয়া তথ্য প্রদান (Misbehavior)',
+        'deduction': '-১০ পয়েন্ট',
+      },
+    ];
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Text(
+              '$targetUserName-এর বিরুদ্ধে রিপোর্ট / জরিমানা',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.red),
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'রিপোর্ট ও জরিমানার কারণ নির্বাচন করুন:',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  ),
+                  const SizedBox(height: 8),
+                  ...penaltyOptions.map((option) {
+                    return RadioListTile<int>(
+                      title: Text(
+                        option['label'],
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                      subtitle: Text(
+                        'ট্রাস্ট স্কোর কমবে: ${option['deduction']}',
+                        style: const TextStyle(color: Colors.red, fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                      value: option['id'] as int,
+                      groupValue: selectedPenaltyType,
+                      contentPadding: EdgeInsets.zero,
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() {
+                            selectedPenaltyType = val;
+                          });
+                        }
+                      },
+                    );
+                  }),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: reasonController,
+                    decoration: InputDecoration(
+                      labelText: 'বিস্তারিত বিবরণ লিখুন (বাধ্যতামূলক)',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    maxLines: 2,
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('বাতিল'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () async {
+                  if (reasonController.text.trim().isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('অনুগ্রহ করে বিস্তারিত বিবরণ লিখুন!'),
+                        backgroundColor: Colors.orange,
+                      ),
+                    );
+                    return;
+                  }
+                  Navigator.pop(dialogContext);
+                  await UserRatingService().submitFraudReportOrPenalty(
+                    targetUserId: targetUserId,
+                    reporterId: reporterId,
+                    reporterName: reporterName,
+                    penaltyType: selectedPenaltyType,
+                    reason: reasonController.text.trim(),
+                  );
+                  onPenaltySubmitted();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('রিপোর্ট সফলভাবে সাবমিট ও ট্রাস্ট স্কোর আপডেট করা হয়েছে!'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                },
+                child: const Text('জরিমানা সাবমিট করুন'),
               ),
             ],
           );

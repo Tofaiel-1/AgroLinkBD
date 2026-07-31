@@ -139,8 +139,6 @@ class _ProfileSettingsState extends State<ProfileSettings> {
     final userName = user?.name ?? 'User';
     final userEmail = user?.email ?? 'No email';
     final primaryColor = _getRolePrimaryColor(context);
-    final isFishBuyerOrBuyer = user?.userType == UserType.fishBuyer ||
-        user?.userType == UserType.buyer;
 
     return Scaffold(
       body: CustomScrollView(
@@ -254,66 +252,47 @@ class _ProfileSettingsState extends State<ProfileSettings> {
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: isFishBuyerOrBuyer
-                    ? [
-                        Expanded(
-                          child: _buildStatItem(
-                            '${user?.totalOrders ?? 0} বার',
-                            'মাছ ক্রয়',
-                            Icons.shopping_bag,
-                          ),
-                        ),
-                        Container(
-                          width: 1,
-                          height: 36,
-                          color: Theme.of(context).dividerColor,
-                        ),
-                        Expanded(
-                          child: _buildStatItem(
-                            '৳ ${(user?.totalSpent ?? 0.0).toStringAsFixed(0)}',
-                            'পরিশোধিত',
-                            Icons.payments,
-                          ),
-                        ),
-                        Container(
-                          width: 1,
-                          height: 36,
-                          color: Theme.of(context).dividerColor,
-                        ),
-                        Expanded(
-                          child: _buildStatItem(
-                            (user?.totalRatings ?? 0) == 0
-                                ? 'নতুন'
-                                : '${(user?.rating ?? 0.0).toStringAsFixed(1)} ⭐️',
-                            'রেটিং (${user?.totalRatings ?? 0})',
-                            Icons.star,
-                          ),
-                        ),
-                      ]
-                    : [
-                        _buildStatItem('52', 'Products', Icons.inventory_2),
-                        Container(
-                          width: 1,
-                          height: 40,
-                          color: Theme.of(context).dividerColor,
-                        ),
-                        _buildStatItem('34', 'Orders', Icons.shopping_bag),
-                        Container(
-                          width: 1,
-                          height: 40,
-                          color: Theme.of(context).dividerColor,
-                        ),
-                        _buildStatItem('4.8', 'Rating', Icons.star),
-                      ],
+                children: [
+                  Expanded(
+                    child: _buildStatItem(
+                      '${user?.totalOrders ?? 0} বার',
+                      'মোট লেনদেন',
+                      Icons.shopping_bag,
+                    ),
+                  ),
+                  Container(
+                    width: 1,
+                    height: 36,
+                    color: Theme.of(context).dividerColor,
+                  ),
+                  Expanded(
+                    child: _buildStatItem(
+                      '৳ ${(user?.totalSpent ?? 0.0).toStringAsFixed(0)}',
+                      'পরিশোধিত',
+                      Icons.payments,
+                    ),
+                  ),
+                  Container(
+                    width: 1,
+                    height: 36,
+                    color: Theme.of(context).dividerColor,
+                  ),
+                  Expanded(
+                    child: _buildStatItem(
+                      '${UserRatingService.calculateTrustScore(user ?? UserModel(id: "", name: "", phone: "", email: "", userType: UserType.farmer, status: UserStatus.active, createdAt: DateTime.now())).toStringAsFixed(0)}%',
+                      'ট্রাস্ট স্কোর',
+                      Icons.verified_user,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
 
-          // Buyer Activity & Credibility Card (Fish Buyer / Buyer specific)
-          if (isFishBuyerOrBuyer)
-            SliverToBoxAdapter(
-              child: _buildBuyerActivityCard(context, user, primaryColor),
-            ),
+          // Universal 360° Trust & Credibility Card (For ALL roles: Farmer, Buyer, Driver, Service Provider, Company)
+          SliverToBoxAdapter(
+            child: _buildUniversalTrustCard(context, user, primaryColor),
+          ),
 
           // Settings Section
           const SliverToBoxAdapter(
@@ -598,7 +577,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
     );
   }
 
-  Widget _buildBuyerActivityCard(
+  Widget _buildUniversalTrustCard(
       BuildContext context, UserModel? user, Color primaryColor) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final int totalOrders = user?.totalOrders ?? 0;
@@ -608,7 +587,15 @@ class _ProfileSettingsState extends State<ProfileSettings> {
     final double transportScore = user?.transportScore ?? 0.0;
     final double rating = user?.rating ?? 0.0;
     final int totalRatings = user?.totalRatings ?? 0;
-    final bool isNewBuyer = totalRatings == 0;
+    final int accountDays = DateTime.now().difference(user?.createdAt ?? DateTime.now()).inDays;
+
+    final double trustScore = UserRatingService.calculateTrustScore(
+        user ?? UserModel(id: "", name: "", phone: "", email: "", userType: UserType.farmer, status: UserStatus.active, createdAt: DateTime.now()));
+    final int fraudReports = user?.fraudReports ?? 0;
+    final int cancelledOrders = user?.cancelledOrders ?? 0;
+    final int paymentDefaults = user?.paymentDefaults ?? 0;
+    final int lateDeliveries = user?.lateDeliveries ?? 0;
+    final int totalPenalties = fraudReports + cancelledOrders + paymentDefaults + lateDeliveries;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -646,7 +633,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
             child: Row(
               children: [
                 Icon(
-                  isNewBuyer ? Icons.person_outline : Icons.verified,
+                  Icons.verified_user,
                   color: primaryColor,
                   size: 24,
                 ),
@@ -656,11 +643,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        isNewBuyer
-                            ? 'নতুন ফিশ বায়ার (New Buyer)'
-                            : (rating >= 4.5
-                                ? 'গোল্ড ফিশ বায়ার - বিশ্বস্ত ক্রেতা'
-                                : 'রেজিস্টার্ড ফিশ বায়ার'),
+                        '${trustScore.toStringAsFixed(0)}% সর্বজনীন বিশ্বস্ততা ও ট্রাস্ট স্কোর',
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
@@ -669,11 +652,13 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        isNewBuyer
-                            ? 'এখনও কোনো খামারি রেটিং দেননি • লেনদেনের পর রেটিং যুক্ত হবে'
-                            : (rating >= 4.5
-                                ? 'নিয়মিত মাছ ক্রয় ও সময়মতো পেমেন্ট প্রদানকারী ক্রেতা'
-                                : 'মাছ ক্রয় ও লেনদেনকারী সদস্য'),
+                        trustScore >= 95
+                            ? '💎 প্ল্যাটিনাম বিশ্বস্ত সদস্য • ১০০% নিরাপদ লেনদেন'
+                            : (trustScore >= 85
+                                ? '🥇 গোল্ড বিশ্বস্ত সদস্য • প্রমাণিত ও নিরাপদ'
+                                : (trustScore >= 70
+                                    ? '🥈 সিলভার সদস্য • নির্ভরযোগ্য'
+                                    : '🥉 ব্রোঞ্জ সদস্য • প্রাথমিক পর্যায়')),
                         style: TextStyle(
                           fontSize: 11,
                           color: isDark ? Colors.grey[300] : Colors.grey[700],
@@ -686,21 +671,19 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: (isNewBuyer ? Colors.blue : Colors.green)
+                    color: (trustScore >= 85 ? Colors.green : Colors.blue)
                         .withOpacity(0.15),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                        color: isNewBuyer ? Colors.blue : Colors.green,
+                        color: trustScore >= 85 ? Colors.green : Colors.blue,
                         width: 1),
                   ),
                   child: Text(
-                    isNewBuyer
-                        ? 'NEW BUYER'
-                        : (rating >= 4.5 ? 'VERIFIED GOLD' : 'ACTIVE BUYER'),
+                    trustScore >= 95 ? 'PLATINUM' : (trustScore >= 85 ? 'GOLD' : 'VERIFIED'),
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
-                      color: isNewBuyer ? Colors.blue : Colors.green,
+                      color: trustScore >= 85 ? Colors.green : Colors.blue,
                     ),
                   ),
                 ),
@@ -710,14 +693,14 @@ class _ProfileSettingsState extends State<ProfileSettings> {
 
           const Divider(height: 1),
 
-          // Activity Details & Reliability Metrics (Real Firebase multi-criteria data)
+          // Activity Details & Reliability Metrics (Universal 360° Data)
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'লেনদেন ও ক্রয়ের বিশ্বস্ততা বিবরণী (Firebase Verified)',
+                  'রেটিং ও ট্রাস্ট স্কোর বৃদ্ধির সূচক (Positive Boosters)',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -727,64 +710,129 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                 const SizedBox(height: 12),
                 _buildActivityDetailRow(
                   context,
-                  Icons.shopping_cart_checkout,
-                  'মোট মাছ ক্রয় (Completed Orders)',
-                  totalOrders == 0
-                      ? 'এখনও কোনো মাছ ক্রয় সম্পন্ন হয়নি'
-                      : '$totalOrders টি সফল ক্রয় সম্পন্ন',
-                  Colors.blue,
-                ),
-                const SizedBox(height: 10),
-                _buildActivityDetailRow(
-                  context,
                   Icons.payments_outlined,
-                  'মোট পরিশোধিত খরচ (Total Spent)',
+                  'পেমেন্ট ও লেনদেন নির্ভরযোগ্যতা (Payment Score)',
                   totalSpent == 0
                       ? '৳ ০ (কোনো লেনদেন হয়নি)'
-                      : '৳ ${totalSpent.toStringAsFixed(0)} (নিরাপদ ও সময়মতো পরিশোধ)',
+                      : '৳ ${totalSpent.toStringAsFixed(0)} পরিশোধিত • সময়মতো নিরাপদ লেনদেন (+স্কোর বৃদ্ধি)',
                   Colors.green,
                 ),
                 const SizedBox(height: 10),
                 _buildActivityDetailRow(
                   context,
-                  Icons.thumb_up_alt_outlined,
-                  'খামারিদের দেওয়া রেটিং (Farmer Rating)',
-                  isNewBuyer
-                      ? 'মূল্যায়ন নেই (খামারিদের রেটিং প্রয়োজন)'
-                      : '${farmerRating.toStringAsFixed(1)} / 5.0 ⭐️ ($totalRatings জন খামারি কর্তৃক মূল্যায়িত)',
-                  Colors.purple,
+                  Icons.verified,
+                  'অ্যাপ ব্যবহারের সময়কাল ও সক্রিয়তা (App Tenure)',
+                  'অ্যাকাউন্ট বয়স: $accountDays দিন যাবৎ সক্রিয় সদস্য • ভেরিফাইড প্রোফাইল (+স্কোর বৃদ্ধি)',
+                  Colors.blue,
                 ),
                 const SizedBox(height: 10),
                 _buildActivityDetailRow(
                   context,
-                  Icons.verified_user_outlined,
-                  'পেমেন্ট সম্পূর্ণ করার রেটিং (Payment Score)',
-                  isNewBuyer
-                      ? 'মূল্যায়ন নেই (পেমেন্ট দ্রুততা মূল্যায়ন)'
-                      : '${paymentScore.toStringAsFixed(1)} / 5.0 ⭐️ (সময়মতো পরিশোধ মূল্যায়ন)',
+                  Icons.shopping_cart_checkout,
+                  'মোট লেনদেন ও অর্ডার সংখ্যা (Trade Volume)',
+                  totalOrders == 0
+                      ? 'এখনও কোনো লেনদেন সম্পন্ন হয়নি'
+                      : 'মোট $totalOrders টি সফল লেনদেন ও অর্ডার সম্পন্ন (+স্কোর বৃদ্ধি)',
                   Colors.orange,
                 ),
                 const SizedBox(height: 10),
                 _buildActivityDetailRow(
                   context,
-                  Icons.local_shipping_outlined,
-                  'ট্রান্সপোর্ট ও রিসিভ রেটিং (Transport Score)',
-                  isNewBuyer
-                      ? 'মূল্যায়ন নেই (পরিবহন ও গ্রহণ মূল্যায়ন)'
-                      : '${transportScore.toStringAsFixed(1)} / 5.0 ⭐️ (মাছ পরিবহন ও গ্রহণ মূল্যায়ন)',
-                  Colors.teal,
+                  Icons.star,
+                  '৩৬০° পিয়ার-টু-পিয়ার রেটিং (Peer Evaluation)',
+                  totalRatings == 0
+                      ? 'এখনও কোনো রেটিং দেওয়া হয়নি (০ জন মূল্যায়নকারী)'
+                      : '${rating.toStringAsFixed(1)} / 5.0 ⭐️ ($totalRatings জন মূল্যায়ন করেছেন: মান ${farmerRating.toStringAsFixed(1)} • পেমেন্ট ${paymentScore.toStringAsFixed(1)} • আচরণ ${transportScore.toStringAsFixed(1)})',
+                  Colors.amber,
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'প্রতারণা ও নিয়ম ভঙ্গের স্ট্যাটাস (Fraud & Penalty Record)',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 _buildActivityDetailRow(
                   context,
-                  Icons.star,
-                  'সামগ্রিক রেটিং ও মূল্যায়নকারী সংখ্যা',
-                  isNewBuyer
-                      ? 'এখনও রেটিং দেওয়া হয়নি (০ জন মূল্যায়নকারী)'
-                      : '${rating.toStringAsFixed(1)} / 5.0 ⭐️ (মোট $totalRatings জন মূল্যায়ন করেছেন)',
-                  Colors.amber,
+                  totalPenalties == 0 ? Icons.shield_outlined : Icons.warning_amber_rounded,
+                  'প্রতারণা ও অনিয়ম রেকর্ড (Trust Deductions)',
+                  totalPenalties == 0
+                      ? '✅ ০ টি প্রতারণা রিপোর্ট • ১০০% ক্লিন রেকর্ড (কোনো জরিমানা নেই)'
+                      : '⚠️ রিপোর্ট: $totalPenalties টি • জরিমানা কর্তন: -${fraudReports * 15 + cancelledOrders * 5 + paymentDefaults * 10 + lateDeliveries * 3} পয়েন্ট',
+                  totalPenalties == 0 ? Colors.teal : Colors.red,
                 ),
                 const SizedBox(height: 16),
+
+                // Universal 360° Interactive Action Buttons (sobai sobar theke rating pabe & fraud report)
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          UserRatingService.showUniversalRateModal(
+                            context: context,
+                            targetUserId: user?.id ?? 'demo_id',
+                            targetUserName: user?.name ?? 'সদস্য',
+                            reviewerId: 'current_user_id',
+                            reviewerName: 'সক্রিয় সদস্য',
+                            onRatingSubmitted: () {
+                              setState(() {});
+                              if (user?.id != null) {
+                                Provider.of<UserProvider>(context, listen: false)
+                                    .loadUser(user!.id);
+                              }
+                            },
+                          );
+                        },
+                        icon: const Icon(Icons.star, size: 18),
+                        label: const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text('মূল্যায়ন করুন'),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.amber[700],
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          UserRatingService.showFraudPenaltyDialog(
+                            context: context,
+                            targetUserId: user?.id ?? 'demo_id',
+                            targetUserName: user?.name ?? 'সদস্য',
+                            reporterId: 'current_user_id',
+                            reporterName: 'সক্রিয় সদস্য',
+                            onPenaltySubmitted: () {
+                              setState(() {});
+                              if (user?.id != null) {
+                                Provider.of<UserProvider>(context, listen: false)
+                                    .loadUser(user!.id);
+                              }
+                            },
+                          );
+                        },
+                        icon: const Icon(Icons.gavel, size: 18),
+                        label: const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text('রিপোর্ট / জরিমানা'),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red,
+                          side: const BorderSide(color: Colors.red),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+
                 Row(
                   children: [
                     Expanded(
@@ -795,7 +843,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                         icon: const Icon(Icons.history, size: 18),
                         label: const FittedBox(
                           fit: BoxFit.scaleDown,
-                          child: Text('ক্রয়ের ইতিহাস'),
+                          child: Text('লেনদেনের ইতিহাস'),
                         ),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: primaryColor,
@@ -805,7 +853,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                     ),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: ElevatedButton.icon(
+                      child: OutlinedButton.icon(
                         onPressed: () {
                           Navigator.of(context).pushNamed('/buyer-payment-history');
                         },
@@ -814,44 +862,13 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                           fit: BoxFit.scaleDown,
                           child: Text('পেমেন্ট রিপোর্ট'),
                         ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: primaryColor,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: primaryColor,
+                          side: BorderSide(color: primaryColor),
                         ),
                       ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      UserRatingService.showRateUserDialog(
-                        context: context,
-                        targetUserId: user?.id ?? 'buyer_demo_id',
-                        targetUserName: user?.name ?? 'ফিশ বায়ার',
-                        reviewerId: 'farmer_sample_id',
-                        reviewerName: 'মাছ খামারি',
-                        onRatingSubmitted: () {
-                          setState(() {});
-                          Provider.of<UserProvider>(context, listen: false)
-                              .loadUser(user?.id ?? '');
-                        },
-                      );
-                    },
-                    icon: const Icon(Icons.rate_review, size: 18),
-                    label: const FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text('ক্রেতাকে রেটিং দিন (মূল্যায়ন করুন)'),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.purple,
-                      side: const BorderSide(color: Colors.purple),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                    ),
-                  ),
                 ),
               ],
             ),

@@ -39,6 +39,11 @@ class UserModel {
   final double farmerRating; // খামারিদের দেওয়া রেটিং (1-5)
   final double paymentScore; // পেমেন্ট সম্পূর্ণ করার রেটিং (1-5)
   final double transportScore; // ট্রান্সপোর্ট ও রিসিভ রেটিং (1-5)
+  final double trustScore; // সর্বজনীন ট্রাস্ট ও বিশ্বস্ততা স্কোর (0.0 to 100.0)
+  final int fraudReports; // প্রতারণা ও ভুয়া রিপোর্ট সংখ্যা
+  final int cancelledOrders; // অর্ডার বাতিল সংখ্যা
+  final int paymentDefaults; // পেমেন্ট বকেয়া বা বিরোধ সংখ্যা
+  final int lateDeliveries; // বিলম্ব বা অনুপস্থিতি সংখ্যা
   final int totalOrders; // মোট সম্পন্ন ক্রয়/অর্ডার সংখ্যা
   final double totalSpent; // মোট পরিশোধিত খরচ
   final DateTime createdAt;
@@ -92,6 +97,11 @@ class UserModel {
     this.lastLoginAt,
     this.mainBalance = 500.0, // Giving 500 default balance for testing
     this.mainBalancePin,
+    this.trustScore = 100.0,
+    this.fraudReports = 0,
+    this.cancelledOrders = 0,
+    this.paymentDefaults = 0,
+    this.lateDeliveries = 0,
     this.domain = 'agriculture',
     this.totalLand,
     this.cropTypes,
@@ -127,6 +137,11 @@ class UserModel {
       'farmerRating': farmerRating,
       'paymentScore': paymentScore,
       'transportScore': transportScore,
+      'trustScore': trustScore,
+      'fraudReports': fraudReports,
+      'cancelledOrders': cancelledOrders,
+      'paymentDefaults': paymentDefaults,
+      'lateDeliveries': lateDeliveries,
       'totalOrders': totalOrders,
       'totalSpent': totalSpent,
       'createdAt': createdAt.toIso8601String(),
@@ -210,6 +225,11 @@ class UserModel {
       farmerRating: (json['farmerRating'] ?? 0.0).toDouble(),
       paymentScore: (json['paymentScore'] ?? 0.0).toDouble(),
       transportScore: (json['transportScore'] ?? 0.0).toDouble(),
+      trustScore: (json['trustScore'] ?? 100.0).toDouble(),
+      fraudReports: json['fraudReports'] ?? 0,
+      cancelledOrders: json['cancelledOrders'] ?? 0,
+      paymentDefaults: json['paymentDefaults'] ?? 0,
+      lateDeliveries: json['lateDeliveries'] ?? 0,
       totalOrders: json['totalOrders'] ?? 0,
       totalSpent: (json['totalSpent'] ?? 0.0).toDouble(),
       createdAt: parsedCreatedAt,
@@ -255,6 +275,11 @@ class UserModel {
     double? farmerRating,
     double? paymentScore,
     double? transportScore,
+    double? trustScore,
+    int? fraudReports,
+    int? cancelledOrders,
+    int? paymentDefaults,
+    int? lateDeliveries,
     int? totalOrders,
     double? totalSpent,
     DateTime? createdAt,
@@ -294,6 +319,11 @@ class UserModel {
       farmerRating: farmerRating ?? this.farmerRating,
       paymentScore: paymentScore ?? this.paymentScore,
       transportScore: transportScore ?? this.transportScore,
+      trustScore: trustScore ?? this.trustScore,
+      fraudReports: fraudReports ?? this.fraudReports,
+      cancelledOrders: cancelledOrders ?? this.cancelledOrders,
+      paymentDefaults: paymentDefaults ?? this.paymentDefaults,
+      lateDeliveries: lateDeliveries ?? this.lateDeliveries,
       totalOrders: totalOrders ?? this.totalOrders,
       totalSpent: totalSpent ?? this.totalSpent,
       createdAt: createdAt ?? this.createdAt,
