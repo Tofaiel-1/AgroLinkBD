@@ -22,6 +22,7 @@ import 'package:agrolinkbd/presentation/screens/card/card_preview_screen.dart' a
 import 'package:agrolinkbd/core/utils/responsive_helper.dart';
 import 'package:agrolinkbd/presentation/widgets/responsive_web_wrapper.dart';
 import 'package:agrolinkbd/presentation/widgets/weather_card_widget.dart';
+import 'package:agrolinkbd/presentation/widgets/universal_trust_badge_widget.dart';
 
 class FishFarmerDashboard extends StatefulWidget {
   const FishFarmerDashboard({super.key});
@@ -223,7 +224,18 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                         ],
                       ),
                       
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
+
+                      // Universal Trust & Work-Verified Score Header
+                      Consumer<UserProvider>(
+                        builder: (context, userProvider, _) {
+                          return UniversalTrustHeaderWidget(
+                            user: userProvider.currentUser,
+                            onTap: () => Get.toNamed('/profile-settings'),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 16),
 
                       // Weather & Water Alert Card
                       FadeTransition(

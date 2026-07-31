@@ -11,6 +11,7 @@ import 'package:agrolinkbd/presentation/screens/buyer/fish_buyer_orders_screen.d
 import 'package:agrolinkbd/core/utils/responsive_helper.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:agrolinkbd/core/providers/cart_provider.dart';
+import 'package:agrolinkbd/presentation/widgets/universal_trust_badge_widget.dart';
 
 /// Fish Buyer Dashboard - Ultra Pro Edition
 /// Special dashboard for buyers looking specifically for fish with smart features.
@@ -210,6 +211,20 @@ class _FishBuyerDashboardState extends State<FishBuyerDashboard>
                     ),
                   ],
                 ),
+              ),
+            ),
+
+            // ============================================
+            // UNIVERSAL TRUST & WORK-VERIFIED SCORE HEADER
+            // ============================================
+            SliverToBoxAdapter(
+              child: Consumer<UserProvider>(
+                builder: (context, userProvider, _) {
+                  return UniversalTrustHeaderWidget(
+                    user: userProvider.currentUser,
+                    onTap: () => Get.toNamed('/profile-settings'),
+                  );
+                },
               ),
             ),
 

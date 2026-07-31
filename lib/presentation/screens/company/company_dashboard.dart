@@ -6,6 +6,7 @@ import 'package:agrolinkbd/presentation/screens/company/providers/company_provid
 import 'package:agrolinkbd/presentation/screens/microfinance/microfinance_kyc_screen.dart';
 import 'package:agrolinkbd/core/providers/user_provider.dart';
 import 'package:agrolinkbd/presentation/widgets/report_generation_card.dart';
+import 'package:agrolinkbd/presentation/widgets/universal_trust_badge_widget.dart';
 import 'package:get/get.dart';
 
 /// Company Role Dashboard
@@ -105,6 +106,20 @@ class _CompanyDashboardState extends State<CompanyDashboard>
                         ],
                       ),
                     ),
+                  ),
+                ),
+
+                // ============================================
+                // UNIVERSAL TRUST & WORK-VERIFIED SCORE HEADER
+                // ============================================
+                SliverToBoxAdapter(
+                  child: Consumer<UserProvider>(
+                    builder: (context, userProvider, _) {
+                      return UniversalTrustHeaderWidget(
+                        user: userProvider.currentUser,
+                        onTap: () => Get.toNamed('/profile-settings'),
+                      );
+                    },
                   ),
                 ),
 

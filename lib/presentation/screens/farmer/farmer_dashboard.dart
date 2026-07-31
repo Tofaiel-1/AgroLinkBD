@@ -20,6 +20,7 @@ import 'package:agrolinkbd/presentation/widgets/report_generation_card.dart';
 import 'package:agrolinkbd/presentation/screens/agri_info/agri_info_hub_screen.dart';
 import 'package:agrolinkbd/presentation/screens/agri_info/saved_agri_data_screen.dart';
 import 'package:agrolinkbd/presentation/widgets/weather_card_widget.dart';
+import 'package:agrolinkbd/presentation/widgets/universal_trust_badge_widget.dart';
 
 class FarmerDashboard extends StatefulWidget {
   const FarmerDashboard({super.key});
@@ -297,6 +298,17 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Universal Trust & Work-Verified Score Header
+                    Consumer<UserProvider>(
+                      builder: (context, userProvider, _) {
+                        return UniversalTrustHeaderWidget(
+                          user: userProvider.currentUser,
+                          onTap: () => Get.toNamed('/profile-settings'),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 12),
+
                     // Global Announcements
                     const GlobalAnnouncementBanner(),
                     const SizedBox(height: 16),

@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:get/get.dart';
 import 'package:agrolinkbd/presentation/screens/transport/transport_booking_screen.dart';
+import 'package:agrolinkbd/presentation/widgets/universal_trust_badge_widget.dart';
 
 class DriverCard extends StatelessWidget {
   final String driverId;
@@ -146,7 +147,17 @@ class DriverCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
+            UniversalTrustBadgeWidget(
+              targetUserId: driverId,
+              targetUserName: name,
+              targetUserType: 'driver',
+              rating: 4.9,
+              totalRatings: 12,
+              currentUserId: 'farmer_01',
+              currentUserName: 'কৃষক ভাই',
+            ),
+            const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(

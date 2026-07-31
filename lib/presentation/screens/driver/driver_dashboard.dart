@@ -13,6 +13,7 @@ import 'package:agrolinkbd/presentation/screens/notifications/driver_notificatio
 import 'package:agrolinkbd/presentation/widgets/global_announcement_banner.dart';
 import 'package:agrolinkbd/presentation/screens/microfinance/microfinance_kyc_screen.dart';
 import 'package:agrolinkbd/presentation/widgets/report_generation_card.dart';
+import 'package:agrolinkbd/presentation/widgets/universal_trust_badge_widget.dart';
 
 /// Driver Role Dashboard
 /// Displays trip overview, earnings, available jobs, and performance metrics
@@ -256,6 +257,16 @@ class _DriverDashboardState extends ConsumerState<DriverDashboard>
               ),
             ),
             
+            // ============================================
+            // UNIVERSAL TRUST & WORK-VERIFIED SCORE HEADER
+            // ============================================
+            SliverToBoxAdapter(
+              child: UniversalTrustHeaderWidget(
+                user: userProvider.currentUser,
+                onTap: () => Get.toNamed('/profile-settings'),
+              ),
+            ),
+
             // ============================================
             // GLOBAL ANNOUNCEMENTS
             // ============================================

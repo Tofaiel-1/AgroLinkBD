@@ -13,6 +13,7 @@ import 'package:agrolinkbd/presentation/screens/service_provider/premium_feature
 import 'package:agrolinkbd/presentation/screens/service_provider/premium_features/client_crm_screen.dart';
 import 'package:agrolinkbd/core/services/transaction_service.dart';
 import 'package:agrolinkbd/core/controllers/user_controller.dart';
+import 'package:agrolinkbd/presentation/widgets/universal_trust_badge_widget.dart';
 import 'dart:ui';
 
 class ServiceProviderDashboard extends ConsumerStatefulWidget {
@@ -292,6 +293,16 @@ class _ServiceProviderDashboardState extends ConsumerState<ServiceProviderDashbo
                     ),
                   ],
                 ),
+              ),
+            ),
+
+            // ============================================
+            // UNIVERSAL TRUST & WORK-VERIFIED SCORE HEADER
+            // ============================================
+            SliverToBoxAdapter(
+              child: UniversalTrustHeaderWidget(
+                user: null,
+                onTap: () => Get.toNamed('/profile-settings'),
               ),
             ),
 
