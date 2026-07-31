@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:agrolinkbd/core/providers/admin_provider.dart';
 import 'package:agrolinkbd/core/providers/user_provider.dart';
+import 'package:agrolinkbd/core/providers/cart_provider.dart';
 import 'package:agrolinkbd/core/models/user_model.dart';
 import 'package:agrolinkbd/presentation/screens/navigation/role_based_navigation_container.dart';
 import 'package:agrolinkbd/presentation/screens/admin/admin_dashboard.dart';
@@ -183,6 +184,13 @@ class _AppRouterState extends State<AppRouter> {
                     debugPrint('✅ User profile loaded: $userId');
                   } else {
                     debugPrint('⏳ User profile not found yet, waiting for registration to complete: $userId');
+                  }
+
+                  try {
+                    final cartProvider = Provider.of<CartProvider>(context, listen: false);
+                    await cartProvider.loadUserCart(userId);
+                  } catch (e) {
+                    debugPrint('⚠️ Cart load warning in AppRouter: $e');
                   }
 
                   _loadedUserIds.add(userId);
