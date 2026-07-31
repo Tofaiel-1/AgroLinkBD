@@ -111,7 +111,8 @@ class DomainSelectionScreen extends StatelessWidget {
         ),
       ),
     ),
-  );
+  ),
+);
   }
 
   Widget _buildDomainCard({
