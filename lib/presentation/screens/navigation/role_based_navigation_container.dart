@@ -7,6 +7,7 @@ import 'package:agrolinkbd/core/services/role_service.dart';
 import 'package:agrolinkbd/core/services/route_guard.dart';
 import 'package:agrolinkbd/core/utils/responsive_helper.dart';
 import 'package:agrolinkbd/presentation/widgets/responsive_web_wrapper.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 
 // Role-specific navigation stacks
 import 'package:agrolinkbd/presentation/screens/farmer/farmer_dashboard.dart';
@@ -26,6 +27,7 @@ import 'package:agrolinkbd/presentation/screens/company/company_orders_screen.da
 import 'package:agrolinkbd/presentation/screens/company/company_contracts_screen.dart';
 
 // Generic screens (available to all roles)
+import 'package:agrolinkbd/presentation/screens/agri_info/emergency_weather_services_screen.dart';
 import 'package:agrolinkbd/presentation/screens/notifications/notification_center.dart';
 import 'package:agrolinkbd/presentation/screens/bazaar/bazaar_home.dart';
 import 'package:agrolinkbd/presentation/screens/profile/profile_settings.dart';
@@ -171,7 +173,7 @@ class _RoleBasedNavigationContainerState
           
           ListTile(
             leading: const Icon(Icons.dark_mode),
-            title: const Text('ডার্ক / লাইট মোড'),
+            title: Text(LanguageProvider.isBn(context) ? 'ডার্ক / লাইট মোড' : 'Dark / Light Mode'),
             trailing: Switch(
               value: Get.isDarkMode,
               onChanged: (value) {
@@ -184,31 +186,50 @@ class _RoleBasedNavigationContainerState
           
           ListTile(
             leading: const Icon(Icons.language),
-            title: const Text('ভাষা (Language)'),
-            subtitle: const Text('বাংলা'),
+            title: Text(LanguageProvider.isBn(context) ? 'ভাষা' : 'Language'),
+            subtitle: Text(LanguageProvider.isBn(context) ? 'বাংলা' : 'English'),
             onTap: () {
-              Get.snackbar('ভাষা পরিবর্তন', 'শীঘ্রই আসছে...');
+              Provider.of<LanguageProvider>(context, listen: false).toggleLanguage();
+              Get.snackbar(
+                LanguageProvider.isBn(context) ? 'ভাষা পরিবর্তন' : 'Language Changed',
+                LanguageProvider.isBn(context) ? 'বাংলা ভাষা নির্বাচন করা হয়েছে' : 'English language selected',
+                snackPosition: SnackPosition.BOTTOM,
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.warning_amber_rounded, color: Colors.red),
+            title: Text(LanguageProvider.isBn(context) ? 'জরুরি সেবা ও আবহাওয়া কেন্দ্র' : 'Emergency & Weather Center', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+            onTap: () {
+              Navigator.pop(context);
+              Get.to(() => const EmergencyWeatherServicesScreen());
             },
           ),
           ListTile(
             leading: const Icon(Icons.help_outline),
-            title: const Text('সাহায্য ও সাপোর্ট'),
+            title: Text(LanguageProvider.isBn(context) ? 'সাহায্য ও সাপোর্ট' : 'Help & Support'),
             onTap: () {
-              Get.snackbar('সাপোর্ট', 'হেল্পলাইন: 16123');
+              Get.snackbar(
+                LanguageProvider.isBn(context) ? 'সাপোর্ট' : 'Support',
+                LanguageProvider.isBn(context) ? 'হেল্পলাইন: 16123' : 'Helpline: 16123',
+              );
             },
           ),
           ListTile(
             leading: const Icon(Icons.privacy_tip_outlined),
-            title: const Text('গোপনীয়তা নীতি'),
+            title: Text(LanguageProvider.isBn(context) ? 'গোপনীয়তা নীতি' : 'Privacy Policy'),
             onTap: () {
-              Get.snackbar('গোপনীয়তা', 'গোপনীয়তা নীতি লোড হচ্ছে...');
+              Get.snackbar(
+                LanguageProvider.isBn(context) ? 'গোপনীয়তা' : 'Privacy Policy',
+                LanguageProvider.isBn(context) ? 'গোপনীয়তা নীতি লোড হচ্ছে...' : 'Loading privacy policy...',
+              );
             },
           ),
           
           const Divider(),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
-            title: const Text('লগ আউট', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            title: Text(LanguageProvider.isBn(context) ? 'লগ আউট' : 'Logout', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
             onTap: () {
               Navigator.pop(context); // Close drawer
               _showLogoutDialog(context);
@@ -223,15 +244,15 @@ class _RoleBasedNavigationContainerState
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text(
-          'লগ আউট',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          LanguageProvider.isBn(context) ? 'লগ আউট' : 'Logout',
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        content: const Text('আপনি কি নিশ্চিত যে আপনি লগ আউট করতে চান?'),
+        content: Text(LanguageProvider.isBn(context) ? 'আপনি কি নিশ্চিত যে আপনি লগ আউট করতে চান?' : 'Are you sure you want to log out?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('বাতিল', style: TextStyle(color: Colors.grey)),
+            child: Text(LanguageProvider.isBn(context) ? 'বাতিল' : 'Cancel', style: const TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -240,11 +261,11 @@ class _RoleBasedNavigationContainerState
                 final userProvider = Provider.of<UserProvider>(context, listen: false);
                 await userProvider.signOut();
               } catch (e) {
-                Get.snackbar('Error', 'লগ আউট করতে সমস্যা হয়েছে: $e');
+                Get.snackbar('Error', LanguageProvider.isBn(context) ? 'লগ আউট করতে সমস্যা হয়েছে: $e' : 'Logout failed: $e');
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('লগ আউট', style: TextStyle(color: Colors.white)),
+            child: Text(LanguageProvider.isBn(context) ? 'লগ আউট' : 'Logout', style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -349,11 +370,14 @@ class _RoleBasedNavigationContainerState
 
   /// Build role-specific bottom navigation with role's color
   Widget _buildRoleSpecificBottomNav(List<Map<String, dynamic>> navItems) {
+    final isBn = LanguageProvider.isBn(context);
     final roleColor = RoleService.getRoleColor(widget.user.userType);
     final items = navItems
         .map((item) => BottomNavigationBarItem(
               icon: Icon(item['icon'] as IconData),
-              label: item['label'] as String,
+              label: isBn
+                  ? (item['labelBN'] as String? ?? item['label'] as String)
+                  : (item['label'] as String),
             ))
         .toList();
 
@@ -393,16 +417,16 @@ class _RoleBasedNavigationContainerState
     final shouldExit = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Exit App?'),
-        content: const Text('Are you sure you want to exit AgroLinkBD?'),
+        title: Text(LanguageProvider.isBn(context) ? 'অ্যাপ থেকে বের হবেন?' : 'Exit App?'),
+        content: Text(LanguageProvider.isBn(context) ? 'আপনি কি নিশ্চিত যে আপনি AgroLinkBD থেকে বের হতে চান?' : 'Are you sure you want to exit AgroLinkBD?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(LanguageProvider.isBn(context) ? 'বাতিল' : 'Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Exit'),
+            child: Text(LanguageProvider.isBn(context) ? 'বের হোন' : 'Exit'),
           ),
         ],
       ),

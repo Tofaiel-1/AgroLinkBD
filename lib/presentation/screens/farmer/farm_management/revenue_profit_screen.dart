@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:agrolinkbd/core/models/phase2_models/farm_models.dart';
 import 'package:agrolinkbd/core/services/phase2_services/farm_service.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 import 'package:intl/intl.dart';
 import 'add_edit_revenue_screen.dart';
 
@@ -32,7 +33,7 @@ class _RevenueProfitScreenState extends State<RevenueProfitScreen> {
         backgroundColor: const Color(0xFF009688),
         elevation: 0,
         title: Text(
-          'Revenue & Profit',
+          LanguageProvider.isBn(context) ? 'আয় ও লাভ' : 'Revenue & Profit',
           style: GoogleFonts.openSans(fontWeight: FontWeight.bold, color: Colors.white),
         ),
       ),

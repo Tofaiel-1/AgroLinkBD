@@ -10,6 +10,7 @@ import 'crop_zone_screen.dart';
 import 'crop_pattern_screen.dart';
 import 'soil_quality_screen.dart';
 import 'saved_agri_data_screen.dart';
+import 'emergency_weather_services_screen.dart';
 
 class AgriInfoHubScreen extends StatefulWidget {
   final String? initialFeature; // 'suitability', 'fertilizer', 'zone', 'pattern', 'soil', 'saved'
@@ -364,8 +365,11 @@ class _AgriInfoHubScreenState extends State<AgriInfoHubScreen> {
 
   Widget _buildFeatureGrid() {
     final features = [
+      _FeatureItem('জরুরি সেবা ও আবহাওয়া', Icons.warning_amber_rounded, const Color(0xFFD32F2F),
+          'লাইভ আবহাওয়া ও জরুরি কৃষি হটলাইন',
+          () => Get.to(() => const EmergencyWeatherServicesScreen())),
       _FeatureItem('ফসল উপযোগিতা', Icons.agriculture, const Color(0xFF2E7D32),
-          'আপনার এলাকায় কোন ফসল সবচেয়ে উপযুক্ত',
+          'উপজেলার জন্য সবচেয়ে উপযোগী ফসল',
           () => _navigate(CropSuitabilityScreen(data: _selectedData))),
       _FeatureItem('সার সুপারিশ', Icons.science, const Color(0xFF558B2F),
           'ফসল অনুযায়ী সারের পরিমাণ ও সময়সূচি',

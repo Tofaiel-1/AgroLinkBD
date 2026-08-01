@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:agrolinkbd/core/models/phase2_models/farm_models.dart';
 import 'package:agrolinkbd/core/services/phase2_services/farm_service.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 import 'package:agrolinkbd/presentation/screens/farmer/farm_management/add_edit_crop_screen.dart';
 
 class CropProductionScreen extends StatefulWidget {
@@ -51,7 +52,7 @@ class _CropProductionScreenState extends State<CropProductionScreen> {
         backgroundColor: const Color(0xFF8BC34A),
         elevation: 0,
         title: Text(
-          'Crop Production',
+          LanguageProvider.isBn(context) ? 'ফসল উৎপাদন' : 'Crop Production',
           style: GoogleFonts.openSans(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         actions: [

@@ -34,24 +34,47 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _dropoffController = TextEditingController();
   final TextEditingController _distanceController = TextEditingController();
-  
+  final TextEditingController _goodsDescController = TextEditingController();
+
   Position? _currentPosition;
-  bool _isLoading = true;
+  bool _isLoadingLocation = true;
   bool _isSubmitting = false;
+  bool _locationError = false;
   double _estimatedFare = 0.0;
+  String _locationDisplayText = 'GPS লোকেশন নেওয়া হচ্ছে...';
+
+  // Predefined destination suggestions (common agricultural hubs in Bangladesh)
+  final List<String> _destinationSuggestions = [
+    'ঢাকা কাওরান বাজার',
+    'চট্টগ্রাম খাতুনগঞ্জ',
+    'রাজশাহী সাহেব বাজার',
+    'বগুড়া সাতমাথা',
+    'সিলেট বন্দর বাজার',
+    'নাটোর বড় হাট',
+    'যশোর বেনাপোল',
+    'কুমিল্লা মনোহরপুর',
+  ];
 
   @override
   void initState() {
     super.initState();
     _estimatedFare = widget.baseFare;
-    _fetchCurrentLocation();
+
+    // If distance already passed from previous screen
+    if (widget.distanceInKm != null) {
+      _distanceController.text = widget.distanceInKm!.toStringAsFixed(1);
+      _calculateFare();
+    }
+
     _distanceController.addListener(_calculateFare);
+    _fetchCurrentLocation();
   }
 
   @override
   void dispose() {
     _dropoffController.dispose();
     _distanceController.dispose();
+    _goodsDescController.dispose();
     super.dispose();
   }
 
@@ -72,28 +95,86 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
   }
 
   Future<void> _fetchCurrentLocation() async {
+    setState(() {
+      _isLoadingLocation = true;
+      _locationError = false;
+      _locationDisplayText = 'GPS লোকেশন নেওয়া হচ্ছে...';
+    });
+
     final locationService = LocationService();
     final position = await locationService.getCurrentPosition();
-    
+
     if (mounted) {
-      setState(() {
-        _currentPosition = position;
-        _isLoading = false;
-      });
+      if (position != null) {
+        // Try to auto-calculate distance if driver upazila coordinates are known
+        double? autoDistance = _tryAutoCalculateDistance(position);
+
+        setState(() {
+          _currentPosition = position;
+          _isLoadingLocation = false;
+          _locationError = false;
+          _locationDisplayText =
+              'GPS লোকেশন পাওয়া গেছে ✓\n(${position.latitude.toStringAsFixed(4)}°N, ${position.longitude.toStringAsFixed(4)}°E)';
+
+          // Auto-fill distance if we could calculate
+          if (autoDistance != null && _distanceController.text.isEmpty) {
+            _distanceController.text = autoDistance.toStringAsFixed(1);
+          }
+        });
+      } else {
+        setState(() {
+          _isLoadingLocation = false;
+          _locationError = true;
+          _locationDisplayText = 'GPS লোকেশন পাওয়া যায়নি\n(ম্যানুয়ালি দূরত্ব দিন)';
+        });
+      }
+    }
+  }
+
+  /// Try to auto-calculate distance from farmer's GPS to driver's upazila center
+  double? _tryAutoCalculateDistance(Position farmerPos) {
+    // Get driver's document to find upazila
+    // We'll do a rough calculation based on seeder's known coordinates
+    // This is a best-effort approach
+    try {
+      // For now, return a reasonable estimate based on typical agricultural transport distances
+      // A real implementation would use the driver's stored coordinates
+      return null; // Will be null if we can't calculate
+    } catch (e) {
+      return null;
     }
   }
 
   Future<void> _submitBooking() async {
     if (!_formKey.currentState!.validate()) return;
-    
-    if (_currentPosition == null) {
-      Get.snackbar('Location Error', 'Unable to fetch your current pickup location.');
-      return;
+
+    if (_currentPosition == null && _locationError) {
+      // Allow booking even without GPS, but warn
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text('GPS ছাড়া বুকিং', style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold)),
+          content: Text(
+            'আপনার GPS লোকেশন পাওয়া যায়নি। তবুও বুকিং করতে চান?',
+            style: GoogleFonts.hindSiliguri(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('না', style: GoogleFonts.hindSiliguri()),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2E7D32)),
+              child: Text('হ্যাঁ, বুক করুন', style: GoogleFonts.hindSiliguri(color: Colors.white)),
+            ),
+          ],
+        ),
+      );
+      if (confirm != true) return;
     }
 
-    setState(() {
-      _isSubmitting = true;
-    });
+    setState(() => _isSubmitting = true);
 
     try {
       final userId = FirebaseAuth.instance.currentUser?.uid ?? 'demo_farmer';
@@ -102,31 +183,63 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
       final bookingData = {
         'farmerId': userId,
         'driverId': widget.driverId,
-        'pickupLocation': GeoPoint(_currentPosition!.latitude, _currentPosition!.longitude),
+        'driverName': widget.driverName,
+        'vehicleType': widget.vehicleType,
+        'capacity': widget.capacity,
+        if (_currentPosition != null)
+          'pickupLocation': GeoPoint(_currentPosition!.latitude, _currentPosition!.longitude),
+        'pickupLocationText': _locationDisplayText,
         'dropoffAddress': _dropoffController.text.trim(),
+        'goodsDescription': _goodsDescController.text.trim(),
         'totalDistanceKm': distance,
+        'baseFare': widget.baseFare,
+        'perKmRate': widget.perKmRate,
         'estimatedFare': _estimatedFare,
-        'status': 'pending',
+        'status': 'pending', // pending → accepted → completed
         'timestamp': FieldValue.serverTimestamp(),
       };
 
-      await FirebaseFirestore.instance.collection('transport_bookings').add(bookingData);
+      final docRef = await FirebaseFirestore.instance
+          .collection('transport_bookings')
+          .add(bookingData);
 
-      Get.back(); // Go back to directory
-      Get.snackbar(
-        'Booking Successful',
-        'Your request has been sent to ${widget.driverName}.',
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-      );
-    } catch (e) {
-      Get.snackbar('Error', 'Failed to create booking: $e');
-    } finally {
+      // Also notify the driver (add to driver's notifications sub-collection)
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.driverId)
+          .collection('notifications')
+          .add({
+        'type': 'booking_request',
+        'bookingId': docRef.id,
+        'farmerName': 'কৃষক',
+        'message': 'নতুন ট্রিপ রিকোয়েস্ট: ${_dropoffController.text.trim()}',
+        'estimatedFare': _estimatedFare,
+        'isRead': false,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+
       if (mounted) {
-        setState(() {
-          _isSubmitting = false;
-        });
+        Get.back();
+        Get.snackbar(
+          '✅ বুকিং সফল!',
+          '${widget.driverName} এর কাছে আপনার অনুরোধ পাঠানো হয়েছে।',
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4),
+          snackPosition: SnackPosition.BOTTOM,
+        );
       }
+    } catch (e) {
+      if (mounted) {
+        Get.snackbar(
+          'ত্রুটি',
+          'বুকিং করতে সমস্যা হয়েছে: $e',
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
@@ -141,277 +254,433 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black87),
         title: Text(
-          'Book Transport',
+          'ট্রিপ বুক করুন 🚛',
           style: GoogleFonts.hindSiliguri(
             color: Colors.black87,
             fontWeight: FontWeight.bold,
+            fontSize: 20,
           ),
         ),
         centerTitle: true,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: primaryGreen))
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Driver Summary Card
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [primaryGreen.withOpacity(0.08), Colors.white],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: primaryGreen.withOpacity(0.2)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: primaryGreen.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
                   children: [
-                    // Driver Summary Card
-                    Card(
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(color: Colors.grey.shade300),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: primaryGreen.withOpacity(0.1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.person, color: primaryGreen, size: 30),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    widget.driverName,
-                                    style: GoogleFonts.hindSiliguri(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '${widget.vehicleType} (${widget.capacity})',
-                                    style: GoogleFonts.hindSiliguri(
-                                      fontSize: 14,
-                                      color: Colors.grey.shade700,
-                                    ),
-                                  ),
-                                  if (widget.distanceInKm != null) ...[
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      '${widget.distanceInKm!.toStringAsFixed(1)} km away from you',
-                                      style: GoogleFonts.hindSiliguri(
-                                        fontSize: 13,
-                                        color: Colors.orange.shade800,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ]
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    
-                    Text(
-                      'Trip Details',
-                      style: GoogleFonts.hindSiliguri(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    // Pickup Location (Auto-fetched)
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey.shade300),
+                        color: primaryGreen.withOpacity(0.1),
+                        shape: BoxShape.circle,
                       ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.my_location, color: Colors.blue.shade600),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Pickup Location',
-                                  style: GoogleFonts.hindSiliguri(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade500,
-                                  ),
-                                ),
-                                Text(
-                                  _currentPosition != null
-                                      ? 'Current GPS Location Added'
-                                      : 'Unable to get location',
-                                  style: GoogleFonts.hindSiliguri(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                      child: const Icon(Icons.local_shipping, color: primaryGreen, size: 32),
                     ),
-                    const SizedBox(height: 16),
-                    
-                    // Dropoff Address
-                    TextFormField(
-                      controller: _dropoffController,
-                      decoration: InputDecoration(
-                        labelText: 'Drop-off Address',
-                        hintText: 'Enter full destination address',
-                        prefixIcon: const Icon(Icons.location_on, color: Colors.redAccent),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter a drop-off address';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    // Estimated Distance
-                    TextFormField(
-                      controller: _distanceController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: 'Estimated Trip Distance (km)',
-                        hintText: 'e.g. 15',
-                        prefixIcon: const Icon(Icons.route, color: Colors.grey),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter estimated distance';
-                        }
-                        if (double.tryParse(value) == null) {
-                          return 'Enter a valid number';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Fare Breakdown
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.green.shade50,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.green.shade200),
-                      ),
+                    const SizedBox(width: 16),
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Fare Estimate',
+                            widget.driverName,
                             style: GoogleFonts.hindSiliguri(
-                              fontSize: 16,
+                              fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: primaryGreen,
+                              color: Colors.black87,
                             ),
                           ),
-                          const SizedBox(height: 12),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text('Base Fare:', style: GoogleFonts.hindSiliguri(color: Colors.black87)),
-                              Text('৳${widget.baseFare.toStringAsFixed(0)}', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-                            ],
+                          const SizedBox(height: 4),
+                          Text(
+                            '${widget.vehicleType} • ${widget.capacity}',
+                            style: GoogleFonts.hindSiliguri(
+                              fontSize: 14,
+                              color: Colors.grey.shade700,
+                            ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 4),
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text('Per km Rate:', style: GoogleFonts.hindSiliguri(color: Colors.black87)),
-                              Text('৳${widget.perKmRate.toStringAsFixed(0)}', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-                            ],
-                          ),
-                          const Divider(height: 24),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Total Estimated:',
-                                style: GoogleFonts.hindSiliguri(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                              Text(
-                                '৳${_estimatedFare.toStringAsFixed(0)}',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: primaryGreen,
-                                ),
-                              ),
+                              _infoChip('বেস ৳${widget.baseFare.toStringAsFixed(0)}', Colors.green.shade700),
+                              const SizedBox(width: 6),
+                              _infoChip('৳${widget.perKmRate.toStringAsFixed(0)}/কিমি', Colors.orange.shade700),
                             ],
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 32),
-
-                    // Submit Button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _isSubmitting ? null : _submitBooking,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: primaryGreen,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: _isSubmitting
-                            ? const SizedBox(
-                                height: 24,
-                                width: 24,
-                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                              )
-                            : Text(
-                                'Confirm Booking Request',
-                                style: GoogleFonts.hindSiliguri(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
                   ],
                 ),
               ),
-            ),
+              const SizedBox(height: 20),
+
+              _sectionTitle('ট্রিপ বিবরণ'),
+              const SizedBox(height: 12),
+
+              // GPS Pickup Location Card
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: _locationError
+                        ? Colors.orange.shade300
+                        : (_currentPosition != null ? Colors.green.shade300 : Colors.grey.shade300),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: _locationError
+                            ? Colors.orange.shade50
+                            : Colors.blue.shade50,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        _isLoadingLocation
+                            ? Icons.location_searching
+                            : (_locationError ? Icons.location_off : Icons.my_location),
+                        color: _locationError ? Colors.orange : Colors.blue.shade600,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'পিকআপ লোকেশন (আপনার অবস্থান)',
+                            style: GoogleFonts.hindSiliguri(
+                              fontSize: 12,
+                              color: Colors.grey.shade500,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          _isLoadingLocation
+                              ? Row(
+                                  children: [
+                                    SizedBox(
+                                      width: 14,
+                                      height: 14,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.blue.shade600,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'GPS খুঁজছে...',
+                                      style: GoogleFonts.hindSiliguri(fontSize: 14, color: Colors.grey),
+                                    ),
+                                  ],
+                                )
+                              : Text(
+                                  _locationDisplayText,
+                                  style: GoogleFonts.hindSiliguri(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: _locationError ? Colors.orange.shade700 : Colors.black87,
+                                  ),
+                                ),
+                        ],
+                      ),
+                    ),
+                    if (!_isLoadingLocation)
+                      IconButton(
+                        onPressed: _fetchCurrentLocation,
+                        icon: const Icon(Icons.refresh, color: Color(0xFF2E7D32)),
+                        tooltip: 'আবার চেষ্টা করুন',
+                        iconSize: 20,
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // Dropoff Address with suggestions
+              TextFormField(
+                controller: _dropoffController,
+                decoration: InputDecoration(
+                  labelText: 'গন্তব্য ঠিকানা *',
+                  hintText: 'যেমন: ঢাকা কাওরান বাজার',
+                  prefixIcon: const Icon(Icons.location_on, color: Colors.redAccent),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  filled: true,
+                  fillColor: Colors.white,
+                  labelStyle: GoogleFonts.hindSiliguri(),
+                  hintStyle: GoogleFonts.hindSiliguri(color: Colors.grey.shade400),
+                ),
+                style: GoogleFonts.hindSiliguri(),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'গন্তব্য ঠিকানা দিন';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 8),
+
+              // Quick destination suggestions
+              SizedBox(
+                height: 36,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _destinationSuggestions.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (context, i) {
+                    return GestureDetector(
+                      onTap: () => _dropoffController.text = _destinationSuggestions[i],
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade50,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.green.shade200),
+                        ),
+                        child: Text(
+                          _destinationSuggestions[i],
+                          style: GoogleFonts.hindSiliguri(
+                            fontSize: 12,
+                            color: Colors.green.shade800,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // Distance Field
+              TextFormField(
+                controller: _distanceController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  labelText: 'আনুমানিক দূরত্ব (কিলোমিটার) *',
+                  hintText: 'যেমন: ১৫',
+                  prefixIcon: const Icon(Icons.route, color: Colors.grey),
+                  suffixText: 'কিমি',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  filled: true,
+                  fillColor: Colors.white,
+                  labelStyle: GoogleFonts.hindSiliguri(),
+                  hintStyle: GoogleFonts.hindSiliguri(color: Colors.grey.shade400),
+                  helperText: 'দূরত্ব দিলে ভাড়া স্বয়ংক্রিয়ভাবে হিসাব হবে',
+                  helperStyle: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.grey.shade500),
+                ),
+                style: GoogleFonts.hindSiliguri(),
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'দূরত্ব দিন';
+                  if (double.tryParse(value) == null) return 'সঠিক সংখ্যা দিন';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 14),
+
+              // Goods Description
+              TextFormField(
+                controller: _goodsDescController,
+                maxLines: 2,
+                decoration: InputDecoration(
+                  labelText: 'মালামালের বিবরণ',
+                  hintText: 'যেমন: ৫০০ কেজি ধান, ২০০ কেজি আলু',
+                  prefixIcon: const Icon(Icons.inventory_2, color: Colors.grey),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  filled: true,
+                  fillColor: Colors.white,
+                  labelStyle: GoogleFonts.hindSiliguri(),
+                  hintStyle: GoogleFonts.hindSiliguri(color: Colors.grey.shade400),
+                ),
+                style: GoogleFonts.hindSiliguri(),
+              ),
+              const SizedBox(height: 20),
+
+              // Fare Breakdown Card
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.green.shade50, Colors.green.shade100.withOpacity(0.5)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.green.shade200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.receipt_long, color: Color(0xFF2E7D32), size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          'ভাড়ার হিসাব',
+                          style: GoogleFonts.hindSiliguri(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: primaryGreen,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _fareRow('বেস ভাড়া:', '৳${widget.baseFare.toStringAsFixed(0)}'),
+                    const SizedBox(height: 8),
+                    _fareRow(
+                      'দূরত্ব খরচ:',
+                      _distanceController.text.isNotEmpty && double.tryParse(_distanceController.text) != null
+                          ? '${_distanceController.text} কিমি × ৳${widget.perKmRate.toStringAsFixed(0)} = ৳${(double.tryParse(_distanceController.text)! * widget.perKmRate).toStringAsFixed(0)}'
+                          : 'দূরত্ব দিন',
+                    ),
+                    const Divider(height: 20, color: Colors.green),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'মোট আনুমানিক ভাড়া:',
+                          style: GoogleFonts.hindSiliguri(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        Text(
+                          '৳${_estimatedFare.toStringAsFixed(0)}',
+                          style: GoogleFonts.poppins(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: primaryGreen,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '* চালকের সাথে চূড়ান্ত ভাড়া নিশ্চিত করুন',
+                      style: GoogleFonts.hindSiliguri(
+                        fontSize: 11,
+                        color: Colors.grey.shade600,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 28),
+
+              // Submit Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _isSubmitting ? null : _submitBooking,
+                  icon: _isSubmitting
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        )
+                      : const Icon(Icons.check_circle_outline),
+                  label: Text(
+                    _isSubmitting ? 'পাঠানো হচ্ছে...' : 'বুকিং নিশ্চিত করুন',
+                    style: GoogleFonts.hindSiliguri(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryGreen,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    elevation: 3,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Note
+              Center(
+                child: Text(
+                  '📞 বুকিং নিশ্চিত হলে চালক আপনাকে ফোন করবেন',
+                  style: GoogleFonts.hindSiliguri(
+                    fontSize: 13,
+                    color: Colors.grey.shade600,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionTitle(String title) {
+    return Text(
+      title,
+      style: GoogleFonts.hindSiliguri(
+        fontSize: 17,
+        fontWeight: FontWeight.bold,
+        color: Colors.black87,
+      ),
+    );
+  }
+
+  Widget _infoChip(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        text,
+        style: GoogleFonts.hindSiliguri(fontSize: 11, color: color, fontWeight: FontWeight.w700),
+      ),
+    );
+  }
+
+  Widget _fareRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: GoogleFonts.hindSiliguri(color: Colors.black87, fontSize: 14)),
+        Text(
+          value,
+          style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.w600, fontSize: 14),
+        ),
+      ],
     );
   }
 }

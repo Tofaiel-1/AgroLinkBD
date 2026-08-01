@@ -31,6 +31,7 @@ import 'core/providers/machinery_provider.dart';
 import 'core/providers/transport_provider.dart';
 import 'core/providers/cart_provider.dart';
 import 'core/providers/role_content_provider.dart';
+import 'core/providers/language_provider.dart';
 import 'package:agrolinkbd/presentation/screens/company/providers/company_provider.dart';
 import 'core/config/firebase_options.dart';
 import 'ultimate_automatic_setup.dart';
@@ -114,6 +115,7 @@ class AgroLinkBDApp extends StatelessWidget {
           ChangeNotifierProvider(create: (_) => CartProvider()),
           ChangeNotifierProvider(create: (_) => RoleContentProvider()),
           ChangeNotifierProvider(create: (_) => CompanyProvider()),
+          ChangeNotifierProvider(create: (_) => LanguageProvider()..loadLanguage()),
         ],
         child: AppLifecycleTracker(
           child: GetMaterialApp(

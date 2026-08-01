@@ -5,17 +5,20 @@ import 'package:agrolinkbd/core/models/weather_model.dart';
 import 'package:agrolinkbd/core/services/weather_service.dart';
 import 'package:agrolinkbd/core/providers/user_provider.dart';
 import 'package:agrolinkbd/core/constants/bd_location_data.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 
 class WeatherCardWidget extends StatefulWidget {
   final String? customDistrict;
   final String? customUpazila;
   final bool isFisheriesTheme;
+  final bool isCompact;
 
   const WeatherCardWidget({
     super.key,
     this.customDistrict,
     this.customUpazila,
     this.isFisheriesTheme = false,
+    this.isCompact = true,
   });
 
   @override
@@ -448,6 +451,82 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                           _buildDetailGridCard('☁️ মেঘের ঘনত্ব', '${weather.cloudCoverPercent}%', isDark),
                         ],
                       ),
+                      const SizedBox(height: 24),
+
+                      // Live Weather News & Agriculture Advisories Section
+                      Text(
+                        '📰 সর্বশেষ আবহাওয়া সংবাদ ও কৃষি পরামর্শ',
+                        style: GoogleFonts.hindSiliguri(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE8F5E9),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isDark ? const Color(0xFF334155) : const Color(0xFFA5D6A7),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.newspaper, color: Colors.green, size: 20),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    '${weather.locationName} এলাকার আবহাওয়া বিশেষ বুলেটিন',
+                                    style: GoogleFonts.hindSiliguri(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: isDark ? Colors.green.shade300 : Colors.green.shade900,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              weather.agriAdvice,
+                              style: GoogleFonts.hindSiliguri(
+                                fontSize: 13,
+                                height: 1.5,
+                                color: isDark ? Colors.grey.shade200 : Colors.grey.shade800,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Divider(color: isDark ? Colors.white12 : Colors.black12),
+                            const SizedBox(height: 6),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'উৎস: বাংলাদেশ আবহাওয়া অধিদপ্তর ও Open-Meteo Live',
+                                  style: GoogleFonts.hindSiliguri(
+                                    fontSize: 11,
+                                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                                  ),
+                                ),
+                                Text(
+                                  'আপডেট: এইমাত্র',
+                                  style: GoogleFonts.hindSiliguri(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green.shade600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
                     ],
                   ),
                 ),
@@ -519,9 +598,9 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
       onTap: () => _showDetailedWeatherBottomSheet(weather),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(widget.isCompact ? 14 : 20),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
           gradient: LinearGradient(
             colors: gradientColors,
             begin: Alignment.topLeft,
@@ -530,8 +609,8 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
           boxShadow: [
             BoxShadow(
               color: gradientColors.first.withValues(alpha: 0.3),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
@@ -546,25 +625,27 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                   onTap: _showLocationPicker,
                   child: Row(
                     children: [
-                      const Icon(Icons.location_on, color: Colors.white, size: 18),
-                      const SizedBox(width: 6),
+                      const Icon(Icons.location_on, color: Colors.white, size: 16),
+                      const SizedBox(width: 4),
                       Text(
                         weather.locationName,
                         style: GoogleFonts.hindSiliguri(
-                          fontSize: 16,
+                          fontSize: widget.isCompact ? 14 : 16,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
                       ),
                       const SizedBox(width: 4),
-                      const Icon(Icons.keyboard_arrow_down, color: Colors.white70, size: 18),
+                      const Icon(Icons.keyboard_arrow_down, color: Colors.white70, size: 16),
                     ],
                   ),
                 ),
                 Row(
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.my_location, color: Colors.white, size: 20),
+                      constraints: const BoxConstraints(),
+                      padding: const EdgeInsets.all(4),
+                      icon: const Icon(Icons.my_location, color: Colors.white, size: 18),
                       onPressed: () async {
                         setState(() => _isLoading = true);
                         final w = await WeatherService().fetchCurrentWeather(forceGps: true);
@@ -577,8 +658,11 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                       },
                       tooltip: 'জিপিএস অবস্থান ব্যবহার করুন',
                     ),
+                    const SizedBox(width: 8),
                     IconButton(
-                      icon: const Icon(Icons.refresh, color: Colors.white, size: 20),
+                      constraints: const BoxConstraints(),
+                      padding: const EdgeInsets.all(4),
+                      icon: const Icon(Icons.refresh, color: Colors.white, size: 18),
                       onPressed: _loadWeather,
                       tooltip: 'আবহাওয়া রিফ্রেশ করুন',
                     ),
@@ -586,7 +670,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: widget.isCompact ? 8 : 12),
 
             // Temperature & Condition
             Row(
@@ -601,7 +685,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                         Text(
                           '${weather.temperature.toStringAsFixed(1)}°',
                           style: GoogleFonts.poppins(
-                            fontSize: 42,
+                            fontSize: widget.isCompact ? 32 : 42,
                             fontWeight: FontWeight.w800,
                             color: Colors.white,
                             height: 1.0,
@@ -610,18 +694,18 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                         Text(
                           'C',
                           style: GoogleFonts.poppins(
-                            fontSize: 22,
+                            fontSize: widget.isCompact ? 18 : 22,
                             fontWeight: FontWeight.w600,
                             color: Colors.white70,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Text(
-                      '${weather.condition} • অনুভব: ${weather.feelsLike.toStringAsFixed(1)}°C',
+                      '${weather.condition} • ${LanguageProvider.isBn(context) ? "অনুভব" : "Feels"}: ${weather.feelsLike.toStringAsFixed(1)}°C',
                       style: GoogleFonts.hindSiliguri(
-                        fontSize: 14,
+                        fontSize: widget.isCompact ? 12 : 14,
                         color: Colors.white.withValues(alpha: 0.9),
                       ),
                     ),
@@ -629,35 +713,35 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                 ),
                 Icon(
                   _getWeatherIcon(weather.weatherCode),
-                  size: 64,
-                  color: Colors.white,
+                  size: widget.isCompact ? 48 : 64,
+                  color: Colors.amber.shade300,
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: widget.isCompact ? 10 : 16),
 
             // Weather Metrics Grid (Rain, Wind & Direction, Humidity, UV)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
               decoration: BoxDecoration(
                 color: Colors.black.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(14),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   _buildMetricItem(
                     icon: Icons.umbrella,
-                    label: 'বৃষ্টির সম্ভাবনা',
+                    label: LanguageProvider.isBn(context) ? 'বৃষ্টির সম্ভাবনা' : 'Rain Chance',
                     value: '${weather.rainProbability}%',
                   ),
-                  Container(height: 24, width: 1, color: Colors.white24),
+                  Container(height: 20, width: 1, color: Colors.white24),
                   _buildMetricItem(
                     icon: Icons.air,
                     label: 'বাতাস (${weather.windDirectionText})',
                     value: '${weather.windSpeedKmH.toStringAsFixed(1)} km/h',
                   ),
-                  Container(height: 24, width: 1, color: Colors.white24),
+                  Container(height: 20, width: 1, color: Colors.white24),
                   _buildMetricItem(
                     icon: Icons.water_drop,
                     label: 'আর্দ্রতা',
@@ -666,14 +750,14 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                 ],
               ),
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: widget.isCompact ? 8 : 14),
 
             // Agricultural Advice Alert Banner
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
@@ -681,24 +765,26 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                     child: Text(
                       weather.agriAdvice,
                       style: GoogleFonts.hindSiliguri(
-                        fontSize: 13,
+                        fontSize: 12,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 14),
+                  const Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 12),
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: widget.isCompact ? 8 : 12),
 
             // Next 3-Hour Rain & Temp Mini Forecast Strip
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               decoration: BoxDecoration(
                 color: Colors.black.withValues(alpha: 0.22),
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

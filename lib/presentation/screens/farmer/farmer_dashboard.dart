@@ -7,6 +7,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:agrolinkbd/core/providers/user_provider.dart';
 import 'package:agrolinkbd/presentation/screens/disease/disease_detection_screen.dart';
 import 'package:agrolinkbd/presentation/screens/farmer/add_product_screen.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
+import 'package:agrolinkbd/core/localization/farmer_translations.dart';
 import 'package:agrolinkbd/presentation/screens/card/card_preview_screen.dart' as agrolinkbd;
 import 'package:agrolinkbd/presentation/screens/payment/direct_transfer_screen.dart';
 import 'package:agrolinkbd/presentation/screens/microfinance/microfinance_kyc_screen.dart';
@@ -20,7 +22,8 @@ import 'package:agrolinkbd/presentation/widgets/report_generation_card.dart';
 import 'package:agrolinkbd/presentation/screens/agri_info/agri_info_hub_screen.dart';
 import 'package:agrolinkbd/presentation/screens/agri_info/saved_agri_data_screen.dart';
 import 'package:agrolinkbd/presentation/widgets/weather_card_widget.dart';
-import 'package:agrolinkbd/presentation/widgets/universal_trust_badge_widget.dart';
+import 'package:agrolinkbd/presentation/screens/agri_info/emergency_weather_services_screen.dart';
+import 'package:agrolinkbd/presentation/screens/notifications/farmer_notifications.dart';
 
 class FarmerDashboard extends StatefulWidget {
   const FarmerDashboard({super.key});
@@ -36,9 +39,9 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
 
   // Mock Tasks State
   final List<Map<String, dynamic>> _tasks = [
-    {'title': 'ধান ক্ষেতে সার প্রয়োগ করা', 'completed': false},
-    {'title': 'টমেটো গাছে কীটনাশক স্প্রে করা', 'completed': false},
-    {'title': 'পুকুরের মাছের খাবার দেওয়া', 'completed': true},
+    {'title': 'ধান ক্ষেতে সার প্রয়োগ করা', 'titleEN': 'Apply fertilizer to rice field', 'completed': false},
+    {'title': 'টমেটো গাছে কীটনাশক স্প্রে করা', 'titleEN': 'Spray pesticide on tomato plants', 'completed': false},
+    {'title': 'পুকুরের মাছের খাবার দেওয়া', 'titleEN': 'Feed pond fish', 'completed': true},
   ];
 
   final TransactionService _transactionService = TransactionService();
@@ -116,6 +119,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
     const Color earthyBrown = Color(0xFF795548);
     const Color cleanWhite = Color(0xFFFFFFFF);
     const Color lightBackground = Color(0xFFF5F7FA);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: lightBackground,
@@ -150,18 +154,33 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
                           shape: BoxShape.circle,
                           border: Border.all(color: emeraldGreen, width: 2),
                         ),
-                        child: const CircleAvatar(
-                          radius: 20,
-                          backgroundImage: NetworkImage('https://randomuser.me/api/portraits/men/44.jpg'),
+                        child: Consumer<UserProvider>(
+                          builder: (context, up, _) {
+                            final photo = up.currentUser?.profileImage;
+                            return CircleAvatar(
+                              radius: 20,
+                              backgroundColor: emeraldGreen.withOpacity(0.15),
+                              backgroundImage: (photo != null && photo.isNotEmpty)
+                                  ? NetworkImage(photo) as ImageProvider
+                                  : null,
+                              child: (photo == null || photo.isEmpty)
+                                  ? const Icon(Icons.person, color: Color(0xFF2E7D32), size: 22)
+                                  : null,
+                            );
+                          },
                         ),
                       ),
                       const SizedBox(width: 12),
                       Consumer<UserProvider>(
                         builder: (context, userProvider, _) {
                           final user = userProvider.currentUser;
-                          final userName = user?.name ?? 'কৃষক';
+                          final userName = user?.name ?? FarmerTranslations.tr(context, 'farmer');
                           String upa = user?.upazila ?? '';
                           String dist = user?.district ?? '';
+                          if (dist.toLowerCase() == 'joypurhat' || (upa.isEmpty && dist.isEmpty)) {
+                            upa = 'গুরুদাসপুর';
+                            dist = 'নাটোর';
+                          }
                           if (upa.isEmpty && user?.address != null) {
                             final addr = user!.address!.toLowerCase();
                             if (addr.contains('gurudaspur') || addr.contains('গুরুদাসপুর')) {
@@ -184,7 +203,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                'শুভ সকাল,',
+                                '${FarmerTranslations.tr(context, 'good_morning')},',
                                 style: GoogleFonts.hindSiliguri(
                                   fontSize: 12,
                                   color: Colors.grey.shade600,
@@ -260,26 +279,41 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        const Icon(Icons.notifications_outlined, color: Colors.black87, size: 28),
-                        Positioned(
-                          right: -2,
-                          top: -2,
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Text(
-                              '3',
-                              style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        ),
-                      ],
+                    GestureDetector(
+                      onTap: () => Get.to(() => const FarmerNotificationsScreen()),
+                      child: StreamBuilder<QuerySnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(_userId)
+                            .collection('notifications')
+                            .where('isRead', isEqualTo: false)
+                            .snapshots(),
+                        builder: (context, snap) {
+                          final count = snap.hasData ? snap.data!.docs.length : 0;
+                          return Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              const Icon(Icons.notifications_outlined, color: Colors.black87, size: 28),
+                              if (count > 0)
+                                Positioned(
+                                  right: -4,
+                                  top: -4,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: const BoxDecoration(
+                                      color: Colors.red,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Text(
+                                      count > 9 ? '9+' : '$count',
+                                      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          );
+                        },
+                      ),
                     ),
                   ],
                 ),
@@ -298,40 +332,169 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Universal Trust & Work-Verified Score Header
-                    Consumer<UserProvider>(
-                      builder: (context, userProvider, _) {
-                        return UniversalTrustHeaderWidget(
-                          user: userProvider.currentUser,
-                          onTap: () => Get.toNamed('/profile-settings'),
-                        );
-                      },
+                    // 1. Rating & Hire a Truck side-by-side in ONE LINE (Space Saver)
+                    Row(
+                      children: [
+                        // Rating Card
+                        Expanded(
+                          child: Consumer<UserProvider>(
+                            builder: (context, userProvider, _) {
+                              return InkWell(
+                                onTap: () => Get.toNamed('/profile-settings'),
+                                borderRadius: BorderRadius.circular(16),
+                                child: Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: emeraldGreen.withValues(alpha: 0.3),
+                                      width: 1.2,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: emeraldGreen.withValues(alpha: 0.08),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          const Icon(Icons.verified, color: emeraldGreen, size: 16),
+                                          const SizedBox(width: 4),
+                                          Expanded(
+                                            child: Text(
+                                              FarmerTranslations.tr(context, 'main_rating'),
+                                              style: GoogleFonts.hindSiliguri(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.bold,
+                                                color: isDark ? Colors.grey[300] : Colors.grey[800],
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        LanguageProvider.isBn(context) ? '৫.০ / ৫.০ ⭐️' : '5.0 / 5.0 ⭐️',
+                                        style: GoogleFonts.hindSiliguri(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.bold,
+                                          color: emeraldGreen,
+                                        ),
+                                      ),
+                                      Text(
+                                        FarmerTranslations.tr(context, 'trusted_user'),
+                                        style: GoogleFonts.hindSiliguri(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.grey.shade600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+
+                        // Hire a Truck Transport Card
+                        Expanded(
+                          child: InkWell(
+                            onTap: () => Get.to(() => const UpazilaTransportScreen()),
+                            borderRadius: BorderRadius.circular(16),
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: Colors.orange.shade700.withValues(alpha: 0.4),
+                                  width: 1.2,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.orange.shade700.withValues(alpha: 0.08),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(Icons.local_shipping, color: Colors.orange.shade800, size: 16),
+                                      const SizedBox(width: 4),
+                                      Expanded(
+                                        child: Text(
+                                          FarmerTranslations.tr(context, 'truck_booking'),
+                                          style: GoogleFonts.hindSiliguri(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.orange.shade900,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    LanguageProvider.isBn(context) ? 'ট্রাক ভাড়া 🚛' : 'Hire a Truck 🚛',
+                                    style: GoogleFonts.hindSiliguri(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.orange.shade800,
+                                    ),
+                                  ),
+                                  Text(
+                                    FarmerTranslations.tr(context, 'emergency_transport'),
+                                    style: GoogleFonts.hindSiliguri(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 12),
 
-                    // Global Announcements
+                    // Global Announcements Banner
                     const GlobalAnnouncementBanner(),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     
-                    // 1. Live Real-time Location Weather Card
+                    // 2. Sleek & Compact Weather Card
                     Consumer<UserProvider>(
                       builder: (context, userProvider, _) {
                         final user = userProvider.currentUser;
                         return WeatherCardWidget(
                           customDistrict: user?.district,
                           customUpazila: user?.upazila,
+                          isCompact: true,
                         );
                       },
                     ),
-                    const SizedBox(height: 24),
-
-                    // Transport Booking Banner
-                    _buildTransportBookingBanner(emeraldGreen),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
                     
                     // 2. Quick Actions Grid
                     Text(
-                      'জরুরী সেবাসমূহ',
+                      FarmerTranslations.tr(context, 'quick_actions'),
                       style: GoogleFonts.hindSiliguri(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -339,12 +502,12 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
                       ),
                     ),
                     const SizedBox(height: 16),
-                    _buildQuickActionsGrid(emeraldGreen, earthyBrown),
+                    _buildQuickActionsGrid(context, emeraldGreen, earthyBrown),
                     const SizedBox(height: 24),
 
                     // 3. Today's Tasks
                     Text(
-                      'আজকের কাজ (Daily Tasks)',
+                      LanguageProvider.isBn(context) ? 'আজকের কাজ (Daily Tasks)' : 'Daily Tasks',
                       style: GoogleFonts.hindSiliguri(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -357,7 +520,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
 
                     // 4. Market Price Ticker
                     Text(
-                      'লাইভ বাজার দর',
+                      LanguageProvider.isBn(context) ? 'লাইভ বাজার দর' : 'Live Market Price',
                       style: GoogleFonts.hindSiliguri(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -370,7 +533,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
                     
                     // 5. Activity Report Generation
                     Text(
-                      'অ্যাক্টিভিটি রিপোর্ট',
+                      LanguageProvider.isBn(context) ? 'অ্যাক্টিভিটি রিপোর্ট' : 'Activity Report',
                       style: GoogleFonts.hindSiliguri(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -384,8 +547,8 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
                           userName: userProvider.currentUser?.name ?? 'কৃষক',
                           userId: _userId,
                           userRole: 'farmer',
-                          amount1Label: 'Total Income',
-                          amount2Label: 'Total Expense',
+                          amount1Label: LanguageProvider.isBn(context) ? 'মোট আয়' : 'Total Income',
+                          amount2Label: LanguageProvider.isBn(context) ? 'মোট খরচ' : 'Total Expense',
                           color: emeraldGreen,
                         );
                       }
@@ -402,78 +565,8 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
     );
   }
 
-  Widget _buildWeatherAlertCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF4FC3F7), Color(0xFF0288D1)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF0288D1).withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'আজকের আবহাওয়া',
-                style: GoogleFonts.hindSiliguri(
-                  fontSize: 14,
-                  color: Colors.white.withOpacity(0.9),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '২৮°C',
-                style: GoogleFonts.poppins(
-                  fontSize: 36,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.orangeAccent.withOpacity(0.9),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.warning_amber_rounded, size: 14, color: Colors.white),
-                    const SizedBox(width: 4),
-                    Text(
-                      'আজ বৃষ্টির সম্ভাবনা আছে',
-                      style: GoogleFonts.hindSiliguri(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            ],
-          ),
-          const Icon(Icons.cloudy_snowing, size: 80, color: Colors.white),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickActionsGrid(Color emeraldGreen, Color earthyBrown) {
+  Widget _buildQuickActionsGrid(BuildContext context, Color emeraldGreen, Color earthyBrown) {
+    final bool isBn = LanguageProvider.isBn(context);
     return GridView.count(
       physics: const NeverScrollableScrollPhysics(),
       shrinkWrap: true,
@@ -484,75 +577,81 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
       children: [
         // Row 1
         _ActionCard(
-          title: 'ফসল বিক্রি',
+          title: isBn ? 'ফসল বিক্রি' : 'Sell Crop',
           icon: Icons.storefront,
           color: emeraldGreen,
           onTap: () => Get.to(() => const AddProductScreen()),
         ),
         _ActionCard(
-          title: 'এআই ডাক্তার',
-          icon: Icons.health_and_safety,
+          title: isBn ? 'জরুরি সেবা' : 'Emergency',
+          icon: Icons.emergency_rounded,
+          color: Colors.red.shade700,
+          onTap: () => Get.to(() => const EmergencyWeatherServicesScreen()),
+        ),
+        _ActionCard(
+          title: isBn ? 'রোগ নির্ণয়' : 'Disease Check',
+          icon: Icons.biotech,
           color: Colors.teal.shade700,
           onTap: () => Get.to(() => const DiseaseDetectionScreen()),
         ),
         _ActionCard(
-          title: 'ফসল উপযোগিতা',
+          title: isBn ? 'ফসল উপযোগিতা' : 'Suitability',
           icon: Icons.agriculture,
           color: Colors.green.shade600,
           onTap: () => Get.to(() => const AgriInfoHubScreen(initialFeature: 'suitability')),
         ),
         _ActionCard(
-          title: 'সার সুপারিশ',
+          title: isBn ? 'সার সুপারিশ' : 'Fertilizer',
           icon: Icons.science,
           color: Colors.lightGreen.shade700,
           onTap: () => Get.to(() => const AgriInfoHubScreen(initialFeature: 'fertilizer')),
         ),
         // Row 2
         _ActionCard(
-          title: 'ফসল জোন',
+          title: isBn ? 'ফসল জোন' : 'Crop Zone',
           icon: Icons.map,
           color: Colors.blue.shade600,
           onTap: () => Get.to(() => const AgriInfoHubScreen(initialFeature: 'zone')),
         ),
         _ActionCard(
-          title: 'ফসল বিন্যাস',
+          title: isBn ? 'ফসল বিন্যাস' : 'Crop Pattern',
           icon: Icons.view_module,
           color: Colors.orange.shade600,
           onTap: () => Get.to(() => const AgriInfoHubScreen(initialFeature: 'pattern')),
         ),
         _ActionCard(
-          title: 'সংরক্ষিত',
+          title: isBn ? 'সংরক্ষিত' : 'Saved Data',
           icon: Icons.bookmark,
           color: Colors.indigo.shade500,
           onTap: () => Get.to(() => const SavedAgriDataScreen()),
         ),
         _ActionCard(
-          title: 'মাটির গুণাগুণ',
+          title: isBn ? 'মাটির গুণাগুণ' : 'Soil Health',
           icon: Icons.landscape,
           color: earthyBrown,
           onTap: () => Get.to(() => const AgriInfoHubScreen(initialFeature: 'soil')),
         ),
         // Row 3
         _ActionCard(
-          title: 'বিশেষজ্ঞ',
+          title: isBn ? 'বিশেষজ্ঞ' : 'Expert',
           icon: Icons.support_agent,
           color: Colors.indigo.shade600,
-          onTap: () => Get.snackbar('বিশেষজ্ঞ পরামর্শ', 'শীঘ্রই যুক্ত করা হবে!'),
+          onTap: () => Get.to(() => const AgriInfoHubScreen(initialFeature: 'disease')),
         ),
         _ActionCard(
-          title: 'পরিবহন',
+          title: isBn ? 'পরিবহন' : 'Transport',
           icon: Icons.local_shipping,
           color: earthyBrown,
           onTap: () => Get.to(() => const UpazilaTransportScreen()),
         ),
         _ActionCard(
-          title: 'পেমেন্ট',
+          title: isBn ? 'পেমেন্ট' : 'Payment',
           icon: Icons.payment,
           color: Colors.orange.shade700,
           onTap: () => Get.to(() => DirectTransferScreen(senderId: _userId)),
         ),
         _ActionCard(
-          title: 'লোন/ঋণ',
+          title: isBn ? 'লোন/ঋণ' : 'Agri Loan',
           icon: Icons.account_balance_rounded,
           color: Colors.blue.shade700,
           onTap: () {
@@ -595,7 +694,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
                       color: task['completed'] ? Colors.grey : Colors.black87,
                       decoration: task['completed'] ? TextDecoration.lineThrough : TextDecoration.none,
                     ),
-                    child: Text(task['title']),
+                    child: Text(LanguageProvider.isBn(context) ? task['title'] : (task['titleEN'] ?? task['title'])),
                   ),
                   onChanged: (bool? val) {
                     setState(() {
@@ -615,11 +714,11 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
 
   Widget _buildMarketPriceTicker() {
     final List<Map<String, dynamic>> prices = [
-      {'crop': 'বোরো ধান', 'price': '৳১২০০/মণ', 'trend': 'up', 'color': Colors.green},
-      {'crop': 'আলু', 'price': '৳৩৫/কেজি', 'trend': 'down', 'color': Colors.red},
-      {'crop': 'পেঁয়াজ', 'price': '৳৯০/কেজি', 'trend': 'up', 'color': Colors.green},
-      {'crop': 'টমেটো', 'price': '৳৩০/কেজি', 'trend': 'down', 'color': Colors.red},
-      {'crop': 'রসুন', 'price': '৳১৮০/কেজি', 'trend': 'up', 'color': Colors.green},
+      {'crop': 'বোরো ধান', 'cropEN': 'Boro Rice', 'price': '৳১২০০/মণ', 'priceEN': '৳1200/maund', 'trend': 'up', 'color': Colors.green},
+      {'crop': 'আলু', 'cropEN': 'Potato', 'price': '৳৩৫/কেজি', 'priceEN': '৳35/kg', 'trend': 'down', 'color': Colors.red},
+      {'crop': 'পেঁয়াজ', 'cropEN': 'Onion', 'price': '৳৯০/কেজি', 'priceEN': '৳90/kg', 'trend': 'up', 'color': Colors.green},
+      {'crop': 'টমেটো', 'cropEN': 'Tomato', 'price': '৳৩০/কেজি', 'priceEN': '৳30/kg', 'trend': 'down', 'color': Colors.red},
+      {'crop': 'রসুন', 'cropEN': 'Garlic', 'price': '৳১৮০/কেজি', 'priceEN': '৳180/kg', 'trend': 'up', 'color': Colors.green},
     ];
 
     return SizedBox(
@@ -627,7 +726,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
       child: ListView.builder(
         controller: _tickerScrollController,
         scrollDirection: Axis.horizontal,
-        itemCount: 20, // Looping items artificially
+        itemCount: 20,
         itemBuilder: (context, i) {
           final item = prices[i % prices.length];
           final isUp = item['trend'] == 'up';
@@ -651,7 +750,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  item['crop']!,
+                  LanguageProvider.isBn(context) ? item['crop']! : (item['cropEN'] ?? item['crop']!),
                   style: GoogleFonts.hindSiliguri(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -663,7 +762,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      item['price']!,
+                      LanguageProvider.isBn(context) ? item['price']! : (item['priceEN'] ?? item['price']!),
                       style: GoogleFonts.poppins(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -684,68 +783,8 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
       ),
     );
   }
-
-  Widget _buildTransportBookingBanner(Color primaryColor) {
-    return GestureDetector(
-      onTap: () {
-        Get.to(() => const UpazilaTransportScreen());
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: primaryColor.withOpacity(0.3)),
-          boxShadow: [
-            BoxShadow(
-              color: primaryColor.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: primaryColor.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(Icons.local_shipping, color: primaryColor, size: 28),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Hire a Truck/Pickup',
-                    style: GoogleFonts.hindSiliguri(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Direct Driver Directory',
-                    style: GoogleFonts.hindSiliguri(
-                      fontSize: 14,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.arrow_forward_ios, size: 16, color: primaryColor),
-          ],
-        ),
-      ),
-    );
-  }
 }
+
 
 class _ActionCard extends StatefulWidget {
   final String title;

@@ -353,9 +353,12 @@ class AuthService {
   // Get user data
   Future<UserModel?> getUserData(String userId) async {
     try {
-      DocumentSnapshot doc =
-          await _firestore.collection('users').doc(userId).get();
-      if (doc.exists) {
+      DocumentSnapshot doc = await _firestore
+          .collection('users')
+          .doc(userId)
+          .get()
+          .timeout(const Duration(seconds: 3));
+      if (doc.exists && doc.data() != null) {
         return UserModel.fromJson(doc.data() as Map<String, dynamic>);
       }
       return null;
@@ -369,7 +372,8 @@ class AuthService {
         throw Exception('Failed to load data: ${e.message}');
       }
     } catch (e) {
-      throw Exception('Unexpected error: $e');
+      debugPrint('⚠️ getUserData error or timeout: $e');
+      return null;
     }
   }
 

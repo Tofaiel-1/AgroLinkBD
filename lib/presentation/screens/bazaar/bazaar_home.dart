@@ -8,6 +8,7 @@ import 'package:agrolinkbd/core/models/user_model.dart';
 import 'bazaar_products.dart';
 import 'bazaar_marketplace.dart';
 import 'add_product_screen.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 
 class BazaarHome extends StatefulWidget {
   const BazaarHome({super.key});
@@ -84,11 +85,12 @@ class _BazaarHomeState extends State<BazaarHome> {
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context);
     final isBuyer = userProvider.currentUser?.userType == UserType.buyer;
+    final isBn = LanguageProvider.isBn(context);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA), // Light theme background
       appBar: AppBar(
-        title: const Text('Bazaar', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), 
+        title: Text(isBn ? 'বাজার' : 'Bazaar', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), 
         elevation: 0,
         backgroundColor: Colors.green.shade800,
         iconTheme: const IconThemeData(color: Colors.white),
@@ -121,7 +123,7 @@ class _BazaarHomeState extends State<BazaarHome> {
                     child: TextField(
                       style: const TextStyle(color: Colors.black87),
                       decoration: InputDecoration(
-                        hintText: 'Search crops, spices, and more...',
+                        hintText: isBn ? 'ফসল, মসলা এবং অন্যান্য অনুসন্ধান করুন...' : 'Search crops, spices, and more...',
                         hintStyle: TextStyle(color: Colors.grey.shade500),
                         icon: const Icon(Icons.search, color: Colors.amber),
                         border: InputBorder.none,
@@ -164,14 +166,14 @@ class _BazaarHomeState extends State<BazaarHome> {
                             }
                           });
                         },
-                        child: const Row(
+                        child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.add_circle, color: Colors.white, size: 28),
-                            SizedBox(width: 12),
+                            const Icon(Icons.add_circle, color: Colors.white, size: 28),
+                            const SizedBox(width: 12),
                             Text(
-                              'Add New Product',
-                              style: TextStyle(
+                              isBn ? 'নতুন পণ্য যোগ করুন' : 'Add New Product',
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -186,7 +188,7 @@ class _BazaarHomeState extends State<BazaarHome> {
 
                   // Explore Marketplace Section
                   Text(
-                    'Explore Marketplace',
+                    isBn ? 'মার্কেটপ্লেস অন্বেষণ করুন' : 'Explore Marketplace',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: Colors.black87,
@@ -247,7 +249,7 @@ class _BazaarHomeState extends State<BazaarHome> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Browse Bazaar',
+                                    isBn ? 'বাজার ব্রাউজ করুন' : 'Browse Bazaar',
                                     style: Theme.of(context)
                                         .textTheme
                                         .titleLarge
@@ -258,7 +260,7 @@ class _BazaarHomeState extends State<BazaarHome> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    'See products from all farmers',
+                                    isBn ? 'সকল কৃষকের পণ্য দেখুন' : 'See products from all farmers',
                                     style: Theme.of(context)
                                         .textTheme
                                         .bodyMedium
@@ -286,7 +288,7 @@ class _BazaarHomeState extends State<BazaarHome> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Trending Crops',
+                        isBn ? 'জনপ্রিয় ফসল' : 'Trending Crops',
                         style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: Colors.black87,
@@ -307,7 +309,7 @@ class _BazaarHomeState extends State<BazaarHome> {
 
                   // My Shop Section
                   Text(
-                    'My Shop',
+                    isBn ? 'আমার দোকান' : 'My Shop',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: Colors.black87,
@@ -319,7 +321,7 @@ class _BazaarHomeState extends State<BazaarHome> {
 
                   // Quick Stats
                   Text(
-                    'Shop Statistics',
+                    isBn ? 'দোকানের পরিসংখ্যান' : 'Shop Statistics',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: Colors.black87,
@@ -334,45 +336,46 @@ class _BazaarHomeState extends State<BazaarHome> {
   }
 
   Widget _buildTrendingCrops() {
+    final isBn = LanguageProvider.isBn(context);
     final trending = [
       {
-        'name': 'Fresh Chili', 
-        'price': '৳120/kg', 
+        'name': isBn ? 'কাঁচা মরিচ' : 'Fresh Chili', 
+        'price': isBn ? '৳১২০/কেজি' : '৳120/kg', 
         'rating': '4.8★', 
         'image': 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782584281/Screenshot_2026-06-28_001608_krqrup.png',
         'color': Colors.redAccent
       },
       {
-        'name': 'Deshi Mango', 
-        'price': '৳80/kg', 
+        'name': isBn ? 'দেশি আম' : 'Deshi Mango', 
+        'price': isBn ? '৳৮০/কেজি' : '৳80/kg', 
         'rating': '4.9★', 
         'image': 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782583216/image_sxwwpa.png',
         'color': Colors.orangeAccent
       },
       {
-        'name': 'Premium Rice', 
-        'price': '৳75/kg', 
+        'name': isBn ? 'প্রিমিয়াম চাল' : 'Premium Rice', 
+        'price': isBn ? '৳৭৫/কেজি' : '৳75/kg', 
         'rating': '4.7★', 
         'image': 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782584453/Screenshot_2026-06-28_002037_e5q6ll.png',
         'color': Colors.amber
       },
       {
-        'name': 'Organic Onion', 
-        'price': '৳90/kg', 
+        'name': isBn ? 'অর্গানিক পেঁয়াজ' : 'Organic Onion', 
+        'price': isBn ? '৳৯০/কেজি' : '৳90/kg', 
         'rating': '4.5★', 
         'image': 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782584281/Screenshot_2026-06-28_001608_krqrup.png',
         'color': Colors.purpleAccent
       },
       {
-        'name': 'Fresh Tomato', 
-        'price': '৳60/kg', 
+        'name': isBn ? 'তাজা টমেটো' : 'Fresh Tomato', 
+        'price': isBn ? '৳৬০/কেজি' : '৳60/kg', 
         'rating': '4.6★', 
         'image': 'https://images.unsplash.com/photo-1561136594-7f68413baa99?q=80&w=400&auto=format&fit=crop',
         'color': Colors.red
       },
       {
-        'name': 'Bogura Potato', 
-        'price': '৳45/kg', 
+        'name': isBn ? 'বগুড়ার আলু' : 'Bogura Potato', 
+        'price': isBn ? '৳৪৫/কেজি' : '৳45/kg', 
         'rating': '4.8★', 
         'image': 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782584736/Screenshot_2026-06-28_002524_ziwqmo.png',
         'color': Colors.brown
@@ -478,10 +481,11 @@ class _BazaarHomeState extends State<BazaarHome> {
   }
 
   Widget _buildCategoryGrid() {
+    final isBn = LanguageProvider.isBn(context);
     final categories = [
-      {'name': 'Vegetables', 'icon': Icons.eco, 'key': 'vegetables', 'color': Colors.lightGreen},
-      {'name': 'Fruits', 'icon': Icons.apple, 'key': 'fruits', 'color': Colors.orange},
-      {'name': 'Spices', 'icon': Icons.grain, 'key': 'spices', 'color': Colors.red},
+      {'name': isBn ? 'শাকসবজি' : 'Vegetables', 'icon': Icons.eco, 'key': 'vegetables', 'color': Colors.lightGreen},
+      {'name': isBn ? 'ফলমূল' : 'Fruits', 'icon': Icons.apple, 'key': 'fruits', 'color': Colors.orange},
+      {'name': isBn ? 'মসলা' : 'Spices', 'icon': Icons.grain, 'key': 'spices', 'color': Colors.red},
     ];
 
     return GridView.count(
@@ -561,7 +565,7 @@ class _BazaarHomeState extends State<BazaarHome> {
             ),
             const SizedBox(height: 4),
             Text(
-              '$productCount Items',
+              LanguageProvider.isBn(context) ? '$productCount টি পণ্য' : '$productCount Items',
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.bold,
@@ -575,15 +579,16 @@ class _BazaarHomeState extends State<BazaarHome> {
   }
 
   Widget _buildStatsRow() {
+    final isBn = LanguageProvider.isBn(context);
     final total = _categoryProductCounts.values.fold<int>(0, (a, b) => a + b);
 
     return Row(
       children: [
-        _buildStatCard('Total Products', '$total', Icons.inventory_2, Colors.blue),
+        _buildStatCard(isBn ? 'মোট পণ্য' : 'Total Products', '$total', Icons.inventory_2, Colors.blue),
         const SizedBox(width: 12),
-        _buildStatCard('Categories', '3', Icons.category, Colors.purple),
+        _buildStatCard(isBn ? 'ক্যাটাগরি' : 'Categories', '3', Icons.category, Colors.purple),
         const SizedBox(width: 12),
-        _buildStatCard('Active', 'Yes', Icons.check_circle, Colors.green),
+        _buildStatCard(isBn ? 'সক্রিয়' : 'Active', isBn ? 'হ্যাঁ' : 'Yes', Icons.check_circle, Colors.green),
       ],
     );
   }

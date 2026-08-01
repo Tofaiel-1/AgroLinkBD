@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 
 class TaskManagementScreen extends StatefulWidget {
   const TaskManagementScreen({Key? key}) : super(key: key);
@@ -41,7 +42,7 @@ class _TaskManagementScreenState extends State<TaskManagementScreen> {
         backgroundColor: const Color(0xFFFF9800),
         elevation: 0,
         title: Text(
-          'Task Management',
+          LanguageProvider.isBn(context) ? 'কাজ ব্যবস্থাপনা' : 'Task Management',
           style: GoogleFonts.openSans(fontWeight: FontWeight.bold, color: Colors.white),
         ),
       ),

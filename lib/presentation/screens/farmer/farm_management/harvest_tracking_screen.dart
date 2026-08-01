@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 
 class HarvestTrackingScreen extends StatelessWidget {
   const HarvestTrackingScreen({Key? key}) : super(key: key);
@@ -36,7 +37,7 @@ class HarvestTrackingScreen extends StatelessWidget {
         backgroundColor: const Color(0xFFFFC107),
         elevation: 0,
         title: Text(
-          'Harvest Tracking',
+          LanguageProvider.isBn(context) ? 'ফসল তোলার হিসাব' : 'Harvest Tracking',
           style: GoogleFonts.openSans(fontWeight: FontWeight.bold, color: Colors.black87),
         ),
         iconTheme: const IconThemeData(color: Colors.black87),

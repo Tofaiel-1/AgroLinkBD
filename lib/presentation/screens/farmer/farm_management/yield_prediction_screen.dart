@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 
 class YieldPredictionScreen extends StatelessWidget {
   const YieldPredictionScreen({Key? key}) : super(key: key);
@@ -12,7 +13,7 @@ class YieldPredictionScreen extends StatelessWidget {
         backgroundColor: const Color(0xFF3F51B5),
         elevation: 0,
         title: Text(
-          'AI Yield Prediction',
+          LanguageProvider.isBn(context) ? 'ফলনের পূর্বাভাস' : 'AI Yield Prediction',
           style: GoogleFonts.openSans(fontWeight: FontWeight.bold, color: Colors.white),
         ),
       ),

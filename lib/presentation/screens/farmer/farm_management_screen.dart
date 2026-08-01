@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:agrolinkbd/core/services/phase2_services/farm_service.dart';
 import 'package:agrolinkbd/core/models/phase2_models/farm_models.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 
 import 'package:agrolinkbd/presentation/screens/farmer/farm_management/farm_profile_screen.dart';
 import 'package:agrolinkbd/presentation/screens/farmer/farm_management/crop_production_screen.dart';
@@ -26,85 +27,88 @@ class _FarmManagementScreenState extends State<FarmManagementScreen> {
   final farmService = FarmService();
   late Stream<List<Farm>> farmsStream;
 
-  final List<Map<String, dynamic>> _modules = [
-    {
-      'title': 'Farm Management',
-      'subtitle': 'Details & Setup',
-      'icon': Icons.agriculture,
-      'color': const Color(0xFF4CAF50),
-      'screen': const FarmProfileScreen(),
-    },
-    {
-      'title': 'Crop Production',
-      'subtitle': 'Tracking & Growth',
-      'icon': Icons.grass,
-      'color': const Color(0xFF8BC34A),
-      'screen': const CropProductionScreen(),
-    },
-    {
-      'title': 'Expense Mgmt',
-      'subtitle': 'Costs & Spending',
-      'icon': Icons.money_off_rounded,
-      'color': const Color(0xFFF44336),
-      'screen': const ExpenseManagementScreen(),
-    },
-    {
-      'title': 'Revenue & Profit',
-      'subtitle': 'Sales & Margins',
-      'icon': Icons.attach_money_rounded,
-      'color': const Color(0xFF009688),
-      'screen': const RevenueProfitScreen(),
-    },
-    {
-      'title': 'Task Management',
-      'subtitle': 'To-Dos & Staff',
-      'icon': Icons.assignment_rounded,
-      'color': const Color(0xFFFF9800),
-      'screen': const TaskManagementScreen(),
-    },
-    {
-      'title': 'Inventory',
-      'subtitle': 'Seeds & Fertilizer',
-      'icon': Icons.inventory_2_rounded,
-      'color': const Color(0xFF795548),
-      'screen': const InventoryScreen(),
-    },
-    {
-      'title': 'Farm Gallery',
-      'subtitle': 'Photos & Media',
-      'icon': Icons.photo_library_rounded,
-      'color': const Color(0xFF9C27B0),
-      'screen': const FarmGalleryScreen(),
-    },
-    {
-      'title': 'GPS Mapping',
-      'subtitle': 'Borders & Zones',
-      'icon': Icons.map_rounded,
-      'color': const Color(0xFF2196F3),
-      'screen': const GpsMappingScreen(),
-    },
-    {
-      'title': 'Harvest Tracking',
-      'subtitle': 'Yields & Logs',
-      'icon': Icons.shopping_basket_rounded,
-      'color': const Color(0xFFFFC107),
-      'screen': const HarvestTrackingScreen(),
-    },
-    {
-      'title': 'Yield Prediction',
-      'subtitle': 'AI Forecasts',
-      'icon': Icons.analytics_rounded,
-      'color': const Color(0xFF3F51B5),
-      'screen': const YieldPredictionScreen(),
-    },
-    {
-      'title': 'Notifications',
-      'subtitle': 'Alerts & Reminders',
-      'icon': Icons.notifications_active_rounded,
-      'color': const Color(0xFFFF5722),
-      'screen': const FarmNotificationsScreen(),
-    },
-  ];
+  List<Map<String, dynamic>> _getModules(BuildContext context) {
+    final bool isBn = LanguageProvider.isBn(context);
+    return [
+      {
+        'title': isBn ? 'খামার ব্যবস্থাপনা' : 'Farm Management',
+        'subtitle': isBn ? 'বিবরণ ও সেটআপ' : 'Details & Setup',
+        'icon': Icons.agriculture,
+        'color': const Color(0xFF4CAF50),
+        'screen': const FarmProfileScreen(),
+      },
+      {
+        'title': isBn ? 'ফসল উৎপাদন' : 'Crop Production',
+        'subtitle': isBn ? 'ট্র্যাকিং ও বৃদ্ধি' : 'Tracking & Growth',
+        'icon': Icons.grass,
+        'color': const Color(0xFF8BC34A),
+        'screen': const CropProductionScreen(),
+      },
+      {
+        'title': isBn ? 'খরচ ব্যবস্থাপনা' : 'Expense Mgmt',
+        'subtitle': isBn ? 'খরচ ও ব্যয়' : 'Costs & Spending',
+        'icon': Icons.money_off_rounded,
+        'color': const Color(0xFFF44336),
+        'screen': const ExpenseManagementScreen(),
+      },
+      {
+        'title': isBn ? 'আয় ও লাভ' : 'Revenue & Profit',
+        'subtitle': isBn ? 'বিক্রয় ও মুনাফা' : 'Sales & Margins',
+        'icon': Icons.attach_money_rounded,
+        'color': const Color(0xFF009688),
+        'screen': const RevenueProfitScreen(),
+      },
+      {
+        'title': isBn ? 'কাজ ব্যবস্থাপনা' : 'Task Management',
+        'subtitle': isBn ? 'করণীয় ও কর্মী' : 'To-Dos & Staff',
+        'icon': Icons.assignment_rounded,
+        'color': const Color(0xFFFF9800),
+        'screen': const TaskManagementScreen(),
+      },
+      {
+        'title': isBn ? 'মালামাল ও মজুত' : 'Inventory',
+        'subtitle': isBn ? 'বীজ ও সার' : 'Seeds & Fertilizer',
+        'icon': Icons.inventory_2_rounded,
+        'color': const Color(0xFF795548),
+        'screen': const InventoryScreen(),
+      },
+      {
+        'title': isBn ? 'খামারের গ্যালারি' : 'Farm Gallery',
+        'subtitle': isBn ? 'ছবি ও মিডিয়া' : 'Photos & Media',
+        'icon': Icons.photo_library_rounded,
+        'color': const Color(0xFF9C27B0),
+        'screen': const FarmGalleryScreen(),
+      },
+      {
+        'title': isBn ? 'জিপিএস ম্যাপিং' : 'GPS Mapping',
+        'subtitle': isBn ? 'সীমানা ও এলাকা' : 'Borders & Zones',
+        'icon': Icons.map_rounded,
+        'color': const Color(0xFF2196F3),
+        'screen': const GpsMappingScreen(),
+      },
+      {
+        'title': isBn ? 'ফসল তোলার হিসাব' : 'Harvest Tracking',
+        'subtitle': isBn ? 'ফলন ও লগ' : 'Yields & Logs',
+        'icon': Icons.shopping_basket_rounded,
+        'color': const Color(0xFFFFC107),
+        'screen': const HarvestTrackingScreen(),
+      },
+      {
+        'title': isBn ? 'ফলনের পূর্বাভাস' : 'Yield Prediction',
+        'subtitle': isBn ? 'এআই পূর্বাভাস' : 'AI Forecasts',
+        'icon': Icons.analytics_rounded,
+        'color': const Color(0xFF3F51B5),
+        'screen': const YieldPredictionScreen(),
+      },
+      {
+        'title': isBn ? 'নোটিফিকেশন' : 'Notifications',
+        'subtitle': isBn ? 'সতর্কবার্তা ও রিমাইন্ডার' : 'Alerts & Reminders',
+        'icon': Icons.notifications_active_rounded,
+        'color': const Color(0xFFFF5722),
+        'screen': const FarmNotificationsScreen(),
+      },
+    ];
+  }
 
   @override
   void initState() {
@@ -127,7 +131,7 @@ class _FarmManagementScreenState extends State<FarmManagementScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
             sliver: SliverToBoxAdapter(
               child: Text(
-                'Management Modules',
+                LanguageProvider.isBn(context) ? 'খামার ব্যবস্থাপনা মডিউল' : 'Management Modules',
                 style: GoogleFonts.openSans(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -147,9 +151,9 @@ class _FarmManagementScreenState extends State<FarmManagementScreen> {
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
-                  return _buildModuleCard(_modules[index]);
+                  return _buildModuleCard(_getModules(context)[index]);
                 },
-                childCount: _modules.length,
+                childCount: _getModules(context).length,
               ),
             ),
           ),
@@ -182,7 +186,7 @@ class _FarmManagementScreenState extends State<FarmManagementScreen> {
       flexibleSpace: FlexibleSpaceBar(
         titlePadding: const EdgeInsets.only(left: 20, bottom: 20),
         title: Text(
-          'Agro Dashboard',
+          LanguageProvider.isBn(context) ? 'আমার খামার সমূহ' : 'Agro Dashboard',
           style: GoogleFonts.openSans(
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -270,7 +274,7 @@ class _FarmManagementScreenState extends State<FarmManagementScreen> {
             children: [
               Expanded(
                 child: _buildStatCard(
-                  'Active Farms',
+                  LanguageProvider.isBn(context) ? 'সক্রিয় খামার' : 'Active Farms',
                   activeFarms,
                   Icons.agriculture_rounded,
                   const Color(0xFFE8F5E9),
@@ -280,7 +284,7 @@ class _FarmManagementScreenState extends State<FarmManagementScreen> {
               const SizedBox(width: 16),
               Expanded(
                 child: _buildStatCard(
-                  'Total Area',
+                  LanguageProvider.isBn(context) ? 'মোট জমি' : 'Total Area',
                   totalArea,
                   Icons.landscape_rounded,
                   const Color(0xFFFFF3E0),

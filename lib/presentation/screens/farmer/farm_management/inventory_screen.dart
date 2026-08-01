@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:agrolinkbd/core/models/phase2_models/farm_models.dart';
 import 'package:agrolinkbd/core/services/phase2_services/farm_service.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 import 'add_edit_inventory_item_screen.dart';
 
 class InventoryScreen extends StatefulWidget {
@@ -40,7 +41,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
         backgroundColor: const Color(0xFF795548),
         elevation: 0,
         title: Text(
-          'Inventory Management',
+          LanguageProvider.isBn(context) ? 'মালামাল ও মজুত' : 'Inventory Management',
           style: GoogleFonts.openSans(fontWeight: FontWeight.bold, color: Colors.white),
         ),
       ),

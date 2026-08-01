@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 
 class FarmGalleryScreen extends StatelessWidget {
   const FarmGalleryScreen({Key? key}) : super(key: key);
@@ -12,7 +13,7 @@ class FarmGalleryScreen extends StatelessWidget {
         backgroundColor: const Color(0xFF9C27B0),
         elevation: 0,
         title: Text(
-          'Farm Gallery',
+          LanguageProvider.isBn(context) ? 'খামারের গ্যালারি' : 'Farm Gallery',
           style: GoogleFonts.openSans(fontWeight: FontWeight.bold, color: Colors.white),
         ),
       ),

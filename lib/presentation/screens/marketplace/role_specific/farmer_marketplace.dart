@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 
 /// Ultra-Premium Visionary Farmer Marketplace
 /// "Bento Box" Spatial Grid System
@@ -25,8 +26,11 @@ class _FarmerMarketplaceState extends State<FarmerMarketplace> {
   final List<Map<String, dynamic>> inputs = [
     {
       'name': 'উন্নত ধানের বীজ',
+      'nameEN': 'Advanced Rice Seeds',
       'supplier': 'সবুজ কৃষি',
+      'supplierEN': 'Green Agri',
       'price': '৳ ৩,৫০০',
+      'priceEN': '৳ 3,500',
       'rating': 4.8,
       'reviews': 125,
       'image': 'https://plus.unsplash.com/premium_photo-1661962383210-90c74fb936bb?w=400&q=80',
@@ -34,8 +38,11 @@ class _FarmerMarketplaceState extends State<FarmerMarketplace> {
     },
     {
       'name': 'জৈব সার',
+      'nameEN': 'Organic Fertilizer',
       'supplier': 'প্রকৃতির আশীর্বাদ',
+      'supplierEN': "Nature's Blessing",
       'price': '৳ ৫,২০০',
+      'priceEN': '৳ 5,200',
       'rating': 4.6,
       'reviews': 89,
       'image': 'https://images.unsplash.com/photo-1592997572594-34afe4facfb5?w=400&q=80',
@@ -43,8 +50,11 @@ class _FarmerMarketplaceState extends State<FarmerMarketplace> {
     },
     {
       'name': 'কীটনাশক স্প্রে',
+      'nameEN': 'Pesticide Spray',
       'supplier': 'নিরাপদ কৃষি',
+      'supplierEN': 'Safe Agri',
       'price': '৳ ৮,০০০',
+      'priceEN': '৳ 8,000',
       'rating': 4.7,
       'reviews': 156,
       'image': 'https://images.unsplash.com/photo-1586773860383-55abbfa112e4?w=400&q=80',
@@ -52,8 +62,11 @@ class _FarmerMarketplaceState extends State<FarmerMarketplace> {
     },
     {
       'name': 'মিনি ট্রাক্টর',
+      'nameEN': 'Mini Tractor',
       'supplier': 'কৃষি যন্ত্র সেবা',
+      'supplierEN': 'Agri Equipment Service',
       'price': '৳ ২৫,০০০',
+      'priceEN': '৳ 25,000',
       'rating': 4.9,
       'reviews': 203,
       'image': 'https://images.unsplash.com/photo-1589923188900-85dae523342b?w=400&q=80',
@@ -77,7 +90,7 @@ class _FarmerMarketplaceState extends State<FarmerMarketplace> {
       backgroundColor: bgColor,
       appBar: AppBar(
         title: Text(
-          'কৃষি ইনপুট মার্কেটপ্লেস',
+          LanguageProvider.isBn(context) ? 'কৃষি ইনপুট মার্কেটপ্লেস' : 'Agri Input Marketplace',
           style: GoogleFonts.hindSiliguri(
             fontWeight: FontWeight.bold,
             color: bottleGreen,
@@ -120,7 +133,7 @@ class _FarmerMarketplaceState extends State<FarmerMarketplace> {
                   controller: _searchController,
                   style: GoogleFonts.hindSiliguri(color: Colors.black87),
                   decoration: InputDecoration(
-                    hintText: 'বীজ, সার, যন্ত্র খুঁজুন...',
+                    hintText: LanguageProvider.isBn(context) ? 'বীজ, সার, যন্ত্র খুঁজুন...' : 'Search seeds, fertilizer...',
                     hintStyle: GoogleFonts.hindSiliguri(color: Colors.grey.shade500),
                     prefixIcon: Icon(Icons.search, color: bottleGreen),
                     suffixIcon: Container(
@@ -144,15 +157,15 @@ class _FarmerMarketplaceState extends State<FarmerMarketplace> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
-                  _buildPremiumCategoryChip('সব', 'all', Icons.grid_view),
+                  _buildPremiumCategoryChip(LanguageProvider.isBn(context) ? 'সব' : 'All', 'all', Icons.grid_view),
                   const SizedBox(width: 12),
-                  _buildPremiumCategoryChip('বীজ', 'seeds', Icons.grass),
+                  _buildPremiumCategoryChip(LanguageProvider.isBn(context) ? 'বীজ' : 'Seeds', 'seeds', Icons.grass),
                   const SizedBox(width: 12),
-                  _buildPremiumCategoryChip('সার', 'fertilizer', Icons.science),
+                  _buildPremiumCategoryChip(LanguageProvider.isBn(context) ? 'সার' : 'Fertilizer', 'fertilizer', Icons.science),
                   const SizedBox(width: 12),
-                  _buildPremiumCategoryChip('কীটনাশক', 'pesticide', Icons.pest_control),
+                  _buildPremiumCategoryChip(LanguageProvider.isBn(context) ? 'কীটনাশক' : 'Pesticide', 'pesticide', Icons.pest_control),
                   const SizedBox(width: 12),
-                  _buildPremiumCategoryChip('যন্ত্র', 'equipment', Icons.agriculture),
+                  _buildPremiumCategoryChip(LanguageProvider.isBn(context) ? 'যন্ত্র' : 'Equipment', 'equipment', Icons.agriculture),
                 ],
               ),
             ),
@@ -308,7 +321,7 @@ class _FarmerMarketplaceState extends State<FarmerMarketplace> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            input['name'],
+                            LanguageProvider.isBn(context) ? (input['name'] ?? '') : (input['nameEN'] ?? input['name'] ?? ''),
                             style: GoogleFonts.hindSiliguri(
                               fontSize: 15,
                               fontWeight: FontWeight.bold,
@@ -319,7 +332,7 @@ class _FarmerMarketplaceState extends State<FarmerMarketplace> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            input['supplier'],
+                            LanguageProvider.isBn(context) ? (input['supplier'] ?? '') : (input['supplierEN'] ?? input['supplier'] ?? ''),
                             style: GoogleFonts.hindSiliguri(
                               fontSize: 12,
                               color: Colors.grey.shade600,
@@ -335,7 +348,7 @@ class _FarmerMarketplaceState extends State<FarmerMarketplace> {
                         children: [
                           Flexible(
                             child: Text(
-                              input['price'],
+                              LanguageProvider.isBn(context) ? (input['price'] ?? '') : (input['priceEN'] ?? input['price'] ?? ''),
                               style: GoogleFonts.poppins(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
@@ -346,8 +359,10 @@ class _FarmerMarketplaceState extends State<FarmerMarketplace> {
                           GestureDetector(
                             onTap: () {
                               Get.snackbar(
-                                'কার্টে যোগ করা হয়েছে',
-                                '${input['name']} আপনার কার্টে সফলভাবে যোগ হয়েছে।',
+                                LanguageProvider.isBn(context) ? 'কার্টে যোগ করা হয়েছে' : 'Added to Cart',
+                                LanguageProvider.isBn(context)
+                                    ? '${input['name']} আপনার কার্টে সফলভাবে যোগ হয়েছে।'
+                                    : '${input['nameEN'] ?? input['name']} successfully added to your cart.',
                                 backgroundColor: bottleGreen,
                                 colorText: Colors.white,
                                 snackPosition: SnackPosition.BOTTOM,

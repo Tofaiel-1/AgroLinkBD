@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import 'package:agrolinkbd/core/providers/user_provider.dart';
 import 'package:agrolinkbd/core/models/user_model.dart';
 import 'dart:io';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 
 class BazaarProducts extends StatefulWidget {
   final String category; // 'vegetables', 'fruits', 'spices'
@@ -20,14 +21,15 @@ class BazaarProducts extends StatefulWidget {
   State<BazaarProducts> createState() => _BazaarProductsState();
 }
 
-String _getCategoryName(String key) {
+String _getCategoryName(BuildContext context, String key) {
+  final isBn = LanguageProvider.isBn(context);
   switch (key) {
     case 'vegetables':
-      return 'Vegetables';
+      return isBn ? 'শাকসবজি' : 'Vegetables';
     case 'fruits':
-      return 'Fruits';
+      return isBn ? 'ফলমূল' : 'Fruits';
     case 'spices':
-      return 'Spices';
+      return isBn ? 'মসলা' : 'Spices';
     default:
       return key;
   }
@@ -387,7 +389,7 @@ class _BazaarProductsState extends State<BazaarProducts> {
       backgroundColor: Colors.black, // Dark theme background
       appBar: AppBar(
         title: Text(
-          _getCategoryName(widget.category),
+          _getCategoryName(context, widget.category),
           style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         backgroundColor: Colors.black,

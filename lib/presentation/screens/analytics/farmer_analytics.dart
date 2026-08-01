@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 
 /// Ultra-Premium Visionary Farmer Analytics Dashboard
 /// "Bento Box" Spatial Grid System
@@ -70,7 +71,7 @@ class _FarmerAnalyticsScreenState extends State<FarmerAnalyticsScreen>
       backgroundColor: bgColor,
       appBar: AppBar(
         title: Text(
-          'খামার বিশ্লেষণ',
+          LanguageProvider.isBn(context) ? 'খামার বিশ্লেষণ' : 'Farm Analytics',
           style: GoogleFonts.hindSiliguri(
             fontWeight: FontWeight.bold,
             color: bottleGreen,
@@ -106,8 +107,8 @@ class _FarmerAnalyticsScreenState extends State<FarmerAnalyticsScreen>
                     GestureDetector(
                       onTap: () {
                         Get.snackbar(
-                          'ভয়েস বট (Voice Bot)',
-                          'শুনছি... আপনার প্রশ্ন বলুন। (Listening...)',
+                          LanguageProvider.isBn(context) ? 'ভয়েস বট (Voice Bot)' : 'Voice Bot',
+                          LanguageProvider.isBn(context) ? 'শুনছি... আপনার প্রশ্ন বলুন। (Listening...)' : 'Listening... Speak your question.',
                           backgroundColor: bottleGreen.withOpacity(0.9),
                           colorText: Colors.white,
                           snackPosition: SnackPosition.BOTTOM,
@@ -143,7 +144,7 @@ class _FarmerAnalyticsScreenState extends State<FarmerAnalyticsScreen>
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'ভয়েস বট',
+                            LanguageProvider.isBn(context) ? 'ভয়েস বট' : 'Voice Bot',
                             style: GoogleFonts.hindSiliguri(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -178,7 +179,7 @@ class _FarmerAnalyticsScreenState extends State<FarmerAnalyticsScreen>
                               ),
                             ),
                             Text(
-                              '৮৫%',
+                              LanguageProvider.isBn(context) ? '৮৫%' : '85%',
                               style: GoogleFonts.poppins(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
@@ -189,7 +190,7 @@ class _FarmerAnalyticsScreenState extends State<FarmerAnalyticsScreen>
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'জমির স্বাস্থ্য',
+                          LanguageProvider.isBn(context) ? 'জমির স্বাস্থ্য' : 'Farm Health',
                           style: GoogleFonts.hindSiliguri(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
@@ -207,8 +208,8 @@ class _FarmerAnalyticsScreenState extends State<FarmerAnalyticsScreen>
                           onChanged: (val) {
                             setState(() => _offlineSmsEnabled = val);
                             Get.snackbar(
-                              'অফলাইন এসএমএস',
-                              val ? 'এসএমএস সেবা চালু করা হয়েছে।' : 'এসএমএস সেবা বন্ধ করা হয়েছে।',
+                              LanguageProvider.isBn(context) ? 'অফলাইন এসএমএস' : 'Offline SMS',
+                              val ? (LanguageProvider.isBn(context) ? 'এসএমএস সেবা চালু করা হয়েছে।' : 'SMS service enabled.') : (LanguageProvider.isBn(context) ? 'এসএমএস সেবা বন্ধ করা হয়েছে।' : 'SMS service disabled.'),
                               backgroundColor: Colors.white,
                               colorText: bottleGreen,
                               snackPosition: SnackPosition.TOP,
@@ -221,7 +222,7 @@ class _FarmerAnalyticsScreenState extends State<FarmerAnalyticsScreen>
                           inactiveTrackColor: Colors.grey.shade300,
                         ),
                         Text(
-                          'অফলাইন SMS',
+                          LanguageProvider.isBn(context) ? 'অফলাইন SMS' : 'Offline SMS',
                           style: GoogleFonts.hindSiliguri(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -245,7 +246,7 @@ class _FarmerAnalyticsScreenState extends State<FarmerAnalyticsScreen>
                       children: [
                         Flexible(
                           child: Text(
-                            'বাজার দর (Trends)',
+                            LanguageProvider.isBn(context) ? 'বাজার দর (Trends)' : 'Market Trends',
                             style: GoogleFonts.hindSiliguri(
                               fontSize: 15,
                               fontWeight: FontWeight.bold,
@@ -261,7 +262,7 @@ class _FarmerAnalyticsScreenState extends State<FarmerAnalyticsScreen>
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
-                            'লাইভ',
+                            LanguageProvider.isBn(context) ? 'লাইভ' : 'LIVE',
                             style: GoogleFonts.hindSiliguri(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
@@ -280,15 +281,15 @@ class _FarmerAnalyticsScreenState extends State<FarmerAnalyticsScreen>
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            _buildInteractiveChartBar('ধান', 80, '৳১২০০', Colors.blue),
+                            _buildInteractiveChartBar(LanguageProvider.isBn(context) ? 'ধান' : 'Rice', 80, LanguageProvider.isBn(context) ? '৳১২০০' : '৳1200', Colors.blue),
                             const SizedBox(width: 20),
-                            _buildInteractiveChartBar('আলু', 40, '৳৩৫', Colors.red),
+                            _buildInteractiveChartBar(LanguageProvider.isBn(context) ? 'আলু' : 'Potato', 40, LanguageProvider.isBn(context) ? '৳৩৫' : '৳35', Colors.red),
                             const SizedBox(width: 20),
-                            _buildInteractiveChartBar('পেঁয়াজ', 90, '৳৯০', bottleGreen),
+                            _buildInteractiveChartBar(LanguageProvider.isBn(context) ? 'পেঁয়াজ' : 'Onion', 90, LanguageProvider.isBn(context) ? '৳৯০' : '৳90', bottleGreen),
                             const SizedBox(width: 20),
-                            _buildInteractiveChartBar('টমেটো', 30, '৳৩০', harvestYellow),
+                            _buildInteractiveChartBar(LanguageProvider.isBn(context) ? 'টমেটো' : 'Tomato', 30, LanguageProvider.isBn(context) ? '৳৩০' : '৳30', harvestYellow),
                             const SizedBox(width: 20),
-                            _buildInteractiveChartBar('রসুন', 100, '৳১৮০', Colors.purple),
+                            _buildInteractiveChartBar(LanguageProvider.isBn(context) ? 'রসুন' : 'Garlic', 100, LanguageProvider.isBn(context) ? '৳১৮০' : '৳180', Colors.purple),
                           ],
                         ),
                       ),
@@ -298,16 +299,16 @@ class _FarmerAnalyticsScreenState extends State<FarmerAnalyticsScreen>
                     const SizedBox(height: 12),
                     // Finance Progress Bars
                     _buildFinanceRow(
-                      'কৃষি বিনিয়োগ',
-                      '৳৫,০০০',
+                      LanguageProvider.isBn(context) ? 'কৃষি বিনিয়োগ' : 'Agri Investment',
+                      LanguageProvider.isBn(context) ? '৳৫,০০০' : '৳5,000',
                       0.6,
                       Icons.account_balance_wallet,
                       bottleGreen,
                     ),
                     const SizedBox(height: 16),
                     _buildFinanceRow(
-                      'ফসল বীমা',
-                      'সক্রিয়',
+                      LanguageProvider.isBn(context) ? 'ফসল বীমা' : 'Crop Insurance',
+                      LanguageProvider.isBn(context) ? 'সক্রিয়' : 'Active',
                       1.0,
                       Icons.security,
                       harvestYellow,
@@ -324,8 +325,8 @@ class _FarmerAnalyticsScreenState extends State<FarmerAnalyticsScreen>
                     child: _buildGlassBentoCard(
                       onTap: () {
                         Get.snackbar(
-                          'মাটির আর্দ্রতা (Soil Moisture)',
-                          'আপনার জমির আর্দ্রতা এখন ৬০%। এখনই সেচ দেওয়ার প্রয়োজন নেই।',
+                          LanguageProvider.isBn(context) ? 'মাটির আর্দ্রতা (Soil Moisture)' : 'Soil Moisture',
+                          LanguageProvider.isBn(context) ? 'আপনার জমির আর্দ্রতা এখন ৬০%। এখনই সেচ দেওয়ার প্রয়োজন নেই।' : 'Soil moisture is 60%. No irrigation needed now.',
                           backgroundColor: Colors.white,
                           colorText: Colors.black87,
                         );
@@ -336,7 +337,7 @@ class _FarmerAnalyticsScreenState extends State<FarmerAnalyticsScreen>
                           const SizedBox(height: 8),
                           FittedBox(
                             child: Text(
-                              'মাটির আর্দ্রতা',
+                              LanguageProvider.isBn(context) ? 'মাটির আর্দ্রতা' : 'Soil Moisture',
                               style: GoogleFonts.hindSiliguri(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -347,7 +348,7 @@ class _FarmerAnalyticsScreenState extends State<FarmerAnalyticsScreen>
                           const SizedBox(height: 4),
                           FittedBox(
                             child: Text(
-                              '৬০% (স্বাভাবিক)',
+                              LanguageProvider.isBn(context) ? '৬০% (স্বাভাবিক)' : '60% (Normal)',
                               style: GoogleFonts.poppins(
                                 fontSize: 11,
                                 color: Colors.grey.shade600,
@@ -386,8 +387,8 @@ class _FarmerAnalyticsScreenState extends State<FarmerAnalyticsScreen>
                     child: _buildGlassBentoCard(
                       onTap: () {
                          Get.snackbar(
-                          'সার ক্যালকুলেটর (AI)',
-                          'AI বলছে: ২ কেজি ইউরিয়া এবং ১ কেজি পটাশ প্রয়োগ করুন।',
+                          LanguageProvider.isBn(context) ? 'সার ক্যালকুলেটর (AI)' : 'Fertilizer Calculator (AI)',
+                          LanguageProvider.isBn(context) ? 'AI বলছে: ২ কেজি ইউরিয়া এবং ১ কেজি পটাশ প্রয়োগ করুন।' : 'AI recommends: Apply 2 kg Urea and 1 kg Potash.',
                           backgroundColor: Colors.white,
                           colorText: Colors.black87,
                         );
@@ -398,7 +399,7 @@ class _FarmerAnalyticsScreenState extends State<FarmerAnalyticsScreen>
                           const SizedBox(height: 8),
                           FittedBox(
                             child: Text(
-                              'সার ক্যালকুলেটর',
+                              LanguageProvider.isBn(context) ? 'সার ক্যালকুলেটর' : 'Fertilizer Calculator',
                               style: GoogleFonts.hindSiliguri(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -408,7 +409,7 @@ class _FarmerAnalyticsScreenState extends State<FarmerAnalyticsScreen>
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'AI প্রস্তাবিত',
+                            LanguageProvider.isBn(context) ? 'AI প্রস্তাবিত' : 'AI Recommended',
                             style: GoogleFonts.hindSiliguri(
                               fontSize: 11,
                               color: Colors.grey.shade600,
@@ -418,8 +419,8 @@ class _FarmerAnalyticsScreenState extends State<FarmerAnalyticsScreen>
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
-                              _buildFertilizerBadge('Urea', Colors.blue),
-                              _buildFertilizerBadge('Potash', Colors.orange),
+                              _buildFertilizerBadge(LanguageProvider.isBn(context) ? 'ইউরিয়া' : 'Urea', Colors.blue),
+                              _buildFertilizerBadge(LanguageProvider.isBn(context) ? 'পটাশ' : 'Potash', Colors.orange),
                             ],
                           ),
                         ],
@@ -438,12 +439,12 @@ class _FarmerAnalyticsScreenState extends State<FarmerAnalyticsScreen>
                     child: _buildGlassBentoCard(
                       onTap: () {
                         Get.defaultDialog(
-                          title: 'হিমাগার বুকিং',
+                          title: LanguageProvider.isBn(context) ? 'হিমাগার বুকিং' : 'Cold Storage Booking',
                           titleStyle: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold),
-                          middleText: 'বগুড়া হিমাগারে আপনার জন্য জায়গা বুক করা হবে?',
+                          middleText: LanguageProvider.isBn(context) ? 'বগুড়া হিমাগারে আপনার জন্য জায়গা বুক করা হবে?' : 'Do you want to book space at Bogra Cold Storage?',
                           middleTextStyle: GoogleFonts.hindSiliguri(),
-                          textConfirm: 'হ্যাঁ',
-                          textCancel: 'না',
+                          textConfirm: LanguageProvider.isBn(context) ? 'হ্যাঁ' : 'Yes',
+                          textCancel: LanguageProvider.isBn(context) ? 'না' : 'No',
                           confirmTextColor: Colors.white,
                           buttonColor: bottleGreen,
                           cancelTextColor: bottleGreen,
@@ -455,7 +456,7 @@ class _FarmerAnalyticsScreenState extends State<FarmerAnalyticsScreen>
                           const SizedBox(height: 8),
                           FittedBox(
                             child: Text(
-                              'হিমাগার বুকিং',
+                              LanguageProvider.isBn(context) ? 'হিমাগার বুকিং' : 'Cold Storage',
                               textAlign: TextAlign.center,
                               style: GoogleFonts.hindSiliguri(
                                 fontSize: 14,
@@ -472,7 +473,7 @@ class _FarmerAnalyticsScreenState extends State<FarmerAnalyticsScreen>
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
-                              'বগুড়া',
+                              LanguageProvider.isBn(context) ? 'বগুড়া' : 'Bogra',
                               style: GoogleFonts.hindSiliguri(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
@@ -491,8 +492,8 @@ class _FarmerAnalyticsScreenState extends State<FarmerAnalyticsScreen>
                       padding: const EdgeInsets.all(0),
                       onTap: () {
                          Get.snackbar(
-                          'সরকারি কৃষি ভর্তুকি',
-                          'নতুন ভর্তুকি স্কিম সম্পর্কে বিস্তারিত জানতে ক্লিক করুন।',
+                          LanguageProvider.isBn(context) ? 'সরকারি কৃষি ভর্তুকি' : 'Govt Agri Subsidy',
+                          LanguageProvider.isBn(context) ? 'নতুন ভর্তুকি স্কিম সম্পর্কে বিস্তারিত জানতে ক্লিক করুন।' : 'Click to learn more about new subsidy schemes.',
                           backgroundColor: Colors.white,
                           colorText: Colors.red.shade800,
                         );
@@ -511,7 +512,7 @@ class _FarmerAnalyticsScreenState extends State<FarmerAnalyticsScreen>
                                   const SizedBox(width: 8),
                                   Flexible(
                                     child: Text(
-                                      'সরকারি কৃষি ভর্তুকি',
+                                      LanguageProvider.isBn(context) ? 'সরকারি কৃষি ভর্তুকি' : 'Govt Agri Subsidy',
                                       style: GoogleFonts.hindSiliguri(
                                         fontSize: 14,
                                         fontWeight: FontWeight.bold,
@@ -537,7 +538,7 @@ class _FarmerAnalyticsScreenState extends State<FarmerAnalyticsScreen>
                                   return Padding(
                                     padding: const EdgeInsets.only(right: 32, top: 16),
                                     child: Text(
-                                      '• বোরো ধানের জন্য ৩০% সরকারি ভর্তুকি ঘোষণা করা হয়েছে। আজই আবেদন করুন।   ',
+                                      LanguageProvider.isBn(context) ? '• বোরো ধানের জন্য ৩০% সরকারি ভর্তুকি ঘোষণা করা হয়েছে। আজই আবেদন করুন।   ' : '• 30% Govt subsidy announced for Boro Rice. Apply today.   ',
                                       style: GoogleFonts.hindSiliguri(
                                         color: Colors.white,
                                         fontSize: 14,
@@ -602,7 +603,7 @@ class _FarmerAnalyticsScreenState extends State<FarmerAnalyticsScreen>
       onTap: () {
         Get.snackbar(
           label,
-          'বর্তমান বাজার দর: $value',
+          LanguageProvider.isBn(context) ? 'বর্তমান বাজার দর: $value' : 'Current Market Price: $value',
           backgroundColor: Colors.white,
           colorText: color,
         );
@@ -663,7 +664,7 @@ class _FarmerAnalyticsScreenState extends State<FarmerAnalyticsScreen>
       onTap: () {
         Get.snackbar(
           title,
-          'আপনার স্ট্যাটাস: $value',
+          LanguageProvider.isBn(context) ? 'আপনার স্ট্যাটাস: $value' : 'Your Status: $value',
           backgroundColor: Colors.white,
           colorText: Colors.black87,
         );

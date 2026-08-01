@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 
 class GpsMappingScreen extends StatelessWidget {
   const GpsMappingScreen({Key? key}) : super(key: key);
@@ -12,7 +13,7 @@ class GpsMappingScreen extends StatelessWidget {
         backgroundColor: const Color(0xFF2196F3),
         elevation: 0,
         title: Text(
-          'GPS Mapping',
+          LanguageProvider.isBn(context) ? 'জিপিএস ম্যাপিং' : 'GPS Mapping',
           style: GoogleFonts.openSans(fontWeight: FontWeight.bold, color: Colors.white),
         ),
       ),

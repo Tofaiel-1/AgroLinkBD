@@ -26,6 +26,7 @@ class UserProvider with ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     } catch (e) {
+      debugPrint('⚠️ Error loading user $userId: $e');
       _error = e.toString();
       _isLoading = false;
       notifyListeners();
@@ -34,13 +35,12 @@ class UserProvider with ChangeNotifier {
 
   // Update user
   Future<void> updateUser(UserModel user) async {
+    _currentUser = user;
+    notifyListeners();
     try {
-      await _authService.createOrUpdateUser(user);
-      _currentUser = user;
-      notifyListeners();
+      await _authService.createOrUpdateUser(user).timeout(const Duration(seconds: 3));
     } catch (e) {
-      _error = e.toString();
-      notifyListeners();
+      debugPrint('⚠️ Error updating user in background: $e');
     }
   }
 

@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:agrolinkbd/core/providers/user_provider.dart';
 import 'dart:io';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 
 class AddProductScreen extends StatefulWidget {
   const AddProductScreen({super.key});
@@ -163,7 +164,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Add Product'),
+        title: Text(LanguageProvider.isBn(context) ? 'পণ্য যোগ করুন' : 'Add Product'),
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -206,7 +207,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                               ),
                               const SizedBox(height: 12),
                               Text(
-                                'Tap to select product image',
+                                LanguageProvider.isBn(context) ? 'পণ্যের ছবি নির্বাচন করতে ট্যাপ করুন' : 'Tap to select product image',
                                 style: Theme.of(context)
                                     .textTheme
                                     .bodyLarge
@@ -229,7 +230,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
               // Product Title
               Text(
-                'Product Title',
+                LanguageProvider.isBn(context) ? 'পণ্যের নাম' : 'Product Title',
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -255,7 +256,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
               // Description
               Text(
-                'Description',
+                LanguageProvider.isBn(context) ? 'বিবরণ' : 'Description',
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -282,7 +283,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
               // Category
               Text(
-                'Category',
+                LanguageProvider.isBn(context) ? 'বিভাগ' : 'Category',
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -293,7 +294,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 items: _categories
                     .map((cat) => DropdownMenuItem<String>(
                           value: cat['value']!,
-                          child: Text(cat['label']!),
+                          child: Text(LanguageProvider.isBn(context) ? (cat['labelBN'] ?? cat['label']!) : cat['label']!),
                         ))
                     .toList(),
                 onChanged: (value) {
@@ -318,7 +319,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Price (per unit)',
+                          LanguageProvider.isBn(context) ? 'মূল্য (প্রতি একক)' : 'Price (per unit)',
                           style:
                               Theme.of(context).textTheme.labelMedium?.copyWith(
                                     fontWeight: FontWeight.w600,
@@ -356,7 +357,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Quantity',
+                          LanguageProvider.isBn(context) ? 'পরিমাণ' : 'Quantity',
                           style:
                               Theme.of(context).textTheme.labelMedium?.copyWith(
                                     fontWeight: FontWeight.w600,
@@ -392,7 +393,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
               // Unit
               Text(
-                'Unit',
+                LanguageProvider.isBn(context) ? 'একক' : 'Unit',
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -422,7 +423,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
               // Location
               Text(
-                'Location',
+                LanguageProvider.isBn(context) ? 'অবস্থান' : 'Location',
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -465,9 +466,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
                             strokeWidth: 2,
                           ),
                         )
-                      : const Text(
-                          'Add Product',
-                          style: TextStyle(
+                      : Text(
+                          LanguageProvider.isBn(context) ? 'পণ্য যোগ করুন' : 'Add Product',
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                             color: Colors.white,

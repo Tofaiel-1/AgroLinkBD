@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 
 class FarmNotificationsScreen extends StatelessWidget {
   const FarmNotificationsScreen({Key? key}) : super(key: key);
@@ -47,14 +48,14 @@ class FarmNotificationsScreen extends StatelessWidget {
         backgroundColor: const Color(0xFFFF5722),
         elevation: 0,
         title: Text(
-          'Notifications',
+          LanguageProvider.isBn(context) ? 'নোটিফিকেশন' : 'Notifications',
           style: GoogleFonts.openSans(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         actions: [
           TextButton(
             onPressed: () {},
             child: Text(
-              'Mark All Read',
+              LanguageProvider.isBn(context) ? 'সব পঠিত করুন' : 'Mark All Read',
               style: GoogleFonts.openSans(color: Colors.white, fontWeight: FontWeight.w600),
             ),
           )

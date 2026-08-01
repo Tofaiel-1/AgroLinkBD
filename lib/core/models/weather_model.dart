@@ -86,13 +86,35 @@ class WeatherModel {
     int clouds = (current['cloud_cover'] as num?)?.toInt() ?? 25;
     bool day = (current['is_day'] as num?)?.toInt() == 1;
 
-    // Rain probability from hourly
-    int rainProb = 0;
-    if (hourly['precipitation_probability'] != null && (hourly['precipitation_probability'] as List).isNotEmpty) {
-      rainProb = ((hourly['precipitation_probability'] as List).first as num).toInt();
+    // Calculate current hour index to start hourly forecast from Now (current hour)
+    int startHourIndex = 0;
+    if (hourly['time'] != null && hourly['time'] is List) {
+      final times = hourly['time'] as List;
+      final now = DateTime.now();
+      final nowIsoHour = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}T${now.hour.toString().padLeft(2, '0')}';
+      for (int i = 0; i < times.length; i++) {
+        if (times[i].toString().startsWith(nowIsoHour)) {
+          startHourIndex = i;
+          break;
+        }
+      }
+      if (startHourIndex == 0 && now.hour > 0 && times.length > now.hour) {
+        startHourIndex = now.hour;
+      }
     }
 
-    // Hourly Forecast (24 Hours)
+    // Rain probability for current hour
+    int rainProb = 0;
+    if (hourly['precipitation_probability'] != null && (hourly['precipitation_probability'] as List).isNotEmpty) {
+      final probs = hourly['precipitation_probability'] as List;
+      if (startHourIndex < probs.length) {
+        rainProb = (probs[startHourIndex] as num).toInt();
+      } else {
+        rainProb = (probs.first as num).toInt();
+      }
+    }
+
+    // Hourly Forecast (24 Hours starting from Current Hour)
     List<HourlyWeather> hourlyList = [];
     if (hourly['time'] != null && hourly['time'] is List) {
       final times = hourly['time'] as List;
@@ -100,9 +122,26 @@ class WeatherModel {
       final probs = (hourly['precipitation_probability'] as List?) ?? [];
       final codes = (hourly['weather_code'] as List?) ?? [];
 
-      for (int i = 0; i < times.length && i < 24; i++) {
+      int endIdx = startHourIndex + 24;
+      if (endIdx > times.length) endIdx = times.length;
+
+      for (int i = startHourIndex; i < endIdx; i++) {
         String tStr = times[i].toString();
-        String displayTime = tStr.contains('T') ? tStr.split('T').last : tStr;
+        DateTime? dt = DateTime.tryParse(tStr);
+        
+        String displayTime;
+        if (i == startHourIndex) {
+          displayTime = 'এখন';
+        } else if (dt != null) {
+          int h = dt.hour;
+          String ampm = h >= 12 ? 'PM' : 'AM';
+          int h12 = h % 12;
+          if (h12 == 0) h12 = 12;
+          displayTime = '$h12 $ampm';
+        } else {
+          displayTime = tStr.contains('T') ? tStr.split('T').last : tStr;
+        }
+
         double tVal = i < temps.length ? (temps[i] as num).toDouble() : temp;
         int pVal = i < probs.length ? (probs[i] as num).toInt() : 0;
         int cVal = i < codes.length ? (codes[i] as num).toInt() : code;
@@ -217,7 +256,7 @@ class WeatherModel {
 
   static String _getAgriAdvice(int code, double rain, double wind, double temp, int rainProb) {
     if (code >= 95) {
-      return '⚠️ বজ্রঝড়ের পূর্বাভাস! মাঠের কাজ স্থগিত রাখুন এবং নিরাপদ আশ্রয়ে থাকুন।';
+      return '⚡ বজ্রঝড়ের সম্ভাবনা ($rainProb%)! মাঠের কাজ স্থগিত রেখে নিরাপদ আশ্রয়ে থাকুন।';
     } else if (rain > 5.0 || code >= 61 || rainProb > 70) {
       return '🌧️ বৃষ্টির সম্ভাবনা $rainProb%! আজ ধানে সার বা কীটনাশক স্প্রে করা বন্ধ রাখুন।';
     } else if (wind > 25.0) {
@@ -232,36 +271,47 @@ class WeatherModel {
   }
 
   factory WeatherModel.defaultFallback(String location) {
+    final now = DateTime.now();
+    int curH = now.hour;
+    List<HourlyWeather> fallbackHourly = [];
+    for (int i = 0; i < 6; i++) {
+      int h = (curH + i) % 24;
+      String ampm = h >= 12 ? 'PM' : 'AM';
+      int h12 = h % 12;
+      if (h12 == 0) h12 = 12;
+      String label = i == 0 ? 'এখন' : '$h12 $ampm';
+      fallbackHourly.add(HourlyWeather(
+        time: label,
+        temperature: 30.0 - (i * 0.4),
+        rainProbability: i == 0 ? 80 : (i == 1 ? 60 : (i == 2 ? 40 : 20)),
+        weatherCode: i < 3 ? 95 : 3,
+      ));
+    }
+
     return WeatherModel(
-      temperature: 28.5,
-      feelsLike: 30.0,
-      condition: 'আংশিক মেঘলা',
-      weatherCode: 2,
-      rainMm: 0.0,
-      rainProbability: 25,
-      humidity: 68,
-      windSpeedKmH: 14.5,
-      windDirectionDegree: 90,
-      windDirectionText: 'পূর্ব',
-      uvIndex: 6.0,
-      pressureHpa: 1012.0,
-      cloudCoverPercent: 30,
-      locationName: location.isNotEmpty ? location : 'গুরুদাসপুর, নাটোর',
+      temperature: 30.0,
+      feelsLike: 35.0,
+      condition: 'মেঘলা আকাশ',
+      weatherCode: 3,
+      rainMm: 0.2,
+      rainProbability: 80,
+      humidity: 78,
+      windSpeedKmH: 12.6,
+      windDirectionDegree: 180,
+      windDirectionText: 'দক্ষিণ',
+      uvIndex: 2.7,
+      pressureHpa: 996.0,
+      cloudCoverPercent: 95,
+      locationName: location.isNotEmpty ? location : 'গুরুদাসপুর, নাটোর (রাজশাহী)',
       isDay: true,
-      agriAdvice: '🌱 সেচ, সার প্রয়োগ এবং ক্ষেতের পরিচর্যার জন্য আজকের আবহাওয়া অত্যন্ত অনুকূল!',
-      hourlyForecast: [
-        HourlyWeather(time: '09:00', temperature: 26.5, rainProbability: 10, weatherCode: 1),
-        HourlyWeather(time: '12:00', temperature: 29.5, rainProbability: 20, weatherCode: 2),
-        HourlyWeather(time: '15:00', temperature: 31.0, rainProbability: 35, weatherCode: 2),
-        HourlyWeather(time: '18:00', temperature: 28.0, rainProbability: 15, weatherCode: 1),
-        HourlyWeather(time: '21:00', temperature: 25.5, rainProbability: 5, weatherCode: 0),
-      ],
+      agriAdvice: '⚡ নাটোর ও উত্তরবঙ্গে বজ্রবৃষ্টির সম্ভাবনা (৮০%)! আজ সেচ ও স্প্রে বন্ধ রাখুন।',
+      hourlyForecast: fallbackHourly,
       dailyForecast: [
-        DailyWeather(dayName: 'আজ', maxTemp: 31.5, minTemp: 24.0, rainProbability: 25, weatherCode: 2),
-        DailyWeather(dayName: 'কাল', maxTemp: 32.0, minTemp: 24.5, rainProbability: 15, weatherCode: 1),
-        DailyWeather(dayName: 'পরশু', maxTemp: 30.0, minTemp: 23.5, rainProbability: 60, weatherCode: 61),
-        DailyWeather(dayName: 'বৃহঃ', maxTemp: 29.5, minTemp: 23.0, rainProbability: 40, weatherCode: 3),
-        DailyWeather(dayName: 'শুক্র', maxTemp: 31.0, minTemp: 24.0, rainProbability: 10, weatherCode: 0),
+        DailyWeather(dayName: 'আজ', maxTemp: 32.0, minTemp: 28.0, rainProbability: 80, weatherCode: 95),
+        DailyWeather(dayName: 'সোম', maxTemp: 32.0, minTemp: 27.0, rainProbability: 60, weatherCode: 95),
+        DailyWeather(dayName: 'মঙ্গল', maxTemp: 32.0, minTemp: 27.0, rainProbability: 60, weatherCode: 95),
+        DailyWeather(dayName: 'বুধ', maxTemp: 29.0, minTemp: 26.0, rainProbability: 30, weatherCode: 3),
+        DailyWeather(dayName: 'বৃহঃ', maxTemp: 29.0, minTemp: 26.0, rainProbability: 20, weatherCode: 3),
       ],
     );
   }

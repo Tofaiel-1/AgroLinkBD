@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:agrolinkbd/core/services/sslcommerz_service.dart';
 import 'package:agrolinkbd/presentation/widgets/quick_buy_bottom_sheet.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 class ProductDetail extends StatefulWidget {
   final Map<String, dynamic> product;
 
@@ -48,7 +48,7 @@ class _ProductDetailState extends State<ProductDetail> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Product Details'),
+        title: Text(LanguageProvider.isBn(context) ? 'পণ্যের বিবরণ' : 'Product Details'),
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -114,7 +114,16 @@ class _ProductDetailState extends State<ProductDetail> {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      widget.product['category'] ?? 'Unknown',
+                      (() {
+                        final isBn = LanguageProvider.isBn(context);
+                        final cat = widget.product['category']?.toString() ?? (isBn ? 'অজানা' : 'Unknown');
+                        if (isBn) {
+                          if (cat.toLowerCase() == 'vegetables') return 'শাকসবজি';
+                          if (cat.toLowerCase() == 'fruits') return 'ফলমূল';
+                          if (cat.toLowerCase() == 'spices') return 'মসলা';
+                        }
+                        return cat;
+                      })(),
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
                             color: Theme.of(context).primaryColor,
                             fontWeight: FontWeight.w600,
@@ -140,12 +149,12 @@ class _ProductDetailState extends State<ProductDetail> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Price',
+                              LanguageProvider.isBn(context) ? 'মূল্য' : 'Price',
                               style: Theme.of(context).textTheme.labelSmall,
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '৳$price/unit',
+                              LanguageProvider.isBn(context) ? '৳$price/একক' : '৳$price/unit',
                               style: Theme.of(context)
                                   .textTheme
                                   .headlineSmall
@@ -160,12 +169,12 @@ class _ProductDetailState extends State<ProductDetail> {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              'Available Qty',
+                              LanguageProvider.isBn(context) ? 'উপলব্ধ পরিমাণ' : 'Available Qty',
                               style: Theme.of(context).textTheme.labelSmall,
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '$quantity units',
+                              LanguageProvider.isBn(context) ? '$quantity একক' : '$quantity units',
                               style: Theme.of(context)
                                   .textTheme
                                   .headlineSmall
@@ -190,7 +199,9 @@ class _ProductDetailState extends State<ProductDetail> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        quantity > 0 ? 'In Stock' : 'Out of Stock',
+                        LanguageProvider.isBn(context)
+                            ? (quantity > 0 ? 'স্টকে আছে' : 'স্টক শেষ')
+                            : (quantity > 0 ? 'In Stock' : 'Out of Stock'),
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
                           color: quantity > 0 ? Colors.green : Colors.red,
@@ -202,7 +213,7 @@ class _ProductDetailState extends State<ProductDetail> {
 
                   // Seller Information
                   Text(
-                    'Seller Information',
+                    LanguageProvider.isBn(context) ? 'বিক্রেতার তথ্য' : 'Seller Information',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -319,7 +330,7 @@ class _ProductDetailState extends State<ProductDetail> {
                   _buildDetailRow('Available Quantity', '$quantity units'),
                   if (widget.product['createdAt'] != null)
                     _buildDetailRow(
-                      'Listed Date',
+                      LanguageProvider.isBn(context) ? 'তালিকাবদ্ধ তারিখ' : 'Listed Date',
                       _formatDate(widget.product['createdAt']),
                     ),
                 ],
@@ -345,7 +356,7 @@ class _ProductDetailState extends State<ProductDetail> {
                       }
                     : null,
                 icon: const Icon(Icons.phone),
-                label: const Text('Contact Seller'),
+                label: Text(LanguageProvider.isBn(context) ? 'বিক্রেতার সাথে যোগাযোগ' : 'Contact Seller'),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   backgroundColor: quantity > 0
@@ -377,7 +388,10 @@ class _ProductDetailState extends State<ProductDetail> {
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   backgroundColor: const Color(0xFF1976D2),
                 ),
-                child: const Text('অর্ডার করুন', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                child: Text(
+                  LanguageProvider.isBn(context) ? 'অর্ডার করুন' : 'Order Now',
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
               ),
             ),
           ],

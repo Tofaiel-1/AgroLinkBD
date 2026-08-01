@@ -159,15 +159,7 @@ class _AppRouterState extends State<AppRouter> {
 
             return Consumer2<AdminProvider, UserProvider>(
               builder: (context, adminProvider, userProvider, _) {
-                // If admin is logged in, check 2FA PIN verification
-                if (adminProvider.isAdminLoggedIn) {
-                  if (!adminProvider.isPinVerified) {
-                    return const AdminSecurityPinScreen();
-                  }
-                  return const AdminDashboard();
-                }
-
-                final userId = authSnapshot.data!.uid;
+             final userId = authSnapshot.data!.uid;
             final email = authSnapshot.data!.email ?? 'user@example.com';
 
             // User is authenticated - Load user data if not already loaded
@@ -180,97 +172,81 @@ class _AppRouterState extends State<AppRouter> {
                   // Try to load user from Firestore
                   await userProvider.loadUser(userId);
 
+                  // Fallback: If profile document is missing in Firestore, create default user
+                  if (userProvider.currentUser == null) {
+                    debugPrint('⏳ Creating fallback profile for user: $userId');
+                    final firebaseUser = authSnapshot.data!;
+                    final fallbackUser = UserModel(
+                      id: userId,
+                      name: firebaseUser.displayName?.isNotEmpty == true
+                          ? firebaseUser.displayName!
+                          : (email.split('@').first),
+                      phone: firebaseUser.phoneNumber ?? '',
+                      email: email,
+                      userType: UserType.farmer, // Default role
+                      status: UserStatus.active,
+                      createdAt: DateTime.now(),
+                    );
+                    await userProvider.updateUser(fallbackUser);
+                  }
+
                   if (userProvider.currentUser != null) {
                     debugPrint('✅ User profile loaded: $userId');
-                  } else {
-                    debugPrint('⏳ User profile not found yet, waiting for registration to complete: $userId');
                   }
 
                   try {
-                    final cartProvider = Provider.of<CartProvider>(context, listen: false);
-                    await cartProvider.loadUserCart(userId);
+                    final cartProvider =
+                        Provider.of<CartProvider>(context, listen: false);
+                    cartProvider.loadUserCart(userId);
                   } catch (e) {
                     debugPrint('⚠️ Cart load warning in AppRouter: $e');
                   }
 
-                  _loadedUserIds.add(userId);
-                  _loadingUserIds.remove(userId);
                   _lastError = null;
                 } catch (e) {
                   debugPrint('❌ Error loading user profile: $e');
-                  _lastError = e.toString();
-
-                  // On error, just log and wait
-                  debugPrint('⚠️ Waiting due to error');
-                  _lastError = 'প্রোফাইল লোড করতে ব্যর্থ';
+                  _lastError = 'প্রোফাইল লোড করতে সমস্যা হয়েছে';
+                } finally {
+                  _loadedUserIds.add(userId);
                   _loadingUserIds.remove(userId);
+                  if (mounted) {
+                    setState(() {});
+                  }
                 }
               });
             }
 
             // Show RoleBasedNavigationContainer if user data is available
-            // This ensures each role has a completely separate navigation stack
-            // preventing any cross-role feature leakage
-            if (_loadedUserIds.contains(userId) ||
-                userProvider.currentUser != null) {
-              final user = userProvider.currentUser;
-              if (user != null) {
-                debugPrint(
-                  '✅ User authenticated: ${user.name} (${user.userType.toString().split('.').last})',
-                );
-                return RoleBasedNavigationContainer(user: user);
-              } else if (_loadedUserIds.contains(userId)) {
-                // Profile loading finished but no user found in database
-                debugPrint('⚠️ User profile missing from database! Signing out.');
-                Future.microtask(() {
-                  FirebaseAuth.instance.signOut();
-                  _loadedUserIds.remove(userId);
-                });
-                return Scaffold(
-                  backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-                  body: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Theme.of(context).primaryColor,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'অসম্পূর্ণ প্রোফাইল। লগআউট করা হচ্ছে...',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }
+            if (userProvider.currentUser != null) {
+              final user = userProvider.currentUser!;
+              debugPrint(
+                '✅ User authenticated: ${user.name} (${user.userType.toString().split('.').last})',
+              );
+              return RoleBasedNavigationContainer(user: user);
             }
 
-            // If user is just being initialized, show loading briefly then proceed
+            // Fallback while initializing or if error occurred
             return Scaffold(
               backgroundColor: Theme.of(context).scaffoldBackgroundColor,
               body: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        Theme.of(context).primaryColor,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Theme.of(context).primaryColor,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'আপনার প্রোফাইল প্রস্তুত করা হচ্ছে...',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    if (_lastError != null) ...[
-                      const SizedBox(height: 12),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 32),
-                        child: Text(
+                      const SizedBox(height: 16),
+                      Text(
+                        'আপনার প্রোফাইল প্রস্তুত করা হচ্ছে...',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      if (_lastError != null) ...[
+                        const SizedBox(height: 12),
+                        Text(
                           'সমস্যা: $_lastError',
                           textAlign: TextAlign.center,
                           style:
@@ -278,15 +254,44 @@ class _AppRouterState extends State<AppRouter> {
                                     color: Colors.orange.shade700,
                                   ),
                         ),
+                      ],
+                      const SizedBox(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          OutlinedButton.icon(
+                            onPressed: () {
+                              setState(() {
+                                _loadedUserIds.remove(userId);
+                                _loadingUserIds.remove(userId);
+                                _lastError = null;
+                              });
+                            },
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('পুনরায় চেষ্টা করুন'),
+                          ),
+                          const SizedBox(width: 12),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              FirebaseAuth.instance.signOut();
+                            },
+                            icon: const Icon(Icons.logout),
+                            label: const Text('লগইন এ যান'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red.shade600,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
-                  ],
+                  ),
                 ),
               ),
             );
-              },
-            );
           },
         );
+      },
+    );
   }
 }

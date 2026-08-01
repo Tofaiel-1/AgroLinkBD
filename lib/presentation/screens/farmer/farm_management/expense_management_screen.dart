@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:agrolinkbd/core/models/phase2_models/farm_models.dart';
 import 'package:agrolinkbd/core/services/phase2_services/farm_service.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 import 'package:intl/intl.dart';
 import 'add_edit_expense_screen.dart';
 
@@ -54,7 +55,7 @@ class _ExpenseManagementScreenState extends State<ExpenseManagementScreen> {
         backgroundColor: const Color(0xFFF44336),
         elevation: 0,
         title: Text(
-          'Expense Management',
+          LanguageProvider.isBn(context) ? 'খরচ ব্যবস্থাপনা' : 'Expense Management',
           style: GoogleFonts.openSans(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         iconTheme: const IconThemeData(color: Colors.white),

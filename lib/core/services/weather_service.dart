@@ -263,7 +263,7 @@ class WeatherService {
         '&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m,surface_pressure,uv_index'
         '&hourly=temperature_2m,precipitation_probability,weather_code'
         '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max'
-        '&timezone=auto',
+        '&timezone=Asia%2FDhaka',
       );
 
       final response = await http.get(url).timeout(const Duration(seconds: 8));

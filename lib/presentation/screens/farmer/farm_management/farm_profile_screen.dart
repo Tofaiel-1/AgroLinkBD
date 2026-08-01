@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:agrolinkbd/core/models/phase2_models/farm_models.dart';
 import 'package:agrolinkbd/core/services/phase2_services/farm_service.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 import 'package:agrolinkbd/presentation/screens/farmer/farm_management/add_edit_farm_screen.dart';
 
 class FarmProfileScreen extends StatefulWidget {
@@ -18,12 +19,16 @@ class _FarmProfileScreenState extends State<FarmProfileScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Farm'),
-        content: const Text('Are you sure you want to delete this farm? All associated data may be lost.'),
+        title: Text(LanguageProvider.isBn(context) ? 'খামার মুছে ফেলুন' : 'Delete Farm'),
+        content: Text(
+          LanguageProvider.isBn(context)
+              ? 'আপনি কি নিশ্চিত যে এই খামারটি মুছে ফেলতে চান? সমস্ত সংশ্লিষ্ট তথ্য মুছে যাবে।'
+              : 'Are you sure you want to delete this farm? All associated data may be lost.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(LanguageProvider.isBn(context) ? 'বাতিল' : 'Cancel'),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -31,12 +36,15 @@ class _FarmProfileScreenState extends State<FarmProfileScreen> {
               await _farmService.deleteFarm(farmId);
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Farm deleted'), backgroundColor: Colors.red),
+                  SnackBar(
+                    content: Text(LanguageProvider.isBn(context) ? 'খামার মুছে ফেলা হয়েছে' : 'Farm deleted'),
+                    backgroundColor: Colors.red,
+                  ),
                 );
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+            child: Text(LanguageProvider.isBn(context) ? 'মুছে ফেলুন' : 'Delete', style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -56,7 +64,7 @@ class _FarmProfileScreenState extends State<FarmProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSectionHeader('My Farms', Icons.landscape),
+                  _buildSectionHeader(LanguageProvider.isBn(context) ? 'আমার খামারসমূহ' : 'My Farms', Icons.landscape),
                   const SizedBox(height: 16),
                 ],
               ),
@@ -73,7 +81,7 @@ class _FarmProfileScreenState extends State<FarmProfileScreen> {
 
               if (snapshot.hasError) {
                 return SliverFillRemaining(
-                  child: Center(child: Text('Error loading farms', style: GoogleFonts.openSans(color: Colors.red))),
+                  child: Center(child: Text(LanguageProvider.isBn(context) ? 'খামার লোড করতে সমস্যা হয়েছে' : 'Error loading farms', style: GoogleFonts.openSans(color: Colors.red))),
                 );
               }
 
@@ -88,12 +96,12 @@ class _FarmProfileScreenState extends State<FarmProfileScreen> {
                         Icon(Icons.agriculture, size: 80, color: Colors.grey.shade400),
                         const SizedBox(height: 16),
                         Text(
-                          'No farms found',
+                          LanguageProvider.isBn(context) ? 'কোনো খামার পাওয়া যায়নি' : 'No farms found',
                           style: GoogleFonts.openSans(fontSize: 18, color: Colors.grey.shade600),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Click the + button to add your first farm.',
+                          LanguageProvider.isBn(context) ? 'আপনার প্রথম খামার যোগ করতে + বাটনে ক্লিক করুন।' : 'Click the + button to add your first farm.',
                           style: GoogleFonts.openSans(fontSize: 14, color: Colors.grey.shade500),
                         ),
                       ],
@@ -129,7 +137,7 @@ class _FarmProfileScreenState extends State<FarmProfileScreen> {
         backgroundColor: const Color(0xFF4CAF50),
         icon: const Icon(Icons.add, color: Colors.white),
         label: Text(
-          'Add Farm',
+          LanguageProvider.isBn(context) ? 'খামার যোগ করুন' : 'Add Farm',
           style: GoogleFonts.openSans(fontWeight: FontWeight.bold, color: Colors.white),
         ),
       ),
@@ -145,7 +153,7 @@ class _FarmProfileScreenState extends State<FarmProfileScreen> {
       flexibleSpace: FlexibleSpaceBar(
         titlePadding: const EdgeInsets.only(left: 20, bottom: 16),
         title: Text(
-          'Farm Management',
+          LanguageProvider.isBn(context) ? 'খামার ব্যবস্থাপনা' : 'Farm Management',
           style: GoogleFonts.openSans(
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -293,7 +301,7 @@ class _FarmProfileScreenState extends State<FarmProfileScreen> {
                           Icon(Icons.grass, size: 16, color: Colors.grey.shade500),
                           const SizedBox(width: 8),
                           Text(
-                            farm.soilType.isNotEmpty ? farm.soilType : 'Unknown Soil',
+                            farm.soilType.isNotEmpty ? farm.soilType : (LanguageProvider.isBn(context) ? 'অজানা মাটি' : 'Unknown Soil'),
                             style: GoogleFonts.openSans(fontSize: 14, color: Colors.grey.shade600),
                           ),
                         ],

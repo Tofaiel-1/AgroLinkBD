@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'product_detail.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 
 class BazaarMarketplace extends StatefulWidget {
   const BazaarMarketplace({super.key});
@@ -21,10 +22,10 @@ class _BazaarMarketplaceState extends State<BazaarMarketplace> {
   List<Map<String, dynamic>> _filteredProducts = [];
 
   final List<Map<String, dynamic>> _categories = [
-    {'name': 'All', 'key': 'all', 'icon': Icons.apps},
-    {'name': 'Vegetables', 'key': 'vegetables', 'icon': Icons.eco},
-    {'name': 'Fruits', 'key': 'fruits', 'icon': Icons.apple},
-    {'name': 'Spices', 'key': 'spices', 'icon': Icons.grain},
+    {'name': 'All', 'nameBN': 'সব', 'key': 'all', 'icon': Icons.apps},
+    {'name': 'Vegetables', 'nameBN': 'শাকসবজি', 'key': 'vegetables', 'icon': Icons.eco},
+    {'name': 'Fruits', 'nameBN': 'ফলমূল', 'key': 'fruits', 'icon': Icons.apple},
+    {'name': 'Spices', 'nameBN': 'মসলা', 'key': 'spices', 'icon': Icons.grain},
   ];
 
   @override
@@ -94,9 +95,10 @@ class _BazaarMarketplaceState extends State<BazaarMarketplace> {
 
   @override
   Widget build(BuildContext context) {
+    final isBn = LanguageProvider.isBn(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Bazaar Marketplace'),
+        title: Text(isBn ? 'বাজার মার্কেটপ্লেস' : 'Bazaar Marketplace'),
         elevation: 0,
         backgroundColor: Theme.of(context).colorScheme.surface,
         foregroundColor: Theme.of(context).textTheme.bodyLarge?.color,
@@ -117,7 +119,7 @@ class _BazaarMarketplaceState extends State<BazaarMarketplace> {
                         _filterProducts();
                       },
                       decoration: InputDecoration(
-                        hintText: 'Search products...',
+                        hintText: LanguageProvider.isBn(context) ? 'পণ্য খুঁজুন...' : 'Search products...',
                         prefixIcon: const Icon(Icons.search),
                         suffixIcon: _searchQuery.isNotEmpty
                             ? IconButton(
@@ -193,7 +195,9 @@ class _BazaarMarketplaceState extends State<BazaarMarketplace> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    category['name'] as String,
+                                    LanguageProvider.isBn(context)
+                                        ? (category['nameBN'] as String? ?? category['name'] as String)
+                                        : (category['name'] as String),
                                     style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.w600,
@@ -226,12 +230,12 @@ class _BazaarMarketplaceState extends State<BazaarMarketplace> {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'No products found',
+                            LanguageProvider.isBn(context) ? 'কোনো পণ্য পাওয়া যায়নি' : 'No products found',
                             style: Theme.of(context).textTheme.titleMedium,
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Try searching or adjusting filters',
+                            LanguageProvider.isBn(context) ? 'অন্য কিছু অনুসন্ধান করুন বা ফিল্টার পরিবর্তন করুন' : 'Try searching or adjusting filters',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ],
@@ -402,7 +406,16 @@ class _BazaarMarketplaceState extends State<BazaarMarketplace> {
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        product['category'] ?? 'Unknown',
+                        (() {
+                          final isBn = LanguageProvider.isBn(context);
+                          final cat = product['category']?.toString() ?? (isBn ? 'অজানা' : 'Unknown');
+                          if (isBn) {
+                            if (cat.toLowerCase() == 'vegetables') return 'শাকসবজি';
+                            if (cat.toLowerCase() == 'fruits') return 'ফলমূল';
+                            if (cat.toLowerCase() == 'spices') return 'মসলা';
+                          }
+                          return cat;
+                        })(),
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
                               color: Theme.of(context).primaryColor,
                               fontSize: 9,
@@ -429,7 +442,7 @@ class _BazaarMarketplaceState extends State<BazaarMarketplace> {
                                   ),
                             ),
                             Text(
-                              'per unit',
+                              LanguageProvider.isBn(context) ? 'প্রতি একক' : 'per unit',
                               style: Theme.of(context).textTheme.labelSmall,
                             ),
                           ],
