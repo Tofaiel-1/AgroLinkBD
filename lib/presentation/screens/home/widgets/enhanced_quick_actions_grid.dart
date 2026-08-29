@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:agrolinkbd/presentation/screens/transport/transport_screen.dart';
+import 'package:agrolinkbd/presentation/screens/transport/upazila_transport_screen.dart';
 import 'package:agrolinkbd/presentation/screens/auction/auction_screen.dart';
 import 'package:agrolinkbd/presentation/screens/investment/investment_screen.dart';
-import 'package:agrolinkbd/presentation/screens/marketplace/marketplace_screen.dart';
 import 'package:agrolinkbd/presentation/screens/machinery/machinery_rental_screen.dart';
+import 'package:agrolinkbd/presentation/screens/telemedicine/agri_telemedicine_screen.dart';
+import 'package:agrolinkbd/presentation/screens/marketplace/buyer_rfq_board_screen.dart';
 import 'package:agrolinkbd/presentation/screens/card/card_preview_screen.dart' as agrolinkbd;
 import 'enhanced_quick_action_card.dart';
 
@@ -35,7 +36,7 @@ class EnhancedQuickActionsGrid extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'দ্রুত সেবা',
+            'দ্রুত সেবা সমূহ ⚡',
             style: GoogleFonts.poppins(
               fontSize: isMobile ? 18 : 20,
               fontWeight: FontWeight.w700,
@@ -95,98 +96,44 @@ class EnhancedQuickActionsGrid extends StatelessWidget {
       {
         'icon': Icons.agriculture,
         'label': 'যন্ত্রপাতি',
-        'subtitle': 'ভাড়া নিন',
+        'subtitle': 'ভাড়া নিন 🚜',
         'color': const Color(0xFF1976D2),
         'onTap': () => Get.to(() => const MachineryRentalScreen()),
       },
       {
         'icon': Icons.local_shipping,
         'label': 'পরিবহন',
-        'subtitle': 'পণ্য পাঠান',
+        'subtitle': 'পণ্য পাঠান 🚚',
         'color': const Color(0xFFFF6F00),
-        'onTap': () => Get.to(() => const TransportScreen()),
+        'onTap': () => Get.to(() => const UpazilaTransportScreen()),
+      },
+      {
+        'icon': Icons.video_call_rounded,
+        'label': 'ডাক্তার কল',
+        'subtitle': 'লাইভ পরামর্শ 🩺',
+        'color': const Color(0xFF6A1B9A),
+        'onTap': () => Get.to(() => const AgriTelemedicineScreen()),
+      },
+      {
+        'icon': Icons.assignment_turned_in,
+        'label': 'চাহিদা বোর্ড',
+        'subtitle': 'পাইকারি টেন্ডার 📋',
+        'color': const Color(0xFFC62828),
+        'onTap': () => Get.to(() => const BuyerRfqBoardScreen()),
       },
       {
         'icon': Icons.gavel,
         'label': 'নিলাম',
-        'subtitle': 'বিডিং করুন',
-        'color': const Color(0xFF7B1FA2),
+        'subtitle': 'বিডিং করুন ⚖️',
+        'color': const Color(0xFF0097A7),
         'onTap': () => Get.to(() => const AuctionScreen()),
       },
       {
         'icon': Icons.attach_money,
         'label': 'বিনিয়োগ',
-        'subtitle': 'লাভ করুন',
-        'color': const Color(0xFF0097A7),
+        'subtitle': 'লাভ করুন 📈',
+        'color': const Color(0xFF388E3C),
         'onTap': () => Get.to(() => const InvestmentScreen()),
-      },
-      {
-        'icon': Icons.science,
-        'label': 'মাটি পরীক্ষা',
-        'subtitle': 'শিঘ্রই আসছে',
-        'color': const Color(0xFF6D4C41),
-        'onTap': () {
-          Get.snackbar(
-            'মাটি পরীক্ষা',
-            'শীঘ্রই আসছে',
-            backgroundColor: const Color(0xFF2E7D32),
-            colorText: Colors.white,
-            borderRadius: 12,
-            margin: const EdgeInsets.all(12),
-            duration: const Duration(seconds: 2),
-          );
-        },
-      },
-      {
-        'icon': Icons.mic,
-        'label': 'পরামর্শ',
-        'subtitle': 'বিশেষজ্ঞের পরামর্শ',
-        'color': const Color(0xFFD32F2F),
-        'onTap': () {
-          Get.snackbar(
-            'কৃষক পরামর্শ',
-            'শীঘ্রই আসছে',
-            backgroundColor: const Color(0xFF2E7D32),
-            colorText: Colors.white,
-            borderRadius: 12,
-            margin: const EdgeInsets.all(12),
-            duration: const Duration(seconds: 2),
-          );
-        },
-      },
-      {
-        'icon': Icons.calendar_today,
-        'label': 'ক্যালেন্ডার',
-        'subtitle': 'ফসল পরিকল্পনা',
-        'color': const Color(0xFF00838F),
-        'onTap': () {
-          Get.snackbar(
-            'ক্যালেন্ডার',
-            'শীঘ্রই আসছে',
-            backgroundColor: const Color(0xFF2E7D32),
-            colorText: Colors.white,
-            borderRadius: 12,
-            margin: const EdgeInsets.all(12),
-            duration: const Duration(seconds: 2),
-          );
-        },
-      },
-      {
-        'icon': Icons.business,
-        'label': 'চুক্তি চাষ',
-        'subtitle': 'নিরাপদ বিক্রয়',
-        'color': const Color(0xFF5E35B1),
-        'onTap': () {
-          Get.snackbar(
-            'চুক্তি চাষাবাদ',
-            'শীঘ্রই আসছে',
-            backgroundColor: const Color(0xFF2E7D32),
-            colorText: Colors.white,
-            borderRadius: 12,
-            margin: const EdgeInsets.all(12),
-            duration: const Duration(seconds: 2),
-          );
-        },
       },
     ];
   }

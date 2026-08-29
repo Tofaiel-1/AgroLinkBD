@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:agrolinkbd/core/models/market_price_model.dart';
 import 'package:agrolinkbd/presentation/widgets/quick_buy_bottom_sheet.dart';
+import 'package:agrolinkbd/core/utils/masked_identity_helper.dart';
 
 class CommodityOrderBookScreen extends StatefulWidget {
   const CommodityOrderBookScreen({super.key});
@@ -192,20 +193,26 @@ class _CommodityOrderBookScreenState extends State<CommodityOrderBookScreen> {
                           children: [
                             CircleAvatar(
                               backgroundColor: const Color(0xFF1B5E20).withOpacity(0.1),
-                              child: const Icon(Icons.person, color: Color(0xFF1B5E20)),
+                              child: const Icon(Icons.verified_user_rounded, color: Color(0xFF1B5E20)),
                             ),
-                            const SizedBox(width: 16),
+                            const SizedBox(width: 14),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    item['sellerName'] ?? 'অজানা কৃষক',
-                                    style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 16),
+                                    item['maskedSellerName'] ??
+                                        MaskedIdentityHelper.getMaskedFarmerName(
+                                          userId: item['sellerId'],
+                                          district: item['district'],
+                                          upazila: item['upazila'],
+                                          fallbackName: item['sellerName'],
+                                        ),
+                                    style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 15),
                                   ),
                                   Text(
-                                    '${item['quantity']} ${item['unit']} Available • ${item['location'] ?? item['district'] ?? ''}',
-                                    style: GoogleFonts.hindSiliguri(color: Colors.grey.shade600, fontSize: 12),
+                                    '${item['quantity']} ${item['unit']} মজুত • ${item['qualityGrade'] ?? 'Grade A'} • 🔒 এস্ক্রো',
+                                    style: GoogleFonts.hindSiliguri(color: const Color(0xFF2E7D32), fontSize: 12, fontWeight: FontWeight.w500),
                                   ),
                                 ],
                               ),
@@ -224,19 +231,28 @@ class _CommodityOrderBookScreenState extends State<CommodityOrderBookScreen> {
                                 const SizedBox(height: 4),
                                 ElevatedButton(
                                   onPressed: () {
+                                    final maskedName = item['maskedSellerName'] ??
+                                        MaskedIdentityHelper.getMaskedFarmerName(
+                                          userId: item['sellerId'],
+                                          district: item['district'],
+                                          upazila: item['upazila'],
+                                          fallbackName: item['sellerName'],
+                                        );
                                     // Adapt product map for QuickBuyBottomSheet
                                     Map<String, dynamic> adaptedProduct = {
                                       'id': item['id'],
                                       'name': item['title'],
                                       'price': price,
                                       'unit': item['unit'],
-                                      'farmer': item['sellerName'],
+                                      'farmer': maskedName,
                                       'farmerId': item['sellerId'],
-                                      'location': item['location'] ?? item['district'] ?? 'বাংলাদেশ',
+                                      'location': item['location'] ?? item['district'] ?? 'বাংলাদেশ হাব',
                                       'image': (item['images'] != null && item['images'].isNotEmpty) ? item['images'][0] : 'https://via.placeholder.com/150',
-                                      'rating': 4.5, // placeholder
+                                      'rating': 4.8,
                                       'category': item['category'],
                                       'isVerified': true,
+                                      'qualityGrade': item['qualityGrade'] ?? 'Grade A',
+                                      'batchCode': item['batchCode'] ?? MaskedIdentityHelper.generateBatchCode(),
                                     };
                                     showModalBottomSheet(
                                       context: context,

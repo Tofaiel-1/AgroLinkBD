@@ -14,6 +14,8 @@ import 'package:agrolinkbd/presentation/widgets/global_announcement_banner.dart'
 import 'package:agrolinkbd/presentation/screens/microfinance/microfinance_kyc_screen.dart';
 import 'package:agrolinkbd/presentation/widgets/report_generation_card.dart';
 import 'package:agrolinkbd/presentation/widgets/universal_trust_badge_widget.dart';
+import 'package:agrolinkbd/core/models/order_model.dart';
+import 'package:agrolinkbd/presentation/screens/transport/order_qr_delivery_screen.dart';
 
 /// Driver Role Dashboard
 /// Displays trip overview, earnings, available jobs, and performance metrics
@@ -550,6 +552,48 @@ class _DriverDashboardState extends ConsumerState<DriverDashboard>
                                 ),
                               ),
                             ],
+                          ),
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                final sampleOrder = OrderModel(
+                                  id: 'TR2024-05821',
+                                  buyerId: 'buyer_demo',
+                                  farmerId: 'farmer_demo',
+                                  farmerName: 'খামারি #AGR-4091 (বগুড়া সদর)',
+                                  productName: 'দেশি গোল আলু',
+                                  productImageUrl: '',
+                                  quantity: 50.0,
+                                  unit: 'মণ',
+                                  totalAmount: 50000.0,
+                                  platformFee: 1500.0,
+                                  farmerPayout: 48500.0,
+                                  driverFare: 3500.0,
+                                  deliveryOtp: '5821',
+                                  batchCode: 'BATCH-BD-5821',
+                                  status: 'shipped',
+                                  statusStep: 3,
+                                  transportStatus: 'ডেলিভারিতে',
+                                  paymentStatus: 'paid',
+                                  escrowStatus: 'held',
+                                  driverId: userId,
+                                  createdAt: DateTime.now(),
+                                );
+                                Get.to(() => OrderQrDeliveryScreen(order: sampleOrder, isDriverView: true));
+                              },
+                              icon: const Icon(Icons.qr_code_scanner, color: Colors.white),
+                              label: Text(
+                                'ওটিপি দিন ও ভাড়া রিলিজ করুন 🔒',
+                                style: GoogleFonts.hindSiliguri(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF1976D2),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              ),
+                            ),
                           ),
                         ],
                       ),

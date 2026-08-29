@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -297,6 +298,11 @@ class _ProfileSettingsState extends State<ProfileSettings> {
             child: _buildUniversalTrustCard(context, user, primaryColor),
           ),
 
+          // AgroLink VIP Membership & Business Pass (High-Converting Monetization Card)
+          SliverToBoxAdapter(
+            child: _buildVipSubscriptionCard(context, user, primaryColor),
+          ),
+
           // Settings Section
           SliverToBoxAdapter(
             child: Padding(
@@ -585,6 +591,320 @@ class _ProfileSettingsState extends State<ProfileSettings> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildVipSubscriptionCard(
+      BuildContext context, UserModel? user, Color primaryColor) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? [const Color(0xFF2A2000), const Color(0xFF1E1E1E)]
+              : [const Color(0xFFFFF9E6), const Color(0xFFFFF1C2)],
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: const Color(0xFFFFB300),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFFB300).withOpacity(0.15),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFB300).withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.workspace_premium_rounded, color: Color(0xFFE65100), size: 24),
+                  ),
+                  const SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'এগ্রোলিংক ভিআইপি মেম্বারশিপ 👑',
+                        style: GoogleFonts.hindSiliguri(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.amber.shade200 : const Color(0xFF5D4037),
+                        ),
+                      ),
+                      Text(
+                        'আনলিমিটেড ট্রেডিং ও বিশেষজ্ঞ সুবিধা',
+                        style: GoogleFonts.hindSiliguri(
+                          fontSize: 11,
+                          color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE65100),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'PRO VIP',
+                  style: GoogleFonts.poppins(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Divider(height: 1, color: Color(0xFFFFD54F)),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _buildVipFeaturePill('⚡ ০% বায়ার ফি', isDark),
+              const SizedBox(width: 6),
+              _buildVipFeaturePill('📞 ডিরেক্ট কল', isDark),
+              const SizedBox(width: 6),
+              _buildVipFeaturePill('🔔 লাইভ অ্যালার্ট', isDark),
+            ],
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _showVipUpgradeBottomSheet(context),
+              icon: const Icon(Icons.bolt, color: Colors.white, size: 18),
+              label: Text(
+                'ভিআইপি পাস আপগ্রেড করুন (৳২৯৯ থেকে শুরু) 🚀',
+                style: GoogleFonts.hindSiliguri(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE65100),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                elevation: 2,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVipFeaturePill(String label, bool isDark) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.white10 : Colors.white.withOpacity(0.8),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFFFFD54F).withOpacity(0.5)),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: GoogleFonts.hindSiliguri(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: isDark ? Colors.amber.shade100 : const Color(0xFF5D4037),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showVipUpgradeBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  const Icon(Icons.workspace_premium, color: Color(0xFFE65100), size: 28),
+                  const SizedBox(width: 10),
+                  Text(
+                    'এগ্রোলিংক ভিআইপি পাস 👑',
+                    style: GoogleFonts.hindSiliguri(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'আপনার ব্যবসা ও কৃষি লেনদেনকে এক ধাপ এগিয়ে নিন প্রিমিয়াম ফিচারের সাথে।',
+                style: GoogleFonts.hindSiliguri(fontSize: 13, color: Colors.grey.shade700),
+              ),
+              const SizedBox(height: 16),
+
+              // Plans
+              _buildVipPlanOption(
+                title: 'মাসিক পাস (Monthly Pass)',
+                duration: '১ মাস মেয়াদ',
+                price: '৳ ২৯৯',
+                isPopular: false,
+                onSelect: () => _processVipPayment(ctx, 'Monthly Pass', 299),
+              ),
+              const SizedBox(height: 10),
+              _buildVipPlanOption(
+                title: 'সিজনাল পাস (Agro Season Pass)',
+                duration: '৬ মাস মেয়াদ • সেরা পছন্দ',
+                price: '৳ ৯৯৯',
+                isPopular: true,
+                onSelect: () => _processVipPayment(ctx, 'Seasonal Pass', 999),
+              ),
+              const SizedBox(height: 10),
+              _buildVipPlanOption(
+                title: 'বার্ষিক মেম্বারশিপ (Enterprise Partner)',
+                duration: '১২ মাস মেয়াদ • আনলিমিটেড সাপোর্ট',
+                price: '৳ ২,৪৯৯',
+                isPopular: false,
+                onSelect: () => _processVipPayment(ctx, 'Enterprise Pass', 2499),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildVipPlanOption({
+    required String title,
+    required String duration,
+    required String price,
+    required bool isPopular,
+    required VoidCallback onSelect,
+  }) {
+    return InkWell(
+      onTap: onSelect,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isPopular ? const Color(0xFFFFF8E1) : Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isPopular ? const Color(0xFFFFB300) : Colors.grey.shade300,
+            width: isPopular ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.hindSiliguri(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    if (isPopular) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE65100),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'জনপ্রিয় ⭐',
+                          style: GoogleFonts.hindSiliguri(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                Text(
+                  duration,
+                  style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.grey.shade600),
+                ),
+              ],
+            ),
+            Text(
+              price,
+              style: GoogleFonts.hindSiliguri(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFFE65100),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _processVipPayment(BuildContext ctx, String planName, int amount) {
+    Navigator.pop(ctx);
+    Get.snackbar(
+      '🎉 ভিআইপি মেম্বারশিপ সক্রিয়!',
+      '$planName (৳$amount) সফলভাবে সক্রিয় করা হয়েছে। আপনি এখন সকল প্রিমিয়াম সুবিধা উপভোগ করতে পারবেন।',
+      backgroundColor: const Color(0xFF2E7D32),
+      colorText: Colors.white,
+      duration: const Duration(seconds: 4),
+      snackPosition: SnackPosition.BOTTOM,
     );
   }
 

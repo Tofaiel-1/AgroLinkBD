@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:agrolinkbd/presentation/widgets/quick_buy_bottom_sheet.dart';
 import 'package:agrolinkbd/core/providers/language_provider.dart';
+import 'package:agrolinkbd/core/utils/masked_identity_helper.dart';
 class ProductDetail extends StatefulWidget {
   final Map<String, dynamic> product;
 
@@ -235,80 +237,102 @@ class _ProductDetailState extends State<ProductDetail> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
+                        color: Colors.green.shade50.withOpacity(0.5),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color:
-                              Theme.of(context).primaryColor.withOpacity(0.2),
+                          color: Colors.green.shade300,
                         ),
                       ),
-                      child: Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Seller Avatar
-                          Container(
-                            width: 60,
-                            height: 60,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Theme.of(context)
-                                  .primaryColor
-                                  .withOpacity(0.1),
-                            ),
-                            child: Center(
-                              child: Icon(
-                                Icons.person,
-                                color: Theme.of(context).primaryColor,
-                                size: 32,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-
-                          // Seller Details
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _sellerInfo?['fullName'] ??
-                                      _sellerInfo?['name'] ??
-                                      'Unknown Seller',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleSmall
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                          Row(
+                            children: [
+                              // Seller Avatar
+                              Container(
+                                width: 52,
+                                height: 52,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.green.shade100,
+                                  border: Border.all(color: Colors.green.shade400, width: 1.5),
                                 ),
-                                const SizedBox(height: 4),
-                                Row(
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.verified_user_rounded,
+                                    color: Color(0xFF2E7D32),
+                                    size: 28,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+
+                              // Masked Seller Details
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Icon(
-                                      Icons.location_on,
-                                      size: 14,
-                                      color: Theme.of(context)
-                                          .primaryColor
-                                          .withOpacity(0.6),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Expanded(
-                                      child: Text(
-                                        _sellerInfo?['location'] ??
-                                            _sellerInfo?['district'] ??
-                                            'Not specified',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .labelSmall,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
+                                    Text(
+                                      MaskedIdentityHelper.getMaskedFarmerName(
+                                        userId: widget.product['userId'] ?? widget.product['sellerId'],
+                                        district: _sellerInfo?['district'] ?? widget.product['district'],
+                                        upazila: _sellerInfo?['upazila'] ?? widget.product['upazila'],
+                                        fallbackName: widget.product['sellerName'] ?? widget.product['farmer'],
                                       ),
+                                      style: GoogleFonts.hindSiliguri(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black87,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.hub_outlined,
+                                          size: 14,
+                                          color: Color(0xFF2E7D32),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Expanded(
+                                          child: Text(
+                                            'উপজেলা কালেকশন হাব • ভেরিফাইড খামারি',
+                                            style: GoogleFonts.hindSiliguri(
+                                              fontSize: 12,
+                                              color: const Color(0xFF2E7D32),
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          const Divider(height: 1),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              const Icon(Icons.shield, color: Color(0xFF1976D2), size: 16),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  '🔒 ১০০% এস্ক্রো সুরক্ষিত: পণ্য হাতে পেয়ে ওজন যাচাইয়ের পরেই কৃষকের টাকা রিলিজ হবে।',
+                                  style: GoogleFonts.hindSiliguri(
+                                    fontSize: 11,
+                                    color: const Color(0xFF0D47A1),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),

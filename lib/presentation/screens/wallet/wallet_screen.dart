@@ -168,6 +168,45 @@ class _WalletScreenState extends State<WalletScreen> {
               ),
             ),
 
+            // Escrow Shield Guarantee Card
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.blue.shade200),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.shield_rounded, color: Color(0xFF1976D2), size: 24),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'এগ্রোলিংক এস্ক্রো প্রটেকশন সক্রিয় 🔒',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue.shade900,
+                          ),
+                        ),
+                        Text(
+                          'আপনার প্রতিটি লেনদেন ও ডেলিভারি শতভাগ নিরাপদ ও ট্র্যাকযোগ্য।',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.blue.shade800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
             const SizedBox(height: 8),
 
             // Recent Transactions

@@ -1,5 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
@@ -10,6 +12,10 @@ import 'bazaar_marketplace.dart';
 import 'add_product_screen.dart';
 import 'package:agrolinkbd/core/providers/language_provider.dart';
 import 'package:agrolinkbd/presentation/screens/analytics/market_price_analysis_screen.dart';
+import 'package:agrolinkbd/presentation/screens/telemedicine/agri_telemedicine_screen.dart';
+import 'package:agrolinkbd/presentation/screens/marketplace/buyer_rfq_board_screen.dart';
+import 'package:agrolinkbd/presentation/screens/machinery/machinery_rental_screen.dart';
+import 'package:agrolinkbd/presentation/screens/transport/upazila_transport_screen.dart';
 
 class BazaarHome extends StatefulWidget {
   const BazaarHome({super.key});
@@ -282,7 +288,139 @@ class _BazaarHomeState extends State<BazaarHome> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 24),
+
+                  // ==========================================
+                  // ULTRA PRO MONETIZATION & VALUE SERVICES
+                  // ==========================================
+                  Text(
+                    isBn ? 'প্রিমিয়াম কৃষি ও মৎস্য সেবা 💎' : 'Premium Agro Services 💎',
+                    style: GoogleFonts.hindSiliguri(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  GridView.count(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    childAspectRatio: 1.25,
+                    children: [
+                      _buildServiceTile(
+                        title: isBn ? 'কৃষি ও মৎস্য ডাক্তার 🩺' : 'Agri & Fish Doctor',
+                        subtitle: isBn ? 'লাইভ ভিডিও কল পরামর্শ' : 'Live Specialist Consult',
+                        badge: '৳৩০ টোকেন',
+                        badgeColor: Colors.purple,
+                        icon: Icons.video_camera_front_outlined,
+                        color: const Color(0xFF6A1B9A),
+                        onTap: () => Get.to(() => const AgriTelemedicineScreen()),
+                      ),
+                      _buildServiceTile(
+                        title: isBn ? 'পাইকারি চাহিদা বোর্ড 📋' : 'Bulk RFQ Board',
+                        subtitle: isBn ? 'পাইকারদের বড় টেন্ডার' : 'Wholesale Tenders',
+                        badge: 'বড় ডিল ⚡',
+                        badgeColor: Colors.red,
+                        icon: Icons.assignment_outlined,
+                        color: const Color(0xFFC62828),
+                        onTap: () => Get.to(() => const BuyerRfqBoardScreen()),
+                      ),
+                      _buildServiceTile(
+                        title: isBn ? 'মেশিনারি ও হার্ভেস্টার 🚜' : 'Machinery Rental',
+                        subtitle: isBn ? 'ট্রাক্টর ও কম্বাইন ভাড়া' : 'Harvester & Drone Rental',
+                        badge: 'এস্ক্রো সুরক্ষিত',
+                        badgeColor: Colors.amber.shade900,
+                        icon: Icons.agriculture_outlined,
+                        color: const Color(0xFFE65100),
+                        onTap: () => Get.to(() => const MachineryRentalScreen()),
+                      ),
+                      _buildServiceTile(
+                        title: isBn ? 'উপজেলা ট্রান্সপোর্ট 🚚' : 'Upazila Transport',
+                        subtitle: isBn ? 'পিকআপ ও ট্রাক বুকিং' : 'Live Truck GPS Booking',
+                        badge: '৫% প্ল্যাটফর্ম সেফটি',
+                        badgeColor: Colors.blue,
+                        icon: Icons.local_shipping_outlined,
+                        color: const Color(0xFF1565C0),
+                        onTap: () => Get.to(() => const UpazilaTransportScreen()),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // B2B Sponsored Brand Deals Banner
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF1B5E20), Color(0xFF2E7D32)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.green.shade900.withOpacity(0.2),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.verified, color: Colors.amber, size: 28),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    'ACI & Lal Teer পার্টনার জোন',
+                                    style: GoogleFonts.hindSiliguri(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                    decoration: BoxDecoration(
+                                      color: Colors.amber,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      'SPONSORED',
+                                      style: GoogleFonts.poppins(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.black),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'সার্টিফাইড হাইব্রিড বীজ ও ফিডে আকর্ষণীয় ছাড়',
+                                style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.white.withOpacity(0.85)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 28),
 
                   // Trending Crops Section
                   Row(
@@ -705,6 +843,95 @@ class _BazaarHomeState extends State<BazaarHome> {
               ),
             ),
             const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildServiceTile({
+    required String title,
+    required String subtitle,
+    required String badge,
+    required Color badgeColor,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withOpacity(0.2), width: 1.2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, color: color, size: 22),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: badgeColor.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: badgeColor.withOpacity(0.3)),
+                  ),
+                  child: Text(
+                    badge,
+                    style: GoogleFonts.hindSiliguri(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: badgeColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.hindSiliguri(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.hindSiliguri(
+                    fontSize: 10,
+                    color: Colors.grey.shade600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ],
         ),
       ),

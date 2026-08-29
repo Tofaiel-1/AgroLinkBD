@@ -561,14 +561,16 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
                           ? '${_distanceController.text} কিমি × ৳${widget.perKmRate.toStringAsFixed(0)} = ৳${(double.tryParse(_distanceController.text)! * widget.perKmRate).toStringAsFixed(0)}'
                           : 'দূরত্ব দিন',
                     ),
+                    const SizedBox(height: 8),
+                    _fareRow('প্ল্যাটফর্ম প্রটেকশন ফি (৫%):', '৳${(_estimatedFare * 0.05).toStringAsFixed(0)}'),
                     const Divider(height: 20, color: Colors.green),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'মোট আনুমানিক ভাড়া:',
+                          'মোট প্রদেয় ভাড়া:',
                           style: GoogleFonts.hindSiliguri(
-                            fontSize: 16,
+                            fontSize: 15,
                             fontWeight: FontWeight.bold,
                             color: Colors.black87,
                           ),
@@ -576,20 +578,53 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
                         Text(
                           '৳${_estimatedFare.toStringAsFixed(0)}',
                           style: GoogleFonts.poppins(
-                            fontSize: 24,
+                            fontSize: 22,
                             fontWeight: FontWeight.bold,
                             color: primaryGreen,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '* চালকের সাথে চূড়ান্ত ভাড়া নিশ্চিত করুন',
-                      style: GoogleFonts.hindSiliguri(
-                        fontSize: 11,
-                        color: Colors.grey.shade600,
-                        fontStyle: FontStyle.italic,
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'চালক নেট আয় পাবেন (৯৫%):',
+                          style: GoogleFonts.hindSiliguri(
+                            fontSize: 12,
+                            color: Colors.grey.shade700,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          '৳${(_estimatedFare * 0.95).toStringAsFixed(0)}',
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green.shade800,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.security, size: 14, color: Color(0xFF1976D2)),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              '🔒 ভাড়া এস্ক্রোতে সুরক্ষিত থাকবে এবং গন্তব্যে পৌঁছার পর ওটিপি দিলে চালকের ওয়ালেটে জমা হবে।',
+                              style: GoogleFonts.hindSiliguri(fontSize: 10, color: const Color(0xFF0D47A1)),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],

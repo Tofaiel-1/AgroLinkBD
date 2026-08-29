@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../exceptions/app_exceptions.dart';
 import '../models/user_model.dart';
+import '../utils/masked_identity_helper.dart';
 
 /// Chat message model
 class ChatMessage {
@@ -139,13 +140,14 @@ class ChatService {
       final messageId = _firestore.collection('messages').doc().id;
       final timestamp = DateTime.now();
 
+      final sanitizedContent = MaskedIdentityHelper.sanitizeContent(content);
       final message = ChatMessage(
         id: messageId,
         conversationId: conversationId,
         senderId: senderId,
         senderName: senderName,
         senderImage: senderImage,
-        content: content,
+        content: sanitizedContent,
         imageUrls: imageUrls,
         timestamp: timestamp,
       );
@@ -158,7 +160,7 @@ class ChatService {
 
       // Update conversation
       await _firestore.collection('conversations').doc(conversationId).update({
-        'lastMessage': content,
+        'lastMessage': sanitizedContent,
         'lastMessageTime': timestamp,
         'readStatus.$senderId': true,
       });

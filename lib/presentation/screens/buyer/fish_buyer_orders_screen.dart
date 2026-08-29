@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:agrolinkbd/core/models/order_model.dart';
 import 'package:agrolinkbd/core/services/order_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -6,6 +7,7 @@ import 'dart:math';
 import 'package:get/get.dart';
 import 'package:agrolinkbd/presentation/screens/buyer/order_details_screen.dart';
 import 'package:agrolinkbd/presentation/screens/buyer/fish_order_tracking_screen.dart';
+import 'package:agrolinkbd/presentation/screens/transport/order_qr_delivery_screen.dart';
 
 /// Buyer Orders Screen — Tab-based order management
 class FishBuyerOrdersScreen extends StatefulWidget {
@@ -302,61 +304,91 @@ class _FishBuyerOrdersScreenState extends State<FishBuyerOrdersScreen>
               color: Color(0xFF1976D2),
             ),
           ),
-          const SizedBox(height: 8),
-            if (order.estimatedDeliveryDate != null)
-              Text(
-                'ETA: ${order.estimatedDeliveryDate!.day}/${order.estimatedDeliveryDate!.month}/${order.estimatedDeliveryDate!.year}',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white70 : Colors.black87,
-                ),
-              ),
-            if (order.specialInstructions != null) ...[
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(isDark ? 0.2 : 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue.withOpacity(0.3)),
-                ),
-                child: Row(
+          const SizedBox(height: 10),
+          // Delivery OTP Card
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1976D2).withOpacity(0.08),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFF1976D2).withOpacity(0.3)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.info_outline, size: 14, color: Colors.blue),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        'নির্দেশনা: ${order.specialInstructions}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isDark ? Colors.white70 : Colors.black87,
-                        ),
+                    Text(
+                      '🔒 ডেলিভারি ওটিপি (Delivery OTP)',
+                      style: GoogleFonts.hindSiliguri(
+                        fontSize: 11,
+                        color: const Color(0xFF0D47A1),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'পণ্য হাতে পেয়ে ড্রাইভারকে দিন',
+                      style: GoogleFonts.hindSiliguri(
+                        fontSize: 10,
+                        color: Colors.grey.shade700,
                       ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                width: double.infinity,
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1976D2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    order.deliveryOtp,
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 4,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () {
                     Get.to(() => FishOrderTrackingScreen(order: order));
                   },
                   icon: const Icon(Icons.local_shipping, size: 16),
-                  label: const Text('মাছের অর্ডার ট্র্যাকিং'),
+                  label: Text('ট্র্যাকিং', style: GoogleFonts.hindSiliguri(fontSize: 12)),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFF0277BD),
                     side: const BorderSide(color: Color(0xFF0277BD)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Get.to(() => OrderQrDeliveryScreen(order: order, isDriverView: false));
+                  },
+                  icon: const Icon(Icons.qr_code_2, size: 16, color: Colors.white),
+                  label: Text('কিউআর ও এস্ক্রো', style: GoogleFonts.hindSiliguri(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2E7D32),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                 ),
               ),
             ],
-            const SizedBox(height: 16),
+          ),
+          const SizedBox(height: 16),
 
             // Status tracker
           Row(
