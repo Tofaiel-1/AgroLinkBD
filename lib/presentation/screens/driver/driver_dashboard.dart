@@ -16,6 +16,10 @@ import 'package:agrolinkbd/presentation/widgets/report_generation_card.dart';
 import 'package:agrolinkbd/presentation/widgets/universal_trust_badge_widget.dart';
 import 'package:agrolinkbd/core/models/order_model.dart';
 import 'package:agrolinkbd/presentation/screens/transport/order_qr_delivery_screen.dart';
+import 'package:agrolinkbd/presentation/screens/driver/return_truck_sharing_screen.dart';
+import 'package:agrolinkbd/presentation/screens/driver/driver_trip_meter_screen.dart';
+import 'package:agrolinkbd/presentation/screens/driver/driver_fuel_expense_tracker_screen.dart';
+import 'package:agrolinkbd/presentation/screens/transport/smart_agro_fare_calculator_screen.dart';
 
 /// Driver Role Dashboard
 /// Displays trip overview, earnings, available jobs, and performance metrics
@@ -296,6 +300,182 @@ class _DriverDashboardState extends ConsumerState<DriverDashboard>
               ),
             ),
             
+            // ============================================
+            // ULTRA PRO DRIVER POWER HUB & RADAR
+            // ============================================
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFE65100), Color(0xFFF57C00), Color(0xFFFF9800)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(22),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFE65100).withOpacity(0.35),
+                        blurRadius: 14,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.bolt, color: Colors.amberAccent, size: 24),
+                              const SizedBox(width: 8),
+                              Text(
+                                'ফার্স্ট রেসপন্স ও ট্রিপ পাওয়ার হাব ⚡',
+                                style: GoogleFonts.hindSiliguri(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              'PRO DRIVER ⭐',
+                              style: GoogleFonts.poppins(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFFE65100),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '৩ গুণ দ্রুত নতুন ট্রিপ অ্যালার্ট, লাইভ মিটার, ফিরতি খালি গাড়ি শেয়ারিং ও জ্বালানি হিসাব।',
+                        style: GoogleFonts.hindSiliguri(fontSize: 12, color: Colors.white.withOpacity(0.95)),
+                      ),
+                      const SizedBox(height: 14),
+
+                      // 4 Action Tiles Grid
+                      Row(
+                        children: [
+                          // 1. Live Trip Meter
+                          Expanded(
+                            child: InkWell(
+                              onTap: () => Get.to(() => const DriverTripMeterScreen()),
+                              borderRadius: BorderRadius.circular(14),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.18),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(color: Colors.white30),
+                                ),
+                                child: Column(
+                                  children: [
+                                    const Icon(Icons.speed, color: Colors.white, size: 24),
+                                    const SizedBox(height: 4),
+                                    Text('লাইভ মিটার', style: GoogleFonts.hindSiliguri(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
+                                    Text('ওটিপি ট্রিপ', style: GoogleFonts.hindSiliguri(fontSize: 10, color: Colors.white70)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+
+                          // 2. Return Truck Sharing (Backhaul)
+                          Expanded(
+                            child: InkWell(
+                              onTap: () => Get.to(() => const ReturnTruckSharingScreen()),
+                              borderRadius: BorderRadius.circular(14),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.18),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(color: Colors.white30),
+                                ),
+                                child: Column(
+                                  children: [
+                                    const Icon(Icons.compare_arrows, color: Colors.amberAccent, size: 24),
+                                    const SizedBox(height: 4),
+                                    Text('ফিরতি ট্রিপ', style: GoogleFonts.hindSiliguri(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
+                                    Text('৫০% ডিসকাউন্ট', style: GoogleFonts.hindSiliguri(fontSize: 10, color: Colors.white70)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+
+                          // 3. Fuel & Net Profit
+                          Expanded(
+                            child: InkWell(
+                              onTap: () => Get.to(() => const DriverFuelExpenseTrackerScreen()),
+                              borderRadius: BorderRadius.circular(14),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.18),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(color: Colors.white30),
+                                ),
+                                child: Column(
+                                  children: [
+                                    const Icon(Icons.local_gas_station, color: Colors.cyanAccent, size: 24),
+                                    const SizedBox(height: 4),
+                                    Text('তেল ও মুনাফা', style: GoogleFonts.hindSiliguri(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
+                                    Text('নিট লাভ হিসাব', style: GoogleFonts.hindSiliguri(fontSize: 10, color: Colors.white70)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+
+                          // 4. Smart Fare Calculator
+                          Expanded(
+                            child: InkWell(
+                              onTap: () => Get.to(() => const SmartAgroFareCalculatorScreen()),
+                              borderRadius: BorderRadius.circular(14),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.18),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(color: Colors.white30),
+                                ),
+                                child: Column(
+                                  children: [
+                                    const Icon(Icons.calculate_outlined, color: Colors.lightGreenAccent, size: 24),
+                                    const SizedBox(height: 4),
+                                    Text('ভাড়া হিসাব', style: GoogleFonts.hindSiliguri(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
+                                    Text('রোড ডিস্ট্যান্স', style: GoogleFonts.hindSiliguri(fontSize: 10, color: Colors.white70)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
             // ============================================
             // ACTIVE TRIP STATUS
             // ============================================

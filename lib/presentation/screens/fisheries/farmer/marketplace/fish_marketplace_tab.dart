@@ -5,6 +5,8 @@ import 'package:agrolinkbd/core/models/marketplace_item_model.dart';
 import 'package:agrolinkbd/core/controllers/marketplace_controller.dart';
 import 'package:agrolinkbd/presentation/screens/fisheries/farmer/marketplace/checkout_screen.dart';
 import 'package:agrolinkbd/presentation/screens/fisheries/farmer/marketplace/sell_fish_screen.dart';
+import 'package:agrolinkbd/presentation/screens/fisheries/farmer/auction/create_fish_auction_screen.dart';
+import 'package:agrolinkbd/presentation/screens/fisheries/farmer/contracts/farmer_contracts_screen.dart';
 import 'package:agrolinkbd/core/utils/responsive_helper.dart';
 
 class FishMarketplaceTab extends StatefulWidget {
@@ -42,19 +44,62 @@ class _FishMarketplaceTabState extends State<FishMarketplaceTab> {
           ),
         ],
       ),
-      body: Obx(() {
-        if (_marketplaceController.items.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+      body: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            color: Theme.of(context).cardColor,
+            child: Row(
               children: [
-                Icon(Icons.storefront, size: 80, color: Colors.grey.shade400),
-                const SizedBox(height: 16),
-                Text('বাজারে এখন কোনো মাছ নেই', style: GoogleFonts.hindSiliguri(fontSize: 18, color: Colors.grey.shade600)),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => Get.to(() => const CreateFishAuctionScreen()),
+                    icon: const Icon(Icons.gavel, size: 16, color: Colors.white),
+                    label: Text('লাইভ ডাক (নিলাম)', style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF006064),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => Get.to(() => const FarmerContractsScreen()),
+                    icon: const Icon(Icons.assignment_turned_in, size: 16, color: Colors.white),
+                    label: Text('আগাম চুক্তি', style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.teal.shade700,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                    ),
+                  ),
+                ),
               ],
             ),
-          );
-        }
+          ),
+          Expanded(
+            child: Obx(() {
+              if (_marketplaceController.items.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.storefront, size: 80, color: Colors.grey.shade400),
+                      const SizedBox(height: 16),
+                      Text('বাজারে এখন কোনো সরাসরি মাছ নেই', style: GoogleFonts.hindSiliguri(fontSize: 18, color: Colors.grey.shade600)),
+                      const SizedBox(height: 12),
+                      ElevatedButton.icon(
+                        onPressed: () => Get.to(() => const SellFishScreen()),
+                        icon: const Icon(Icons.add),
+                        label: Text('মাছ বিক্রির বিজ্ঞাপন দিন', style: GoogleFonts.hindSiliguri()),
+                        style: ElevatedButton.styleFrom(backgroundColor: oceanBlue),
+                      ),
+                    ],
+                  ),
+                );
+              }
 
         final items = _marketplaceController.items;
         final isDesktop = ResponsiveHelper.isDesktop(context) || ResponsiveHelper.isTablet(context);
@@ -173,6 +218,9 @@ class _FishMarketplaceTabState extends State<FishMarketplaceTab> {
           itemBuilder: (context, index) => buildItemCard(items[index]),
         );
       }),
-    );
+    ),
+  ],
+),
+);
   }
 }

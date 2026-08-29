@@ -9,9 +9,18 @@ import 'package:agrolinkbd/presentation/screens/marketplace/fish_marketplace_scr
 import 'package:agrolinkbd/presentation/screens/buyer/shopping_cart_screen.dart';
 import 'package:agrolinkbd/presentation/screens/buyer/fish_buyer_orders_screen.dart';
 import 'package:agrolinkbd/core/utils/responsive_helper.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:agrolinkbd/core/providers/cart_provider.dart';
 import 'package:agrolinkbd/presentation/widgets/universal_trust_badge_widget.dart';
+import 'package:agrolinkbd/presentation/screens/fisheries/buyer/auction/fish_buyer_auction_list_screen.dart';
+import 'package:agrolinkbd/presentation/screens/fisheries/buyer/rfq/post_fish_rfq_screen.dart';
+import 'package:agrolinkbd/presentation/screens/fisheries/buyer/rfq/buyer_rfq_responses_screen.dart';
+import 'package:agrolinkbd/presentation/screens/fisheries/buyer/contracts/buyer_preharvest_contracts_screen.dart';
+import 'package:agrolinkbd/presentation/screens/fisheries/farmer/transport/fish_transport_screen.dart';
+import 'package:agrolinkbd/presentation/screens/subscription/vip_subscription_paywall_screen.dart';
+import 'package:agrolinkbd/presentation/screens/fisheries/premium/fish_price_prediction_screen.dart';
+import 'package:agrolinkbd/presentation/screens/fisheries/premium/vip_wholesaler_directory_screen.dart';
+import 'package:agrolinkbd/presentation/screens/fisheries/premium/fish_buyer_qc_inspection_screen.dart';
+import 'package:agrolinkbd/presentation/screens/fisheries/premium/fish_cold_chain_directory_screen.dart';
 
 /// Fish Buyer Dashboard - Ultra Pro Edition
 /// Special dashboard for buyers looking specifically for fish with smart features.
@@ -266,6 +275,302 @@ class _FishBuyerDashboardState extends State<FishBuyerDashboard>
                           onTap: () => Get.to(() => const ShoppingCartScreen()),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // ============================================
+                    // WHOLESALE & LIVE BIDDING PROCUREMENT HUB
+                    // ============================================
+                    Container(
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF01579B), Color(0xFF0277BD), Color(0xFF0288D1)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF01579B).withOpacity(0.35),
+                            blurRadius: 15,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.gavel, color: Colors.amberAccent, size: 24),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'পাইকারি মাছ নিলাম ও প্রকিউরমেন্ট',
+                                    style: GoogleFonts.hindSiliguri(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: Colors.amberAccent.withOpacity(0.25),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.amberAccent),
+                                ),
+                                child: Text(
+                                  'Ultra Pro',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.amberAccent,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'সরাসরি খামার থেকে লাইভ বিডিং, পাইকারি চাহিদাপত্র ও অগ্রিম বুকিং দিয়ে সেরা দামে মাছ কিনুন।',
+                            style: GoogleFonts.hindSiliguri(
+                              fontSize: 12,
+                              color: Colors.white70,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          Row(
+                            children: [
+                              // 1. Live Auctions
+                              Expanded(
+                                child: InkWell(
+                                  onTap: () => Get.to(() => const FishBuyerAuctionListScreen()),
+                                  borderRadius: BorderRadius.circular(14),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(color: Colors.white24),
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        const Icon(Icons.touch_app, color: Colors.amberAccent, size: 26),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          'লাইভ নিলাম',
+                                          style: GoogleFonts.hindSiliguri(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                        Text(
+                                          'খামারের লট বিডিং',
+                                          style: GoogleFonts.hindSiliguri(
+                                            color: Colors.white70,
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+
+                              // 2. Post RFQ
+                              Expanded(
+                                child: InkWell(
+                                  onTap: () => Get.to(() => const PostFishRfqScreen()),
+                                  borderRadius: BorderRadius.circular(14),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(color: Colors.white24),
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        const Icon(Icons.campaign, color: Colors.cyanAccent, size: 26),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          'চাহিদাপত্র দিন',
+                                          style: GoogleFonts.hindSiliguri(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                        Text(
+                                          'বাল্ক কোটেশন',
+                                          style: GoogleFonts.hindSiliguri(
+                                            color: Colors.white70,
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+
+                              // 3. Pre-Harvest Futures
+                              Expanded(
+                                child: InkWell(
+                                  onTap: () => Get.to(() => const BuyerPreharvestContractsScreen()),
+                                  borderRadius: BorderRadius.circular(14),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(color: Colors.white24),
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        const Icon(Icons.lock_clock, color: Colors.greenAccent, size: 26),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          'আগাম বুকিং',
+                                          style: GoogleFonts.hindSiliguri(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                        Text(
+                                          'নিশ্চিত সরবরাহ',
+                                          style: GoogleFonts.hindSiliguri(
+                                            color: Colors.white70,
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () => Get.to(() => const BuyerRfqResponsesScreen()),
+                                  icon: const Icon(Icons.list_alt, size: 16, color: Colors.white),
+                                  label: Text(
+                                    'আমার চাহিদাপত্র ও দর প্রস্তাব দেখুন',
+                                    style: GoogleFonts.hindSiliguri(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    side: const BorderSide(color: Colors.white38),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () => Get.to(() => const FishTransportScreen()),
+                                  icon: const Icon(Icons.local_shipping, size: 16, color: Colors.white),
+                                  label: Text(
+                                    'অক্সিজেন ভ্যান ট্র্যাক',
+                                    style: GoogleFonts.hindSiliguri(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    side: const BorderSide(color: Colors.white38),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    // ============================================
+                    // VIP PRO INTELLIGENCE & SATELLITE BAR
+                    // ============================================
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF8E1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFFFB300), width: 1.5),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.workspace_premium, color: Color(0xFFE65100), size: 28),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('ভিআইপি বায়ার প্রকিউরমেন্ট হাব 👑', style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 14, color: const Color(0xFFE65100))),
+                                    Text('১৪-দিনের দর প্রেডিকশন, কিউসি সার্টিফিকেট ও কোল্ড চেইন', style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.brown)),
+                                  ],
+                                ),
+                              ),
+                              ElevatedButton(
+                                onPressed: () => Get.to(() => const VipSubscriptionPaywallScreen()),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFE65100),
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                                child: Text('VIP PASS', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10)),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () => Get.to(() => const FishPricePredictionScreen()),
+                                  icon: const Icon(Icons.trending_up, size: 16, color: Color(0xFFE65100)),
+                                  label: Text('এআই দর', style: GoogleFonts.hindSiliguri(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFFE65100))),
+                                  style: OutlinedButton.styleFrom(side: const BorderSide(color: Color(0xFFFFB300))),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () => Get.to(() => const FishBuyerQcInspectionScreen()),
+                                  icon: const Icon(Icons.verified, size: 16, color: Color(0xFFE65100)),
+                                  label: Text('কিউসি গ্রেড', style: GoogleFonts.hindSiliguri(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFFE65100))),
+                                  style: OutlinedButton.styleFrom(side: const BorderSide(color: Color(0xFFFFB300))),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () => Get.to(() => const FishColdChainDirectoryScreen()),
+                                  icon: const Icon(Icons.ac_unit, size: 16, color: Color(0xFFE65100)),
+                                  label: Text('বরফকল', style: GoogleFonts.hindSiliguri(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFFE65100))),
+                                  style: OutlinedButton.styleFrom(side: const BorderSide(color: Color(0xFFFFB300))),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 24),
 

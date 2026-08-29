@@ -10,6 +10,7 @@ import 'package:agrolinkbd/core/services/pdf/user_report_service.dart';
 import 'package:agrolinkbd/core/providers/language_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:printing/printing.dart';
+import 'package:agrolinkbd/presentation/screens/subscription/vip_subscription_paywall_screen.dart';
 
 class ProfileSettings extends StatefulWidget {
   const ProfileSettings({super.key});
@@ -695,7 +696,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () => _showVipUpgradeBottomSheet(context),
+              onPressed: () => Get.to(() => const VipSubscriptionPaywallScreen()),
               icon: const Icon(Icons.bolt, color: Colors.white, size: 18),
               label: Text(
                 'ভিআইপি পাস আপগ্রেড করুন (৳২৯৯ থেকে শুরু) 🚀',
@@ -739,172 +740,6 @@ class _ProfileSettingsState extends State<ProfileSettings> {
           ),
         ),
       ),
-    );
-  }
-
-  void _showVipUpgradeBottomSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) {
-        return Container(
-          padding: const EdgeInsets.all(20),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  const Icon(Icons.workspace_premium, color: Color(0xFFE65100), size: 28),
-                  const SizedBox(width: 10),
-                  Text(
-                    'এগ্রোলিংক ভিআইপি পাস 👑',
-                    style: GoogleFonts.hindSiliguri(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'আপনার ব্যবসা ও কৃষি লেনদেনকে এক ধাপ এগিয়ে নিন প্রিমিয়াম ফিচারের সাথে।',
-                style: GoogleFonts.hindSiliguri(fontSize: 13, color: Colors.grey.shade700),
-              ),
-              const SizedBox(height: 16),
-
-              // Plans
-              _buildVipPlanOption(
-                title: 'মাসিক পাস (Monthly Pass)',
-                duration: '১ মাস মেয়াদ',
-                price: '৳ ২৯৯',
-                isPopular: false,
-                onSelect: () => _processVipPayment(ctx, 'Monthly Pass', 299),
-              ),
-              const SizedBox(height: 10),
-              _buildVipPlanOption(
-                title: 'সিজনাল পাস (Agro Season Pass)',
-                duration: '৬ মাস মেয়াদ • সেরা পছন্দ',
-                price: '৳ ৯৯৯',
-                isPopular: true,
-                onSelect: () => _processVipPayment(ctx, 'Seasonal Pass', 999),
-              ),
-              const SizedBox(height: 10),
-              _buildVipPlanOption(
-                title: 'বার্ষিক মেম্বারশিপ (Enterprise Partner)',
-                duration: '১২ মাস মেয়াদ • আনলিমিটেড সাপোর্ট',
-                price: '৳ ২,৪৯৯',
-                isPopular: false,
-                onSelect: () => _processVipPayment(ctx, 'Enterprise Pass', 2499),
-              ),
-              const SizedBox(height: 20),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildVipPlanOption({
-    required String title,
-    required String duration,
-    required String price,
-    required bool isPopular,
-    required VoidCallback onSelect,
-  }) {
-    return InkWell(
-      onTap: onSelect,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: isPopular ? const Color(0xFFFFF8E1) : Colors.grey.shade50,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isPopular ? const Color(0xFFFFB300) : Colors.grey.shade300,
-            width: isPopular ? 2 : 1,
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      title,
-                      style: GoogleFonts.hindSiliguri(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    if (isPopular) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE65100),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          'জনপ্রিয় ⭐',
-                          style: GoogleFonts.hindSiliguri(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-                Text(
-                  duration,
-                  style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.grey.shade600),
-                ),
-              ],
-            ),
-            Text(
-              price,
-              style: GoogleFonts.hindSiliguri(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFFE65100),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _processVipPayment(BuildContext ctx, String planName, int amount) {
-    Navigator.pop(ctx);
-    Get.snackbar(
-      '🎉 ভিআইপি মেম্বারশিপ সক্রিয়!',
-      '$planName (৳$amount) সফলভাবে সক্রিয় করা হয়েছে। আপনি এখন সকল প্রিমিয়াম সুবিধা উপভোগ করতে পারবেন।',
-      backgroundColor: const Color(0xFF2E7D32),
-      colorText: Colors.white,
-      duration: const Duration(seconds: 4),
-      snackPosition: SnackPosition.BOTTOM,
     );
   }
 

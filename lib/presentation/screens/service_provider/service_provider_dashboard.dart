@@ -9,8 +9,10 @@ import 'package:agrolinkbd/presentation/screens/service_provider/manage_services
 import 'package:agrolinkbd/presentation/screens/service_provider/portfolio_gallery_screen.dart';
 import 'package:agrolinkbd/presentation/screens/service_provider/premium_features/booking_calendar_screen.dart';
 import 'package:agrolinkbd/presentation/screens/service_provider/premium_features/ai_assistant_screen.dart';
-import 'package:agrolinkbd/presentation/screens/service_provider/premium_features/premium_subscription_screen.dart';
 import 'package:agrolinkbd/presentation/screens/service_provider/premium_features/client_crm_screen.dart';
+import 'package:agrolinkbd/presentation/screens/service_provider/premium_features/tele_consultation_prescription_screen.dart';
+import 'package:agrolinkbd/presentation/screens/service_provider/premium_features/service_provider_lead_engine_screen.dart';
+import 'package:agrolinkbd/presentation/screens/subscription/vip_subscription_paywall_screen.dart';
 import 'package:agrolinkbd/core/services/transaction_service.dart';
 import 'package:agrolinkbd/core/controllers/user_controller.dart';
 import 'package:agrolinkbd/presentation/widgets/universal_trust_badge_widget.dart';
@@ -485,6 +487,20 @@ class _ServiceProviderDashboardState extends ConsumerState<ServiceProviderDashbo
                       childAspectRatio: 1.1,
                       children: [
                         _buildActionCard(
+                          icon: Icons.medical_services_rounded,
+                          title: 'ডিজিটাল প্রেসক্রিপশন',
+                          subtitle: 'ডোজ ও কনসালটেন্সি',
+                          gradient: const [Color(0xFF004D40), Color(0xFF00796B)],
+                          onTap: () => Get.to(() => const TeleConsultationPrescriptionScreen()),
+                        ),
+                        _buildActionCard(
+                          icon: Icons.bolt_rounded,
+                          title: 'ভিআইপি লিড ইঞ্জিন',
+                          subtitle: '৩x দ্রুত কাজ ও বিড',
+                          gradient: const [Color(0xFF283593), Color(0xFF3F51B5)],
+                          onTap: () => Get.to(() => const ServiceProviderLeadEngineScreen()),
+                        ),
+                        _buildActionCard(
                           icon: Icons.calendar_month_rounded,
                           title: 'বুকিং ক্যালেন্ডার',
                           subtitle: 'অর্ডার মেইনটেইন',
@@ -507,10 +523,10 @@ class _ServiceProviderDashboardState extends ConsumerState<ServiceProviderDashbo
                         ),
                         _buildActionCard(
                           icon: Icons.workspace_premium_rounded,
-                          title: 'AgroLinkBD Pro',
-                          subtitle: 'আপগ্রেড করুন',
+                          title: 'AgroLink VIP Pass',
+                          subtitle: 'আপগ্রেড করুন 👑',
                           gradient: const [Color(0xFFF2994A), Color(0xFFF2C94C)],
-                          onTap: () => Get.to(() => const PremiumSubscriptionScreen()),
+                          onTap: () => Get.to(() => const VipSubscriptionPaywallScreen()),
                         ),
                       ],
                     ),

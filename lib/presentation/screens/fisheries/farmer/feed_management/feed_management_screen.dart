@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:get/get.dart';
 
 class FeedManagementScreen extends StatelessWidget {
   const FeedManagementScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    const Color oceanBlue = Color(0xFF0288D1);
-
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(

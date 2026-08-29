@@ -207,50 +207,62 @@ class WeatherService {
     double? userLng,
     bool forceGps = false,
   }) async {
-    double lat = 24.4102; // Natore default
-    double lng = 89.0076;
-    String locationDisplayName = 'গুরুদাসপুর, নাটোর (রাজশাহী)';
+    double lat = 23.8103; // Dhaka center fallback
+    double lng = 90.4125;
+    String locationDisplayName = 'ঢাকা সদর, ঢাকা';
 
     try {
-      // 1. If forceGps is true (user tapped GPS button explicitly)
-      if (forceGps) {
-        Position? position = await LocationService().getCurrentPosition();
+      final locService = LocationService();
+
+      // 1. If explicit coordinates provided or forceGps is true
+      if (userLat != null && userLng != null) {
+        lat = userLat;
+        lng = userLng;
+        final res = await locService.resolveAddressFromCoordinates(lat, lng);
+        locationDisplayName = res.formattedAddress;
+      } else if (forceGps) {
+        Position? position = await locService.getCurrentPosition();
         if (position != null) {
           lat = position.latitude;
           lng = position.longitude;
-          locationDisplayName = 'আপনার জিপিএস অবস্থান';
+          final res = await locService.resolveAddressFromCoordinates(lat, lng);
+          locationDisplayName = res.formattedAddress;
         }
       }
-      // 2. Prioritize User's Profile / Configured Location (Upazila & District)
-      else {
-        String rawUpazila = (userUpazila != null && userUpazila.isNotEmpty)
-            ? userUpazila
-            : 'Gurudaspur';
-        String rawDistrict = (userDistrict != null && userDistrict.isNotEmpty)
-            ? userDistrict
-            : 'Natore';
+      // 2. Prioritize User's Profile Location if given
+      else if ((userUpazila != null && userUpazila.isNotEmpty) ||
+          (userDistrict != null && userDistrict.isNotEmpty)) {
+        String rawUpazila = userUpazila ?? '';
+        String rawDistrict = userDistrict ?? '';
 
-        // Resolve District key from Upazila FIRST
-        String resolvedDistrictKey = resolveDistrictFromUpazila(rawUpazila);
-        // Only fallback to userDistrict if upazila was not explicitly provided
-        if ((userUpazila == null || userUpazila.isEmpty) &&
-            userDistrict != null &&
-            userDistrict.isNotEmpty) {
+        String resolvedDistrictKey = rawDistrict;
+        if (rawUpazila.isNotEmpty) {
+          resolvedDistrictKey = resolveDistrictFromUpazila(rawUpazila);
+        }
+        if (resolvedDistrictKey.isEmpty && rawDistrict.isNotEmpty) {
           resolvedDistrictKey = resolveDistrictFromUpazila(rawDistrict);
         }
 
         final mapped = _districtCoordinates[resolvedDistrictKey] ??
-            _districtCoordinates['Natore']!;
+            _districtCoordinates['Dhaka']!;
         lat = mapped['lat'] as double;
         lng = mapped['lng'] as double;
 
-        String banglaUpa = getBanglaUpazilaName(rawUpazila);
+        String banglaUpa = rawUpazila.isNotEmpty ? getBanglaUpazilaName(rawUpazila) : '${mapped['name']} সদর';
         String banglaDist = mapped['name'] as String;
-        String divText = mapped['division'] as String? ?? 'রাজশাহী';
+        String divText = mapped['division'] as String? ?? 'ঢাকা';
 
         locationDisplayName = '$banglaUpa, $banglaDist ($divText)';
-        debugPrint(
-            '📍 Weather location resolved: $locationDisplayName ($lat, $lng)');
+      }
+      // 3. Otherwise, try real GPS location before fallback
+      else {
+        Position? position = await locService.getCurrentPosition();
+        if (position != null) {
+          lat = position.latitude;
+          lng = position.longitude;
+          final res = await locService.resolveAddressFromCoordinates(lat, lng);
+          locationDisplayName = res.formattedAddress;
+        }
       }
     } catch (e) {
       debugPrint('📍 Weather location resolution warning: $e');

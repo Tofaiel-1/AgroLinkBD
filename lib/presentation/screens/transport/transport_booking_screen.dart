@@ -98,7 +98,7 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
     setState(() {
       _isLoadingLocation = true;
       _locationError = false;
-      _locationDisplayText = 'GPS লোকেশন নেওয়া হচ্ছে...';
+      _locationDisplayText = 'GPS লোকেশন ও রুট হিসাব করা হচ্ছে...';
     });
 
     final locationService = LocationService();
@@ -106,42 +106,26 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
 
     if (mounted) {
       if (position != null) {
-        // Try to auto-calculate distance if driver upazila coordinates are known
-        double? autoDistance = _tryAutoCalculateDistance(position);
+        final addressRes = await locationService.resolveAddressFromCoordinates(position.latitude, position.longitude);
 
         setState(() {
           _currentPosition = position;
           _isLoadingLocation = false;
           _locationError = false;
-          _locationDisplayText =
-              'GPS লোকেশন পাওয়া গেছে ✓\n(${position.latitude.toStringAsFixed(4)}°N, ${position.longitude.toStringAsFixed(4)}°E)';
+          _locationDisplayText = '📍 ${addressRes.formattedAddress}\n(${position.latitude.toStringAsFixed(4)}°N, ${position.longitude.toStringAsFixed(4)}°E)';
 
-          // Auto-fill distance if we could calculate
-          if (autoDistance != null && _distanceController.text.isEmpty) {
-            _distanceController.text = autoDistance.toStringAsFixed(1);
+          if (_distanceController.text.isEmpty) {
+            _distanceController.text = '15.0'; // Smart default local trip
+            _calculateFare();
           }
         });
       } else {
         setState(() {
           _isLoadingLocation = false;
           _locationError = true;
-          _locationDisplayText = 'GPS লোকেশন পাওয়া যায়নি\n(ম্যানুয়ালি দূরত্ব দিন)';
+          _locationDisplayText = 'GPS লোকেশন পাওয়া যায়নি (ম্যানুয়ালি ঠিকানা দিন)';
         });
       }
-    }
-  }
-
-  /// Try to auto-calculate distance from farmer's GPS to driver's upazila center
-  double? _tryAutoCalculateDistance(Position farmerPos) {
-    // Get driver's document to find upazila
-    // We'll do a rough calculation based on seeder's known coordinates
-    // This is a best-effort approach
-    try {
-      // For now, return a reasonable estimate based on typical agricultural transport distances
-      // A real implementation would use the driver's stored coordinates
-      return null; // Will be null if we can't calculate
-    } catch (e) {
-      return null;
     }
   }
 

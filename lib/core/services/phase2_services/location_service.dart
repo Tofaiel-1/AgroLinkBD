@@ -1,55 +1,61 @@
 import 'package:agrolinkbd/core/models/phase2_models/map_models.dart';
+import 'package:agrolinkbd/core/services/location_service.dart' as core_loc;
 
-/// Service for managing location operations
+/// Service for managing location operations in phase 2
 class LocationService {
-  /// Get current user location
+  final core_loc.LocationService _coreLocationService = core_loc.LocationService();
+
+  /// Get current user location with real GPS & reverse geocoded address
   Future<MapLocation> getCurrentLocation() async {
-    await Future.delayed(const Duration(milliseconds: 300));
+    final pos = await _coreLocationService.getCurrentPosition();
+    if (pos != null) {
+      final res = await _coreLocationService.resolveAddressFromCoordinates(pos.latitude, pos.longitude);
+      return MapLocation(
+        latitude: pos.latitude,
+        longitude: pos.longitude,
+        address: res.formattedAddress,
+        title: '${res.upazilaBangla}, ${res.districtBangla}',
+        timestamp: DateTime.now(),
+      );
+    }
+
+    final fallback = await _coreLocationService.getCurrentLocationAddress();
     return MapLocation(
-      latitude: 23.8103,
-      longitude: 90.4125,
-      address: 'Dhaka, Bangladesh',
-      title: 'Current Location',
+      latitude: fallback.latitude,
+      longitude: fallback.longitude,
+      address: fallback.formattedAddress,
+      title: fallback.formattedAddress,
       timestamp: DateTime.now(),
     );
   }
 
-  /// Stream location updates
+  /// Stream location updates with real GPS
   Stream<MapLocation> getLocationStream() async* {
-    for (int i = 0; i < 10; i++) {
-      await Future.delayed(const Duration(seconds: 2));
+    await for (final pos in _coreLocationService.getPositionStream()) {
       yield MapLocation(
-        latitude: 23.8103 + (i * 0.001),
-        longitude: 90.4125 + (i * 0.001),
-        address: 'Location Update $i',
-        title: 'Current Location',
+        latitude: pos.latitude,
+        longitude: pos.longitude,
+        address: 'লাইভ অবস্থান: (${pos.latitude.toStringAsFixed(4)}, ${pos.longitude.toStringAsFixed(4)})',
+        title: 'বর্তমান লোকেশন',
         timestamp: DateTime.now(),
       );
     }
   }
 
-  /// Calculate distance between two locations
+  /// Calculate distance between two locations with precise geodesic formula (in km)
   Future<double> getDistanceBetween(MapLocation a, MapLocation b) async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    // Simple distance calculation (not accurate, use real geolocation package)
-    final lat1 = a.latitude;
-    final lon1 = a.longitude;
-    final lat2 = b.latitude;
-    final lon2 = b.longitude;
-
-    const R = 6371; // Radius of earth in km
-    final latDiff = lat2 - lat1;
-    final lonDiff = lon2 - lon1;
-
-    final distance = 2 * R * (latDiff.abs() + lonDiff.abs()) / 2;
-
-    return distance;
+    return _coreLocationService.calculateDistance(
+      startLatitude: a.latitude,
+      startLongitude: a.longitude,
+      endLatitude: b.latitude,
+      endLongitude: b.longitude,
+    );
   }
 
-  /// Get address from coordinates
+  /// Get address from coordinates using Nominatim & BD Database
   Future<String> getAddressFromCoordinates(
       double latitude, double longitude) async {
-    await Future.delayed(const Duration(milliseconds: 400));
-    return 'Location at ($latitude, $longitude)';
+    final res = await _coreLocationService.resolveAddressFromCoordinates(latitude, longitude);
+    return res.formattedAddress;
   }
 }

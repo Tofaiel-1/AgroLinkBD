@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 // import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 // import 'package:firebase_analytics/firebase_analytics.dart';
@@ -35,7 +34,6 @@ import 'core/providers/role_content_provider.dart';
 import 'core/providers/language_provider.dart';
 import 'package:agrolinkbd/presentation/screens/company/providers/company_provider.dart';
 import 'core/config/firebase_options.dart';
-import 'ultimate_automatic_setup.dart';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
