@@ -23,7 +23,7 @@ Future<Map<String, dynamic>> setupSuperadminAccount() async {
     debugPrint('🔐 Starting Superadmin Setup...');
 
     const String email = 'mdtofaielhussaintota@gmail.com';
-    const String password = 'super123';
+    const String password = 'super123T';
     const String name = 'Super Admin';
 
     // ═══════════════════════════════════════════════════════════════
@@ -67,12 +67,23 @@ Future<Map<String, dynamic>> setupSuperadminAccount() async {
           );
           debugPrint('✅ Signed in to existing Auth user');
         } catch (signInError) {
-          debugPrint('❌ Sign in failed: $signInError');
-          return {
-            'success': false,
-            'message': 'User exists but password incorrect',
-            'action': 'Reset password or use correct password',
-          };
+          debugPrint('❌ Sign in failed with new password: $signInError');
+          debugPrint('   Trying with old password "super123"...');
+          try {
+            userCredential = await _auth.signInWithEmailAndPassword(
+              email: email.trim(),
+              password: 'super123',
+            );
+            debugPrint('✅ Signed in with old password. Updating to new password...');
+            await userCredential.user!.updatePassword(password);
+            debugPrint('✅ Password updated successfully');
+          } catch (oldPassError) {
+            return {
+              'success': false,
+              'message': 'User exists but could not login with new or old password.',
+              'action': 'Reset password or use correct password',
+            };
+          }
         }
       } else {
         debugPrint('   Error: ${e.message}');

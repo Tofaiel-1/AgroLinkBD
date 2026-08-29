@@ -10,6 +10,8 @@ import 'package:agrolinkbd/presentation/screens/admin/admin_dashboard.dart';
 import 'package:agrolinkbd/presentation/screens/auth/login_screen.dart';
 import 'package:agrolinkbd/presentation/screens/auth/register_screen.dart';
 import 'package:agrolinkbd/presentation/screens/admin/admin_security_pin_screen.dart';
+import 'package:agrolinkbd/presentation/screens/admin/advanced_admin_dashboard.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// App Router - Routes user to appropriate screen based on authentication and login status
 /// 1. Admin logged in → AdminDashboard
@@ -169,40 +171,68 @@ class _AppRouterState extends State<AppRouter> {
 
               Future.microtask(() async {
                 try {
-                  // Try to load user from Firestore
-                  await userProvider.loadUser(userId);
+                  // Check if the user is an admin first
+                  final adminDoc = await FirebaseFirestore.instance.collection('admins').doc(userId).get();
+                  if (adminDoc.exists) {
+                    debugPrint('✅ Admin profile found: $userId');
+                    Provider.of<AdminProvider>(context, listen: false).setAdminFromDoc(adminDoc);
+                    _lastError = null;
+                  } else {
+                    // Prevent race condition: if it's a known admin email, wait for setup script to create the doc
+                    if (email == 'superadmin@agrolinkbd.com' || email == 'admin@agrolinkbd.com' || email == 'mdtofaielhussaintota@gmail.com') {
+                      debugPrint('⏳ AppRouter: Superadmin detected but admin doc missing. Waiting for setup...');
+                      await Future.delayed(const Duration(seconds: 4));
+                      final retryAdmin = await FirebaseFirestore.instance.collection('admins').doc(userId).get();
+                      if (retryAdmin.exists) {
+                        debugPrint('✅ Admin profile found after wait: $userId');
+                        Provider.of<AdminProvider>(context, listen: false).setAdminFromDoc(retryAdmin);
+                        _lastError = null;
+                      }
+                    }
 
-                  // Fallback: If profile document is missing in Firestore, create default user
-                  if (userProvider.currentUser == null) {
-                    debugPrint('⏳ Creating fallback profile for user: $userId');
-                    final firebaseUser = authSnapshot.data!;
-                    final fallbackUser = UserModel(
-                      id: userId,
-                      name: firebaseUser.displayName?.isNotEmpty == true
-                          ? firebaseUser.displayName!
-                          : (email.split('@').first),
-                      phone: firebaseUser.phoneNumber ?? '',
-                      email: email,
-                      userType: UserType.farmer, // Default role
-                      status: UserStatus.active,
-                      createdAt: DateTime.now(),
-                    );
-                    await userProvider.updateUser(fallbackUser);
+                    // Only proceed with user loading if AdminProvider is still NOT logged in
+                    if (!Provider.of<AdminProvider>(context, listen: false).isAdminLoggedIn) {
+                      // Try to load user from Firestore
+                      await userProvider.loadUser(userId);
+
+                      // Fallback: If profile document is missing in Firestore, create default user
+                      // Only do this if there was NO error loading it (i.e. document actually does not exist)
+                      if (userProvider.currentUser == null && userProvider.error == null) {
+                        if (email == 'superadmin@agrolinkbd.com' || email == 'admin@agrolinkbd.com' || email == 'mdtofaielhussaintota@gmail.com') {
+                          debugPrint('⏳ Skipping fallback farmer profile creation for superadmin');
+                        } else {
+                          debugPrint('⏳ Creating fallback profile for user: $userId');
+                          final firebaseUser = authSnapshot.data!;
+                          final fallbackUser = UserModel(
+                            id: userId,
+                            name: firebaseUser.displayName?.isNotEmpty == true
+                                ? firebaseUser.displayName!
+                                : (email.split('@').first),
+                            phone: firebaseUser.phoneNumber ?? '',
+                            email: email,
+                            userType: UserType.farmer, // Default role
+                            status: UserStatus.active,
+                            createdAt: DateTime.now(),
+                          );
+                          await userProvider.updateUser(fallbackUser);
+                        }
+                      }
+
+                      if (userProvider.currentUser != null) {
+                        debugPrint('✅ User profile loaded: $userId');
+                      }
+
+                      try {
+                        final cartProvider =
+                            Provider.of<CartProvider>(context, listen: false);
+                        cartProvider.loadUserCart(userId);
+                      } catch (e) {
+                        debugPrint('⚠️ Cart load warning in AppRouter: $e');
+                      }
+
+                      _lastError = null;
+                    }
                   }
-
-                  if (userProvider.currentUser != null) {
-                    debugPrint('✅ User profile loaded: $userId');
-                  }
-
-                  try {
-                    final cartProvider =
-                        Provider.of<CartProvider>(context, listen: false);
-                    cartProvider.loadUserCart(userId);
-                  } catch (e) {
-                    debugPrint('⚠️ Cart load warning in AppRouter: $e');
-                  }
-
-                  _lastError = null;
                 } catch (e) {
                   debugPrint('❌ Error loading user profile: $e');
                   _lastError = 'প্রোফাইল লোড করতে সমস্যা হয়েছে';
@@ -214,6 +244,11 @@ class _AppRouterState extends State<AppRouter> {
                   }
                 }
               });
+            }
+
+            // Show Admin dashboard if admin
+            if (adminProvider.isAdminLoggedIn) {
+              return const AdvancedAdminDashboard();
             }
 
             // Show RoleBasedNavigationContainer if user data is available

@@ -24,6 +24,7 @@ import 'package:agrolinkbd/presentation/screens/microfinance/microfinance_admin_
 import 'package:agrolinkbd/presentation/screens/admin/admin_financial_requests_screen.dart';
 import 'package:agrolinkbd/presentation/screens/admin/admin_reports_screen.dart';
 import 'package:agrolinkbd/presentation/screens/admin/admin_pin_reset_screen.dart';
+import 'package:agrolinkbd/presentation/screens/admin/admin_user_disputes_screen.dart';
 
 class PulseEffect extends StatefulWidget {
   final Widget child;
@@ -384,6 +385,8 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
           children: [
             _buildHeader(),
             const SizedBox(height: 24),
+            _buildQuickActionsGrid(crossAxisCount: 4),
+            const SizedBox(height: 24),
             _isLoadingData 
                 ? _buildShimmerGrid(2) 
                 : _buildStatCardsGrid(2),
@@ -391,8 +394,6 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
             if (!_isLoadingData) _buildChartsSection(),
             const SizedBox(height: 24),
             if (!_isLoadingData) _buildActivityFeed(),
-            const SizedBox(height: 24),
-            _buildQuickActionsGrid(crossAxisCount: 4),
             const SizedBox(height: 40),
           ],
         ),
@@ -414,6 +415,8 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
                 children: [
                   _buildHeader(),
                   const SizedBox(height: 32),
+                  _buildQuickActionsGrid(crossAxisCount: 4),
+                  const SizedBox(height: 32),
                   _isLoadingData 
                       ? _buildShimmerGrid(4) 
                       : _buildStatCardsGrid(4),
@@ -429,8 +432,6 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
                         Expanded(child: _buildAlertsSection()),
                       ],
                     ),
-                  const SizedBox(height: 32),
-                  _buildQuickActionsGrid(crossAxisCount: 4),
                 ],
               ),
             ),
@@ -553,6 +554,7 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
   Widget _buildSidebarMenu() {
     final menuItems = [
       {'icon': Icons.dashboard_rounded, 'label': 'Dashboard', 'action': 'dashboard'},
+      {'icon': Icons.gavel_rounded, 'label': 'Disputes', 'action': 'disputes'},
       {'icon': Icons.people_rounded, 'label': 'Users DB', 'action': 'users'},
       {'icon': Icons.lock_reset, 'label': 'PIN Resets', 'action': 'pin_resets'},
       {'icon': Icons.inventory_2_rounded, 'label': 'Marketplace', 'action': 'market'},
@@ -571,7 +573,9 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
           child: GestureDetector(
             onTap: () {
               setState(() => _selectedMenuIndex = index);
-              if (entry.value['action'] == 'users') {
+              if (entry.value['action'] == 'disputes') {
+                Get.to(() => const AdminUserDisputesScreen());
+              } else if (entry.value['action'] == 'users') {
                 Get.to(() => AdminUserManagementScreen());
               } else if (entry.value['action'] == 'pin_resets') {
                 Get.to(() => const AdminPinResetScreen());

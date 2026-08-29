@@ -5,8 +5,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:agrolinkbd/core/providers/user_provider.dart';
 import 'package:agrolinkbd/core/models/user_model.dart';
 import 'package:agrolinkbd/core/services/user_rating_service.dart';
+import 'package:agrolinkbd/core/services/pdf/user_report_service.dart';
 import 'package:agrolinkbd/core/providers/language_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:printing/printing.dart';
 
 class ProfileSettings extends StatefulWidget {
   const ProfileSettings({super.key});
@@ -486,10 +488,18 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                   ),
                   const Divider(height: 1),
                   _buildMenuTile(
-                    LanguageProvider.isBn(context) ? 'সমস্যা জানান' : 'Report Issue',
-                    LanguageProvider.isBn(context) ? 'যেকোনো সমস্যা রিপোর্ট করুন' : 'Report a problem',
-                    Icons.report_problem,
+                    LanguageProvider.isBn(context) ? 'কারিগরি সমস্যা জানান' : 'Report Technical Issue',
+                    LanguageProvider.isBn(context) ? 'অ্যাপে কোনো সমস্যা থাকলে জানান' : 'Report an app problem',
+                    Icons.bug_report_outlined,
                     _showReportDialog,
+                    context,
+                  ),
+                  const Divider(height: 1),
+                  _buildMenuTile(
+                    LanguageProvider.isBn(context) ? 'অন্য ব্যবহারকারীর বিরুদ্ধে অভিযোগ' : 'Report User / Dispute',
+                    LanguageProvider.isBn(context) ? 'প্রতারণা, বাতিল বা অনিয়মের রিপোর্ট সুপার অ্যাডমিনে পাঠান' : 'Submit user complaint to Super Admin',
+                    Icons.gavel_rounded,
+                    () => _showUserDisputeReportDialog(context),
                     context,
                   ),
                   const Divider(height: 1),
@@ -600,12 +610,12 @@ class _ProfileSettingsState extends State<ProfileSettings> {
         color: isDark ? const Color(0xFF1E1E2E) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: primaryColor.withOpacity(0.35),
+          color: primaryColor.withValues(alpha: 0.35),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: primaryColor.withOpacity(0.08),
+            color: primaryColor.withValues(alpha: 0.08),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -620,8 +630,8 @@ class _ProfileSettingsState extends State<ProfileSettings> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  primaryColor.withOpacity(0.18),
-                  primaryColor.withOpacity(0.05),
+                  primaryColor.withValues(alpha: 0.18),
+                  primaryColor.withValues(alpha: 0.05),
                 ],
               ),
               borderRadius:
@@ -646,6 +656,8 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                           fontWeight: FontWeight.bold,
                           color: primaryColor,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -655,21 +667,24 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                                 ? (LanguageProvider.isBn(context) ? '🥇 গোল্ড বিশ্বস্ত সদস্য • প্রমাণিত ও নিরাপদ' : '🥇 Gold Member • Verified & Safe')
                                 : (trustScore >= 70
                                     ? (LanguageProvider.isBn(context) ? '🥈 সিলভার সদস্য • নির্ভরযোগ্য' : '🥈 Silver Member • Reliable')
-                                    : (LanguageProvider.isBn(context) ? '🥉 ব্রোঞ্জ সদস্য • প্রাথমিক পর্যায়' : '🥉 Bronze Member • Starter'))),
+                                    : (LanguageProvider.isBn(context) ? '🥉 ব্রোঞ্জ সদস্য • প্রাথমিক পর্যায়' : '🥉 Bronze Member • Starter'))),
                         style: TextStyle(
                           fontSize: 11,
                           color: isDark ? Colors.grey[300] : Colors.grey[700],
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
                 ),
+                const SizedBox(width: 8),
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: (trustScore >= 85 ? Colors.green : Colors.blue)
-                        .withOpacity(0.15),
+                        .withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                         color: trustScore >= 85 ? Colors.green : Colors.blue,
@@ -690,7 +705,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
 
           const Divider(height: 1),
 
-          // Root Rating & Clean Verified Summary (কোনো হাবিজাবি তথ্য ছাড়া ১টি রুট রেটিং ও ৩টি ব্যাজ)
+          // Root Rating & Clean Verified Summary
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -707,30 +722,37 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'মূল রেটিং (Root Trust Rating)',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: isDark ? Colors.grey[400] : Colors.grey[600],
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'মূল রেটিং (Root Trust Rating)',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? Colors.grey[400] : Colors.grey[600],
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            totalRatings == 0
-                                ? '৫.০ / ৫.০ ⭐️ (১০০% বিশ্বস্ততা)'
-                                : '${rating.toStringAsFixed(1)} / 5.0 ⭐️ (${trustScore.toStringAsFixed(0)}% বিশ্বস্ততা)',
-                            style: TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.bold,
-                              color: primaryColor,
+                            const SizedBox(height: 4),
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                totalRatings == 0
+                                    ? '৫.০ / ৫.০ ⭐️ (১০০% বিশ্বস্ততা)'
+                                    : '${rating.toStringAsFixed(1)} / 5.0 ⭐️ (${trustScore.toStringAsFixed(0)}% বিশ্বস্ততা)',
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.bold,
+                                  color: primaryColor,
+                                ),
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
+                      const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 6),
@@ -739,6 +761,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: const Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(Icons.verified,
                                 color: Colors.green, size: 15),
@@ -758,7 +781,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                 ),
                 const SizedBox(height: 14),
 
-                // 3 Clean Verified Summary Chips/Pills (habijabi information user er kase thakbe na)
+                // 3 Clean Verified Summary Chips/Pills
                 Row(
                   children: [
                     Expanded(
@@ -802,76 +825,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                 ),
                 const SizedBox(height: 16),
 
-                // Universal 360° Interactive Action Buttons (sobai sobar theke rating pabe & fraud report)
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          final currentUser = Provider.of<UserProvider>(context, listen: false).currentUser;
-                          UserRatingService.showUniversalRateModal(
-                            context: context,
-                            targetUserId: user?.id ?? 'demo_id',
-                            targetUserName: user?.name ?? 'সদস্য',
-                            reviewerId: currentUser?.id ?? 'current_user_id',
-                            reviewerName: currentUser?.name ?? 'সক্রিয় সদস্য',
-                            reviewerRole: currentUser?.userType.name,
-                            targetUserRole: user?.userType.name,
-                            onRatingSubmitted: () {
-                              setState(() {});
-                              if (user?.id != null) {
-                                Provider.of<UserProvider>(context, listen: false)
-                                    .loadUser(user!.id);
-                              }
-                            },
-                          );
-                        },
-                        icon: const Icon(Icons.star, size: 18),
-                        label: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(LanguageProvider.isBn(context) ? 'মূল্যায়ন করুন' : 'Rate User'),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.amber[700],
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () {
-                          UserRatingService.showFraudPenaltyDialog(
-                            context: context,
-                            targetUserId: user?.id ?? 'demo_id',
-                            targetUserName: user?.name ?? 'সদস্য',
-                            reporterId: 'current_user_id',
-                            reporterName: 'সক্রিয় সদস্য',
-                            onPenaltySubmitted: () {
-                              setState(() {});
-                              if (user?.id != null) {
-                                Provider.of<UserProvider>(context, listen: false)
-                                    .loadUser(user!.id);
-                              }
-                            },
-                          );
-                        },
-                        icon: const Icon(Icons.gavel, size: 18),
-                        label: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(LanguageProvider.isBn(context) ? 'রিপোর্ট / জরিমানা' : 'Report / Penalty'),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.red,
-                          side: const BorderSide(color: Colors.red),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-
+                // User's Own Trust & Transaction Action Buttons
                 Row(
                   children: [
                     Expanded(
@@ -904,6 +858,42 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                         style: OutlinedButton.styleFrom(
                           foregroundColor: primaryColor,
                           side: BorderSide(color: primaryColor),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => _generateUserActivityReport(user),
+                        icon: const Icon(Icons.picture_as_pdf, size: 18),
+                        label: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(LanguageProvider.isBn(context) ? 'অ্যাক্টিভিটি রিপোর্ট' : 'Activity Report'),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryColor,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _showUserDisputeReportDialog(context),
+                        icon: const Icon(Icons.report_gmailerrorred_rounded, size: 18),
+                        label: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(LanguageProvider.isBn(context) ? 'অভিযোগ / রিপোর্ট' : 'Report / Dispute'),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red.shade700,
+                          side: BorderSide(color: Colors.red.shade400),
                         ),
                       ),
                     ),
@@ -1408,6 +1398,385 @@ class _ProfileSettingsState extends State<ProfileSettings> {
             child: const Text('Close'),
           ),
         ],
+      ),
+    );
+  }
+
+  // Generate Activity Report for user's own profile
+  Future<void> _generateUserActivityReport(UserModel? user) async {
+    if (user == null) return;
+    try {
+      final pdfBytes = await UserReportService.fetchAndGenerateUserReport(
+        userName: user.name,
+        userId: user.id,
+        userRole: user.userType.name,
+        period: ReportPeriod.monthly,
+      );
+
+      if (!mounted) return;
+
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => Scaffold(
+            appBar: AppBar(title: Text('${user.name} - Activity Report Preview')),
+            body: PdfPreview(
+              build: (format) => pdfBytes,
+              canChangeOrientation: false,
+              canChangePageFormat: false,
+              allowPrinting: true,
+              allowSharing: true,
+            ),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error generating report: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  // Dispute & Report Dialog against another user (Submits to Super Admin)
+  void _showUserDisputeReportDialog(BuildContext context) {
+    final currentUser = Provider.of<UserProvider>(context, listen: false).currentUser;
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('অনুগ্রহ করে প্রথমে লগইন করুন!'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    final targetUserQueryController = TextEditingController();
+    final targetNameController = TextEditingController();
+    final orderRefController = TextEditingController();
+    final descriptionController = TextEditingController();
+
+    int selectedPenaltyType = 1;
+    String selectedRole = 'farmer';
+
+    final List<Map<String, dynamic>> penaltyCategories = [
+      {
+        'id': 1,
+        'category': 'ভুয়া ওজন বা নিম্নমানের পণ্য (Quality Fraud)',
+        'label': '🚫 ভুয়া ওজন বা নিম্নমানের পণ্য (Quality Fraud)',
+        'desc': 'প্রদত্ত মাছ/পণ্যের ওজন কম, ভেজাল বা মানহীন ছিল',
+      },
+      {
+        'id': 2,
+        'category': 'অর্ডার বাতিল বা গ্রহণ না করা (Breach of Contract)',
+        'label': '❌ কনফার্ম করার পর অর্ডার বাতিল বা প্রত্যাখ্যান',
+        'desc': 'অর্ডার কনফার্ম করার পর কারণ ছাড়া বাতিল বা পণ্য নেয়নি',
+      },
+      {
+        'id': 3,
+        'category': 'পেমেন্ট বকেয়া বা প্রতারণা (Payment Default)',
+        'label': '💸 পেমেন্ট বকেয়া বা লেনদেনে জালিয়াতি',
+        'desc': 'বকেয়া টাকা দেয়নি বা চেক বাউন্স বা মিথ্যা পেমেন্ট দেখিয়েছে',
+      },
+      {
+        'id': 4,
+        'category': 'ডেলিভারি বিলম্ব বা নো-শো (Trip Failure)',
+        'label': '⏰ নির্ধারিত সময়ে ট্রিপ ড্রপ বা নো-শো',
+        'desc': 'ড্রাইভার উপস্থিত হয়নি বা মালামাল পরিবহন করেনি',
+      },
+      {
+        'id': 5,
+        'category': 'অসদাচরণ বা হুমকি (Harassment/Misbehavior)',
+        'label': '⚠️ অসদাচরণ, হুমকি বা মিথ্যা তথ্য প্রদান',
+        'desc': 'ফোনে বা সরাসরি দুর্ব্যবহার বা প্রতারণামূলক মিথ্যা তথ্য দিয়েছে',
+      },
+      {
+        'id': 6,
+        'category': 'অন্যান্য চুক্তিভঙ্গ (Other Policy Breach)',
+        'label': '📑 অন্যান্য চুক্তিভঙ্গ বা গুরুতর অনিয়ম',
+        'desc': 'প্ল্যাটফর্মের নীতিমালা ভঙ্গকারী অন্যান্য সমস্যা',
+      },
+    ];
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) {
+          final selectedCategory = penaltyCategories.firstWhere(
+            (c) => c['id'] == selectedPenaltyType,
+            orElse: () => penaltyCategories.first,
+          );
+
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: [
+                const Icon(Icons.gavel_rounded, color: Colors.red, size: 24),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    LanguageProvider.isBn(context) ? 'অভিযোগ ও রিপোর্ট দাখিল' : 'File User Dispute / Report',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.red),
+                  ),
+                ),
+              ],
+            ),
+            content: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.amber.shade700, width: 1),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.shield_outlined, color: Colors.amber.shade900, size: 22),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              LanguageProvider.isBn(context)
+                                  ? 'এই রিপোর্টটি সুপার অ্যাডমিনের কাছে যাবে। সুপার অ্যাডমিন প্রমাণ যাচাই করে অভিযুক্তের বিরুদ্ধে ব্যবস্থা নিবেন।'
+                                  : 'This report will be submitted to Super Admin for verification and penalty enforcement.',
+                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Target User Identifier (Phone / User ID)
+                    Text(
+                      LanguageProvider.isBn(context) ? 'অভিযুক্ত ব্যক্তির ফোন নম্বর বা ইউজার আইডি (বাধ্যতামূলক):' : 'Accused User Phone / User ID (Required):',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                    ),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: targetUserQueryController,
+                      keyboardType: TextInputType.phone,
+                      decoration: InputDecoration(
+                        hintText: 'যেমন: 017XXXXXXXX বা USR-901',
+                        prefixIcon: const Icon(Icons.person_search_outlined, size: 20),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Target User Name / Role
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                LanguageProvider.isBn(context) ? 'অভিযুক্ত ব্যক্তির নাম:' : 'Accused Name:',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                              ),
+                              const SizedBox(height: 4),
+                              TextField(
+                                controller: targetNameController,
+                                decoration: InputDecoration(
+                                  hintText: 'নাম (জানা থাকলে)',
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          flex: 2,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                LanguageProvider.isBn(context) ? 'রোল:' : 'Role:',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                              ),
+                              const SizedBox(height: 4),
+                              DropdownButtonFormField<String>(
+                                value: selectedRole,
+                                decoration: InputDecoration(
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                ),
+                                items: const [
+                                  DropdownMenuItem(value: 'farmer', child: Text('কৃষক', style: TextStyle(fontSize: 12))),
+                                  DropdownMenuItem(value: 'fishFarmer', child: Text('মাছ চাষী', style: TextStyle(fontSize: 12))),
+                                  DropdownMenuItem(value: 'buyer', child: Text('ক্রেতা', style: TextStyle(fontSize: 12))),
+                                  DropdownMenuItem(value: 'fishBuyer', child: Text('মাছ ক্রেতা', style: TextStyle(fontSize: 12))),
+                                  DropdownMenuItem(value: 'driver', child: Text('ড্রাইভার', style: TextStyle(fontSize: 12))),
+                                  DropdownMenuItem(value: 'serviceProvider', child: Text('সেবা প্রদানকারী', style: TextStyle(fontSize: 12))),
+                                  DropdownMenuItem(value: 'company', child: Text('কোম্পানি', style: TextStyle(fontSize: 12))),
+                                ],
+                                onChanged: (val) {
+                                  if (val != null) setState(() => selectedRole = val);
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Violation Category Selection
+                    Text(
+                      LanguageProvider.isBn(context) ? 'অভিযোগের সুনির্দিষ্ট কারণ (বাধ্যতামূলক):' : 'Specific Violation Reason (Required):',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                    ),
+                    const SizedBox(height: 6),
+                    ...penaltyCategories.map((cat) {
+                      return RadioListTile<int>(
+                        title: Text(
+                          cat['label'],
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Text(
+                          cat['desc'],
+                          style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        value: cat['id'] as int,
+                        groupValue: selectedPenaltyType,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+                        dense: true,
+                        onChanged: (val) {
+                          if (val != null) setState(() => selectedPenaltyType = val);
+                        },
+                      );
+                    }),
+                    const SizedBox(height: 10),
+
+                    // Order / Reference ID (Optional)
+                    TextField(
+                      controller: orderRefController,
+                      decoration: InputDecoration(
+                        labelText: LanguageProvider.isBn(context) ? 'অর্ডার / ট্রিপ / রেফারেন্স নম্বর (যদি থাকে)' : 'Order/Trip Reference ID (Optional)',
+                        hintText: 'যেমন: ORD-8812 / TRP-104',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Detailed Description / Evidence
+                    TextField(
+                      controller: descriptionController,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        labelText: LanguageProvider.isBn(context) ? 'বিস্তারিত বিবরণ ও প্রমাণ (বাধ্যতামূলক)' : 'Detailed Description & Evidence (Required)',
+                        hintText: 'ঘটনাটি কখন ঘটেছে এবং কী অনিয়ম হয়েছে বিস্তারিত লিখুন...',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: Text(LanguageProvider.isBn(context) ? 'বাতিল' : 'Cancel'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                onPressed: () async {
+                  final targetInput = targetUserQueryController.text.trim();
+                  final description = descriptionController.text.trim();
+
+                  if (targetInput.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('অনুগ্রহ করে অভিযুক্ত ব্যক্তির ফোন বা আইডি দিন!'), backgroundColor: Colors.orange),
+                    );
+                    return;
+                  }
+
+                  // Check self-reporting
+                  if (targetInput == currentUser.id || targetInput == currentUser.phone || targetInput == currentUser.email) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('⚠️ আপনি নিজের বিরুদ্ধে অভিযোগ বা জরিমানা রিপোর্ট করতে পারবেন না!'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                    return;
+                  }
+
+                  if (description.isEmpty || description.length < 5) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('অনুগ্রহ করে বিস্তারিত বিবরণ লিখুন (কমপক্ষে ৫ অক্ষর)!'), backgroundColor: Colors.orange),
+                    );
+                    return;
+                  }
+
+                  Navigator.pop(dialogContext);
+
+                  final success = await UserRatingService().submitUserDisputeReport(
+                    targetUserId: targetInput,
+                    targetUserName: targetNameController.text.trim().isNotEmpty ? targetNameController.text.trim() : targetInput,
+                    targetUserRole: selectedRole,
+                    targetUserPhone: targetInput,
+                    reporterId: currentUser.id,
+                    reporterName: currentUser.name,
+                    reporterRole: currentUser.userType.name,
+                    reporterPhone: currentUser.phone,
+                    penaltyType: selectedPenaltyType,
+                    category: selectedCategory['category'] ?? 'General Dispute',
+                    reason: description,
+                    orderReference: orderRefController.text.trim(),
+                  );
+
+                  if (success) {
+                    if (context.mounted) {
+                      showDialog(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          title: const Row(
+                            children: [
+                              Icon(Icons.check_circle, color: Colors.green),
+                              SizedBox(width: 8),
+                              Text('অভিযোগ দাখিল সফল'),
+                            ],
+                          ),
+                          content: const Text(
+                            'আপনার অভিযোগটি সফলভাবে সুপার অ্যাডমিনের পর্যালোচনায় জমা হয়েছে। সুপার অ্যাডমিন তথ্য যাচাই করে অভিযুক্ত ব্যক্তির বিরুদ্ধে ব্যবস্থা গ্রহণ করবেন।',
+                            style: TextStyle(fontSize: 13),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx),
+                              child: const Text('ঠিক আছে'),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                  } else {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('রিপোর্ট জমা দিতে সমস্যা হয়েছে। পুনরায় চেষ্টা করুন।'), backgroundColor: Colors.red),
+                      );
+                    }
+                  }
+                },
+                child: Text(LanguageProvider.isBn(context) ? 'সুপার অ্যাডমিনে পাঠান' : 'Submit to Super Admin'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

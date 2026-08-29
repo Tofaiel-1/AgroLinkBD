@@ -7,7 +7,10 @@ import 'package:agrolinkbd/core/services/role_service.dart';
 import 'package:agrolinkbd/core/services/route_guard.dart';
 import 'package:agrolinkbd/core/utils/responsive_helper.dart';
 import 'package:agrolinkbd/presentation/widgets/responsive_web_wrapper.dart';
+import 'dart:async';
 import 'package:agrolinkbd/core/providers/language_provider.dart';
+import 'package:agrolinkbd/core/services/order_service.dart';
+import 'package:agrolinkbd/core/services/notification_service.dart';
 
 // Role-specific navigation stacks
 import 'package:agrolinkbd/presentation/screens/farmer/farmer_dashboard.dart';
@@ -87,15 +90,30 @@ class _RoleBasedNavigationContainerState
     extends State<RoleBasedNavigationContainer> {
   late PageController _pageController;
   int _currentIndex = 0;
+  StreamSubscription? _orderSubscription;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: 0);
+    _setupFarmerOrderListener();
+  }
+
+  void _setupFarmerOrderListener() {
+    if (widget.user.userType == UserType.farmer) {
+      _orderSubscription = OrderService().listenToNewFarmerOrders(widget.user.id).listen((order) {
+        // Show local notification
+        NotificationService().showNotification(
+          title: 'নতুন অর্ডার পেয়েছেন!',
+          body: '${order.productName} এর জন্য একটি নতুন অর্ডার এসেছে। পরিমাণ: ${order.quantity}',
+        );
+      });
+    }
   }
 
   @override
   void dispose() {
+    _orderSubscription?.cancel();
     _pageController.dispose();
     super.dispose();
   }

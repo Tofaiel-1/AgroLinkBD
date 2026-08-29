@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:agrolinkbd/core/providers/admin_provider.dart';
 import 'admin_reports_screen.dart';
+import 'admin_user_disputes_screen.dart';
 
 /// Comprehensive Super Admin Dashboard
 /// Displays system statistics, admin management, activity logs, and analytics
@@ -124,6 +125,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
   Widget _buildTabButtons() {
     const tabs = [
       ('Overview', Icons.dashboard),
+      ('Disputes & Penalties', Icons.gavel_rounded),
       ('Admin Management', Icons.people),
       ('Activity Logs', Icons.history),
       ('Analytics', Icons.analytics),
@@ -199,21 +201,23 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
       case 0:
         return _buildOverviewTab();
       case 1:
+        return const AdminUserDisputesScreen();
+      case 2:
         return Scaffold(
           appBar: AppBar(title: const Text('Admin Management')),
           body: const Center(child: Text('Admin Management Feature')),
         );
-      case 2:
+      case 3:
         return Scaffold(
           appBar: AppBar(title: const Text('Audit Logs')),
           body: const Center(child: Text('Audit Logs Viewer')),
         );
-      case 3:
+      case 4:
         return Scaffold(
           appBar: AppBar(title: const Text('Analytics')),
           body: const Center(child: Text('Analytics Dashboard')),
         );
-      case 4:
+      case 5:
         return const AdminReportsScreen();
       default:
         return Container();

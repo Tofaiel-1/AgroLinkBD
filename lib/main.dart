@@ -15,6 +15,7 @@ import 'package:agrolinkbd/presentation/buyer/screens/cart_screen.dart';
 import 'package:agrolinkbd/presentation/buyer/screens/checkout_screen.dart';
 import 'package:agrolinkbd/presentation/buyer/screens/buyer_orders_screen.dart';
 import 'package:agrolinkbd/presentation/buyer/screens/wishlist_screen.dart';
+import 'package:agrolinkbd/presentation/screens/marketplace/commodity_order_book_screen.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/location_service.dart';
 import 'core/services/app_lifecycle_tracker.dart';
@@ -85,17 +86,21 @@ void main() async {
     debugPrint('⚠️ Service initialization warning: $e');
   }
 
+  // Initialize Admin
+  await _initializeAdminIfNeeded();
+
   runApp(const AgroLinkBDApp());
 }
 
 /// Initialize super admin if not exists
 Future<void> _initializeAdminIfNeeded() async {
-  try {
-    // Run the ultimate automatic setup
-    await runUltimateSetupOnAppStart();
-  } catch (e) {
-    debugPrint('⚠️ Admin initialization error: $e');
-  }
+  // Setup script disabled to prevent auto-login as superadmin
+  // If you need to run the setup, you can temporarily uncomment this
+  // try {
+  //   await runUltimateSetupOnAppStart();
+  // } catch (e) {
+  //   debugPrint('⚠️ Admin initialization error: $e');
+  // }
 }
 
 class AgroLinkBDApp extends StatelessWidget {
@@ -171,6 +176,11 @@ class AgroLinkBDApp extends StatelessWidget {
             GetPage(
               name: '/buyer/wishlist',
               page: () => const WishlistScreen(),
+              transition: Transition.rightToLeft,
+            ),
+            GetPage(
+              name: '/commodity-order-book',
+              page: () => const CommodityOrderBookScreen(),
               transition: Transition.rightToLeft,
             ),
           ],

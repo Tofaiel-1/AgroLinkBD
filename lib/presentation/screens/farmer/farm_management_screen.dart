@@ -16,6 +16,8 @@ import 'package:agrolinkbd/presentation/screens/farmer/farm_management/harvest_t
 import 'package:agrolinkbd/presentation/screens/farmer/farm_management/yield_prediction_screen.dart';
 import 'package:agrolinkbd/presentation/screens/farmer/farm_management/farm_notifications_screen.dart';
 
+import 'package:agrolinkbd/presentation/screens/analytics/farmer_analytics.dart';
+
 class FarmManagementScreen extends StatefulWidget {
   const FarmManagementScreen({Key? key}) : super(key: key);
 
@@ -31,7 +33,7 @@ class _FarmManagementScreenState extends State<FarmManagementScreen> {
     final bool isBn = LanguageProvider.isBn(context);
     return [
       {
-        'title': isBn ? 'খামার ব্যবস্থাপনা' : 'Farm Management',
+        'title': isBn ? 'খামার ব্যবস্থাপনা' : 'Farm Profile',
         'subtitle': isBn ? 'বিবরণ ও সেটআপ' : 'Details & Setup',
         'icon': Icons.agriculture,
         'color': const Color(0xFF4CAF50),
@@ -59,7 +61,7 @@ class _FarmManagementScreenState extends State<FarmManagementScreen> {
         'screen': const RevenueProfitScreen(),
       },
       {
-        'title': isBn ? 'কাজ ব্যবস্থাপনা' : 'Task Management',
+        'title': isBn ? 'কাজ ব্যবস্থাপনা' : 'Task Mgmt',
         'subtitle': isBn ? 'করণীয় ও কর্মী' : 'To-Dos & Staff',
         'icon': Icons.assignment_rounded,
         'color': const Color(0xFFFF9800),
@@ -87,25 +89,32 @@ class _FarmManagementScreenState extends State<FarmManagementScreen> {
         'screen': const GpsMappingScreen(),
       },
       {
-        'title': isBn ? 'ফসল তোলার হিসাব' : 'Harvest Tracking',
+        'title': isBn ? 'ফসল তোলা' : 'Harvesting',
         'subtitle': isBn ? 'ফলন ও লগ' : 'Yields & Logs',
         'icon': Icons.shopping_basket_rounded,
         'color': const Color(0xFFFFC107),
         'screen': const HarvestTrackingScreen(),
       },
       {
-        'title': isBn ? 'ফলনের পূর্বাভাস' : 'Yield Prediction',
+        'title': isBn ? 'ফলনের পূর্বাভাস' : 'Yield Forecast',
         'subtitle': isBn ? 'এআই পূর্বাভাস' : 'AI Forecasts',
         'icon': Icons.analytics_rounded,
         'color': const Color(0xFF3F51B5),
         'screen': const YieldPredictionScreen(),
       },
       {
-        'title': isBn ? 'নোটিফিকেশন' : 'Notifications',
-        'subtitle': isBn ? 'সতর্কবার্তা ও রিমাইন্ডার' : 'Alerts & Reminders',
+        'title': isBn ? 'নোটিফিকেশন' : 'Alerts',
+        'subtitle': isBn ? 'সতর্কবার্তা' : 'Alerts & Reminders',
         'icon': Icons.notifications_active_rounded,
         'color': const Color(0xFFFF5722),
         'screen': const FarmNotificationsScreen(),
+      },
+      {
+        'title': isBn ? 'অ্যানালিটিক্স' : 'Analytics',
+        'subtitle': isBn ? 'গ্রাফ ও ডেটা' : 'Graphs & Data',
+        'icon': Icons.insights_rounded,
+        'color': const Color(0xFF673AB7),
+        'screen': const FarmerAnalyticsScreen(),
       },
     ];
   }
@@ -128,11 +137,11 @@ class _FarmManagementScreenState extends State<FarmManagementScreen> {
             child: _buildSummarySection(),
           ),
           SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             sliver: SliverToBoxAdapter(
               child: Text(
                 LanguageProvider.isBn(context) ? 'খামার ব্যবস্থাপনা মডিউল' : 'Management Modules',
-                style: GoogleFonts.openSans(
+                style: GoogleFonts.hindSiliguri(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: const Color(0xFF2D3748),
@@ -141,13 +150,13 @@ class _FarmManagementScreenState extends State<FarmManagementScreen> {
             ),
           ),
           SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+            padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 6.0),
             sliver: SliverGrid(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                childAspectRatio: 1.05,
+                crossAxisCount: 4,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 10,
+                childAspectRatio: 0.78,
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
@@ -161,7 +170,12 @@ class _FarmManagementScreenState extends State<FarmManagementScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const FarmProfileScreen()),
+          );
+        },
         backgroundColor: const Color(0xFF2E7D32),
         elevation: 4,
         shape: RoundedRectangleBorder(
@@ -300,46 +314,48 @@ class _FarmManagementScreenState extends State<FarmManagementScreen> {
 
   Widget _buildStatCard(String title, String value, IconData icon, Color bgColor, Color iconColor) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFCBD5E1).withOpacity(0.4),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: bgColor,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(icon, color: iconColor, size: 28),
+            child: Icon(icon, color: iconColor, size: 24),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.openSans(
-                    fontSize: 13,
+                  style: GoogleFonts.hindSiliguri(
+                    fontSize: 12,
                     color: const Color(0xFF718096),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   value,
-                  style: GoogleFonts.openSans(
-                    fontSize: 18,
+                  style: GoogleFonts.hindSiliguri(
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: const Color(0xFF2D3748),
                   ),
@@ -355,23 +371,26 @@ class _FarmManagementScreenState extends State<FarmManagementScreen> {
   }
 
   Widget _buildModuleCard(Map<String, dynamic> module) {
-    final Color color = module['color'];
+    final Color color = module['color'] as Color;
+    final String title = module['title'] as String;
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200, width: 1),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFCBD5E1).withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
+            color: color.withOpacity(0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(16),
           onTap: () {
             if (module['screen'] != null) {
               Navigator.push(
@@ -380,62 +399,42 @@ class _FarmManagementScreenState extends State<FarmManagementScreen> {
               );
             }
           },
-          splashColor: color.withOpacity(0.1),
-          highlightColor: color.withOpacity(0.05),
+          splashColor: color.withOpacity(0.12),
+          highlightColor: color.withOpacity(0.06),
           child: Padding(
-            padding: const EdgeInsets.all(18.0),
+            padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 6.0),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: color.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Icon(
-                        module['icon'] as IconData,
-                        color: color,
-                        size: 28,
-                      ),
-                    ),
-                    Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      color: Colors.grey.shade300,
-                      size: 16,
-                    ),
-                  ],
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    module['icon'] as IconData,
+                    color: color,
+                    size: 22,
+                  ),
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      module['title'] as String,
-                      style: GoogleFonts.openSans(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                        color: const Color(0xFF2D3748),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                const SizedBox(height: 6),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                  child: Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.hindSiliguri(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 11,
+                      color: const Color(0xFF2D3748),
+                      height: 1.15,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      module['subtitle'] as String,
-                      style: GoogleFonts.openSans(
-                        fontSize: 12,
-                        color: const Color(0xFF718096),
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+                  ),
                 ),
               ],
             ),

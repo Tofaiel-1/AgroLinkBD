@@ -718,4 +718,31 @@ class BDLocationData {
       "Purbadhala",
     ],
   };
+
+  // Sample data for Unions. 
+  // In a production app, this should be loaded from a JSON file or API since there are 4,500+ unions.
+  static const Map<String, List<String>> unionsByUpazila = {
+    "Comilla Sadar": ["Amratoli", "Durgapur North", "Durgapur South", "Jagannathpur", "Kalirbazar", "Panchthubi"],
+    "Bogra Sadar": ["Erulia", "Fapore", "Gokul", "Lahiri Para", "Namoja", "Nishindara", "Noongola", "Rajapur", "Shabgram", "Shakharia", "Shekhahar"],
+    "Dhaka": ["Savar Union", "Ashulia", "Dhamsona", "Pathalia", "Aminbazar", "Tetuljhora"],
+  };
+
+  /// Returns the list of unions for a given upazila.
+  /// If the upazila is not in our sample map, it generates some generic unions so the UI doesn't break.
+  static List<String> getUnions(String? upazila) {
+    if (upazila == null || upazila.isEmpty) return [];
+    
+    if (unionsByUpazila.containsKey(upazila)) {
+      return unionsByUpazila[upazila]!;
+    }
+    
+    // Fallback generic unions for testing.
+    return [
+      "$upazila Union 1",
+      "$upazila Union 2",
+      "$upazila Union 3",
+      "$upazila Union 4",
+      "Sadar Union",
+    ];
+  }
 }

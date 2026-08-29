@@ -31,7 +31,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _otpSent = false;
   String? _verificationId;
   bool _useEmailLogin =
-      true; // Default to email login since phone API not integrated
+      false; // Default to phone login since it's the primary method
   bool _obscurePassword = true;
 
   @override
@@ -289,7 +289,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
 
-    String phone = '+88${_phoneController.text}';
+    String phone = '+880${_phoneController.text}';
 
     await _authService.signInWithPhone(
       phoneNumber: phone,
@@ -538,25 +538,151 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 32),
 
-                      // Mobile login removed per user request
-                      const SizedBox(height: 16),
+                      // Tab toggles for Phone/Email
+                      Row(
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => setState(() {
+                                _useEmailLogin = false;
+                                _otpSent = false;
+                              }),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                decoration: BoxDecoration(
+                                  border: Border(
+                                    bottom: BorderSide(
+                                      color: !_useEmailLogin ? primaryColor : Colors.transparent,
+                                      width: 2,
+                                    ),
+                                  ),
+                                ),
+                                child: Text(
+                                  'মোবাইল লগইন',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: !_useEmailLogin ? primaryColor : subTextColor,
+                                    fontWeight: !_useEmailLogin ? FontWeight.bold : FontWeight.normal,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => setState(() => _useEmailLogin = true),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                decoration: BoxDecoration(
+                                  border: Border(
+                                    bottom: BorderSide(
+                                      color: _useEmailLogin ? primaryColor : Colors.transparent,
+                                      width: 2,
+                                    ),
+                                  ),
+                                ),
+                                child: Text(
+                                  'ইমেইল লগইন',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: _useEmailLogin ? primaryColor : subTextColor,
+                                    fontWeight: _useEmailLogin ? FontWeight.bold : FontWeight.normal,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
 
-                      // Email Login Form
+                      if (!_useEmailLogin && !_otpSent) ...[
+                        // Phone Login Form
+                        TextFormField(
+                          controller: _phoneController,
+                          keyboardType: TextInputType.text,
+                          style: TextStyle(color: textColor),
+                          decoration: inputDecoration.copyWith(
+                            labelText: 'মোবাইল নাম্বার',
+                            hintText: '17XXXXXXXX',
+                            prefixIcon: Icon(Icons.phone_outlined, color: primaryColor),
+                            prefixText: '+880 ',
+                            prefixStyle: TextStyle(color: textColor, fontSize: 16),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'মোবাইল নাম্বার দিন';
+                            }
+                            if (value.length != 10) {
+                              return 'নাম্বার ১০ ডিজিটের হতে হবে (যেমন, 17XXXXXXXX)';
+                            }
+                            // Validate BD operator prefix (without the 0)
+                            final validPrefixes = ['17', '13', '19', '14', '18', '16', '15'];
+                            if (value.length >= 2 && !validPrefixes.contains(value.substring(0, 2))) {
+                              return 'সঠিক অপারেটর কোড দিন';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 24),
+                        _buildPrimaryButton(
+                          onPressed: _isLoading ? null : _sendOTP,
+                          text: 'OTP পাঠান',
+                          isLoading: _isLoading,
+                        ),
+                      ] else if (!_useEmailLogin && _otpSent) ...[
+                        // OTP Input Form
+                        Text(
+                          '+880 ${_phoneController.text} নাম্বারে পাঠানো ৬-ডিজিটের কোডটি দিন',
+                          style: TextStyle(color: subTextColor, fontSize: 14),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _otpController,
+                          keyboardType: TextInputType.number,
+                          maxLength: 6,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: textColor, fontSize: 24, letterSpacing: 8),
+                          decoration: inputDecoration.copyWith(
+                            hintText: '------',
+                            counterText: '',
+                          ),
+                          validator: (value) {
+                            if (value == null || value.length != 6) {
+                              return '৬-ডিজিটের OTP দিন';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 24),
+                        _buildPrimaryButton(
+                          onPressed: _isLoading ? null : _verifyOTP,
+                          text: 'লগইন করুন',
+                          isLoading: _isLoading,
+                        ),
+                        const SizedBox(height: 16),
+                        TextButton(
+                          onPressed: () => setState(() => _otpSent = false),
+                          child: Text('নাম্বার পরিবর্তন করুন', style: TextStyle(color: primaryColor)),
+                        ),
+                      ] else ...[
+                        // Email Login Form
                         TextFormField(
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
                           style: TextStyle(color: textColor),
                           decoration: inputDecoration.copyWith(
-                            labelText: 'Email',
+                            labelText: 'ইমেইল',
                             hintText: 'example@email.com',
                             prefixIcon: Icon(Icons.email_outlined, color: primaryColor),
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Enter email';
+                              return 'ইমেইল দিন';
                             }
                             if (!value.contains('@')) {
-                              return 'Enter valid email';
+                              return 'সঠিক ইমেইল দিন';
                             }
                             return null;
                           },
@@ -567,7 +693,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           obscureText: _obscurePassword,
                           style: TextStyle(color: textColor),
                           decoration: inputDecoration.copyWith(
-                            labelText: 'Password',
+                            labelText: 'পাসওয়ার্ড',
                             hintText: '••••••••',
                             prefixIcon: Icon(Icons.lock_outline, color: primaryColor),
                             suffixIcon: IconButton(
@@ -613,25 +739,26 @@ class _LoginScreenState extends State<LoginScreen> {
                           text: 'লগইন করুন',
                           isLoading: _isLoading,
                         ),
-                        const SizedBox(height: 24),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text('নতুন ইউজার? ', style: TextStyle(color: subTextColor)),
-                            TextButton(
-                              onPressed: () {
-                                Get.to(() => const RegisterScreen(
-                                      userId: '',
-                                      phone: '',
-                                    ));
-                              },
-                              child: const Text(
-                                'রেজিস্টার করুন',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
+                      ],
+                      const SizedBox(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('নতুন ইউজার? ', style: TextStyle(color: subTextColor)),
+                          TextButton(
+                            onPressed: () {
+                              Get.to(() => const RegisterScreen(
+                                    userId: '',
+                                    phone: '',
+                                  ));
+                            },
+                            child: const Text(
+                              'রেজিস্টার করুন',
+                              style: TextStyle(fontWeight: FontWeight.bold),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
+                      ),
 
 
                       const SizedBox(height: 32),

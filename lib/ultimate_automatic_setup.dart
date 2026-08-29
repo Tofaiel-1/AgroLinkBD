@@ -38,7 +38,7 @@ Future<Map<String, dynamic>> ultimateAutomaticSetup() async {
     debugPrint('⏳ PHASE 2: Auth User Setup...');
 
     const String email = 'superadmin@agrolinkbd.com';
-    const String password = 'super123';
+    const String password = 'super123T';
 
     String? uid = await _setupAuthUser(email, password);
 
@@ -173,12 +173,28 @@ Future<String?> _setupAuthUser(String email, String password) async {
       if (e.code == 'email-already-in-use') {
         debugPrint('   User already exists. Signing in...');
         // User already exists, so just sign in
-        final userCredential = await _auth.signInWithEmailAndPassword(
-          email: email.trim(),
-          password: password,
-        );
-        debugPrint('   ✓ Auth user signed in and verified');
-        return userCredential.user!.uid;
+        try {
+          final userCredential = await _auth.signInWithEmailAndPassword(
+            email: email.trim(),
+            password: password,
+          );
+          debugPrint('   ✓ Auth user signed in and verified');
+          return userCredential.user!.uid;
+        } catch (signInError) {
+          debugPrint('   Incorrect new password. Trying with old password "super123"...');
+          try {
+            final userCredential = await _auth.signInWithEmailAndPassword(
+              email: email.trim(),
+              password: 'super123',
+            );
+            debugPrint('   ✓ Signed in with old password. Updating to new password...');
+            await userCredential.user!.updatePassword(password);
+            debugPrint('   ✓ Password updated successfully');
+            return userCredential.user!.uid;
+          } catch (e) {
+            throw Exception('Auth error: Could not sign in with new or old password.');
+          }
+        }
       } else {
         throw Exception('Auth error: ${e.code} - ${e.message}');
       }
@@ -250,7 +266,7 @@ Future<Map<String, dynamic>> _verifyEverything(String uid, String email) async {
 
     final signInResult = await _auth.signInWithEmailAndPassword(
       email: email,
-      password: 'super123',
+      password: 'super123T',
     );
 
     if (signInResult.user!.uid != uid) {

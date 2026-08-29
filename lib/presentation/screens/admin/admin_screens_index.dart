@@ -21,6 +21,7 @@ export 'admin_services_provider_management_screen.dart';
 export 'admin_logs_audit_screen.dart';
 export 'admin_analytics_reports_screen.dart';
 export 'admin_system_settings_screen.dart';
+export 'admin_user_disputes_screen.dart';
 
 // Legacy Admin Screens
 export 'admin_user_management_screen.dart';

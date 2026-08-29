@@ -53,8 +53,21 @@ class NotificationService {
     print('FCM Token: $token');
   }
 
-  // Show local notification
+  // Show local notification (Internal for FCM)
   Future<void> _showLocalNotification(RemoteMessage message) async {
+    await showNotification(
+      title: message.notification?.title ?? 'AgroLinkBD',
+      body: message.notification?.body ?? '',
+      payload: message.data.toString(),
+    );
+  }
+
+  // Show local notification publicly
+  Future<void> showNotification({
+    required String title,
+    required String body,
+    String? payload,
+  }) async {
     const AndroidNotificationDetails androidDetails =
         AndroidNotificationDetails(
           'agrolinkbd_channel',
@@ -69,11 +82,11 @@ class NotificationService {
     );
 
     await _localNotifications.show(
-      message.hashCode,
-      message.notification?.title ?? 'AgroLinkBD',
-      message.notification?.body ?? '',
+      DateTime.now().millisecond, // unique ID
+      title,
+      body,
       notificationDetails,
-      payload: message.data.toString(),
+      payload: payload,
     );
   }
 

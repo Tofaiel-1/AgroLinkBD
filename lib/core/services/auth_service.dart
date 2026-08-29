@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import '../models/user_model.dart';
 import 'audit_service.dart';
+import 'notification_service.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -357,9 +358,19 @@ class AuthService {
           .collection('users')
           .doc(userId)
           .get()
-          .timeout(const Duration(seconds: 3));
-      if (doc.exists && doc.data() != null) {
-        return UserModel.fromJson(doc.data() as Map<String, dynamic>);
+          .timeout(const Duration(seconds: 8)); // Increased timeout
+      
+      if (!doc.exists) {
+        return null; // Profile truly does not exist
+      }
+      
+      if (doc.data() != null) {
+        try {
+          return UserModel.fromJson(doc.data() as Map<String, dynamic>);
+        } catch (parseError, stackTrace) {
+          debugPrint('⚠️ Error parsing user data: $parseError\n$stackTrace');
+          throw Exception('Data format error: $parseError');
+        }
       }
       return null;
     } on FirebaseException catch (e) {
@@ -373,15 +384,27 @@ class AuthService {
       }
     } catch (e) {
       debugPrint('⚠️ getUserData error or timeout: $e');
-      return null;
+      throw Exception('Failed to get user data: $e'); // Throw instead of return null
     }
   }
 
-  // Update last login
+  // Update last login and FCM token
   Future<void> updateLastLogin(String userId) async {
-    await _firestore.collection('users').doc(userId).update({
-      'lastLoginAt': DateTime.now().toIso8601String(),
-    });
+    try {
+      final token = await NotificationService().getFCMToken();
+      
+      final Map<String, dynamic> updateData = {
+        'lastLoginAt': DateTime.now().toIso8601String(),
+      };
+      
+      if (token != null) {
+        updateData['fcmToken'] = token;
+      }
+      
+      await _firestore.collection('users').doc(userId).update(updateData);
+    } catch (e) {
+      debugPrint('⚠️ Error updating last login/token: $e');
+    }
   }
 
   // Sign out

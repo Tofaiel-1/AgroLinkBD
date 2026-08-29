@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'admin_main_dashboard.dart';
 import 'admin_user_management_screen.dart';
+import 'admin_user_disputes_screen.dart';
 import 'admin_analytics_screen.dart';
 import 'admin_settings_screen.dart';
 
@@ -27,6 +28,11 @@ class _AdminPanelNavigationState extends State<AdminPanelNavigation> {
       'icon': Icons.dashboard,
       'label': 'Dashboard',
       'screen': const AdminMainDashboard(),
+    },
+    {
+      'icon': Icons.gavel_rounded,
+      'label': 'Disputes',
+      'screen': const AdminUserDisputesScreen(),
     },
     {
       'icon': Icons.people,

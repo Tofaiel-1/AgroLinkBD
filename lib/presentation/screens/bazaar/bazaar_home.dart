@@ -9,6 +9,7 @@ import 'bazaar_products.dart';
 import 'bazaar_marketplace.dart';
 import 'add_product_screen.dart';
 import 'package:agrolinkbd/core/providers/language_provider.dart';
+import 'package:agrolinkbd/presentation/screens/analytics/market_price_analysis_screen.dart';
 
 class BazaarHome extends StatefulWidget {
   const BazaarHome({super.key});
@@ -317,6 +318,10 @@ class _BazaarHomeState extends State<BazaarHome> {
                   ),
                   const SizedBox(height: 16),
                   _buildCategoryGrid(),
+                  const SizedBox(height: 32),
+
+                  // Market Price Analytics Link
+                  _buildMarketPriceLink(isBn),
                   const SizedBox(height: 32),
 
                   // Quick Stats
@@ -636,4 +641,74 @@ class _BazaarHomeState extends State<BazaarHome> {
       ),
     );
   }
+
+  Widget _buildMarketPriceLink(bool isBn) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const MarketPriceAnalysisScreen(),
+          ),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.orange.shade400, Colors.deepOrange.shade600],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.orange.withOpacity(0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.analytics_outlined, color: Colors.white, size: 32),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isBn ? 'বাজার দর বিশ্লেষণ' : 'Market Price Analysis',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    isBn ? 'আজকের বাজার দর ও প্রবণতা জানুন' : 'Check today\'s market prices & trends',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
 }
+

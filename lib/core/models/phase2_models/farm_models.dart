@@ -179,6 +179,22 @@ class FarmActivity {
   }
 }
 
+DateTime _parseFarmDate(dynamic value) {
+  if (value == null) return DateTime.now();
+  if (value is Timestamp) return value.toDate();
+  if (value is DateTime) return value;
+  if (value is String) return DateTime.tryParse(value) ?? DateTime.now();
+  if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
+  return DateTime.now();
+}
+
+double _parseFarmDouble(dynamic value) {
+  if (value == null) return 0.0;
+  if (value is num) return value.toDouble();
+  if (value is String) return double.tryParse(value) ?? 0.0;
+  return 0.0;
+}
+
 class FarmExpense {
   final String id;
   final String userId;
@@ -188,7 +204,15 @@ class FarmExpense {
   final DateTime date;
   final String description;
 
-  FarmExpense({required this.id, required this.userId, required this.farmId, required this.category, required this.amount, required this.date, required this.description});
+  FarmExpense({
+    required this.id,
+    required this.userId,
+    required this.farmId,
+    required this.category,
+    required this.amount,
+    required this.date,
+    required this.description,
+  });
 
   Map<String, dynamic> toMap() {
     return {
@@ -204,12 +228,12 @@ class FarmExpense {
   factory FarmExpense.fromMap(Map<String, dynamic> map, String documentId) {
     return FarmExpense(
       id: documentId,
-      userId: map['userId'] ?? '',
-      farmId: map['farmId'] ?? '',
-      category: map['category'] ?? '',
-      amount: (map['amount'] ?? 0.0).toDouble(),
-      date: map['date'] != null ? (map['date'] as Timestamp).toDate() : DateTime.now(),
-      description: map['description'] ?? '',
+      userId: map['userId']?.toString() ?? '',
+      farmId: map['farmId']?.toString() ?? '',
+      category: map['category']?.toString() ?? '',
+      amount: _parseFarmDouble(map['amount']),
+      date: _parseFarmDate(map['date']),
+      description: map['description']?.toString() ?? '',
     );
   }
 }
@@ -225,7 +249,17 @@ class FarmRevenue {
   final DateTime date;
   final String buyerName;
 
-  FarmRevenue({required this.id, required this.userId, required this.farmId, required this.cropName, required this.amount, required this.quantity, required this.unit, required this.date, required this.buyerName});
+  FarmRevenue({
+    required this.id,
+    required this.userId,
+    required this.farmId,
+    required this.cropName,
+    required this.amount,
+    required this.quantity,
+    required this.unit,
+    required this.date,
+    required this.buyerName,
+  });
 
   Map<String, dynamic> toMap() {
     return {
@@ -243,14 +277,14 @@ class FarmRevenue {
   factory FarmRevenue.fromMap(Map<String, dynamic> map, String documentId) {
     return FarmRevenue(
       id: documentId,
-      userId: map['userId'] ?? '',
-      farmId: map['farmId'] ?? '',
-      cropName: map['cropName'] ?? '',
-      amount: (map['amount'] ?? 0.0).toDouble(),
-      quantity: (map['quantity'] ?? 0.0).toDouble(),
-      unit: map['unit'] ?? 'kg',
-      date: map['date'] != null ? (map['date'] as Timestamp).toDate() : DateTime.now(),
-      buyerName: map['buyerName'] ?? '',
+      userId: map['userId']?.toString() ?? '',
+      farmId: map['farmId']?.toString() ?? '',
+      cropName: map['cropName']?.toString() ?? '',
+      amount: _parseFarmDouble(map['amount']),
+      quantity: _parseFarmDouble(map['quantity']),
+      unit: map['unit']?.toString() ?? 'kg',
+      date: _parseFarmDate(map['date']),
+      buyerName: map['buyerName']?.toString() ?? '',
     );
   }
 }

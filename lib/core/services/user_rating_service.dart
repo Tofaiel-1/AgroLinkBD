@@ -158,26 +158,81 @@ class UserRatingService {
     }
   }
 
-  // Submit a fraud report or penalty deduction to decrease the user's trust score
-  Future<void> submitFraudReportOrPenalty({
+  // Submit a dispute/fraud report against another user to Super Admin for review
+  Future<bool> submitUserDisputeReport({
     required String targetUserId,
+    required String targetUserName,
+    String? targetUserRole,
+    String? targetUserPhone,
     required String reporterId,
     required String reporterName,
-    required int penaltyType, // 1=fake weight (-15), 2=cancel (-5), 3=payment default (-10), 4=late (-5), 5=misbehavior (-10)
+    String? reporterRole,
+    String? reporterPhone,
+    required int penaltyType, // 1=fake weight/quality, 2=cancel/breach, 3=payment default, 4=late/no-show, 5=misbehavior, 6=other
+    required String category,
     required String reason,
+    String? orderReference,
+  }) async {
+    try {
+      if (reporterId.isNotEmpty && targetUserId.isNotEmpty && reporterId == targetUserId) {
+        debugPrint('Cannot report self!');
+        return false;
+      }
+
+      final reportRef = _firestore.collection('user_reports').doc();
+      final reportData = {
+        'id': reportRef.id,
+        'targetUserId': targetUserId,
+        'targetUserName': targetUserName,
+        'targetUserRole': targetUserRole ?? 'User',
+        'targetUserPhone': targetUserPhone ?? '',
+        'reporterId': reporterId,
+        'reporterName': reporterName,
+        'reporterRole': reporterRole ?? 'User',
+        'reporterPhone': reporterPhone ?? '',
+        'penaltyType': penaltyType,
+        'category': category,
+        'reason': reason,
+        'orderReference': orderReference ?? 'N/A',
+        'status': 'pending', // 'pending', 'action_taken', 'dismissed'
+        'adminNotes': '',
+        'penaltyDeducted': 0,
+        'createdAt': DateTime.now().toIso8601String(),
+        'updatedAt': DateTime.now().toIso8601String(),
+      };
+
+      await reportRef.set(reportData);
+      return true;
+    } catch (e) {
+      debugPrint('Error submitting user dispute report: $e');
+      return false;
+    }
+  }
+
+  // Super Admin action: Approve penalty on target user and deduct trust points
+  Future<bool> resolveDisputeAndApplyPenalty({
+    required String reportId,
+    required String targetUserId,
+    required int penaltyType,
+    required String adminNotes,
+    required String adminId,
+    required String adminName,
   }) async {
     try {
       final userRef = _firestore.collection('users').doc(targetUserId);
-      final penaltyCollection = userRef.collection('penalties');
+      final reportRef = _firestore.collection('user_reports').doc(reportId);
 
-      await penaltyCollection.add({
-        'reporterId': reporterId,
-        'reporterName': reporterName,
+      // Record in target user's penalties subcollection for audit history
+      await userRef.collection('penalties').add({
+        'reportId': reportId,
         'penaltyType': penaltyType,
-        'reason': reason,
+        'adminNotes': adminNotes,
+        'approvedBy': adminName,
+        'approvedById': adminId,
         'createdAt': DateTime.now().toIso8601String(),
       });
 
+      // Update user penalty statistics
       await _firestore.runTransaction((transaction) async {
         final snapshot = await transaction.get(userRef);
         if (snapshot.exists) {
@@ -187,7 +242,7 @@ class UserRatingService {
           int paymentDefaults = data['paymentDefaults'] ?? 0;
           int lateDeliveries = data['lateDeliveries'] ?? 0;
 
-          if (penaltyType == 1 || penaltyType == 5) {
+          if (penaltyType == 1 || penaltyType == 5 || penaltyType == 6) {
             fraudReports += 1;
           } else if (penaltyType == 2) {
             cancelledOrders += 1;
@@ -205,8 +260,65 @@ class UserRatingService {
           });
         }
       });
+
+      // Update report status in user_reports
+      await reportRef.update({
+        'status': 'action_taken',
+        'adminNotes': adminNotes,
+        'resolvedBy': adminName,
+        'resolvedById': adminId,
+        'resolvedAt': DateTime.now().toIso8601String(),
+        'updatedAt': DateTime.now().toIso8601String(),
+      });
+
+      return true;
     } catch (e) {
-      debugPrint('Error submitting fraud/penalty report: $e');
+      debugPrint('Error applying admin penalty: $e');
+      return false;
+    }
+  }
+
+  // Super Admin action: Dismiss/Reject report as baseless or resolved without penalty
+  Future<bool> dismissDispute({
+    required String reportId,
+    required String adminNotes,
+    required String adminId,
+    required String adminName,
+  }) async {
+    try {
+      final reportRef = _firestore.collection('user_reports').doc(reportId);
+      await reportRef.update({
+        'status': 'dismissed',
+        'adminNotes': adminNotes,
+        'resolvedBy': adminName,
+        'resolvedById': adminId,
+        'resolvedAt': DateTime.now().toIso8601String(),
+        'updatedAt': DateTime.now().toIso8601String(),
+      });
+      return true;
+    } catch (e) {
+      debugPrint('Error dismissing dispute report: $e');
+      return false;
+    }
+  }
+
+  // Super Admin action: Toggle Ban/Suspend User
+  Future<bool> toggleUserBan({
+    required String targetUserId,
+    required bool isBanned,
+    required String reason,
+    required String adminName,
+  }) async {
+    try {
+      await _firestore.collection('users').doc(targetUserId).update({
+        'isBanned': isBanned,
+        'banReason': isBanned ? reason : '',
+        'bannedAt': isBanned ? DateTime.now().toIso8601String() : null,
+      });
+      return true;
+    } catch (e) {
+      debugPrint('Error toggling user ban: $e');
+      return false;
     }
   }
 
@@ -565,43 +677,70 @@ class UserRatingService {
     );
   }
 
-  // Show Fraud & Penalty Deduction Modal ("fraud activity er jonne rating decrease hobe... add more decrease option")
+  // Show Fraud & Penalty Deduction Modal - Submits dispute to Super Admin for verification and penalty action
   static void showFraudPenaltyDialog({
     required BuildContext context,
     required String targetUserId,
     required String targetUserName,
+    String? targetUserRole,
+    String? targetUserPhone,
     required String reporterId,
     required String reporterName,
+    String? reporterRole,
+    String? reporterPhone,
+    String? orderReference,
     required VoidCallback onPenaltySubmitted,
   }) {
+    if (reporterId.isNotEmpty && targetUserId.isNotEmpty && reporterId == targetUserId) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚠️ আপনি নিজের বিরুদ্ধে রিপোর্ট বা জরিমানা আবেদন করতে পারবেন না!'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     int selectedPenaltyType = 1;
     final TextEditingController reasonController = TextEditingController();
+    final TextEditingController orderRefController = TextEditingController(text: orderReference ?? '');
 
     final List<Map<String, dynamic>> penaltyOptions = [
       {
         'id': 1,
-        'label': '🚫 ভুয়া ওজন বা ভেজাল পণ্য (Quality Fraud)',
+        'category': 'ভুয়া ওজন বা নিম্নমানের পণ্য (Quality/Weight Fraud)',
+        'label': '🚫 ভুয়া ওজন বা নিম্নমানের পণ্য (Quality/Weight Fraud)',
         'deduction': '-১৫ পয়েন্ট',
       },
       {
         'id': 2,
-        'label': '❌ অর্ডার নিশ্চিত করার পর বাতিল/গ্রহণ না করা',
+        'category': 'অর্ডার বাতিল বা গ্রহণ না করা (Breach/Cancellation)',
+        'label': '❌ অর্ডার নিশ্চিত করার পর বাতিল বা পণ্য গ্রহণ না করা',
         'deduction': '-৫ পয়েন্ট',
       },
       {
         'id': 3,
-        'label': '💸 পেমেন্ট বকেয়া বা বিলম্ব (Payment Default)',
+        'category': 'পেমেন্ট বকেয়া বা প্রতারণা (Payment Default/Scam)',
+        'label': '💸 পেমেন্ট বকেয়া বা লেনদেনে প্রতারণা (Payment Default)',
         'deduction': '-১০ পয়েন্ট',
       },
       {
         'id': 4,
-        'label': '⏰ নির্ধারিত সময়ে উপস্থিত না হওয়া (No-Show)',
+        'category': 'ডেলিভারি বিলম্ব বা নো-শো (Delivery/Trip Failure)',
+        'label': '⏰ নির্ধারিত সময়ে উপস্থিত না হওয়া বা ট্রিপ ড্রপ (No-Show)',
         'deduction': '-৫ পয়েন্ট',
       },
       {
         'id': 5,
-        'label': '⚠️ অসদাচরণ বা ভুয়া তথ্য প্রদান (Misbehavior)',
+        'category': 'অসদাচরণ বা ভুয়া তথ্য (Harassment/Misbehavior)',
+        'label': '⚠️ অসদাচরণ, ভুয়া তথ্য বা দুর্ব্যবহার (Misbehavior)',
         'deduction': '-১০ পয়েন্ট',
+      },
+      {
+        'id': 6,
+        'category': 'অন্যান্য চুক্তিভঙ্গ বা অনিয়ম (Other Policy Violation)',
+        'label': '📑 অন্যান্য চুক্তিভঙ্গ বা গুরুতর অনিয়ম',
+        'deduction': '-৫ থেকে -১৫ পয়েন্ট',
       },
     ];
 
@@ -609,58 +748,109 @@ class UserRatingService {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setState) {
+          final selectedOption = penaltyOptions.firstWhere(
+            (o) => o['id'] == selectedPenaltyType,
+            orElse: () => penaltyOptions.first,
+          );
+
           return AlertDialog(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
-            title: Text(
-              '$targetUserName-এর বিরুদ্ধে রিপোর্ট / জরিমানা',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.red),
-            ),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'রিপোর্ট ও জরিমানার কারণ নির্বাচন করুন:',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+            title: Row(
+              children: [
+                const Icon(Icons.gavel_rounded, color: Colors.red, size: 22),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '$targetUserName-এর বিরুদ্ধে অভিযোগ / রিপোর্ট',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.red),
                   ),
-                  const SizedBox(height: 8),
-                  ...penaltyOptions.map((option) {
-                    return RadioListTile<int>(
-                      title: Text(
-                        option['label'],
-                        style: const TextStyle(fontSize: 13),
+                ),
+              ],
+            ),
+            content: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.amber.shade700, width: 1),
                       ),
-                      subtitle: Text(
-                        'ট্রাস্ট স্কোর কমবে: ${option['deduction']}',
-                        style: const TextStyle(color: Colors.red, fontSize: 11, fontWeight: FontWeight.bold),
-                      ),
-                      value: option['id'] as int,
-                      groupValue: selectedPenaltyType,
-                      contentPadding: EdgeInsets.zero,
-                      onChanged: (val) {
-                        if (val != null) {
-                          setState(() {
-                            selectedPenaltyType = val;
-                          });
-                        }
-                      },
-                    );
-                  }),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: reasonController,
-                    decoration: InputDecoration(
-                      labelText: 'বিস্তারিত বিবরণ লিখুন (বাধ্যতামূলক)',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.admin_panel_settings, color: Colors.amber, size: 20),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'অভিযোগটি যাচাইয়ের জন্য সুপার অ্যাডমিনের কাছে পাঠানো হবে। প্রমাণিত হলে অভিযুক্ত ব্যবহারকারীর ট্রাস্ট স্কোর কর্তন ও প্রয়োজনীয় ব্যবস্থা নেওয়া হবে।',
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.black87),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    maxLines: 2,
-                  ),
-                ],
+                    const SizedBox(height: 12),
+                    const Text(
+                      'সুনির্দিষ্ট কারণ নির্বাচন করুন (বাধ্যতামূলক):',
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                    ),
+                    const SizedBox(height: 8),
+                    ...penaltyOptions.map((option) {
+                      return RadioListTile<int>(
+                        title: Text(
+                          option['label'],
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                        ),
+                        subtitle: Text(
+                          'প্রস্তাবিত কর্তন: ${option['deduction']}',
+                          style: const TextStyle(color: Colors.red, fontSize: 11, fontWeight: FontWeight.bold),
+                        ),
+                        value: option['id'] as int,
+                        groupValue: selectedPenaltyType,
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                        onChanged: (val) {
+                          if (val != null) {
+                            setState(() {
+                              selectedPenaltyType = val;
+                            });
+                          }
+                        },
+                      );
+                    }),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: orderRefController,
+                      decoration: InputDecoration(
+                        labelText: 'অর্ডার / ট্রিপ / রেফারেন্স নম্বর (যদি থাকে)',
+                        hintText: 'যেমন: ORD-1024 / TRP-502',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: reasonController,
+                      decoration: InputDecoration(
+                        labelText: 'অভিযোগের বিস্তারিত বিবরণ ও প্রমাণ (বাধ্যতামূলক)',
+                        hintText: 'ঘটনাটি কখন ঘটেছে এবং কী অনিয়ম হয়েছে বিস্তারিত লিখুন...',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      maxLines: 3,
+                    ),
+                  ],
+                ),
               ),
             ),
             actions: [
@@ -674,34 +864,72 @@ class UserRatingService {
                   foregroundColor: Colors.white,
                 ),
                 onPressed: () async {
-                  if (reasonController.text.trim().isEmpty) {
+                  final reasonText = reasonController.text.trim();
+                  if (reasonText.isEmpty || reasonText.length < 5) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('অনুগ্রহ করে বিস্তারিত বিবরণ লিখুন!'),
+                        content: Text('অনুগ্রহ করে অভিযোগের বিস্তারিত বিবরণ লিখুন (কমপক্ষে ৫ অক্ষর)!'),
                         backgroundColor: Colors.orange,
                       ),
                     );
                     return;
                   }
+
                   Navigator.pop(dialogContext);
-                  await UserRatingService().submitFraudReportOrPenalty(
+                  final success = await UserRatingService().submitUserDisputeReport(
                     targetUserId: targetUserId,
+                    targetUserName: targetUserName,
+                    targetUserRole: targetUserRole,
+                    targetUserPhone: targetUserPhone,
                     reporterId: reporterId,
                     reporterName: reporterName,
+                    reporterRole: reporterRole,
+                    reporterPhone: reporterPhone,
                     penaltyType: selectedPenaltyType,
-                    reason: reasonController.text.trim(),
+                    category: selectedOption['category'] ?? 'General Dispute',
+                    reason: reasonText,
+                    orderReference: orderRefController.text.trim(),
                   );
-                  onPenaltySubmitted();
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('রিপোর্ট সফলভাবে সাবমিট ও ট্রাস্ট স্কোর আপডেট করা হয়েছে!'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
+
+                  if (success) {
+                    onPenaltySubmitted();
+                    if (context.mounted) {
+                      showDialog(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          title: const Row(
+                            children: [
+                              Icon(Icons.check_circle, color: Colors.green),
+                              SizedBox(width: 8),
+                              Text('অভিযোগ দাখিল সফল'),
+                            ],
+                          ),
+                          content: const Text(
+                            'আপনার অভিযোগটি সফলভাবে সুপার অ্যাডমিনের পর্যালোচনায় জমা হয়েছে। সুপার অ্যাডমিন তথ্য যাচাই করে অভিযুক্ত ব্যবহারকারীর বিরুদ্ধে ব্যবস্থা গ্রহণ করবেন।',
+                            style: TextStyle(fontSize: 13),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx),
+                              child: const Text('ঠিক আছে'),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                  } else {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('অভিযোগ দাখিল করা সম্ভব হয়নি। পুনরায় চেষ্টা করুন।'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
                   }
                 },
-                child: const Text('জরিমানা সাবমিট করুন'),
+                child: const Text('সুপার অ্যাডমিনে রিপোর্ট পাঠান'),
               ),
             ],
           );

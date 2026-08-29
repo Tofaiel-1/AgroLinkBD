@@ -6,12 +6,15 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import 'package:agrolinkbd/presentation/screens/marketplace/add_product_screen.dart';
+import 'package:agrolinkbd/core/models/market_price_model.dart';
 import 'package:agrolinkbd/core/models/order_model.dart';
 import 'package:agrolinkbd/core/services/order_service.dart';
 import 'package:agrolinkbd/core/services/sslcommerz_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:agrolinkbd/presentation/screens/buyer/fish_buyer_orders_screen.dart';
 import 'package:agrolinkbd/presentation/widgets/quick_buy_bottom_sheet.dart';
+import 'package:agrolinkbd/presentation/screens/analytics/market_price_analysis_screen.dart';
+import 'package:agrolinkbd/core/services/market_price_service.dart';
 
 class MarketplaceScreen extends StatefulWidget {
   const MarketplaceScreen({super.key});
@@ -24,6 +27,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   String _selectedCategory = 'সব';
   String _sortBy = 'popular';
   int _currentBannerIndex = 0;
+  final MarketPriceService _marketPriceService = MarketPriceService();
+  Map<String, double> _marketPrices = {};
 
   final List<String> _banners = [
     'https://images.unsplash.com/photo-1488459716781-31db52582fe9?q=80&w=1200&auto=format&fit=crop',
@@ -42,7 +47,26 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     {'label': 'দুধ-ডিম', 'key': 'dairy', 'icon': Icons.egg_rounded},
   ];
 
-  
+  List<MarketPriceModel> _marketCommodities = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchMarketPrices();
+  }
+
+  Future<void> _fetchMarketPrices() async {
+    final prices = await _marketPriceService.fetchCurrentMarketPrices();
+    if (mounted) {
+      setState(() {
+        _marketCommodities = prices;
+        for (var p in prices) {
+          _marketPrices[p.productName] = p.currentPrice;
+        }
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context);
@@ -258,219 +282,84 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
           ),
 
           // ==========================================
-          // PRODUCT GRID WITH FIREBASE
+          // MARKET PRICE ANALYSIS BANNER
+          // ==========================================
           SliverToBoxAdapter(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance.collection('bazaar_products').snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Padding(
-                    padding: EdgeInsets.all(32.0),
-                    child: Center(child: CircularProgressIndicator()),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const MarketPriceAnalysisScreen(),
+                    ),
                   );
-                }
-                
-                if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
-                }
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.orange.shade400, Colors.deepOrange.shade600],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.orange.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.analytics, color: Colors.white, size: 28),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'বাজার দর বিশ্লেষণ',
+                              style: GoogleFonts.hindSiliguri(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'আজকের বাজার দর ও প্রবণতা জানুন',
+                              style: GoogleFonts.hindSiliguri(
+                                color: Colors.white.withOpacity(0.9),
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 20),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
 
-                var docs = snapshot.data?.docs ?? [];
-                
-                List<Map<String, dynamic>> allProducts = [];
-                
-                for(var doc in docs) {
-                  var data = doc.data() as Map<String, dynamic>;
-                  final title = data['title']?.toString().trim() ?? '';
-                  if (title.isEmpty || title.toLowerCase() == 'unknown') {
-                    continue;
-                  }
-                  allProducts.add({
-                    'id': doc.id,
-                    'name': title,
-                    'price': (data['price'] ?? 0).toDouble(),
-                    'unit': data['unit'] ?? 'kg',
-                    'farmer': 'AgroLink Farm',
-                    'farmerId': data['userId'],
-                    'location': data['location'] ?? 'বাংলাদেশ',
-                    'image': data['imageUrl'] ?? 'https://via.placeholder.com/150',
-                    'rating': 4.5,
-                    'category': data['category'] ?? 'other',
-                    'badge': 'New',
-                    'isVerified': true,
-                  });
-                }
-
-                allProducts.addAll([
-                  {
-                    'name': 'তাজা টমেটো (Premium)',
-                    'price': 120,
-                    'unit': 'কেজি',
-                    'farmer': 'করিম ফার্ম',
-                    'location': 'বগুড়া',
-                    'image': 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782757091/Tomato_hcjt7o.png',
-                    'rating': 4.8,
-                    'category': 'vegetables',
-                    'badge': 'Hot',
-                    'isVerified': true,
-                  },
-                  {
-                    'name': 'দেশি পেঁয়াজ (Organic)',
-                    'price': 40,
-                    'unit': 'কেজি',
-                    'farmer': 'রহিম এগ্রো',
-                    'location': 'পাবনা',
-                    'image': 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782757375/images_z5w9hg.jpg',
-                    'rating': 4.5,
-                    'category': 'vegetables',
-                    'badge': 'Sale',
-                    'isVerified': true,
-                  },
-                  {
-                    'name': 'মিনিকেট চাল (সুপার)',
-                    'price': 80,
-                    'unit': 'কেজি',
-                    'farmer': 'কৃষক সমবায়',
-                    'location': 'দিনাজপুর',
-                    'image': 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782584453/Screenshot_2026-06-28_002037_e5q6ll.png',
-                    'rating': 4.9,
-                    'category': 'grains',
-                    'badge': null,
-                    'isVerified': true,
-                  },
-                  {
-                    'name': 'তাজা আলু (রংপুর)',
-                    'price': 20,
-                    'unit': 'কেজি',
-                    'farmer': 'রংপুর ফার্ম',
-                    'location': 'রংপুর',
-                    'image': 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782584736/Screenshot_2026-06-28_002524_ziwqmo.png',
-                    'rating': 4.3,
-                    'category': 'vegetables',
-                    'badge': null,
-                    'isVerified': false,
-                  },
-                  {
-                    'name': 'আম (হিমসাগর)',
-                    'price': 120,
-                    'unit': 'কেজি',
-                    'farmer': 'রাজশাহী ফ্রুট',
-                    'location': 'রাজশাহী',
-                    'image': 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782583216/image_sxwwpa.png',
-                    'rating': 4.9,
-                    'category': 'fruits',
-                    'badge': 'Top Rated',
-                    'isVerified': true,
-                  },
-                  {
-                    'name': 'রুই মাছ (হালদা)',
-                    'price': 350,
-                    'unit': 'কেজি',
-                    'farmer': 'মৎস্য খামার',
-                    'location': 'ময়মনসিংহ',
-                    'image': 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782734272/Screenshot_2026-06-29_175728_q4k1bk.png',
-                    'rating': 4.7,
-                    'category': 'fish',
-                    'badge': 'Fresh',
-                    'isVerified': true,
-                  },
-                  {
-                    'name': 'গরুর মাংস (দেশি)',
-                    'price': 650,
-                    'unit': 'কেজি',
-                    'farmer': 'সততা এগ্রো',
-                    'location': 'ঢাকা',
-                    'image': 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782756123/images_wrgten.webp',
-                    'rating': 4.8,
-                    'category': 'meat',
-                    'badge': null,
-                    'isVerified': true,
-                  },
-                  {
-                    'name': 'ফার্মের ডিম',
-                    'price': 100,
-                    'unit': 'ডজন',
-                    'farmer': 'পোলট্রি ফার্ম',
-                    'location': 'গাজীপুর',
-                    'image': 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782756249/download_ezwxls.jpg',
-                    'rating': 4.6,
-                    'category': 'dairy',
-                    'badge': null,
-                    'isVerified': true,
-                  },
-                                    {
-                    'name': 'খাঁটি মধু (সুন্দরবন)',
-                    'price': 1200,
-                    'unit': 'কেজি',
-                    'farmer': 'মৌয়াল সমবায়',
-                    'location': 'খুলনা',
-                    'image': 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782756674/images_fhqvvm.jpg',
-                    'rating': 4.9,
-                    'category': 'spices',
-                    'badge': 'Premium',
-                    'isVerified': true,
-                  },
-                  {
-                    'name': 'টাটকা বেগুন',
-                    'price': 50,
-                    'unit': 'কেজি',
-                    'farmer': 'সবুজ এগ্রো',
-                    'location': 'নরসিংদী',
-                    'image': 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782757463/images_vqbixx.jpg',
-                    'rating': 4.2,
-                    'category': 'vegetables',
-                    'badge': 'Fresh',
-                    'isVerified': true,
-                  },
-                  {
-                    'name': 'সরিষার তেল (ঘানি ভাঙা)',
-                    'price': 350,
-                    'unit': 'লিটার',
-                    'farmer': 'তৈল কল',
-                    'location': 'জামালপুর',
-                    'image': 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782757514/images_cnlkya.jpg',
-                    'rating': 4.9,
-                    'category': 'spices',
-                    'badge': 'Organic',
-                    'isVerified': true,
-                  },
-                  {
-                    'name': 'দেশি মুরগি',
-                    'price': 600,
-                    'unit': 'পিছ',
-                    'farmer': 'গ্রামের খামার',
-                    'location': 'কুমিল্লা',
-                    'image': 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782757555/images_xgtcyf.jpg',
-                    'rating': 4.7,
-                    'category': 'meat',
-                    'badge': null,
-                    'isVerified': true,
-                  },
-                  {
-                    'name': 'তরমুজ (বরিশাল)',
-                    'price': 200,
-                    'unit': 'পিছ',
-                    'farmer': 'বরিশাল ফ্রুটস',
-                    'location': 'বরিশাল',
-                    'image': 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782757612/images_elzmmv.jpg',
-                    'rating': 4.8,
-                    'category': 'fruits',
-                    'badge': 'Summer Special',
-                    'isVerified': true,
-                  },
-                  {
-                    'name': 'ধনে পাতা (দেশি)',
-                    'price': 20,
-                    'unit': 'আঁটি',
-                    'farmer': 'কৃষক বাজার',
-                    'location': 'সাভার',
-                    'image': 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782757651/images_gnubxi.jpg',
-                    'rating': 4.5,
-                    'category': 'vegetables',
-                    'badge': null,
-                    'isVerified': false,
-                  },
-                ]);
-
+          // ==========================================
+          // ==========================================
+          // COMMODITY GRID
+          SliverToBoxAdapter(
+            child: Builder(
+              builder: (context) {
                 String selectedKey = 'all';
                 for(var c in _categories) {
                   if(c['label'] == _selectedCategory) {
@@ -479,16 +368,30 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                   }
                 }
 
-                var products = selectedKey == 'all' 
-                    ? allProducts 
-                    : allProducts.where((p) => p['category'] == selectedKey).toList();
+                var filteredCommodities = selectedKey == 'all' 
+                    ? _marketCommodities 
+                    : _marketCommodities.where((p) => p.category == selectedKey).toList();
 
-                if (_sortBy == 'price_low') {
-                  products.sort((a, b) => (a['price'] as num).compareTo(b['price'] as num));
-                } else if (_sortBy == 'price_high') {
-                  products.sort((a, b) => (b['price'] as num).compareTo(a['price'] as num));
-                } else if (_sortBy == 'rating') {
-                  products.sort((a, b) => (b['rating'] as num).compareTo(a['rating'] as num));
+                if (_marketCommodities.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.all(32.0),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+
+                if (filteredCommodities.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(40.0),
+                      child: Column(
+                        children: [
+                          Icon(Icons.search_off_rounded, size: 80, color: Colors.grey.shade300),
+                          const SizedBox(height: 16),
+                          Text('কোনো পণ্য পাওয়া যায়নি', style: GoogleFonts.hindSiliguri(color: Colors.grey.shade600, fontSize: 16)),
+                        ],
+                      ),
+                    ),
+                  );
                 }
 
                 return Column(
@@ -497,7 +400,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                       child: Text(
-                        '${products.length} টি পণ্য পাওয়া গেছে',
+                        '${filteredCommodities.length} টি আইটেম পাওয়া গেছে',
                         style: GoogleFonts.hindSiliguri(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -505,37 +408,23 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                         ),
                       ),
                     ),
-                    if (products.isEmpty)
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(40.0),
-                          child: Column(
-                            children: [
-                              Icon(Icons.search_off_rounded, size: 80, color: Colors.grey.shade300),
-                              const SizedBox(height: 16),
-                              Text('কোনো পণ্য পাওয়া যায়নি', style: GoogleFonts.hindSiliguri(color: Colors.grey.shade600, fontSize: 16)),
-                            ],
-                          ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                          childAspectRatio: 0.8,
                         ),
-                      )
-                    else
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        child: GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 16,
-                            mainAxisSpacing: 16,
-                            childAspectRatio: 0.68,
-                          ),
-                          itemCount: products.length,
-                          itemBuilder: (context, index) {
-                            return _buildProductCard(products[index]);
-                          },
-                        ),
+                        itemCount: filteredCommodities.length,
+                        itemBuilder: (context, index) {
+                          return _buildCommodityCard(filteredCommodities[index]);
+                        },
                       ),
+                    ),
                   ],
                 );
               },
@@ -556,15 +445,11 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     );
   }
 
-  Widget _buildProductCard(Map<String, dynamic> product) {
+  Widget _buildCommodityCard(MarketPriceModel commodity) {
+    bool isTrendUp = commodity.trend == PriceTrend.up;
     return GestureDetector(
       onTap: () {
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (context) => QuickBuyBottomSheet(product: product),
-        );
+        Get.toNamed('/commodity-order-book', arguments: commodity);
       },
       child: Container(
         decoration: BoxDecoration(
@@ -586,34 +471,28 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
               flex: 5,
               child: ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Image.network(
-                      product['image'] ?? 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?q=80&w=600&auto=format&fit=crop',
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        color: Colors.grey.shade200,
-                        child: Icon(Icons.image_not_supported, color: Colors.grey.shade400, size: 40),
-                      ),
-                    ),
-                    if (product['badge'] != null)
-                      Positioned(
-                        top: 10,
-                        left: 10,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: product['badge'] == 'Hot' ? Colors.red : Colors.orange,
-                            borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  color: Colors.grey.shade100,
+                  width: double.infinity,
+                  child: commodity.imageUrl != null 
+                      ? Image.network(
+                          commodity.imageUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Icon(
+                            Icons.broken_image,
+                            size: 60,
+                            color: Colors.grey.shade400,
                           ),
-                          child: Text(
-                            product['badge'],
-                            style: GoogleFonts.hindSiliguri(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                        )
+                      : Center(
+                          child: Icon(
+                            commodity.category == 'vegetables' ? Icons.grass : 
+                            commodity.category == 'fish' ? Icons.set_meal : 
+                            commodity.category == 'meat' ? Icons.kebab_dining : Icons.shopping_basket,
+                            size: 60,
+                            color: Colors.green.shade300,
                           ),
                         ),
-                      ),
-                  ],
                 ),
               ),
             ),
@@ -625,46 +504,25 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.star_rounded, size: 14, color: Colors.amber),
-                        const SizedBox(width: 4),
-                        Text('${product['rating']}', style: GoogleFonts.hindSiliguri(fontSize: 11, fontWeight: FontWeight.bold)),
-                        const Spacer(),
-                        if (product['isVerified'])
-                          const Icon(Icons.verified, size: 14, color: Colors.blue),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
                     Text(
-                      product['name'],
+                      commodity.productName,
                       style: GoogleFonts.hindSiliguri(
                         fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                        fontSize: 16,
                         color: const Color(0xFF1E293B),
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        Icon(Icons.location_on_rounded, size: 12, color: Colors.grey.shade500),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            product['location'],
-                            style: GoogleFonts.hindSiliguri(
-                              fontSize: 11,
-                              color: Colors.grey.shade500,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
+                    const SizedBox(height: 4),
+                    Text(
+                      'বেস প্রাইস (Agrolink)',
+                      style: GoogleFonts.hindSiliguri(
+                        fontSize: 11,
+                        color: Colors.grey.shade500,
+                      ),
                     ),
-                    const Spacer(),
+                    const SizedBox(height: 4),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.end,
@@ -673,31 +531,45 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '৳${product['price']}',
+                              '৳${commodity.currentPrice}',
                               style: GoogleFonts.hindSiliguri(
                                 color: const Color(0xFF1B5E20),
                                 fontWeight: FontWeight.w800,
-                                fontSize: 16,
+                                fontSize: 18,
                               ),
                             ),
                             Text(
-                              'প্রতি ${product['unit']}',
+                              'প্রতি ${commodity.unit}',
                               style: GoogleFonts.hindSiliguri(
                                 color: Colors.grey.shade600,
-                                fontSize: 10,
+                                fontSize: 11,
                               ),
                             ),
                           ],
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF1B5E20),
+                            color: isTrendUp ? Colors.red.shade50 : Colors.green.shade50,
                             borderRadius: BorderRadius.circular(6),
                           ),
-                          child: Text(
-                            'Order Now',
-                            style: GoogleFonts.hindSiliguri(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                          child: Row(
+                            children: [
+                              Icon(
+                                isTrendUp ? Icons.arrow_upward : Icons.arrow_downward,
+                                size: 12,
+                                color: isTrendUp ? Colors.red : Colors.green,
+                              ),
+                              const SizedBox(width: 2),
+                              Text(
+                                isTrendUp ? 'উচ্চমূল্য' : 'স্বাভাবিক',
+                                style: GoogleFonts.hindSiliguri(
+                                  color: isTrendUp ? Colors.red : Colors.green, 
+                                  fontSize: 10, 
+                                  fontWeight: FontWeight.bold
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],

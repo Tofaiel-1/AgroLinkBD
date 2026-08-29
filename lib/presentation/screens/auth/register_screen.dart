@@ -34,6 +34,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? _selectedDivision;
   String? _selectedDistrict;
   String? _selectedUpazila;
+  String? _selectedUnion;
   bool _isLoading = false;
 
   List<String> get _districts {
@@ -44,6 +45,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   List<String> get _upazilas {
     if (_selectedDistrict == null) return [];
     return BDLocationData.upazilasByDistrict[_selectedDistrict] ?? [];
+  }
+
+  List<String> get _unions {
+    if (_selectedUpazila == null) return [];
+    return BDLocationData.getUnions(_selectedUpazila);
   }
 
   @override
@@ -104,24 +110,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
       // Extract provider before await
       final userProvider = Provider.of<UserProvider>(context, listen: false);
 
-      // Register with Firebase Auth (Email/Password)
-      final credential = await _authService.registerWithEmail(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-        name: _nameController.text.trim(),
-        phone: _phoneController.text.isEmpty ? null : '+88${_phoneController.text.trim()}',
-        userType: _selectedUserType.toString(),
-      );
+      String userId = widget.userId;
 
-      String userId = credential.user!.uid;
-      debugPrint('✅ Firebase Auth user created: $userId');
+      if (userId.isEmpty) {
+        // Legacy Email Registration
+        final credential = await _authService.registerWithEmail(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+          name: _nameController.text.trim(),
+          phone: _phoneController.text.isEmpty ? null : '+880${_phoneController.text.trim()}',
+          userType: _selectedUserType.toString(),
+        );
+        userId = credential.user!.uid;
+        debugPrint('✅ Firebase Auth user created: $userId');
 
-      // Send verification email
-      try {
-        await credential.user!.sendEmailVerification();
-        debugPrint('✅ Verification email sent');
-      } catch (e) {
-        debugPrint('⚠️ Verification email error: $e');
+        // Send verification email
+        try {
+          await credential.user!.sendEmailVerification();
+          debugPrint('✅ Verification email sent');
+        } catch (e) {
+          debugPrint('⚠️ Verification email error: $e');
+        }
+      } else {
+        debugPrint('✅ Using existing Phone Auth user ID: $userId');
       }
 
       // Map UserType to UserRole
@@ -167,12 +178,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
       // Create user profile in Firestore
       
       String finalAddress = _addressController.text;
-      if (_selectedUpazila != null && _selectedUpazila!.isNotEmpty) {
-        if (finalAddress.isNotEmpty) {
-          finalAddress = '$finalAddress, $_selectedUpazila';
-        } else {
-          finalAddress = _selectedUpazila!;
-        }
+      String villageName = _addressController.text;
+      
+      // Build a full address string for backward compatibility
+      List<String> addressParts = [];
+      if (villageName.isNotEmpty) addressParts.add(villageName);
+      if (_selectedUnion != null && _selectedUnion!.isNotEmpty) addressParts.add(_selectedUnion!);
+      if (_selectedUpazila != null && _selectedUpazila!.isNotEmpty) addressParts.add(_selectedUpazila!);
+      
+      if (addressParts.isNotEmpty) {
+        finalAddress = addressParts.join(', ');
       }
 
       // Get domain from arguments or infer from role
@@ -185,14 +200,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
       UserModel user = UserModel(
         id: userId,
         name: _nameController.text,
-        phone:
-            _phoneController.text.isEmpty ? '' : '+88${_phoneController.text}',
-        email: _emailController.text.trim(),
+        phone: widget.phone.isNotEmpty 
+            ? (widget.phone.startsWith('+880') ? widget.phone : '+880${widget.phone.replaceFirst(RegExp(r'^\+?880?'), '')}') 
+            : (_phoneController.text.isEmpty ? '' : '+880${_phoneController.text}'),
+        email: widget.userId.isNotEmpty ? null : _emailController.text.trim(),
         userType: _selectedUserType,
         status: UserStatus.active,
-        address: finalAddress,
+        address: finalAddress, // Legacy formatted full address
         district: _selectedDistrict,
         upazila: _selectedUpazila,
+        unionName: _selectedUnion,
+        village: villageName,
         createdAt: DateTime.now(),
         domain: userDomain,
       );
@@ -232,17 +250,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
       await userProvider.loadUser(userId);
       debugPrint('✅ User loaded in provider');
 
-      Get.snackbar(
-        'Registration Success! ✅',
-        'A verification link has been sent to ${_emailController.text}. Please verify your email and login.',
-        duration: const Duration(seconds: 6),
-        snackPosition: SnackPosition.TOP,
-        backgroundColor: Colors.green.shade100,
-        colorText: Colors.green.shade900,
-        icon: const Icon(Icons.check_circle, color: Colors.green),
-        margin: const EdgeInsets.all(16),
-        borderRadius: 12,
-      );
+      if (widget.userId.isEmpty) {
+        Get.snackbar(
+          'Registration Success! ✅',
+          'A verification link has been sent to ${_emailController.text}. Please verify your email and login.',
+          duration: const Duration(seconds: 6),
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.green.shade100,
+          colorText: Colors.green.shade900,
+          icon: const Icon(Icons.check_circle, color: Colors.green),
+          margin: const EdgeInsets.all(16),
+          borderRadius: 12,
+        );
+      } else {
+        Get.snackbar(
+          'প্রোফাইল তৈরি সফল! ✅',
+          'আপনার অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে।',
+          duration: const Duration(seconds: 3),
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.green.shade100,
+          colorText: Colors.green.shade900,
+          icon: const Icon(Icons.check_circle, color: Colors.green),
+          margin: const EdgeInsets.all(16),
+          borderRadius: 12,
+        );
+      }
 
       debugPrint(
           '🎉 Registration completed successfully - navigating to dashboard');
@@ -500,94 +532,111 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         controller: _nameController,
                         style: TextStyle(color: textColor),
                         decoration: inputDecoration.copyWith(
-                          labelText: 'Full Name',
+                          labelText: 'পূর্ণ নাম',
                           prefixIcon: Icon(Icons.person_outline, color: primaryColor),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Please enter your name';
+                            return 'আপনার নাম লিখুন';
                           }
                           return null;
                         },
                       ),
                       const SizedBox(height: 20),
 
-                      // Email
-                      TextFormField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        style: TextStyle(color: textColor),
-                        decoration: inputDecoration.copyWith(
-                          labelText: 'Email *',
-                          prefixIcon: Icon(Icons.email_outlined, color: primaryColor),
+                      if (widget.userId.isEmpty) ...[
+                        // Email
+                        TextFormField(
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          style: TextStyle(color: textColor),
+                          decoration: inputDecoration.copyWith(
+                            labelText: 'ইমেইল *',
+                            prefixIcon: Icon(Icons.email_outlined, color: primaryColor),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'ইমেইল দিন';
+                            }
+                            if (!value.contains('@')) {
+                              return 'সঠিক ইমেইল দিন';
+                            }
+                            return null;
+                          },
                         ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your email';
-                          }
-                          if (!value.contains('@')) {
-                            return 'Please enter a valid email';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 20),
+                        const SizedBox(height: 20),
 
-                      // Password
-                      TextFormField(
-                        controller: _passwordController,
-                        obscureText: true,
-                        style: TextStyle(color: textColor),
-                        decoration: inputDecoration.copyWith(
-                          labelText: 'Password *',
-                          prefixIcon: Icon(Icons.lock_outline, color: primaryColor),
+                        // Password
+                        TextFormField(
+                          controller: _passwordController,
+                          obscureText: true,
+                          style: TextStyle(color: textColor),
+                          decoration: inputDecoration.copyWith(
+                            labelText: 'পাসওয়ার্ড *',
+                            prefixIcon: Icon(Icons.lock_outline, color: primaryColor),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'পাসওয়ার্ড লিখুন';
+                            }
+                            if (value.length < 6) {
+                              return 'পাসওয়ার্ড কমপক্ষে ৬ সংখ্যার হতে হবে';
+                            }
+                            return null;
+                          },
                         ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter a password';
-                          }
-                          if (value.length < 6) {
-                            return 'Password must be at least 6 characters';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 20),
+                        const SizedBox(height: 20),
 
-                      // Confirm Password
-                      TextFormField(
-                        controller: _confirmPasswordController,
-                        obscureText: true,
-                        style: TextStyle(color: textColor),
-                        decoration: inputDecoration.copyWith(
-                          labelText: 'Confirm Password *',
-                          prefixIcon: Icon(Icons.lock_outline, color: primaryColor),
+                        // Confirm Password
+                        TextFormField(
+                          controller: _confirmPasswordController,
+                          obscureText: true,
+                          style: TextStyle(color: textColor),
+                          decoration: inputDecoration.copyWith(
+                            labelText: 'পাসওয়ার্ড নিশ্চিত করুন *',
+                            prefixIcon: Icon(Icons.lock_outline, color: primaryColor),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'পাসওয়ার্ড নিশ্চিত করুন';
+                            }
+                            if (value != _passwordController.text) {
+                              return 'পাসওয়ার্ড মেলেনি';
+                            }
+                            return null;
+                          },
                         ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please confirm your password';
-                          }
-                          if (value != _passwordController.text) {
-                            return 'Passwords do not match';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 20),
+                        const SizedBox(height: 20),
 
-                      // Phone (Optional)
-                      TextFormField(
-                        controller: _phoneController,
-                        keyboardType: TextInputType.phone,
-                        style: TextStyle(color: textColor),
-                        decoration: inputDecoration.copyWith(
-                          labelText: 'Mobile Number (Optional)',
-                          hintText: '01XXXXXXXXX',
-                          prefixIcon: Icon(Icons.phone_outlined, color: primaryColor),
-                          prefixText: '+88 ',
-                          prefixStyle: TextStyle(color: textColor, fontSize: 16),
+                        // Phone (Optional for Email flow)
+                        TextFormField(
+                          controller: _phoneController,
+                          keyboardType: TextInputType.text,
+                          style: TextStyle(color: textColor),
+                          decoration: inputDecoration.copyWith(
+                            labelText: 'মোবাইল নাম্বার (Optional)',
+                            hintText: '17XXXXXXXX',
+                            prefixIcon: Icon(Icons.phone_outlined, color: primaryColor),
+                            prefixText: '+880 ',
+                            prefixStyle: TextStyle(color: textColor, fontSize: 16),
+                          ),
                         ),
-                      ),
+                      ] else ...[
+                        // Phone (Readonly for Phone Auth flow)
+                        TextFormField(
+                          initialValue: widget.phone,
+                          readOnly: true,
+                          style: TextStyle(color: Colors.grey.shade600),
+                          decoration: inputDecoration.copyWith(
+                            labelText: 'মোবাইল নাম্বার (Verified)',
+                            prefixIcon: Icon(Icons.verified_outlined, color: Colors.green),
+                            prefixText: '', // It already includes the prefix from Firebase Auth
+                            prefixStyle: TextStyle(color: Colors.grey.shade600, fontSize: 16),
+                            filled: true,
+                            fillColor: isDark ? Colors.grey.shade900 : Colors.grey.shade200,
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 24),
 
                       // User Type (Only show if not pre-selected via arguments)
@@ -631,6 +680,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             _selectedDivision = value;
                             _selectedDistrict = null; // Reset dependent fields
                             _selectedUpazila = null;
+                            _selectedUnion = null;
                           });
                         },
                       ),
@@ -646,6 +696,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           setState(() {
                             _selectedDistrict = value;
                             _selectedUpazila = null; // Reset dependent field
+                            _selectedUnion = null;
                           });
                         },
                       ),
@@ -658,18 +709,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         items: _upazilas,
                         icon: Icons.location_on_outlined,
                         onChanged: (value) {
-                          setState(() => _selectedUpazila = value);
+                          setState(() {
+                            _selectedUpazila = value;
+                            _selectedUnion = null;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Union
+                      SearchableDropdown(
+                        hint: 'Select Union',
+                        value: _selectedUnion,
+                        items: _unions,
+                        icon: Icons.holiday_village_outlined,
+                        onChanged: (value) {
+                          setState(() => _selectedUnion = value);
                         },
                       ),
                       const SizedBox(height: 20),
 
-                      // Address
+                      // Address (Village / Road)
                       TextFormField(
                         controller: _addressController,
                         maxLines: 2,
                         style: TextStyle(color: textColor),
                         decoration: inputDecoration.copyWith(
-                          labelText: 'Address',
+                          labelText: 'Village / Road / House',
                           prefixIcon: Padding(
                             padding: const EdgeInsets.only(bottom: 24.0),
                             child: Icon(Icons.home_outlined, color: primaryColor),

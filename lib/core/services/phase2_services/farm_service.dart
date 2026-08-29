@@ -1,21 +1,35 @@
 import 'package:agrolinkbd/core/models/phase2_models/farm_models.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:get/get.dart';
+import 'package:agrolinkbd/core/controllers/user_controller.dart';
 
 /// Service for managing farm operations with Firestore
 class FarmService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  String? get currentUserId => _auth.currentUser?.uid;
+  String? get currentUserId {
+    if (_auth.currentUser?.uid != null && _auth.currentUser!.uid.isNotEmpty) {
+      return _auth.currentUser!.uid;
+    }
+    try {
+      if (Get.isRegistered<UserController>()) {
+        final uc = Get.find<UserController>();
+        if (uc.userId.isNotEmpty) return uc.userId;
+      }
+    } catch (_) {}
+    return 'farmer_demo';
+  }
 
   /// Get a real-time stream of all farms for current farmer
   Stream<List<Farm>> getFarmsStream() {
-    if (currentUserId == null) return const Stream.empty();
+    final uid = currentUserId;
+    if (uid == null || uid.isEmpty) return Stream.value([]);
 
     return _firestore
         .collection('farms')
-        .where('userId', isEqualTo: currentUserId)
+        .where('userId', isEqualTo: uid)
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => Farm.fromMap(doc.data(), doc.id))
@@ -24,12 +38,13 @@ class FarmService {
 
   /// Get all farms for current farmer (one-time fetch)
   Future<List<Farm>> getFarms() async {
-    if (currentUserId == null) return [];
+    final uid = currentUserId;
+    if (uid == null || uid.isEmpty) return [];
 
     try {
       final snapshot = await _firestore
           .collection('farms')
-          .where('userId', isEqualTo: currentUserId)
+          .where('userId', isEqualTo: uid)
           .get();
 
       return snapshot.docs
@@ -43,12 +58,13 @@ class FarmService {
 
   /// Create a new farm
   Future<Farm?> createFarm(Farm farm) async {
-    if (currentUserId == null) return null;
+    final uid = currentUserId;
+    if (uid == null || uid.isEmpty) return null;
 
     try {
       // Ensure the farm is created with the correct userId
       final farmData = farm.toMap();
-      farmData['userId'] = currentUserId;
+      farmData['userId'] = uid;
 
       final docRef = await _firestore.collection('farms').add(farmData);
       
@@ -79,11 +95,12 @@ class FarmService {
 
   /// Get a real-time stream of all crop plantings for current farmer
   Stream<List<CropPlanting>> getCropPlantingsStream() {
-    if (currentUserId == null) return const Stream.empty();
+    final uid = currentUserId;
+    if (uid == null || uid.isEmpty) return Stream.value([]);
 
     return _firestore
         .collection('crop_plantings')
-        .where('userId', isEqualTo: currentUserId)
+        .where('userId', isEqualTo: uid)
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => CropPlanting.fromMap(doc.data(), doc.id))
@@ -109,10 +126,11 @@ class FarmService {
 
   /// Add a new crop planting
   Future<void> addCropPlanting(CropPlanting planting) async {
-    if (currentUserId == null) return;
+    final uid = currentUserId;
+    if (uid == null || uid.isEmpty) return;
     try {
       final data = planting.toMap();
-      data['userId'] = currentUserId;
+      data['userId'] = uid;
       await _firestore.collection('crop_plantings').add(data);
     } catch (e) {
       print('Error adding crop planting: $e');
@@ -134,12 +152,13 @@ class FarmService {
       final snapshot = await _firestore
           .collection('farm_activities')
           .where('farmId', isEqualTo: farmId)
-          .orderBy('date', descending: true)
           .get();
 
-      return snapshot.docs
+      final list = snapshot.docs
           .map((doc) => FarmActivity.fromMap(doc.data(), doc.id))
           .toList();
+      list.sort((a, b) => b.date.compareTo(a.date));
+      return list;
     } catch (e) {
       print('Error getting farm activities: $e');
       return [];
@@ -154,65 +173,95 @@ class FarmService {
       print('Error logging farm activity: $e');
     }
   }
+
   /// Get a real-time stream of all farm expenses for current farmer
   Stream<List<FarmExpense>> getExpensesStream() {
-    if (currentUserId == null) return const Stream.empty();
+    final uid = currentUserId;
+    if (uid == null || uid.isEmpty) return Stream.value([]);
 
     return _firestore
         .collection('farm_expenses')
-        .where('userId', isEqualTo: currentUserId)
-        .orderBy('date', descending: true)
+        .where('userId', isEqualTo: uid)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => FarmExpense.fromMap(doc.data(), doc.id))
-            .toList());
+        .map((snapshot) {
+          final list = snapshot.docs
+              .map((doc) => FarmExpense.fromMap(doc.data(), doc.id))
+              .toList();
+          list.sort((a, b) => b.date.compareTo(a.date));
+          return list;
+        });
   }
 
   /// Add a new expense
   Future<void> addExpense(FarmExpense expense) async {
-    if (currentUserId == null) return;
+    final uid = currentUserId;
+    if (uid == null || uid.isEmpty) return;
     try {
       final data = expense.toMap();
-      data['userId'] = currentUserId;
+      data['userId'] = uid;
       await _firestore.collection('farm_expenses').add(data);
     } catch (e) {
       print('Error adding farm expense: $e');
     }
   }
 
+  /// Delete an expense
+  Future<void> deleteExpense(String expenseId) async {
+    try {
+      await _firestore.collection('farm_expenses').doc(expenseId).delete();
+    } catch (e) {
+      print('Error deleting farm expense: $e');
+    }
+  }
+
   /// Get a real-time stream of all farm revenues for current farmer
   Stream<List<FarmRevenue>> getRevenuesStream() {
-    if (currentUserId == null) return const Stream.empty();
+    final uid = currentUserId;
+    if (uid == null || uid.isEmpty) return Stream.value([]);
 
     return _firestore
         .collection('farm_revenues')
-        .where('userId', isEqualTo: currentUserId)
-        .orderBy('date', descending: true)
+        .where('userId', isEqualTo: uid)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => FarmRevenue.fromMap(doc.data(), doc.id))
-            .toList());
+        .map((snapshot) {
+          final list = snapshot.docs
+              .map((doc) => FarmRevenue.fromMap(doc.data(), doc.id))
+              .toList();
+          list.sort((a, b) => b.date.compareTo(a.date));
+          return list;
+        });
   }
 
   /// Add a new revenue
   Future<void> addRevenue(FarmRevenue revenue) async {
-    if (currentUserId == null) return;
+    final uid = currentUserId;
+    if (uid == null || uid.isEmpty) return;
     try {
       final data = revenue.toMap();
-      data['userId'] = currentUserId;
+      data['userId'] = uid;
       await _firestore.collection('farm_revenues').add(data);
     } catch (e) {
       print('Error adding farm revenue: $e');
     }
   }
 
+  /// Delete a revenue
+  Future<void> deleteRevenue(String revenueId) async {
+    try {
+      await _firestore.collection('farm_revenues').doc(revenueId).delete();
+    } catch (e) {
+      print('Error deleting farm revenue: $e');
+    }
+  }
+
   /// Get a real-time stream of all farm inventory for current farmer
   Stream<List<FarmInventoryItem>> getInventoryStream() {
-    if (currentUserId == null) return const Stream.empty();
+    final uid = currentUserId;
+    if (uid == null || uid.isEmpty) return Stream.value([]);
 
     return _firestore
         .collection('farm_inventory')
-        .where('userId', isEqualTo: currentUserId)
+        .where('userId', isEqualTo: uid)
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => FarmInventoryItem.fromMap(doc.data(), doc.id))
@@ -221,10 +270,11 @@ class FarmService {
 
   /// Add a new inventory item
   Future<void> addInventoryItem(FarmInventoryItem item) async {
-    if (currentUserId == null) return;
+    final uid = currentUserId;
+    if (uid == null || uid.isEmpty) return;
     try {
       final data = item.toMap();
-      data['userId'] = currentUserId;
+      data['userId'] = uid;
       await _firestore.collection('farm_inventory').add(data);
     } catch (e) {
       print('Error adding farm inventory item: $e');

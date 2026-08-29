@@ -22,14 +22,16 @@ class UserModel {
   final String id;
   final String name;
   final String phone;
-  final String email;
+  final String? email;
   final UserType userType;
   final UserStatus status;
   final String? profileImage;
   final String? nidNumber;
-  final String? address;
+  final String? address; // For backward compatibility
   final String? district;
   final String? upazila;
+  final String? unionName; // New
+  final String? village; // New
   final double? latitude;
   final double? longitude;
   final bool isPremium;
@@ -74,7 +76,7 @@ class UserModel {
     required this.id,
     required this.name,
     required this.phone,
-    required this.email,
+    this.email,
     required this.userType,
     required this.status,
     this.profileImage,
@@ -82,6 +84,8 @@ class UserModel {
     this.address,
     this.district,
     this.upazila,
+    this.unionName,
+    this.village,
     this.latitude,
     this.longitude,
     this.isPremium = false,
@@ -128,6 +132,8 @@ class UserModel {
       'address': address,
       'district': district,
       'upazila': upazila,
+      'unionName': unionName,
+      'village': village,
       'latitude': latitude,
       'longitude': longitude,
       'isPremium': isPremium,
@@ -200,7 +206,7 @@ class UserModel {
       id: json['id'] ?? '',
       name: json['name'] ?? '',
       phone: json['phone'] ?? '',
-      email: json['email'] ?? '',
+      email: json['email'],
       userType: UserType.values.firstWhere(
         (e) => e.toString() == json['userType'] || e.name.toLowerCase() == json['userType']?.toString().toLowerCase(),
         orElse: () => UserType.farmer,
@@ -214,6 +220,8 @@ class UserModel {
       address: json['address'],
       district: json['district'],
       upazila: json['upazila'],
+      unionName: json['unionName'],
+      village: json['village'],
       latitude: json['latitude']?.toDouble(),
       longitude: json['longitude']?.toDouble(),
       isPremium: json['isPremium'] ?? false,
@@ -266,6 +274,8 @@ class UserModel {
     String? address,
     String? district,
     String? upazila,
+    String? unionName,
+    String? village,
     double? latitude,
     double? longitude,
     bool? isPremium,
@@ -310,6 +320,8 @@ class UserModel {
       address: address ?? this.address,
       district: district ?? this.district,
       upazila: upazila ?? this.upazila,
+      unionName: unionName ?? this.unionName,
+      village: village ?? this.village,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       isPremium: isPremium ?? this.isPremium,

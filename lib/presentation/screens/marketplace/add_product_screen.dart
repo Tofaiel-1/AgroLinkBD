@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
+import 'package:agrolinkbd/core/models/market_price_model.dart';
+import 'package:agrolinkbd/core/services/market_price_service.dart';
 
 class AddProductScreen extends StatefulWidget {
   const AddProductScreen({super.key});
@@ -11,10 +13,58 @@ class AddProductScreen extends StatefulWidget {
 
 class _AddProductScreenState extends State<AddProductScreen> {
   final _formKey = GlobalKey<FormState>();
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _priceController = TextEditingController();
   String _selectedCategory = 'সবজি';
   final List<String> _categories = ['সবজি', 'ফলমূল', 'চাল', 'মসলা', 'মাছ', 'মাংস', 'দুধ-ডিম', 'অন্যান্য'];
   
   bool _isLoading = false;
+  List<MarketPriceModel> _marketPrices = [];
+  MarketPriceModel? _matchedCommodity;
+  final MarketPriceService _marketPriceService = MarketPriceService();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMarketPrices();
+    _nameController.addListener(_onNameChanged);
+  }
+
+  Future<void> _loadMarketPrices() async {
+    _marketPrices = await _marketPriceService.fetchCurrentMarketPrices();
+  }
+
+  void _onNameChanged() {
+    final text = _nameController.text.trim().toLowerCase();
+    if (text.isEmpty) {
+      if (_matchedCommodity != null) {
+        setState(() => _matchedCommodity = null);
+      }
+      return;
+    }
+
+    MarketPriceModel? bestMatch;
+    for (var commodity in _marketPrices) {
+      if (text.contains(commodity.productName.toLowerCase()) || 
+          commodity.productName.toLowerCase().contains(text)) {
+        bestMatch = commodity;
+        break;
+      }
+    }
+
+    if (bestMatch != _matchedCommodity) {
+      setState(() {
+        _matchedCommodity = bestMatch;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _priceController.dispose();
+    super.dispose();
+  }
 
   void _submitForm() async {
     if (_formKey.currentState!.validate()) {
@@ -125,6 +175,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                         Text('পণ্যের নাম', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: const Color(0xFF1E293B))),
                         const SizedBox(height: 8),
                         TextFormField(
+                          controller: _nameController,
                           decoration: InputDecoration(
                             hintText: 'যেমন: তাজা টমেটো',
                             hintStyle: GoogleFonts.poppins(color: Colors.grey.shade400, fontSize: 14),
@@ -135,6 +186,31 @@ class _AddProductScreenState extends State<AddProductScreen> {
                           ),
                           validator: (value) => value == null || value.isEmpty ? 'পণ্যের নাম লিখুন' : null,
                         ),
+                        
+                        if (_matchedCommodity != null) ...[
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.blue.shade200),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.info_outline, size: 16, color: Colors.blue),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Agrolink Base Price: ৳${_matchedCommodity!.currentPrice} / ${_matchedCommodity!.unit}',
+                                    style: GoogleFonts.poppins(fontSize: 12, color: Colors.blue.shade800, fontWeight: FontWeight.w600),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        
                         const SizedBox(height: 20),
 
                         Text('ক্যাটাগরি', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: const Color(0xFF1E293B))),
@@ -161,6 +237,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                                   Text('দাম (৳)', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: const Color(0xFF1E293B))),
                                   const SizedBox(height: 8),
                                   TextFormField(
+                                    controller: _priceController,
                                     keyboardType: TextInputType.number,
                                     decoration: InputDecoration(
                                       hintText: 'যেমন: ৪০',

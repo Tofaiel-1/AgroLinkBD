@@ -60,20 +60,27 @@ class UniversalTrustHeaderWidget extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Icon(Icons.verified, color: primaryColor, size: 20),
-                    const SizedBox(width: 6),
-                    Text(
-                      'মূল রেটিং (Root Trust Score)',
-                      style: GoogleFonts.hindSiliguri(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.grey[300] : Colors.grey[800],
+                Expanded(
+                  child: Row(
+                    children: [
+                      Icon(Icons.verified, color: primaryColor, size: 20),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          'মূল রেটিং (Root Trust Score)',
+                          style: GoogleFonts.hindSiliguri(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.grey[300] : Colors.grey[800],
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 8),
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -98,16 +105,23 @@ class UniversalTrustHeaderWidget extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  totalRatings == 0
-                      ? '৫.০ / ৫.০ ⭐️ (নতুন ভেরিফাইড ইউজার)'
-                      : '${rating.toStringAsFixed(1)} / 5.0 ⭐️ ($totalRatings জন মূল্যায়ন করেছেন)',
-                  style: GoogleFonts.hindSiliguri(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: primaryColor,
+                Expanded(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      totalRatings == 0
+                          ? '৫.০ / ৫.০ ⭐️ (নতুন ভেরিফাইড ইউজার)'
+                          : '${rating.toStringAsFixed(1)} / 5.0 ⭐️ ($totalRatings জন মূল্যায়ন করেছেন)',
+                      style: GoogleFonts.hindSiliguri(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: primaryColor,
+                      ),
+                    ),
                   ),
                 ),
+                const SizedBox(width: 8),
                 Icon(
                   Icons.arrow_forward_ios,
                   size: 14,
@@ -204,8 +218,12 @@ class UniversalTrustBadgeWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     const Color primaryGreen = Color(0xFF2E7D32);
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    final bool isSelf = currentUserId.isNotEmpty && targetUserId.isNotEmpty && currentUserId == targetUserId;
+
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 6,
+      runSpacing: 4,
       children: [
         Row(
           mainAxisSize: MainAxisSize.min,
@@ -224,34 +242,35 @@ class UniversalTrustBadgeWidget extends StatelessWidget {
             ),
           ],
         ),
-        TextButton.icon(
-          onPressed: () {
-            UserRatingService.showUniversalRateModal(
-              context: context,
-              targetUserId: targetUserId,
-              targetUserName: targetUserName,
-              reviewerId: currentUserId,
-              reviewerName: currentUserName,
-              reviewerRole: reviewerRole,
-              targetUserRole: targetUserType,
-              onRatingSubmitted: () {},
-            );
-          },
-          style: TextButton.styleFrom(
-            foregroundColor: primaryGreen,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            minimumSize: Size.zero,
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          ),
-          icon: const Icon(Icons.rate_review_outlined, size: 15),
-          label: Text(
-            'মূল্যায়ন করুন',
-            style: GoogleFonts.hindSiliguri(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
+        if (!isSelf)
+          TextButton.icon(
+            onPressed: () {
+              UserRatingService.showUniversalRateModal(
+                context: context,
+                targetUserId: targetUserId,
+                targetUserName: targetUserName,
+                reviewerId: currentUserId,
+                reviewerName: currentUserName,
+                reviewerRole: reviewerRole,
+                targetUserRole: targetUserType,
+                onRatingSubmitted: () {},
+              );
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: primaryGreen,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            icon: const Icon(Icons.rate_review_outlined, size: 15),
+            label: Text(
+              'মূল্যায়ন করুন',
+              style: GoogleFonts.hindSiliguri(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
-        ),
       ],
     );
   }

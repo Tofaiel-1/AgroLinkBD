@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:agrolinkbd/core/controllers/user_controller.dart';
 import 'package:agrolinkbd/presentation/screens/marketplace/marketplace_screen.dart';
-import 'package:agrolinkbd/presentation/screens/profile/profile_screen.dart';
+import 'package:agrolinkbd/presentation/screens/profile/profile_settings.dart';
 import 'package:agrolinkbd/presentation/widgets/global_announcement_banner.dart';
 import 'package:agrolinkbd/presentation/widgets/secure_balance_widget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:agrolinkbd/core/services/transaction_service.dart';
 import 'package:agrolinkbd/core/services/transaction_service.dart';
 
 class BuyerDashboardScreen extends StatefulWidget {
@@ -113,7 +114,7 @@ class _BuyerDashboardScreenState extends State<BuyerDashboardScreen> {
                           _buildHeaderIcon(Icons.notifications_none_rounded, () {}),
                           const SizedBox(width: 8),
                           GestureDetector(
-                            onTap: () => Get.to(() => const ProfileScreen()),
+                            onTap: () => Get.to(() => const ProfileSettings()),
                             child: Container(
                               padding: const EdgeInsets.all(2),
                               decoration: BoxDecoration(
@@ -130,28 +131,6 @@ class _BuyerDashboardScreenState extends State<BuyerDashboardScreen> {
                         ],
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Search Bar
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: Colors.white.withOpacity(0.2)),
-                    ),
-                    child: TextField(
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        hintText: 'পণ্য খুঁজুন (যেমন: চাল, সবজি)...',
-                        hintStyle: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 14),
-                        border: InputBorder.none,
-                        icon: Icon(Icons.search, color: Colors.white.withOpacity(0.6)),
-                        suffixIcon: Icon(Icons.tune_rounded, color: Colors.white.withOpacity(0.6)),
-                        contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                    ),
                   ),
                 ],
               ),
@@ -177,12 +156,12 @@ class _BuyerDashboardScreenState extends State<BuyerDashboardScreen> {
                       context,
                       icon: Icons.shopping_bag_outlined,
                       iconColor: _primaryBlue,
-                      value: '১৫',
+                      value: '0',
                       label: 'মোট অর্ডার',
                       isDark: isDark,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: StreamBuilder<DocumentSnapshot>(
                       stream: FirebaseFirestore.instance.collection('cards').doc(FirebaseAuth.instance.currentUser?.uid).snapshots(),
@@ -209,13 +188,13 @@ class _BuyerDashboardScreenState extends State<BuyerDashboardScreen> {
                       }
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: _buildStatCard(
                       context,
                       icon: Icons.favorite_border,
                       iconColor: Colors.red,
-                      value: '৮',
+                      value: '0',
                       label: 'প্রিয় কৃষক',
                       isDark: isDark,
                     ),
@@ -224,6 +203,8 @@ class _BuyerDashboardScreenState extends State<BuyerDashboardScreen> {
               ),
             ),
           ),
+
+          // MY SHOP BANNER REMOVED
 
           // ===== CATEGORIES =====
           SliverToBoxAdapter(
@@ -377,7 +358,7 @@ class _BuyerDashboardScreenState extends State<BuyerDashboardScreen> {
   Widget _buildStatCard(BuildContext context,
       {required IconData icon, required Color iconColor, String? value, Widget? valueWidget, required String label, required bool isDark}) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 4),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -392,15 +373,15 @@ class _BuyerDashboardScreenState extends State<BuyerDashboardScreen> {
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(color: iconColor.withOpacity(0.1), shape: BoxShape.circle),
-            child: Icon(icon, color: iconColor, size: 28),
+            child: Icon(icon, color: iconColor, size: 24),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           valueWidget ?? Text(
             value ?? '',
             style: TextStyle(
-              fontSize: 22,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
               color: isDark ? Colors.white : Colors.black87,
             ),
@@ -409,11 +390,13 @@ class _BuyerDashboardScreenState extends State<BuyerDashboardScreen> {
           Text(
             label,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 11,
               color: isDark ? Colors.white70 : Colors.black54,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w600,
             ),
             textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
