@@ -137,7 +137,7 @@ class _VipWholesalerDirectoryScreenState extends State<VipWholesalerDirectoryScr
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.star, size: 16, color: deepPurple),
+                          Icon(Icons.star, size: 16, color: deepPurple),
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(

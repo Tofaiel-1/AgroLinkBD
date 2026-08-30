@@ -24,6 +24,7 @@ import 'package:agrolinkbd/presentation/screens/agri_info/saved_agri_data_screen
 import 'package:agrolinkbd/presentation/widgets/weather_card_widget.dart';
 import 'package:agrolinkbd/presentation/screens/agri_info/emergency_weather_services_screen.dart';
 import 'package:agrolinkbd/presentation/screens/notifications/farmer_notifications.dart';
+import 'package:agrolinkbd/presentation/screens/home/widgets/premium_agro_services_section.dart';
 
 class FarmerDashboard extends StatefulWidget {
   const FarmerDashboard({super.key});
@@ -332,146 +333,64 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 1. Rating & Hire a Truck side-by-side in ONE LINE (Space Saver)
-                    Row(
-                      children: [
-                        // Rating Card
-                        Expanded(
-                          child: Consumer<UserProvider>(
-                            builder: (context, userProvider, _) {
-                              return InkWell(
-                                onTap: () => Get.toNamed('/profile-settings'),
-                                borderRadius: BorderRadius.circular(16),
-                                child: Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(
-                                      color: emeraldGreen.withValues(alpha: 0.3),
-                                      width: 1.2,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: emeraldGreen.withValues(alpha: 0.08),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 3),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          const Icon(Icons.verified, color: emeraldGreen, size: 16),
-                                          const SizedBox(width: 4),
-                                          Expanded(
-                                            child: Text(
-                                              FarmerTranslations.tr(context, 'main_rating'),
-                                              style: GoogleFonts.hindSiliguri(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.bold,
-                                                color: isDark ? Colors.grey[300] : Colors.grey[800],
-                                              ),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        LanguageProvider.isBn(context) ? '৫.০ / ৫.০ ⭐️' : '5.0 / 5.0 ⭐️',
-                                        style: GoogleFonts.hindSiliguri(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.bold,
-                                          color: emeraldGreen,
-                                        ),
-                                      ),
-                                      Text(
-                                        FarmerTranslations.tr(context, 'trusted_user'),
-                                        style: GoogleFonts.hindSiliguri(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.grey.shade600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
+                    // 1. Hire a Truck Transport Banner
+                    InkWell(
+                      onTap: () => Get.to(() => const UpazilaTransportScreen()),
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Colors.orange.shade700.withValues(alpha: 0.35),
+                            width: 1.2,
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.orange.shade700.withValues(alpha: 0.08),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 10),
-
-                        // Hire a Truck Transport Card
-                        Expanded(
-                          child: InkWell(
-                            onTap: () => Get.to(() => const UpazilaTransportScreen()),
-                            borderRadius: BorderRadius.circular(16),
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: Colors.orange.shade700.withValues(alpha: 0.4),
-                                  width: 1.2,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.orange.shade700.withValues(alpha: 0.08),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 3),
-                                  ),
-                                ],
+                                color: Colors.orange.shade50,
+                                shape: BoxShape.circle,
                               ),
+                              child: Icon(Icons.local_shipping, color: Colors.orange.shade800, size: 24),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Row(
-                                    children: [
-                                      Icon(Icons.local_shipping, color: Colors.orange.shade800, size: 16),
-                                      const SizedBox(width: 4),
-                                      Expanded(
-                                        child: Text(
-                                          FarmerTranslations.tr(context, 'truck_booking'),
-                                          style: GoogleFonts.hindSiliguri(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.orange.shade900,
-                                          ),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
                                   Text(
-                                    LanguageProvider.isBn(context) ? 'ট্রাক ভাড়া 🚛' : 'Hire a Truck 🚛',
+                                    LanguageProvider.isBn(context) ? 'জরুরি ট্রাক ও পরিবহন ভাড়া 🚛' : 'Hire a Truck Transport 🚛',
                                     style: GoogleFonts.hindSiliguri(
-                                      fontSize: 15,
+                                      fontSize: 14,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.orange.shade800,
+                                      color: Colors.orange.shade900,
                                     ),
                                   ),
                                   Text(
                                     FarmerTranslations.tr(context, 'emergency_transport'),
                                     style: GoogleFonts.hindSiliguri(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w600,
+                                      fontSize: 11,
                                       color: Colors.grey.shade600,
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                          ),
+                            Icon(Icons.arrow_forward_ios, size: 14, color: Colors.orange.shade800),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                     const SizedBox(height: 12),
 
@@ -503,6 +422,13 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
                     ),
                     const SizedBox(height: 16),
                     _buildQuickActionsGrid(context, emeraldGreen, earthyBrown),
+                    const SizedBox(height: 24),
+
+                    // Premium Agro Services Section (Right below Quick Actions)
+                    PremiumAgroServicesSection(
+                      isBn: LanguageProvider.isBn(context),
+                      padding: EdgeInsets.zero,
+                    ),
                     const SizedBox(height: 24),
 
                     // 3. Today's Tasks

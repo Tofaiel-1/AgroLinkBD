@@ -3,14 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
-import 'package:agrolinkbd/core/providers/user_provider.dart';
 import 'package:agrolinkbd/presentation/widgets/premium_dashboard_widgets.dart';
 import 'package:agrolinkbd/presentation/screens/marketplace/fish_marketplace_screen.dart';
 import 'package:agrolinkbd/presentation/screens/buyer/shopping_cart_screen.dart';
 import 'package:agrolinkbd/presentation/screens/buyer/fish_buyer_orders_screen.dart';
 import 'package:agrolinkbd/core/utils/responsive_helper.dart';
 import 'package:agrolinkbd/core/providers/cart_provider.dart';
-import 'package:agrolinkbd/presentation/widgets/universal_trust_badge_widget.dart';
 import 'package:agrolinkbd/presentation/screens/fisheries/buyer/auction/fish_buyer_auction_list_screen.dart';
 import 'package:agrolinkbd/presentation/screens/fisheries/buyer/rfq/post_fish_rfq_screen.dart';
 import 'package:agrolinkbd/presentation/screens/fisheries/buyer/rfq/buyer_rfq_responses_screen.dart';
@@ -18,7 +16,6 @@ import 'package:agrolinkbd/presentation/screens/fisheries/buyer/contracts/buyer_
 import 'package:agrolinkbd/presentation/screens/fisheries/farmer/transport/fish_transport_screen.dart';
 import 'package:agrolinkbd/presentation/screens/subscription/vip_subscription_paywall_screen.dart';
 import 'package:agrolinkbd/presentation/screens/fisheries/premium/fish_price_prediction_screen.dart';
-import 'package:agrolinkbd/presentation/screens/fisheries/premium/vip_wholesaler_directory_screen.dart';
 import 'package:agrolinkbd/presentation/screens/fisheries/premium/fish_buyer_qc_inspection_screen.dart';
 import 'package:agrolinkbd/presentation/screens/fisheries/premium/fish_cold_chain_directory_screen.dart';
 
@@ -223,19 +220,7 @@ class _FishBuyerDashboardState extends State<FishBuyerDashboard>
               ),
             ),
 
-            // ============================================
-            // UNIVERSAL TRUST & WORK-VERIFIED SCORE HEADER
-            // ============================================
-            SliverToBoxAdapter(
-              child: Consumer<UserProvider>(
-                builder: (context, userProvider, _) {
-                  return UniversalTrustHeaderWidget(
-                    user: userProvider.currentUser,
-                    onTap: () => Get.toNamed('/profile-settings'),
-                  );
-                },
-              ),
-            ),
+
 
             // ============================================
             // BODY CONTENT

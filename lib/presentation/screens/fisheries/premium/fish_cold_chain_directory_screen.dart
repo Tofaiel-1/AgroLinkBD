@@ -97,7 +97,7 @@ class FishColdChainDirectoryScreen extends StatelessWidget {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.ac_unit, size: 18, color: coldBlue),
+                          Icon(Icons.ac_unit, size: 18, color: coldBlue),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(

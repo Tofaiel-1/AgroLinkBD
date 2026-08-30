@@ -134,7 +134,7 @@ class _FishFingerlingCalculatorScreenState extends State<FishFingerlingCalculato
                               keyboardType: TextInputType.number,
                               decoration: InputDecoration(
                                 labelText: 'আয়তন (শতাংশ)',
-                                prefixIcon: const Icon(Icons.aspect_ratio, color: deepTeal),
+                                prefixIcon: Icon(Icons.aspect_ratio, color: deepTeal),
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                               ),
                               onChanged: (_) => _calculateStockingDensity(),
@@ -147,7 +147,7 @@ class _FishFingerlingCalculatorScreenState extends State<FishFingerlingCalculato
                               keyboardType: TextInputType.number,
                               decoration: InputDecoration(
                                 labelText: 'গভীরতা (ফুট)',
-                                prefixIcon: const Icon(Icons.height, color: deepTeal),
+                                prefixIcon: Icon(Icons.height, color: deepTeal),
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                               ),
                               onChanged: (_) => _calculateStockingDensity(),
@@ -160,7 +160,7 @@ class _FishFingerlingCalculatorScreenState extends State<FishFingerlingCalculato
                         value: _farmingSystem,
                         decoration: InputDecoration(
                           labelText: 'চাষ পদ্ধতি ও প্রজাতি',
-                          prefixIcon: const Icon(Icons.set_meal, color: deepTeal),
+                          prefixIcon: Icon(Icons.set_meal, color: deepTeal),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         items: [

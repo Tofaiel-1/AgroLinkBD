@@ -4,6 +4,7 @@ import 'package:agrolinkbd/core/providers/user_provider.dart';
 import '../widgets/enhanced_app_bar.dart';
 import '../widgets/greeting_section.dart';
 import '../widgets/enhanced_quick_actions_grid.dart';
+import '../widgets/premium_agro_services_section.dart';
 import '../widgets/promotional_banner.dart';
 import '../widgets/trending_products_section.dart';
 import '../widgets/featured_cards_section.dart';
@@ -38,6 +39,10 @@ class HomeTabScreen extends StatelessWidget {
 
             // Quick actions grid
             const EnhancedQuickActionsGrid(),
+            SizedBox(height: isMobile ? 20 : 28),
+
+            // Premium Agro Services Section
+            const PremiumAgroServicesSection(),
             SizedBox(height: isMobile ? 20 : 28),
 
             // Trending Products Section

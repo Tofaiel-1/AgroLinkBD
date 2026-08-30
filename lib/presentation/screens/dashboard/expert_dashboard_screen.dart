@@ -127,10 +127,10 @@ class ExpertDashboardScreen extends StatelessWidget {
                       const SizedBox(width: 12),
                       Expanded(
                         child: _buildStatCard(
-                          '৪.৮',
-                          'রেটিং',
-                          Icons.star,
-                          Colors.amber,
+                          '১৫',
+                          'সক্রিয় প্রেসক্রিপশন',
+                          Icons.medical_services_rounded,
+                          Colors.teal,
                         ),
                       ),
                     ],

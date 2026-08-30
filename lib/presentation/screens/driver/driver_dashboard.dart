@@ -13,7 +13,6 @@ import 'package:agrolinkbd/presentation/screens/notifications/driver_notificatio
 import 'package:agrolinkbd/presentation/widgets/global_announcement_banner.dart';
 import 'package:agrolinkbd/presentation/screens/microfinance/microfinance_kyc_screen.dart';
 import 'package:agrolinkbd/presentation/widgets/report_generation_card.dart';
-import 'package:agrolinkbd/presentation/widgets/universal_trust_badge_widget.dart';
 import 'package:agrolinkbd/core/models/order_model.dart';
 import 'package:agrolinkbd/presentation/screens/transport/order_qr_delivery_screen.dart';
 import 'package:agrolinkbd/presentation/screens/driver/return_truck_sharing_screen.dart';
@@ -263,15 +262,7 @@ class _DriverDashboardState extends ConsumerState<DriverDashboard>
               ),
             ),
             
-            // ============================================
-            // UNIVERSAL TRUST & WORK-VERIFIED SCORE HEADER
-            // ============================================
-            SliverToBoxAdapter(
-              child: UniversalTrustHeaderWidget(
-                user: userProvider.currentUser,
-                onTap: () => Get.toNamed('/profile-settings'),
-              ),
-            ),
+
 
             // ============================================
             // GLOBAL ANNOUNCEMENTS

@@ -13,14 +13,13 @@ import 'package:agrolinkbd/presentation/widgets/report_generation_card.dart';
 import 'package:agrolinkbd/presentation/screens/fisheries/farmer/pond_management/pond_management_screen.dart';
 import 'package:agrolinkbd/presentation/screens/fisheries/farmer/ai_doctor/ai_fish_doctor_screen.dart';
 import 'package:agrolinkbd/presentation/screens/fisheries/farmer/feed_management/feed_management_screen.dart';
-import 'package:agrolinkbd/presentation/screens/fisheries/farmer/marketplace/sell_fish_screen.dart';
+import 'package:agrolinkbd/presentation/screens/marketplace/fish_marketplace_screen.dart';
 import 'package:agrolinkbd/presentation/screens/fisheries/farmer/water_testing/water_testing_screen.dart';
 import 'package:agrolinkbd/presentation/screens/fisheries/farmer/expert_advice/expert_advice_screen.dart';
 import 'package:agrolinkbd/presentation/screens/fisheries/farmer/transport/fish_transport_screen.dart';
 import 'package:agrolinkbd/presentation/screens/fisheries/farmer/market_price/fish_market_price_screen.dart';
 import 'package:agrolinkbd/core/utils/responsive_helper.dart';
 import 'package:agrolinkbd/presentation/widgets/weather_card_widget.dart';
-import 'package:agrolinkbd/presentation/widgets/universal_trust_badge_widget.dart';
 import 'package:agrolinkbd/presentation/screens/fisheries/farmer/auction/create_fish_auction_screen.dart';
 import 'package:agrolinkbd/presentation/screens/fisheries/farmer/contracts/farmer_contracts_screen.dart';
 import 'package:agrolinkbd/presentation/screens/fisheries/farmer/fcr_calculator/fish_growth_fcr_simulator_screen.dart';
@@ -234,17 +233,6 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                       
                       const SizedBox(height: 16),
 
-                      // Universal Trust & Work-Verified Score Header
-                      Consumer<UserProvider>(
-                        builder: (context, userProvider, _) {
-                          return UniversalTrustHeaderWidget(
-                            user: userProvider.currentUser,
-                            onTap: () => Get.toNamed('/profile-settings'),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
                       // Weather & Water Alert Card
                       FadeTransition(
                         opacity: _fadeAnimation,
@@ -263,7 +251,45 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                       const SizedBox(height: 20),
 
                       // ============================================
-                      // ULTRA PRO COMMERCIAL & INCOME GENERATION HUB
+                      // 1. জরুরী মৎস্য সেবা (QUICK ACTIONS GRID)
+                      // ============================================
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: deepAqua.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Icon(Icons.flash_on_rounded, color: deepAqua, size: 20),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'জরুরী মৎস্য সেবা',
+                                style: GoogleFonts.hindSiliguri(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? Colors.white : Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      
+                      FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: _buildQuickActionsGrid(oceanBlue, deepAqua),
+                      ),
+
+                      const SizedBox(height: 22),
+
+                      // ============================================
+                      // 2. ULTRA PRO COMMERCIAL & INCOME GENERATION HUB
                       // ============================================
                       Container(
                         padding: const EdgeInsets.all(18),
@@ -453,10 +479,10 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                         ),
                       ),
 
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 22),
 
                       // ============================================
-                      // VIP PRO INTELLIGENCE & SATELLITE HUB
+                      // 3. VIP PRO INTELLIGENCE & SATELLITE HUB (VIP PASS)
                       // ============================================
                       Container(
                         padding: const EdgeInsets.all(18),
@@ -684,29 +710,6 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
 
                       const SizedBox(height: 24),
 
-                      // Quick Actions Section
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'জরুরী মৎস্য সেবা',
-                            style: GoogleFonts.hindSiliguri(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: isDark ? Colors.white : Colors.black87,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      FadeTransition(
-                        opacity: _fadeAnimation,
-                        child: _buildQuickActionsGrid(oceanBlue, deepAqua),
-                      ),
-
-                      const SizedBox(height: 24),
-
                       // Tasks Section
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -804,10 +807,10 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
           onTap: () => Get.to(() => const FeedManagementScreen()),
         ),
         _ActionCard(
-          title: 'মাছ বিক্রি',
+          title: 'বিগ ফিশ মার্কেট',
           icon: Icons.storefront,
-          color: Colors.green.shade600,
-          onTap: () => Get.to(() => const SellFishScreen()),
+          color: deepAqua,
+          onTap: () => Get.to(() => const FishMarketplaceScreen()),
         ),
         
         // Row 2

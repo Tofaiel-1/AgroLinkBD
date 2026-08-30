@@ -1,423 +1,419 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
-import 'package:agrolinkbd/presentation/screens/buyer/shopping_cart_screen.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:agrolinkbd/presentation/screens/buyer/shopping_cart_screen.dart';
 import 'package:agrolinkbd/core/models/order_model.dart';
 import 'package:agrolinkbd/core/services/order_service.dart';
 import 'package:agrolinkbd/core/services/sslcommerz_service.dart';
 import 'package:agrolinkbd/presentation/screens/buyer/fish_buyer_orders_screen.dart';
-import 'package:agrolinkbd/core/utils/responsive_helper.dart';
 import 'package:agrolinkbd/core/providers/cart_provider.dart';
 import 'package:agrolinkbd/core/models/cart_model.dart';
+import 'package:agrolinkbd/presentation/screens/fisheries/farmer/auction/create_fish_auction_screen.dart';
+import 'package:agrolinkbd/presentation/screens/fisheries/premium/fish_buyer_qc_inspection_screen.dart';
 
 class FishMarketplaceScreen extends StatefulWidget {
-  const FishMarketplaceScreen({super.key});
+  final bool showAppBar;
+  const FishMarketplaceScreen({super.key, this.showAppBar = true});
 
   @override
   State<FishMarketplaceScreen> createState() => _FishMarketplaceScreenState();
 }
 
-class _FishMarketplaceScreenState extends State<FishMarketplaceScreen> {
+class _FishMarketplaceScreenState extends State<FishMarketplaceScreen> with SingleTickerProviderStateMixin {
   String _selectedCategory = 'সব';
   String _sortBy = 'popular';
   String _searchQuery = '';
+  bool _isWholesaleMode = false;
   int _currentBannerIndex = 0;
+  late PageController _bannerPageController;
+  Timer? _bannerTimer;
 
-  final List<String> _banners = [
-    'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=1000&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1516815231560-8f41ec531527?w=1000&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=1000&auto=format&fit=crop&q=80',
-  ];
+  late Duration _flashDuration;
+  Timer? _flashTimer;
 
   final List<Map<String, dynamic>> _categories = [
-    {'label': 'সব', 'key': 'all', 'icon': Icons.set_meal},
-    {'label': 'মিঠা পানির মাছ', 'key': 'sweet_water', 'icon': Icons.water},
-    {'label': 'সামুদ্রিক মাছ', 'key': 'sea_water', 'icon': Icons.waves},
-    {'label': 'জীবন্ত মাছ', 'key': 'live', 'icon': Icons.pool},
-    {'label': 'চিংড়ি ও কাঁকড়া', 'key': 'shrimp_crab', 'icon': Icons.phishing},
-    {'label': 'বরফ ঢাকা', 'key': 'frozen', 'icon': Icons.ac_unit},
-    {'label': 'শুটকি', 'key': 'dry', 'icon': Icons.wb_sunny},
-    {'label': 'পোনা ও রেণু', 'key': 'fingerling', 'icon': Icons.opacity},
+    {'label': 'সব', 'key': 'all', 'icon': Icons.set_meal, 'count': '২২+'},
+    {'label': 'পদ্মার ইলিশ ও নদীর মাছ', 'key': 'river', 'icon': Icons.waves, 'count': '৮'},
+    {'label': 'জীবন্ত অক্সিজেন ট্যাংক', 'key': 'live', 'icon': Icons.pool, 'count': '৬'},
+    {'label': 'গলদা ও বাগদা চিংড়ি', 'key': 'shrimp_crab', 'icon': Icons.phishing, 'count': '৫'},
+    {'label': 'পাইকারি বড় লট (৫০+ কেজি)', 'key': 'wholesale', 'icon': Icons.inventory_2, 'count': '১০'},
+    {'label': 'সামুদ্রিক ও রূপচাঁদা', 'key': 'marine', 'icon': Icons.sailing, 'count': '৭'},
+    {'label': 'মহেশখালী অর্গানিক শুটকি', 'key': 'dry', 'icon': Icons.wb_sunny, 'count': '৪'},
+    {'label': 'হ্যাচারি পোনা ও রেণু', 'key': 'fingerling', 'icon': Icons.opacity, 'count': '৩'},
+  ];
+
+  final List<Map<String, dynamic>> _heroFlashDeals = [
+    {
+      'id': 'FLASH_1',
+      'title': 'চাঁদপুর মোহনার পদ্মার তাজা রূপালী ইলিশ',
+      'weight': '১.৩ - ১.৬ কেজি/পিস',
+      'price': 1450,
+      'wholesalePrice': 1350,
+      'discount': '১৫% ছাড়',
+      'tag': 'ভোর ৪:৩০ এ চাঁদপুর মোহনা থেকে আহরিত',
+      'image': 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=900&auto=format&fit=crop&q=80',
+      'location': 'চাঁদপুর ফিশারি ঘাট',
+      'seller': 'চাঁদপুর মোহনা ইলিশ ফোরাম',
+      'stock': '৪৫০ কেজি লট',
+      'verified': true,
+      'phone': '01711002233',
+    },
+    {
+      'id': 'FLASH_2',
+      'title': 'সাতক্ষীরার রপ্তানি গ্রেড জম্বো বাগদা চিংড়ি',
+      'weight': '২০-২৫ পিস/কেজি (জম্বো)',
+      'price': 950,
+      'wholesalePrice': 880,
+      'discount': '১০% পাইকারি ছাড়',
+      'tag': 'ঘের থেকে সরাসরি জীবন্ত সংগ্রহ',
+      'image': 'https://images.unsplash.com/photo-1565680018434-b513d5e5fd47?w=900&auto=format&fit=crop&q=80',
+      'location': 'শ্যামনগর, সাতক্ষীরা',
+      'seller': 'সাতক্ষীরা সী-ফুড এক্সপোর্ট',
+      'stock': '২০০ কেজি লট',
+      'verified': true,
+      'phone': '01711445566',
+    },
+    {
+      'id': 'FLASH_3',
+      'title': 'হালদা নদীর তেলযুক্ত তাজা বড় কাতলা মাছ',
+      'weight': '৪ - ৫.৫ কেজি সাইজ',
+      'price': 440,
+      'wholesalePrice': 390,
+      'discount': 'পাইকারি বিশেষ লট',
+      'tag': 'প্রাকৃতিক হালদা নদীর খাঁটি স্বাদ',
+      'image': 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=900&auto=format&fit=crop&q=80',
+      'location': 'হালদা নদী, চট্টগ্রাম',
+      'seller': 'চট্টগ্রাম রিভার ক্যাচ এন্টারপ্রাইজ',
+      'stock': '৬০০ কেজি লট',
+      'verified': true,
+      'phone': '01811889900',
+    },
   ];
 
   final List<Map<String, dynamic>> _allFishProducts = [
     {
       'id': 'FP001',
-      'title': 'পদ্মার তাজা ইলিশ (১.২ কেজি+ ওজনের)',
-      'primaryCategory': 'সামুদ্রিক মাছ',
-      'categories': ['সামুদ্রিক মাছ', 'বরফ ঢাকা'],
+      'title': 'পদ্মার তাজা ইলিশ (১.২ - ১.৫ কেজি ওজনের)',
+      'primaryCategory': 'পদ্মার ইলিশ ও নদীর মাছ',
+      'categories': ['পদ্মার ইলিশ ও নদীর মাছ', 'পাইকারি বড় লট (৫০+ কেজি)'],
       'price': 1450,
+      'wholesalePrice': 1350,
+      'minWholesaleKg': 30,
       'unit': 'কেজি',
-      'seller': 'চাঁদপুর ফিশার্স ফোরাম',
-      'location': 'চাঁদপুর বন্দর',
+      'seller': 'চাঁদপুর মোহনা ফিশার্স অ্যাসোসিয়েশন',
+      'location': 'চাঁদপুর বন্দর ঘাট',
       'rating': 4.9,
-      'reviews': 142,
+      'reviews': 248,
       'stock': '৩২০ কেজি',
       'isLive': false,
       'isPremium': true,
-      'imageUrl': 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=600&auto=format&fit=crop&q=80',
-      'description': 'পদ্মা ও মেঘনার মোহনা থেকে সরাসরি সংগৃহীত তাজা রুপালি ইলিশ। কোনো রাসায়নিক বা ফরমালিন মুক্ত, বরফ দিয়ে সংরক্ষিত টাটকা ইলিশ।'
+      'harvestTime': 'আজ ভোর ৫:৩০ AM',
+      'puritySeal': '১০০% ফরমালিন মুক্ত সার্টিফাইড',
+      'deliveryMode': 'থার্মোকল বরফ বক্স / এক্সপ্রেস ভ্যান',
+      'imageUrl': 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=700&auto=format&fit=crop&q=80',
+      'description': 'চাঁদপুরের পদ্মা ও মেঘনা মিলনস্থল থেকে সরাসরি ভোরে ধরা খাঁটি চকচকে রূপালী ইলিশ। কোনো বরফের রাসায়নিক নেই, শতভাগ টাটকা ও ডিমযুক্ত স্বাদ।',
+      'phone': '01711002233',
     },
     {
       'id': 'FP002',
-      'title': 'দেশি রুই মাছ (২.৫ - ৩ কেজি ওজনের তাজা)',
-      'primaryCategory': 'মিঠা পানির মাছ',
-      'categories': ['মিঠা পানির মাছ', 'জীবন্ত মাছ'],
+      'title': 'দেশি রুই মাছ (২.৫ - ৩.৫ কেজি ওজনের তাজা)',
+      'primaryCategory': 'পদ্মার ইলিশ ও নদীর মাছ',
+      'categories': ['পদ্মার ইলিশ ও নদীর মাছ', 'জীবন্ত অক্সিজেন ট্যাংক', 'পাইকারি বড় লট (৫০+ কেজি)'],
       'price': 380,
+      'wholesalePrice': 330,
+      'minWholesaleKg': 50,
       'unit': 'কেজি',
-      'seller': 'করিম মৎস্য খামার',
-      'location': 'নাটোর, রাজশাহী',
+      'seller': 'রাজশাহী চলনবিল অ্যাকোয়াকালচার',
+      'location': 'সিংড়া, নাটোর',
       'rating': 4.8,
-      'reviews': 98,
-      'stock': '৫৫০ কেজি',
+      'reviews': 185,
+      'stock': '৭৫০ কেজি',
       'isLive': true,
       'isPremium': true,
-      'imageUrl': 'https://images.unsplash.com/photo-1534483509719-3feaee7c30da?w=600&auto=format&fit=crop&q=80',
-      'description': 'রাজশাহীর চলনবিল ও খামারে প্রাকৃতিক খাবার দিয়ে চাষ করা দেশি রুই মাছ। সরাসরি খামার থেকে জীবন্ত বা তাজা ডেলিভারি।'
+      'harvestTime': 'আজ সকাল ৬:১৫ AM',
+      'puritySeal': 'প্রাকৃতিক প্রোটিন ফিডে চাষকৃত',
+      'deliveryMode': 'অক্সিজেন লাইভ ভ্যান ডেলিভারি',
+      'imageUrl': 'https://images.unsplash.com/photo-1534483509719-3feaee7c30da?w=700&auto=format&fit=crop&q=80',
+      'description': 'চলনবিলের পরিষ্কার পানিতে প্রাকৃতিক খাদ্য দিয়ে বড় করা খাঁটি দেশি রুই মাছ। লাল টুকটুকে তাজা ফুলকা ও শক্ত আঁশযুক্ত মাংস।',
+      'phone': '01711223344',
     },
     {
       'id': 'FP003',
-      'title': 'জীবন্ত বাগদা চিংড়ি (রপ্তানি গ্রেড)',
-      'primaryCategory': 'চিংড়ি ও কাঁকড়া',
-      'categories': ['চিংড়ি ও কাঁকড়া', 'সামুদ্রিক মাছ', 'জীবন্ত মাছ'],
+      'title': 'জীবন্ত বাগদা চিংড়ি (রপ্তানি গ্রেড-১)',
+      'primaryCategory': 'গলদা ও বাগদা চিংড়ি',
+      'categories': ['গলদা ও বাগদা চিংড়ি', 'সামুদ্রিক ও রূপচাঁদা', 'জীবন্ত অক্সিজেন ট্যাংক'],
       'price': 950,
+      'wholesalePrice': 870,
+      'minWholesaleKg': 20,
       'unit': 'কেজি',
-      'seller': 'সাতক্ষীরা অ্যাকোয়া লিমিটেড',
+      'seller': 'সাতক্ষীরা ব্লু-অ্যাকোয়া লিমিটেড',
       'location': 'শ্যামনগর, সাতক্ষীরা',
       'rating': 5.0,
-      'reviews': 185,
+      'reviews': 310,
       'stock': '১৮০ কেজি',
       'isLive': true,
       'isPremium': true,
-      'imageUrl': 'https://images.unsplash.com/photo-1565680018434-b513d5e5fd47?w=600&auto=format&fit=crop&q=80',
-      'description': 'সাতক্ষীরার ঘের থেকে সরাসরি সংগৃহীত আন্তর্জাতিক মানের বাগদা চিংড়ি। সুস্বাদু ও পুষ্টিগুণে ভরপুর।'
+      'harvestTime': 'আজ ভোর ৫:০০ AM',
+      'puritySeal': 'ইইউ এক্সপোর্ট কোয়ালিটি সার্টিফাইড',
+      'deliveryMode': 'অক্সিজেন স্যাচুরেটেড ওয়াটার প্যাক',
+      'imageUrl': 'https://images.unsplash.com/photo-1565680018434-b513d5e5fd47?w=700&auto=format&fit=crop&q=80',
+      'description': 'সাতক্ষীরার লোনা পানির প্রাকৃতিক ঘের থেকে সংগৃহীত সরাসরি আন্তর্জাতিক মানের গ্রেড-১ বাগদা চিংড়ি। দারুণ মিষ্টি স্বাদ ও খাস্তা টেক্সচার।',
+      'phone': '01711556677',
     },
     {
       'id': 'FP004',
-      'title': 'হালদা নদীর কাতলা মাছ (৩ কেজি+ সাইজ)',
-      'primaryCategory': 'মিঠা পানির মাছ',
-      'categories': ['মিঠা পানির মাছ'],
+      'title': 'হালদা নদীর কাতলা মাছ (৪ কেজি+ সাইজ)',
+      'primaryCategory': 'পদ্মার ইলিশ ও নদীর মাছ',
+      'categories': ['পদ্মার ইলিশ ও নদীর মাছ', 'পাইকারি বড় লট (৫০+ কেজি)'],
       'price': 420,
+      'wholesalePrice': 380,
+      'minWholesaleKg': 40,
       'unit': 'কেজি',
-      'seller': 'চট্টগ্রাম রিভার ক্যাচ',
-      'location': 'হালদা নদী, চট্টগ্রাম',
-      'rating': 4.7,
-      'reviews': 76,
-      'stock': '৪০০ কেজি',
+      'seller': 'চট্টগ্রাম রিভার ফ্রেশ কো-অপারেটিভ',
+      'location': 'হালদা ঘাট, রাউজান',
+      'rating': 4.9,
+      'reviews': 142,
+      'stock': '৫০০ কেজি',
       'isLive': false,
-      'isPremium': false,
-      'imageUrl': 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=600&auto=format&fit=crop&q=80',
-      'description': 'হালদা নদীর প্রাকৃতিক পরিবেশ থেকে ধরা তাজা কাতলা মাছ। তেলযুক্ত ও অত্যন্ত সুস্বাদু।'
+      'isPremium': true,
+      'harvestTime': 'আজ ভোর ৪:৪৫ AM',
+      'puritySeal': 'হালদা নদীর ঐতিহ্যবাহী প্রাকৃতিক মাছ',
+      'deliveryMode': 'থার্মোকল ক্র্যাশড আইস বক্স',
+      'imageUrl': 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=700&auto=format&fit=crop&q=80',
+      'description': 'বিশ্বখ্যাত প্রাকৃতিক মৎস্য প্রজনন ক্ষেত্র হালদা নদীর সুবিশাল সুস্বাদু কাতলা মাছ। পেটিতে প্রচুর মিষ্টি চর্বি ও কোমল মাংস।',
+      'phone': '01811334455',
     },
     {
       'id': 'FP005',
-      'title': 'জীবন্ত দেশি কৈ মাছ (বায়োফ্লক লাইভ ট্যাংক)',
-      'primaryCategory': 'জীবন্ত মাছ',
-      'categories': ['জীবন্ত মাছ', 'মিঠা পানির মাছ'],
-      'price': 480,
+      'title': 'জীবন্ত দেশি শিং মাছ (বায়োফ্লক ট্যাংক ফ্রেশ)',
+      'primaryCategory': 'জীবন্ত অক্সিজেন ট্যাংক',
+      'categories': ['জীবন্ত অক্সিজেন ট্যাংক', 'পদ্মার ইলিশ ও নদীর মাছ'],
+      'price': 600,
+      'wholesalePrice': 540,
+      'minWholesaleKg': 15,
       'unit': 'কেজি',
-      'seller': 'ময়মনসিংহ বায়োফ্লক খামার',
-      'location': 'ত্রিশাল, ময়মনসিংহ',
+      'seller': 'ময়মনসিংহ প্রিমিয়ার বায়োফ্লক হাব',
+      'location': 'ত্রিশাল, ময়মনসিংহ',
       'rating': 4.9,
-      'reviews': 110,
+      'reviews': 178,
       'stock': '২২০ কেজি',
       'isLive': true,
       'isPremium': true,
-      'imageUrl': 'https://images.unsplash.com/photo-1524704654690-b56c05c78a00?w=600&auto=format&fit=crop&q=80',
-      'description': 'ময়মনসিংহের বায়োফ্লক খামারে উৎপাদিত ১০০% জীবন্ত দেশি কৈ মাছ। অক্সিজেন ট্যাংকের মাধ্যমে ডেলিভারি।'
+      'harvestTime': 'লাইভ ট্যাংক থেকে সরাসরি অর্ডার অনুযায়ী তোলা হবে',
+      'puritySeal': '১০০% জীবন্ত গ্যারান্টি • রক্তস্বল্পতায় আদর্শ',
+      'deliveryMode': 'লাইভ অক্সিজেন ব্যাগ বা ট্যাংক ভ্যান',
+      'imageUrl': 'https://images.unsplash.com/photo-1524704654690-b56c05c78a00?w=700&auto=format&fit=crop&q=80',
+      'description': 'রোগী, প্রসূতি মা ও শিশুদের জন্য পুষ্টিগুণে সেরা শতভাগ জীবন্ত দেশি শিং মাছ। সম্পূর্ণ ড্রাগ-মুক্ত ও প্রাকৃতিক পরিবেশে উৎপাদিত।',
+      'phone': '01911998877',
     },
     {
       'id': 'FP006',
-      'title': 'সামুদ্রিক কোরাল / ভেঁটকি মাছ (২ কেজি ওজনের)',
-      'primaryCategory': 'সামুদ্রিক মাছ',
-      'categories': ['সামুদ্রিক মাছ', 'বরফ ঢাকা'],
-      'price': 750,
+      'title': 'কক্সবাজারের রূপচাঁদা (সিলভার পমফ্রেট ১ কেজি প্যাক)',
+      'primaryCategory': 'সামুদ্রিক ও রূপচাঁদা',
+      'categories': ['সামুদ্রিক ও রূপচাঁদা', 'পাইকারি বড় লট (৫০+ কেজি)'],
+      'price': 850,
+      'wholesalePrice': 780,
+      'minWholesaleKg': 25,
       'unit': 'কেজি',
-      'seller': 'কক্সবাজার সি-ফুড হাব',
+      'seller': 'কক্সবাজার ডিপ-সী ট্রলার ফোরাম',
       'location': 'ফিশারি ঘাট, কক্সবাজার',
-      'rating': 4.8,
-      'reviews': 92,
-      'stock': '১৫০ কেজি',
+      'rating': 4.9,
+      'reviews': 215,
+      'stock': '৩০০ কেজি',
       'isLive': false,
       'isPremium': true,
-      'imageUrl': 'https://images.unsplash.com/photo-1580476262798-bddd9f4b7369?w=600&auto=format&fit=crop&q=80',
-      'description': 'বঙ্গোপসাগর থেকে গভীর সমুদ্রে ধরা তাজা কোরাল বা ভেঁটকি মাছ। ফিশ ফ্রাই ও বারবিকিউয়ের জন্য সেরা।'
+      'harvestTime': 'গতকাল রাতে গভীর বঙ্গোপসাগর থেকে আসা ট্রলার',
+      'puritySeal': 'রপ্তানি গ্রেড সিলভার রূপচাঁদা',
+      'deliveryMode': 'চিলড কোল্ড চেইন ট্রান্সপোর্ট',
+      'imageUrl': 'https://images.unsplash.com/photo-1534939561126-855b8675edd7?w=700&auto=format&fit=crop&q=80',
+      'description': 'কক্সবাজারের গভীর সমুদ্রের আসল সিলভার রূপচাঁদা মাছ। ফাইভ স্টার রেস্তোরাঁ ও হোম ডাইনিংয়ের জন্য সর্বোচ্চ মানের ফ্রাই সাইজ।',
+      'phone': '01811667788',
     },
     {
       'id': 'FP007',
-      'title': 'গলদা চিংড়ি (জম্বো সাইজ ১ কেজি প্যাক)',
-      'primaryCategory': 'চিংড়ি ও কাঁকড়া',
-      'categories': ['চিংড়ি ও কাঁকড়া', 'মিঠা পানির মাছ'],
+      'title': 'গলদা চিংড়ি (জম্বো সাইজ ৫০০ গ্রাম - ১ কেজি প্যাক)',
+      'primaryCategory': 'গলদা ও বাগদা চিংড়ি',
+      'categories': ['গলদা ও বাগদা চিংড়ি', 'পদ্মার ইলিশ ও নদীর মাছ'],
       'price': 1100,
+      'wholesalePrice': 990,
+      'minWholesaleKg': 15,
       'unit': 'কেজি',
-      'seller': 'বাগেরহাট চিংড়ি চাষী সমিতি',
-      'location': 'মংলা, বাগেরহাট',
+      'seller': 'বাগেরহাট গলদা চাষী সমিতি',
+      'location': 'মংলা রোড, বাগেরহাট',
       'rating': 4.9,
-      'reviews': 165,
+      'reviews': 260,
       'stock': '১৪০ কেজি',
       'isLive': false,
       'isPremium': true,
-      'imageUrl': 'https://images.unsplash.com/photo-1559742811-822873691df8?w=600&auto=format&fit=crop&q=80',
-      'description': 'বাগেরহাটের মিষ্টি ও আধা-লোনা পানির গলদা চিংড়ি। প্রতিটি মাছে প্রচুর মাথার ঘি ও বড় মাংসল শরীর।'
+      'harvestTime': 'আজ ভোর ৬:০০ AM',
+      'puritySeal': 'মাথায় ভরপুর লাল ঘি গ্যারান্টি',
+      'deliveryMode': 'আইসড থার্মোকল বক্স',
+      'imageUrl': 'https://images.unsplash.com/photo-1559742811-822873691df8?w=700&auto=format&fit=crop&q=80',
+      'description': 'বাগেরহাটের মিষ্টি পানির সুবিশাল গলদা চিংড়ি। প্রতিটি চিংড়ির মাথায় রয়েছে সুস্বাদু লাল ঘি এবং মোটা মাংসল শরীর।',
+      'phone': '01711889911',
     },
     {
       'id': 'FP008',
-      'title': 'পাবদা মাছ (দেশি টাটকা ১ কেজি প্যাক)',
-      'primaryCategory': 'মিঠা পানির মাছ',
-      'categories': ['মিঠা পানির মাছ'],
-      'price': 550,
+      'title': 'সুন্দরবনের জীবন্ত মাড ক্র্যাব (বড় সাইজের কাঁকড়া)',
+      'primaryCategory': 'গলদা ও বাগদা চিংড়ি',
+      'categories': ['গলদা ও বাগদা চিংড়ি', 'সামুদ্রিক ও রূপচাঁদা', 'জীবন্ত অক্সিজেন ট্যাংক'],
+      'price': 720,
+      'wholesalePrice': 650,
+      'minWholesaleKg': 20,
       'unit': 'কেজি',
-      'seller': 'যশোর ফিশারি জোন',
-      'location': 'চাঁচড়া, যশোর',
-      'rating': 4.6,
-      'reviews': 64,
-      'stock': '৩০০ কেজি',
-      'isLive': false,
-      'isPremium': false,
-      'imageUrl': 'https://images.unsplash.com/photo-1615141982883-c7ad0e69fd62?w=600&auto=format&fit=crop&q=80',
-      'description': 'যশোরের হ্যাচারি ও খামারের টাটকা পাবদা মাছ। কাঁটাহীন ও শিশুদের খাওয়ার জন্য অত্যন্ত উপযোগী।'
+      'seller': 'খুলনা সুন্দরবন সি-ফুড প্রসেসিং',
+      'location': 'রূপসা ঘাট, খুলনা',
+      'rating': 4.8,
+      'reviews': 130,
+      'stock': '১১০ কেজি',
+      'isLive': true,
+      'isPremium': true,
+      'harvestTime': 'সুন্দরবন খাঁড়ি থেকে সরাসরি সংগৃহীত',
+      'puritySeal': '১০০% জীবিত ও মাংসে টাইট কাঁকড়া',
+      'deliveryMode': 'স্পেশাল ব্রিদিং ব্যাম্বু ক্রাফট বক্স',
+      'imageUrl': 'https://images.unsplash.com/photo-1559742811-822873691df8?w=700&auto=format&fit=crop&q=80',
+      'description': 'সুন্দরবনের প্রাকৃতিক লোনা খাঁড়ির বড় সাইজের জীবন্ত কাঁকড়া। প্রচুর নরম মাংস ও ঘিয়ে ভরপুর এক্সপোর্ট কোয়ালিটি।',
+      'phone': '01711332211',
     },
     {
       'id': 'FP009',
-      'title': 'কক্সবাজারের রূপচাঁদা (সিলভার পমফ্রেট)',
-      'primaryCategory': 'সামুদ্রিক মাছ',
-      'categories': ['সামুদ্রিক মাছ', 'বরফ ঢাকা'],
-      'price': 850,
+      'title': 'সামুদ্রিক কোরাল / ভেঁটকি মাছ (২ - ৩ কেজি সাইজ)',
+      'primaryCategory': 'সামুদ্রিক ও রূপচাঁদা',
+      'categories': ['সামুদ্রিক ও রূপচাঁদা', 'পাইকারি বড় লট (৫০+ কেজি)'],
+      'price': 750,
+      'wholesalePrice': 680,
+      'minWholesaleKg': 30,
       'unit': 'কেজি',
-      'seller': 'কক্সবাজার মেরিন ফিশারিজ',
-      'location': 'কক্সবাজার সদর',
-      'rating': 4.9,
-      'reviews': 130,
-      'stock': '১৭০ কেজি',
+      'seller': 'কক্সবাজার সী-ফুড ট্রেডিং',
+      'location': 'টেকনাফ কোস্টাল জোন',
+      'rating': 4.8,
+      'reviews': 112,
+      'stock': '১৯০ কেজি',
       'isLive': false,
       'isPremium': true,
-      'imageUrl': 'https://images.unsplash.com/photo-1534939561126-855b8675edd7?w=600&auto=format&fit=crop&q=80',
-      'description': 'কক্সবাজারের সমুদ্র থেকে ধরা আসল সিলভার রূপচাঁদা মাছ। রেস্টুরেন্ট ও পরিবারের জন্য ফ্রেশ কোয়ালিটি।'
+      'harvestTime': 'আজ ভোর ৫:০০ AM',
+      'puritySeal': 'বারবিকিউ ও ফিশ ফিলেটের জন্য সেরা',
+      'deliveryMode': 'কোল্ড চেইন এক্সপ্রেস ভ্যান',
+      'imageUrl': 'https://images.unsplash.com/photo-1580476262798-bddd9f4b7369?w=700&auto=format&fit=crop&q=80',
+      'description': 'বঙ্গোপসাগরের গভীর জলসীমা থেকে সংগৃহীত প্রিমিয়াম সাইজের সাদা কোরাল বা ভেঁটকি মাছ। ফিশ ফ্রাই ও তন্দুরি বারবিকিউয়ের জন্য অতুলনীয়।',
+      'phone': '01811443322',
     },
     {
       'id': 'FP010',
-      'title': 'লইট্টা শুটকি (কক্সবাজার স্পেশাল ড্রাই ফিশ)',
-      'primaryCategory': 'শুটকি',
-      'categories': ['শুটকি'],
-      'price': 650,
-      'unit': 'কেজি',
-      'seller': 'মহেশখালী শুটকি ভান্ডার',
-      'location': 'মহেশখালী, কক্সবাজার',
-      'rating': 4.8,
-      'reviews': 148,
-      'stock': '১২০ কেজি',
-      'isLive': false,
-      'isPremium': true,
-      'imageUrl': 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=80',
-      'description': 'মহেশখালীর রোদে প্রাকৃতিকভাবে শুকানো লইট্টা শুটকি। কোনো কীটনাশক বা লবণ ছাড়া স্বাস্থ্যসম্মত প্রক্রিয়ায় তৈরি।'
-    },
-    {
-      'id': 'FP011',
-      'title': 'জীবন্ত শিং মাছ (ফার্ম ফ্রেশ, দেশি জাত)',
-      'primaryCategory': 'জীবন্ত মাছ',
-      'categories': ['জীবন্ত মাছ', 'মিঠা পানির মাছ'],
-      'price': 600,
-      'unit': 'কেজি',
-      'seller': 'মুক্তাগাছা ফিশার্স',
-      'location': 'মুক্তাগাছা, ময়মনসিংহ',
-      'rating': 4.9,
-      'reviews': 88,
-      'stock': '১৯০ কেজি',
-      'isLive': true,
-      'isPremium': true,
-      'imageUrl': 'https://images.unsplash.com/photo-1510130387422-82ebdeffd616?w=600&auto=format&fit=crop&q=80',
-      'description': 'রোগী ও শিশুদের জন্য পুষ্টিকর জীবন্ত দেশি শিং মাছ। সরাসরি খামার থেকে লাইভ ডেলিভারি।'
-    },
-    {
-      'id': 'FP012',
-      'title': 'নদীর বোয়াল মাছ (বড় সাইজ ৪ কেজি+)',
-      'primaryCategory': 'মিঠা পানির মাছ',
-      'categories': ['মিঠা পানির মাছ'],
-      'price': 780,
-      'unit': 'কেজি',
-      'seller': 'সিলেট হাওর মৎস্য খামার',
-      'location': 'সুনামগঞ্জ হাওর, সিলেট',
-      'rating': 4.7,
-      'reviews': 70,
-      'stock': '১১০ কেজি',
-      'isLive': false,
-      'isPremium': false,
-      'imageUrl': 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=600&auto=format&fit=crop&q=80',
-      'description': 'সুনামগঞ্জের টাঙ্গুয়ার হাওরের মিষ্টি পানির বড় বোয়াল মাছ। তেলযুক্ত ও সুস্বাদু দেশি বোয়াল।'
-    },
-    {
-      'id': 'FP013',
-      'title': 'সামুদ্রিক কাঁকড়া (লাইভ ও ফ্রেশ মড ক্র্যাব)',
-      'primaryCategory': 'চিংড়ি ও কাঁকড়া',
-      'categories': ['চিংড়ি ও কাঁকড়া', 'সামুদ্রিক মাছ', 'জীবন্ত মাছ'],
-      'price': 700,
-      'unit': 'কেজি',
-      'seller': 'সুন্দরবন সি-ফুড প্রসেসিং',
-      'location': 'রূপসা, খুলনা',
-      'rating': 4.8,
-      'reviews': 95,
-      'stock': '৯০ কেজি',
-      'isLive': true,
-      'isPremium': true,
-      'imageUrl': 'https://images.unsplash.com/photo-1559742811-822873691df8?w=600&auto=format&fit=crop&q=80',
-      'description': 'সুন্দরবন উপকূলীয় অঞ্চল থেকে সংগৃহীত জীবন্ত মড ক্র্যাব। প্রচুর মাংসে ভরপুর ও রপ্তানি কোয়ালিটি।'
-    },
-    {
-      'id': 'FP014',
-      'title': 'মনোসেক্স তেলাপিয়া (জীবন্ত ও টাটকা)',
-      'primaryCategory': 'মিঠা পানির মাছ',
-      'categories': ['মিঠা পানির মাছ', 'জীবন্ত মাছ'],
-      'price': 220,
-      'unit': 'কেজি',
-      'seller': 'বগুড়া অ্যাগ্রো ফিশারিজ',
-      'location': 'শেরপুর, বগুড়া',
-      'rating': 4.5,
-      'reviews': 210,
-      'stock': '৮০০ কেজি',
-      'isLive': true,
-      'isPremium': false,
-      'imageUrl': 'https://images.unsplash.com/photo-1534483509719-3feaee7c30da?w=600&auto=format&fit=crop&q=80',
-      'description': 'বগুড়ার খামারে চাষকৃত তাজা মনোসেক্স তেলাপিয়া। প্রতিদিন সকালে ধরা টাটকা মাছ।'
-    },
-    {
-      'id': 'FP015',
-      'title': 'রূপচাঁদা শুটকি (প্রিমিয়াম গ্রেড ড্রাই ফিশ)',
-      'primaryCategory': 'শুটকি',
-      'categories': ['শুটকি', 'সামুদ্রিক মাছ'],
+      'title': 'সেন্টমার্টিন অর্গানিক রূপচাঁদা শুটকি (লবণ ও কেমিক্যালমুক্ত)',
+      'primaryCategory': 'মহেশখালী অর্গানিক শুটকি',
+      'categories': ['মহেশখালী অর্গানিক শুটকি', 'সামুদ্রিক ও রূপচাঁদা'],
       'price': 1250,
+      'wholesalePrice': 1120,
+      'minWholesaleKg': 10,
       'unit': 'কেজি',
-      'seller': 'সেন্টমার্টিন শুটকি হাউজ',
-      'location': 'টেকনাফ, কক্সবাজার',
+      'seller': 'সেন্টমার্টিন ড্রাইড ফিশ এন্টারপ্রাইজ',
+      'location': 'সেন্টমার্টিন দ্বীপ, কক্সবাজার',
       'rating': 5.0,
-      'reviews': 115,
-      'stock': '৬০ কেজি',
-      'isLive': false,
-      'isPremium': true,
-      'imageUrl': 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=80',
-      'description': 'সেন্টমার্টিন দ্বীপের আসল রূপচাঁদা মাছের অর্গানিক শুটকি। কোনো প্রকার কেমিক্যাল বা বালু মুক্ত।'
-    },
-    {
-      'id': 'FP016',
-      'title': 'চ্যাপা শুটকি (ময়মনসিংহের ঐতিহ্যবাহী)',
-      'primaryCategory': 'শুটকি',
-      'categories': ['শুটকি'],
-      'price': 900,
-      'unit': 'কেজি',
-      'seller': 'ময়মনসিংহ অর্গানিক শুটকি',
-      'location': 'ময়মনসিংহ সদর',
-      'rating': 4.9,
-      'reviews': 140,
+      'reviews': 165,
       'stock': '৮০ কেজি',
       'isLive': false,
       'isPremium': true,
-      'imageUrl': 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=80',
-      'description': 'ময়মনসিংহের পুটি মাছ থেকে ঐতিহ্যবাহী পদ্ধতিতে তৈরি খাঁটি চ্যাপা শুটকি। অসাধারণ ঘ্রাণ ও স্বাদ।'
+      'harvestTime': 'প্রাকৃতিক সূর্যালোক ও সামুদ্রিক বাতাসে শুকানো',
+      'puritySeal': '১০০% কীটনাশক ও বালুকামুক্ত অর্গানিক',
+      'deliveryMode': 'ভ্যাকুয়াম সিলড প্রিমিয়াম পাউচ',
+      'imageUrl': 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=700&auto=format&fit=crop&q=80',
+      'description': 'সেন্টমার্টিন দ্বীপের আসল রূপচাঁদা মাছের স্বাস্থ্যসম্মত অর্গানিক শুটকি। কোনো কীটনাশক, বিষাক্ত লবণ বা ধুলাবালি স্পর্শ করেনি।',
+      'phone': '01811554433',
     },
     {
-      'id': 'FP017',
-      'title': 'পাঙ্গাস মাছ (তাজা ও বরফমুক্ত)',
-      'primaryCategory': 'মিঠা পানির মাছ',
-      'categories': ['মিঠা পানির মাছ'],
-      'price': 180,
-      'unit': 'কেজি',
-      'seller': 'গাজীপুর ফিশ প্রজেক্ট',
-      'location': 'শ্রীপুর, গাজীপুর',
-      'rating': 4.6,
-      'reviews': 310,
-      'stock': '১২০০ কেজি',
-      'isLive': false,
-      'isPremium': false,
-      'imageUrl': 'https://images.unsplash.com/photo-1615141982883-c7ad0e69fd62?w=600&auto=format&fit=crop&q=80',
-      'description': 'গাজীপুরের খামারের ফ্রেশ পাঙ্গাস মাছ। কোনো আঁশটে গন্ধ মুক্ত ও পুষ্টিকর।'
-    },
-    {
-      'id': 'FP018',
-      'title': 'সামুদ্রিক টুনা ও টুনা ফিলেট (বরফ ঢাকা)',
-      'primaryCategory': 'বরফ ঢাকা',
-      'categories': ['বরফ ঢাকা', 'সামুদ্রিক মাছ'],
-      'price': 950,
-      'unit': 'কেজি',
-      'seller': 'চট্টগ্রাম ওশান ফ্রেশ',
-      'location': 'পতেঙ্গা, চট্টগ্রাম',
-      'rating': 4.8,
-      'reviews': 84,
-      'stock': '২০০ কেজি',
-      'isLive': false,
-      'isPremium': true,
-      'imageUrl': 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=600&auto=format&fit=crop&q=80',
-      'description': 'গভীর সমুদ্রের তাজা টুনা মাছের বরফ ঢাকা ফিলেট ও গোটা মাছ। সুস্বাদু ও উচ্চ প্রোটিন সমৃদ্ধ।'
-    },
-    {
-      'id': 'FP019',
-      'title': 'দেশি টেংরা মাছ (নদীর টাটকা ১ কেজি)',
-      'primaryCategory': 'মিঠা পানির মাছ',
-      'categories': ['মিঠা পানির মাছ'],
-      'price': 620,
-      'unit': 'কেজি',
-      'seller': 'চলনবিল মৎস্য ভান্ডার',
-      'location': 'সিরাজগঞ্জ',
-      'rating': 4.7,
-      'reviews': 79,
-      'stock': '১৫০ কেজি',
-      'isLive': false,
-      'isPremium': false,
-      'imageUrl': 'https://images.unsplash.com/photo-1580476262798-bddd9f4b7369?w=600&auto=format&fit=crop&q=80',
-      'description': 'চলনবিলের প্রাকৃতিক টেংরা মাছ। চচ্চড়ি ও ঝোলের জন্য অতুলনীয় স্বাদ।'
-    },
-    {
-      'id': 'FP020',
-      'title': 'রুই মাছের পোনা (রেণু ও পোনা সাপ্লাই)',
-      'primaryCategory': 'পোনা ও রেণু',
-      'categories': ['পোনা ও রেণু', 'মিঠা পানির মাছ'],
+      'id': 'FP011',
+      'title': 'উচ্চ ফলনশীল রুই ও কাতলার উন্নত জাতের পোনা (রেণু ও ফিঙ্গারলিং)',
+      'primaryCategory': 'হ্যাচারি পোনা ও রেণু',
+      'categories': ['হ্যাচারি পোনা ও রেণু', 'পদ্মার ইলিশ ও নদীর মাছ'],
       'price': 1200,
+      'wholesalePrice': 1050,
+      'minWholesaleKg': 10,
       'unit': 'হাজার পিস',
-      'seller': 'যশোর হ্যাচারি লিমিটেড',
-      'location': 'যশোর সদর',
+      'seller': 'যশোর সরকারি সার্টিফাইড হ্যাচারি কমপ্লেক্স',
+      'location': 'চাঁচড়া, যশোর',
       'rating': 4.9,
-      'reviews': 160,
-      'stock': '৫০,০০০ পিস',
+      'reviews': 195,
+      'stock': '৮০,০০০ পিস',
       'isLive': true,
       'isPremium': true,
-      'imageUrl': 'https://images.unsplash.com/photo-1524704654690-b56c05c78a00?w=600&auto=format&fit=crop&q=80',
-      'description': 'উচ্চ ফলনশীল রুই মাছের গ্রেড-১ পোনা। চাষীদের পুকুরে ছাড়ার জন্য ১০০% সুস্থ ও চটপটে পোনা।'
+      'harvestTime': 'হ্যাচারি ট্যাংক থেকে লাইভ অক্সিজেন ব্যাগে প্যাক হবে',
+      'puritySeal': '১০০% রোগমুক্ত এসপিএফ ব্রুড স্টক',
+      'deliveryMode': 'অক্সিজেন বেলুন ট্রিপল লেয়ার ব্যাগ',
+      'imageUrl': 'https://images.unsplash.com/photo-1524704654690-b56c05c78a00?w=700&auto=format&fit=crop&q=80',
+      'description': 'উচ্চ বৃদ্ধি ও রোগ প্রতিরোধক্ষমতাসম্পন্ন অরিজিনাল রুই ও কাতলার গ্রেড-১ পোনা। সারা দেশে ৭২ ঘন্টার অক্সিজেন সহনশীল ব্যাগে পরিবহন।',
+      'phone': '01711667788',
     },
     {
-      'id': 'FP021',
-      'title': 'কাতলা ও সিলভার কার্প পোনা (হ্যাচারি ফ্রেশ)',
-      'primaryCategory': 'পোনা ও রেণু',
-      'categories': ['পোনা ও রেণু', 'মিঠা পানির মাছ'],
-      'price': 1100,
-      'unit': 'হাজার পিস',
-      'seller': 'বগুড়া হ্যাচারি কমপ্লেক্স',
-      'location': 'বগুড়া সদর',
-      'rating': 4.8,
-      'reviews': 125,
-      'stock': '৪০,০০০ পিস',
+      'id': 'FP012',
+      'title': 'সুপার মনোসেক্স গিফট তেলাপিয়া (বড় আড়ত লট ৫০০ কেজি+)',
+      'primaryCategory': 'পাইকারি বড় লট (৫০+ কেজি)',
+      'categories': ['পাইকারি বড় লট (৫০+ কেজি)', 'জীবন্ত অক্সিজেন ট্যাংক'],
+      'price': 220,
+      'wholesalePrice': 185,
+      'minWholesaleKg': 100,
+      'unit': 'কেজি',
+      'seller': 'বগুড়া মেগা অ্যাকোয়াকালচার জোন',
+      'location': 'শেরপুর, বগুড়া',
+      'rating': 4.7,
+      'reviews': 340,
+      'stock': '২,৫০০ কেজি',
       'isLive': true,
       'isPremium': false,
-      'imageUrl': 'https://images.unsplash.com/photo-1524704654690-b56c05c78a00?w=600&auto=format&fit=crop&q=80',
-      'description': 'দ্রুত বর্ধনশীল কাতলা ও সিলভার কার্পের পোনা। অক্সিজেন ব্যাগে সারা দেশে পরিবহনের সুবিধা।'
-    },
-    {
-      'id': 'FP022',
-      'title': 'বরফ ঢাকা চিংড়ি (হোটেল ও রেস্টুরেন্ট প্যাক)',
-      'primaryCategory': 'বরফ ঢাকা',
-      'categories': ['বরফ ঢাকা', 'চিংড়ি ও কাঁকড়া'],
-      'price': 880,
-      'unit': 'কেজি',
-      'seller': 'খুলনা সি-ফুড এক্সপোর্ট',
-      'location': 'রূপসা, খুলনা',
-      'rating': 4.9,
-      'reviews': 140,
-      'stock': '৩৫০ কেজি',
-      'isLive': false,
-      'isPremium': true,
-      'imageUrl': 'https://images.unsplash.com/photo-1565680018434-b513d5e5fd47?w=600&auto=format&fit=crop&q=80',
-      'description': 'হোটেল, রেস্টুরেন্ট ও ক্যাটারিংয়ের জন্য রেডি-টু-কুক বরফ ঢাকা চিংড়ি মাছ।'
+      'harvestTime': 'আজ সকাল ৭:০০ AM হারভেস্ট শুরু',
+      'puritySeal': 'সুপারস্টোর ও পাইকারি আড়তদারদের জন্য প্রস্তুত',
+      'deliveryMode': 'ট্যাঙ্কার ট্রাক বা বরফ ভ্যান',
+      'imageUrl': 'https://images.unsplash.com/photo-1534483509719-3feaee7c30da?w=700&auto=format&fit=crop&q=80',
+      'description': 'প্রতিটি মাছ ৫০০-৭০০ গ্রাম ওজনের মনোসেক্স গিফট তেলাপিয়া। হোটেল, রেস্তোরাঁ ও সুপারশপের জন্য সরাসরি খামার রেটে বিশাল লট।',
+      'phone': '01711990011',
     },
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _bannerPageController = PageController();
+    _startBannerAutoScroll();
+
+    _flashDuration = const Duration(hours: 4, minutes: 28, seconds: 45);
+    _startFlashTimer();
+  }
+
+  void _startBannerAutoScroll() {
+    _bannerTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+      if (mounted && _bannerPageController.hasClients) {
+        _currentBannerIndex = (_currentBannerIndex + 1) % _heroFlashDeals.length;
+        _bannerPageController.animateToPage(
+          _currentBannerIndex,
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+  }
+
+  void _startFlashTimer() {
+    _flashTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted && _flashDuration.inSeconds > 0) {
+        setState(() {
+          _flashDuration = _flashDuration - const Duration(seconds: 1);
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _bannerPageController.dispose();
+    _bannerTimer?.cancel();
+    _flashTimer?.cancel();
+    super.dispose();
+  }
 
   List<Map<String, dynamic>> get _filteredProducts {
     var list = _allFishProducts.where((product) {
@@ -428,7 +424,8 @@ class _FishMarketplaceScreenState extends State<FishMarketplaceScreen> {
           (product['title'] as String).toLowerCase().contains(_searchQuery.toLowerCase()) ||
           (product['seller'] as String).toLowerCase().contains(_searchQuery.toLowerCase()) ||
           (product['location'] as String).toLowerCase().contains(_searchQuery.toLowerCase());
-      return matchesCategory && matchesSearch;
+      final matchesWholesale = !_isWholesaleMode || (product['categories'] as List<String>? ?? []).contains('পাইকারি বড় লট (৫০+ কেজি)');
+      return matchesCategory && matchesSearch && matchesWholesale;
     }).toList();
 
     if (_sortBy == 'price_low') {
@@ -441,545 +438,675 @@ class _FishMarketplaceScreenState extends State<FishMarketplaceScreen> {
     return list;
   }
 
+  void _makePhoneCall(String phoneNumber) async {
+    final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
+    if (await canLaunchUrl(launchUri)) {
+      await launchUrl(launchUri);
+    } else {
+      Get.snackbar('কল করা যাচ্ছে না', 'নম্বর: $phoneNumber', backgroundColor: Colors.red.shade100);
+    }
+  }
+
+  void _openWhatsApp(String phoneNumber) async {
+    final cleanNumber = phoneNumber.replaceAll(RegExp(r'\D'), '');
+    final fullNumber = cleanNumber.startsWith('88') ? cleanNumber : '88$cleanNumber';
+    final Uri url = Uri.parse('https://wa.me/$fullNumber?text=আমি%20অ্যাগ্রোলিংক%20বিডি%20বিগ%20ফিশ%20মার্কেট%20থেকে%20মাছ%20কিনতে%20আগ্রহী।');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } else {
+      _makePhoneCall(phoneNumber);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    const Color deepOcean = Color(0xFF00363A);
+    const Color tealAccent = Color(0xFF006064);
+
     final filtered = _filteredProducts;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF5F7FA),
+      backgroundColor: isDark ? const Color(0xFF0A1218) : const Color(0xFFF1F5F8),
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
-          // ==========================================
-          // APP BAR & SEARCH
-          // ==========================================
-          SliverAppBar(
-            expandedHeight: 140,
-            pinned: true,
-            floating: true,
-            backgroundColor: const Color(0xFF0277BD),
-            elevation: 0,
-            title: Text(
-              'মৎস্য ও সি-ফুড বাজার',
-              style: GoogleFonts.hindSiliguri(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            actions: [
-              Consumer<CartProvider>(
-                builder: (context, cartProvider, child) {
-                  return Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white),
-                        onPressed: () {
-                          Get.to(() => const ShoppingCartScreen());
-                        },
-                      ),
-                      if (cartProvider.itemCount > 0)
-                        Positioned(
-                          right: 6,
-                          top: 8,
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: Colors.amber,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 1.5),
-                            ),
-                            constraints: const BoxConstraints(
-                              minWidth: 18,
-                              minHeight: 18,
-                            ),
-                            child: Text(
-                              '${cartProvider.itemCount}',
-                              style: GoogleFonts.poppins(
-                                color: Colors.black87,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ),
-                    ],
-                  );
-                },
-              ),
-              PopupMenuButton<String>(
-                icon: const Icon(Icons.sort, color: Colors.white),
-                onSelected: (value) => setState(() => _sortBy = value),
-                itemBuilder: (_) => [
-                  PopupMenuItem(value: 'popular', child: Text('জনপ্রিয় ও নতুন', style: GoogleFonts.hindSiliguri())),
-                  PopupMenuItem(value: 'price_low', child: Text('দাম: কম → বেশি', style: GoogleFonts.hindSiliguri())),
-                  PopupMenuItem(value: 'price_high', child: Text('দাম: বেশি → কম', style: GoogleFonts.hindSiliguri())),
-                  PopupMenuItem(value: 'rating', child: Text('সেরা রেটিং', style: GoogleFonts.hindSiliguri())),
-                ],
-              ),
-            ],
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF0277BD), Color(0xFF00ACC1)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 60, left: 16, right: 16),
-                    child: Container(
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF2C3E50) : Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: isDark ? Colors.white24 : Colors.transparent),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(isDark ? 0.3 : 0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          )
-                        ],
-                      ),
-                      child: TextField(
-                        style: TextStyle(color: isDark ? Colors.white : Colors.black87),
-                        onChanged: (val) {
-                          setState(() {
-                            _searchQuery = val.trim();
-                          });
-                        },
-                        decoration: InputDecoration(
-                          hintText: 'কী মাছ খুঁজছেন? (যেমন: রুই, ইলিশ, চিংড়ি)',
-                          hintStyle: GoogleFonts.hindSiliguri(color: isDark ? Colors.grey.shade400 : Colors.grey.shade500, fontSize: 14),
-                          prefixIcon: const Icon(Icons.search, color: Color(0xFF0277BD)),
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 15),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // ==========================================
-          // BANNER CAROUSEL
-          // ==========================================
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 20, 16, 10),
-              child: SizedBox(
-                height: 160,
-                child: Stack(
+          if (widget.showAppBar)
+            SliverAppBar(
+              expandedHeight: 175.0,
+              floating: false,
+              pinned: true,
+              elevation: 0,
+              backgroundColor: deepOcean,
+              flexibleSpace: FlexibleSpaceBar(
+                titlePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                title: Row(
                   children: [
-                    PageView.builder(
-                      itemCount: _banners.length,
-                      onPageChanged: (index) => setState(() => _currentBannerIndex = index),
-                      itemBuilder: (context, index) {
-                        final titles = [
-                          'বাংলাদেশের বৃহত্তম তাজা মাছের বাজার',
-                          'নদী ও খামারের জীবন্ত মাছ সরাসরি অর্ডার করুন',
-                          'কক্সবাজার ও চট্টগ্রামের সামুদ্রিক তাজা সি-ফুড',
-                        ];
-                        return Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            image: DecorationImage(
-                              image: NetworkImage(_banners[index]),
-                              fit: BoxFit.cover,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.12),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              )
-                            ],
-                          ),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              gradient: LinearGradient(
-                                colors: [Colors.black.withOpacity(0.65), Colors.transparent],
-                                begin: Alignment.bottomCenter,
-                                end: Alignment.topCenter,
-                              ),
-                            ),
-                            padding: const EdgeInsets.all(16),
-                            alignment: Alignment.bottomLeft,
-                            child: Text(
-                              titles[index],
-                              style: GoogleFonts.hindSiliguri(
-                                color: Colors.white,
-                                fontSize: 17,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.set_meal, color: Color(0xFF80DEEA), size: 18),
                     ),
-                    Positioned(
-                      bottom: 10,
-                      left: 0,
-                      right: 0,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(
-                          _banners.length,
-                          (index) => Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 4),
-                            width: _currentBannerIndex == index ? 20 : 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: _currentBannerIndex == index ? const Color(0xFF0277BD) : Colors.white,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'বিগ ফিশ মার্কেট ও হোলসেল হাব',
+                        style: GoogleFonts.hindSiliguri(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.white,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
                 ),
-              ),
-            ),
-          ),
-
-          // ==========================================
-          // CATEGORIES (Horizontal Scroll with Count Badge)
-          // ==========================================
-          SliverToBoxAdapter(
-            child: SizedBox(
-              height: 110,
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                itemCount: _categories.length,
-                itemBuilder: (context, index) {
-                  final cat = _categories[index];
-                  final isSelected = _selectedCategory == cat['label'];
-
-                  // Calculate item count in category
-                  final count = _allFishProducts.where((p) {
-                    return cat['label'] == 'সব' ||
-                        p['primaryCategory'] == cat['label'] ||
-                        (p['categories'] as List<String>).contains(cat['label']);
-                  }).length;
-
-                  return GestureDetector(
-                    onTap: () => setState(() => _selectedCategory = cat['label']),
-                    child: Container(
-                      width: 86,
-                      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                      child: Column(
-                        children: [
-                          Stack(
-                            clipBehavior: Clip.none,
+                background: Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF002528), Color(0xFF004D40), Color(0xFF01579B)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 45, 16, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.35),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: const Color(0xFF80DEEA).withValues(alpha: 0.3)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              Container(
-                                height: 58,
-                                width: 58,
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? const Color(0xFF0277BD)
-                                      : (isDark ? const Color(0xFF1E1E1E) : Colors.white),
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: isSelected
-                                        ? const Color(0xFF0288D1)
-                                        : (isDark ? Colors.white12 : Colors.grey.shade300),
-                                    width: 1.5,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
-                                      blurRadius: 6,
-                                      offset: const Offset(0, 3),
-                                    )
-                                  ],
-                                ),
-                                child: Icon(
-                                  cat['icon'],
-                                  color: isSelected ? Colors.white : const Color(0xFF0277BD),
-                                  size: 26,
-                                ),
-                              ),
-                              Positioned(
-                                right: -4,
-                                top: -2,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                                  decoration: BoxDecoration(
-                                    color: isSelected ? Colors.amber : const Color(0xFF0277BD),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: Text(
-                                    '$count',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      color: isSelected ? Colors.black87 : Colors.white,
-                                    ),
-                                  ),
+                              const Icon(Icons.trending_up, color: Colors.greenAccent, size: 14),
+                              const SizedBox(width: 6),
+                              Text(
+                                'আজকের রেট: ইলিশ ৳১৪৫০/কেজি ↑ | কাতলা ৳৪২০ | বাগদা ৳৯৫০ | রুই ৳৩৮০',
+                                style: GoogleFonts.hindSiliguri(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            cat['label'],
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.hindSiliguri(
-                              fontSize: 12,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              color: isSelected
-                                  ? const Color(0xFF0277BD)
-                                  : (isDark ? Colors.grey.shade300 : Colors.black87),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.verified_user_outlined, color: Color(0xFF80DEEA)),
+                  tooltip: 'ল্যাব ও কোয়ালিটি সনদ',
+                  onPressed: () => Get.to(() => const FishBuyerQcInspectionScreen()),
+                ),
+                Consumer<CartProvider>(
+                  builder: (context, cart, child) {
+                    return Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white),
+                          tooltip: 'শপিং কার্ট',
+                          onPressed: () => Get.to(() => const ShoppingCartScreen()),
+                        ),
+                        if (cart.itemCount > 0)
+                          Positioned(
+                            right: 6,
+                            top: 8,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: Colors.deepOrange,
+                                shape: BoxShape.circle,
+                              ),
+                              constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                              child: Text(
+                                '${cart.itemCount}',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.poppins(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
-                        ],
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
+
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+              child: Column(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF16252F) : Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: TextField(
+                      onChanged: (val) => setState(() => _searchQuery = val),
+                      decoration: InputDecoration(
+                        hintText: 'মাছের নাম, নদী/ঘের বা আড়তদার খুঁজুন...',
+                        hintStyle: GoogleFonts.hindSiliguri(color: Colors.grey.shade500, fontSize: 13.5),
+                        prefixIcon: const Icon(Icons.search, color: tealAccent),
+                        suffixIcon: _searchQuery.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear, size: 18),
+                                onPressed: () => setState(() => _searchQuery = ''),
+                              )
+                            : const Icon(Icons.mic, color: Colors.grey),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       ),
                     ),
-                  );
-                },
+                  ),
+                  const SizedBox(height: 12),
+
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: _isWholesaleMode
+                            ? [const Color(0xFF004D40), const Color(0xFF006064)]
+                            : [Colors.teal.shade50, Colors.cyan.shade50],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.teal.shade300.withValues(alpha: 0.5)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.local_shipping,
+                          color: _isWholesaleMode ? Colors.white : tealAccent,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _isWholesaleMode ? 'পাইকারি আড়ত মোড সক্রিয় (৫০+ কেজি লট)' : 'খুচরা ও পারিবারিক বাজার মোড',
+                                style: GoogleFonts.hindSiliguri(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: _isWholesaleMode ? Colors.white : Colors.teal.shade900,
+                                ),
+                              ),
+                              Text(
+                                _isWholesaleMode ? 'আড়তদার ও সুপারশপের জন্য বিশেষ রেট' : 'পাইকারি মূল্যে কিনতে মোড চালু করুন',
+                                style: GoogleFonts.hindSiliguri(
+                                  fontSize: 11,
+                                  color: _isWholesaleMode ? Colors.white70 : Colors.grey.shade700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch.adaptive(
+                          value: _isWholesaleMode,
+                          activeTrackColor: const Color(0xFF80DEEA),
+                          onChanged: (val) {
+                            setState(() {
+                              _isWholesaleMode = val;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
 
-          // ==========================================
-          // FILTER HEADER STRIP
-          // ==========================================
+          SliverToBoxAdapter(
+            child: _buildHeroFlashDealsCarousel(context, isDark),
+          ),
+
+          SliverToBoxAdapter(
+            child: _buildCategoryBar(),
+          ),
+
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    '$_selectedCategory (${filtered.length} টি পণ্য)',
+                    '${filtered.length} টি তাজা মাছ পাওয়া গেছে',
                     style: GoogleFonts.hindSiliguri(
-                      fontSize: 16,
+                      fontSize: 13.5,
                       fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : Colors.black87,
+                      color: Colors.grey.shade700,
                     ),
                   ),
-                  if (_searchQuery.isNotEmpty)
-                    TextButton.icon(
-                      onPressed: () => setState(() => _searchQuery = ''),
-                      icon: const Icon(Icons.clear, size: 14),
-                      label: Text('সার্চ রিসেট', style: GoogleFonts.hindSiliguri(fontSize: 12)),
+                  DropdownButton<String>(
+                    value: _sortBy,
+                    underline: const SizedBox(),
+                    icon: const Icon(Icons.sort, size: 18),
+                    style: GoogleFonts.hindSiliguri(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.bold,
+                      color: deepOcean,
                     ),
+                    items: const [
+                      DropdownMenuItem(value: 'popular', child: Text('জনপ্রিয়')),
+                      DropdownMenuItem(value: 'price_low', child: Text('মূল্য: কম থেকে বেশি')),
+                      DropdownMenuItem(value: 'price_high', child: Text('মূল্য: বেশি থেকে কম')),
+                      DropdownMenuItem(value: 'rating', child: Text('রেটিং অনুসারে')),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) setState(() => _sortBy = val);
+                    },
+                  ),
                 ],
               ),
             ),
           ),
 
-          // ==========================================
-          // PRODUCTS GRID OR EMPTY STATE
-          // ==========================================
-          if (filtered.isEmpty)
-            SliverToBoxAdapter(
-              child: Container(
-                margin: const EdgeInsets.all(32),
-                padding: const EdgeInsets.all(28),
+          filtered.isEmpty
+              ? SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: _buildEmptySearchState(),
+                )
+              : SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  sliver: SliverGrid(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: MediaQuery.of(context).size.width > 600 ? 3 : 2,
+                      mainAxisSpacing: 14,
+                      crossAxisSpacing: 14,
+                      childAspectRatio: 0.58,
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        return _buildProMaxFishCard(context, filtered[index], isDark);
+                      },
+                      childCount: filtered.length,
+                    ),
+                  ),
+                ),
+
+          const SliverToBoxAdapter(
+            child: SizedBox(height: 80),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => Get.to(() => const CreateFishAuctionScreen()),
+        backgroundColor: const Color(0xFF004D40),
+        elevation: 6,
+        icon: const Icon(Icons.gavel, color: Colors.white, size: 18),
+        label: Text(
+          'লাইভ মাছের নিলাম',
+          style: GoogleFonts.hindSiliguri(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeroFlashDealsCarousel(BuildContext context, bool isDark) {
+    return Container(
+      height: 195,
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: Stack(
+        children: [
+          PageView.builder(
+            controller: _bannerPageController,
+            itemCount: _heroFlashDeals.length,
+            onPageChanged: (idx) => setState(() => _currentBannerIndex = idx),
+            itemBuilder: (context, index) {
+              final deal = _heroFlashDeals[index];
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(22),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+                      color: Colors.black.withValues(alpha: 0.18),
+                      blurRadius: 12,
+                      offset: const Offset(0, 5),
                     ),
                   ],
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.search_off, size: 64, color: Colors.grey.shade400),
-                    const SizedBox(height: 12),
-                    Text(
-                      'এই ক্যাটাগরিতে কোনো মাছ পাওয়া যায়নি',
-                      style: GoogleFonts.hindSiliguri(
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white70 : Colors.black87,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(22),
+                  child: Stack(
+                    children: [
+                      CachedNetworkImage(
+                        imageUrl: deal['image'] as String,
+                        width: double.infinity,
+                        height: 195,
+                        fit: BoxFit.cover,
+                        errorWidget: (c, u, e) => Container(color: const Color(0xFF004D40)),
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'অন্য কোনো ক্যাটাগরি বেছে নিন অথবা সার্চ পরিবর্তন করুন',
-                      style: GoogleFonts.hindSiliguri(
-                        fontSize: 13,
-                        color: Colors.grey,
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.black.withValues(alpha: 0.85),
+                              Colors.black.withValues(alpha: 0.3),
+                              Colors.transparent,
+                            ],
+                            begin: Alignment.bottomLeft,
+                            end: Alignment.topRight,
+                          ),
+                        ),
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
+                      Positioned(
+                        top: 12,
+                        left: 14,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.redAccent,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.flash_on, color: Colors.white, size: 14),
+                              const SizedBox(width: 4),
+                              Text(
+                                'আজকের ভোরবেলার ফ্রেশ ক্যাচ',
+                                style: GoogleFonts.hindSiliguri(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        top: 12,
+                        right: 14,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.7),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Text(
+                            'শেষ হতে: ${_formatDuration(_flashDuration)}',
+                            style: GoogleFonts.poppins(
+                              color: Colors.amberAccent,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 14,
+                        left: 14,
+                        right: 14,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    deal['title'] as String,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.hindSiliguri(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${deal['tag']} • ${deal['stock']}',
+                                    maxLines: 1,
+                                    style: GoogleFonts.hindSiliguri(
+                                      color: const Color(0xFF80DEEA),
+                                      fontSize: 11.5,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      Text(
+                                        '৳ ${deal['price']}',
+                                        style: GoogleFonts.poppins(
+                                          color: Colors.white,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        '/কেজি',
+                                        style: GoogleFonts.hindSiliguri(
+                                          color: Colors.white70,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: Colors.greenAccent.withValues(alpha: 0.3),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          'পাইকারি ৳${deal['wholesalePrice']}',
+                                          style: GoogleFonts.hindSiliguri(
+                                            color: Colors.greenAccent,
+                                            fontSize: 10.5,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            ElevatedButton(
+                              onPressed: () {
+                                final product = _allFishProducts.firstWhere(
+                                  (p) => p['title'] == deal['title'] || p['id'] == 'FP001',
+                                );
+                                _showFishDetailModal(context, product, isDark);
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF006064),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              ),
+                              child: Text('অর্ডার করুন', style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            )
-          else
-            SliverPadding(
-              padding: const EdgeInsets.all(16),
-              sliver: SliverGrid(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: ResponsiveHelper.getGridColumns(context),
-                  childAspectRatio: ResponsiveHelper.isDesktop(context) ? 0.78 : 0.62,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final product = filtered[index];
-                    return _buildFishProductCard(
-                      product: product,
-                      isDark: isDark,
-                    );
-                  },
-                  childCount: filtered.length,
-                ),
-              ),
-            ),
-
-          const SliverToBoxAdapter(child: SizedBox(height: 40)),
+              );
+            },
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildFishProductCard({
-    required Map<String, dynamic> product,
-    required bool isDark,
-  }) {
-    final title = product['title'] as String;
-    final price = product['price'] as int;
-    final seller = product['seller'] as String;
-    final location = product['location'] as String;
-    final imageUrl = product['imageUrl'] as String;
-    final rating = product['rating'] as double;
-    final reviews = product['reviews'] as int;
-    final stock = product['stock'] as String;
-    final isLive = product['isLive'] as bool? ?? false;
-    final isPremium = product['isPremium'] as bool? ?? false;
+  String _formatDuration(Duration d) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    return '${twoDigits(d.inHours)}:${twoDigits(d.inMinutes.remainder(60))}:${twoDigits(d.inSeconds.remainder(60))}';
+  }
 
-    return GestureDetector(
-      onTap: () => _showProductDetailModal(context, product, isDark),
-      child: Container(
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: isDark ? Colors.white12 : Colors.transparent),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.3 : 0.06),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            )
-          ],
+  Widget _buildCategoryBar() {
+    return Container(
+      height: 52,
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: _categories.length,
+        itemBuilder: (context, index) {
+          final cat = _categories[index];
+          final isSelected = _selectedCategory == cat['label'];
+
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4.0),
+            child: ChoiceChip(
+              avatar: Icon(
+                cat['icon'] as IconData,
+                size: 16,
+                color: isSelected ? Colors.white : const Color(0xFF006064),
+              ),
+              label: Text(
+                '${cat['label']} (${cat['count']})',
+                style: GoogleFonts.hindSiliguri(
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  color: isSelected ? Colors.white : Colors.black87,
+                ),
+              ),
+              selected: isSelected,
+              selectedColor: const Color(0xFF006064),
+              backgroundColor: Theme.of(context).cardColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(
+                  color: isSelected ? const Color(0xFF006064) : Colors.grey.shade300,
+                ),
+              ),
+              onSelected: (val) {
+                setState(() {
+                  _selectedCategory = cat['label'] as String;
+                });
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildProMaxFishCard(BuildContext context, Map<String, dynamic> product, bool isDark) {
+    final bool isLive = product['isLive'] == true;
+    final int price = _isWholesaleMode ? (product['wholesalePrice'] as int? ?? product['price'] as int) : product['price'] as int;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF16252F) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: Border.all(
+          color: isLive ? Colors.cyan.withValues(alpha: 0.4) : Colors.grey.shade200.withValues(alpha: 0.3),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Image with Badges
-            Expanded(
-              flex: 4,
-              child: Stack(
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          onTap: () => _showFishDetailModal(context, product, isDark),
+          borderRadius: BorderRadius.circular(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Stack(
                 children: [
                   ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                    child: Image.network(
-                      imageUrl,
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                    child: CachedNetworkImage(
+                      imageUrl: product['imageUrl'] as String,
+                      height: 120,
                       width: double.infinity,
-                      height: double.infinity,
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        color: isDark ? const Color(0xFF0D47A1).withOpacity(0.3) : const Color(0xFFE1F5FE),
-                        child: const Center(
-                          child: Icon(Icons.set_meal, size: 48, color: Color(0xFF0277BD)),
-                        ),
-                      ),
+                      placeholder: (c, u) => Container(height: 120, color: Colors.grey.shade200),
+                      errorWidget: (c, u, e) => Container(height: 120, color: const Color(0xFF004D40)),
                     ),
                   ),
-                  // Top left badge
                   Positioned(
                     top: 8,
                     left: 8,
-                    child: Row(
-                      children: [
-                        if (isPremium)
-                          Container(
-                            margin: const EdgeInsets.only(right: 4),
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.amber,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              'প্রিমিয়াম',
-                              style: GoogleFonts.hindSiliguri(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                            ),
-                          ),
-                        if (isLive)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.green.shade600,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.circle, size: 7, color: Colors.white),
-                                const SizedBox(width: 3),
-                                Text(
-                                  'জীবন্ত',
-                                  style: GoogleFonts.hindSiliguri(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ],
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: isLive ? Colors.teal.shade800.withValues(alpha: 0.9) : const Color(0xFF0288D1).withValues(alpha: 0.9),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(isLive ? Icons.pool : Icons.waves, color: Colors.white, size: 11),
+                          const SizedBox(width: 3),
+                          Text(
+                            isLive ? 'জীবন্ত মাছ' : 'টাটকা রিভার ক্যাচ',
+                            style: GoogleFonts.hindSiliguri(
+                              color: Colors.white,
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                  // Rating & Reviews badge on bottom right of image
                   Positioned(
-                    bottom: 8,
+                    top: 8,
                     right: 8,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.7),
-                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.black.withValues(alpha: 0.65),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.star, size: 12, color: Colors.amber),
+                          const Icon(Icons.star, color: Colors.amber, size: 11),
                           const SizedBox(width: 2),
                           Text(
-                            '$rating ($reviews)',
+                            '${product['rating']}',
                             style: GoogleFonts.poppins(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
                               color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ],
@@ -988,144 +1115,111 @@ class _FishMarketplaceScreenState extends State<FishMarketplaceScreen> {
                   ),
                 ],
               ),
-            ),
-            // Details Section
-            Expanded(
-              flex: 5,
-              child: Padding(
-                padding: const EdgeInsets.all(12),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 2),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      title,
-                      style: GoogleFonts.hindSiliguri(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: isDark ? Colors.white : Colors.black87,
-                      ),
+                      product['title'] as String,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.hindSiliguri(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.bold,
+                        height: 1.2,
+                      ),
                     ),
+                    const SizedBox(height: 3),
                     Row(
                       children: [
-                        const Icon(Icons.location_on, size: 13, color: Colors.grey),
-                        const SizedBox(width: 4),
+                        const Icon(Icons.location_on, size: 11, color: Colors.grey),
+                        const SizedBox(width: 2),
                         Expanded(
                           child: Text(
-                            '$seller • $location',
-                            style: GoogleFonts.hindSiliguri(
-                              fontSize: 11,
-                              color: Colors.grey[600],
-                            ),
+                            product['location'] as String,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.hindSiliguri(fontSize: 10, color: Colors.grey.shade600),
                           ),
                         ),
                       ],
                     ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'মজুত: ${product['stock']}',
+                      style: GoogleFonts.hindSiliguri(fontSize: 10, color: Colors.teal.shade800, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text(
+                          '৳ $price',
+                          style: GoogleFonts.poppins(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF006064),
+                          ),
+                        ),
+                        Text(
+                          ' /${product['unit']}',
+                          style: GoogleFonts.hindSiliguri(fontSize: 10.5, color: Colors.grey.shade600),
+                        ),
+                      ],
+                    ),
+                    if (_isWholesaleMode)
+                      Text(
+                        'নূন্যতম ${product['minWholesaleKg'] ?? 20} কেজি লট',
+                        style: GoogleFonts.hindSiliguri(fontSize: 9.5, color: Colors.deepOrange, fontWeight: FontWeight.bold),
+                      ),
+                    const SizedBox(height: 4),
+                    Row(
                       children: [
                         Expanded(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.centerLeft,
+                          child: ElevatedButton(
+                            onPressed: () => _showFishDetailModal(context, product, isDark),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF006064),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              elevation: 1,
+                            ),
                             child: Text(
-                              '৳ $price / কেজি',
-                              style: GoogleFonts.poppins(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                                color: const Color(0xFF0277BD),
-                              ),
+                              'অর্ডার / কিনুন',
+                              style: GoogleFonts.hindSiliguri(fontSize: 11.5, fontWeight: FontWeight.bold),
                             ),
                           ),
                         ),
                         const SizedBox(width: 4),
-                        Flexible(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.centerRight,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF0277BD).withOpacity(0.12),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                'মজুদ: $stock',
-                                style: GoogleFonts.hindSiliguri(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  color: const Color(0xFF0277BD),
-                                ),
-                              ),
+                        InkWell(
+                          onTap: () {
+                            _addToCart(
+                              product['title'] as String,
+                              price.toString(),
+                              product['seller'] as String,
+                              product['location'] as String,
+                              product['imageUrl'] as String,
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(10),
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF006064).withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    // Buttons: Add to cart & Buy Now
-                    Row(
-                      children: [
-                        Expanded(
-                          child: SizedBox(
-                            height: 34,
-                            child: ElevatedButton(
-                              onPressed: () => _addToCart(
-                                title,
-                                price.toString(),
-                                seller,
-                                location,
-                                imageUrl,
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: isDark
-                                    ? const Color(0xFF1976D2).withOpacity(0.2)
-                                    : const Color(0xFFE3F2FD),
-                                foregroundColor: const Color(0xFF0277BD),
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                padding: EdgeInsets.zero,
-                              ),
-                              child: const Icon(Icons.shopping_cart_outlined, size: 18),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          flex: 2,
-                          child: SizedBox(
-                            height: 34,
-                            child: ElevatedButton(
-                              onPressed: () => _handleDirectPurchase(
-                                title,
-                                price.toDouble(),
-                                seller,
-                                imageUrl,
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF0277BD),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                padding: EdgeInsets.zero,
-                              ),
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Text(
-                                  'এখুনি কিনুন',
-                                  style: GoogleFonts.hindSiliguri(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ),
+                            child: const Icon(Icons.add_shopping_cart, size: 16, color: Color(0xFF006064)),
                           ),
                         ),
                       ],
@@ -1133,248 +1227,292 @@ class _FishMarketplaceScreenState extends State<FishMarketplaceScreen> {
                   ],
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  void _showProductDetailModal(BuildContext context, Map<String, dynamic> product, bool isDark) {
-    final title = product['title'] as String;
-    final price = product['price'] as int;
-    final seller = product['seller'] as String;
-    final location = product['location'] as String;
-    final imageUrl = product['imageUrl'] as String;
-    final rating = product['rating'] as double;
-    final reviews = product['reviews'] as int;
-    final stock = product['stock'] as String;
-    final description = product['description'] as String;
-    final isLive = product['isLive'] as bool? ?? false;
+  void _showFishDetailModal(BuildContext context, Map<String, dynamic> product, bool isDark) {
+    double selectedKg = 1.0;
+    String selectedCutting = 'আস্ত মাছ (Whole Round)';
+    String selectedDelivery = '🧊 বরফ ঢাকা থার্মোকল বক্স';
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 550),
-        child: Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).viewInsets.bottom,
-            left: 20,
-            right: 20,
-            top: 16,
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade400,
-                      borderRadius: BorderRadius.circular(4),
+    Get.bottomSheet(
+      StatefulBuilder(
+        builder: (context, setModalState) {
+          final int unitPrice = _isWholesaleMode ? (product['wholesalePrice'] as int? ?? product['price'] as int) : product['price'] as int;
+          final double totalPrice = unitPrice * selectedKg;
+
+          return Container(
+            constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.88),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, -5),
+                ),
+              ],
+            ),
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 45,
+                      height: 5,
+                      decoration: BoxDecoration(color: Colors.grey.shade400, borderRadius: BorderRadius.circular(10)),
                     ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.network(
-                    imageUrl,
-                    height: 200,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
+                  const SizedBox(height: 14),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(18),
+                    child: CachedNetworkImage(
+                      imageUrl: product['imageUrl'] as String,
+                      height: 180,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: GoogleFonts.hindSiliguri(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          product['title'] as String,
+                          style: GoogleFonts.hindSiliguri(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                       ),
-                    ),
-                    if (isLive)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: Colors.green.shade600,
-                          borderRadius: BorderRadius.circular(8),
+                          color: const Color(0xFF006064).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          '১০০% জীবন্ত মাছ',
-                          style: GoogleFonts.hindSiliguri(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
+                          '৳ $unitPrice /${product['unit']}',
+                          style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w800, color: const Color(0xFF006064)),
                         ),
                       ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Icon(Icons.star, color: Colors.amber, size: 18),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Icon(Icons.verified, color: Colors.teal, size: 15),
+                      const SizedBox(width: 4),
+                      Text(
+                        product['puritySeal'] as String? ?? '১০০% ফরমালিন মুক্ত',
+                        style: GoogleFonts.hindSiliguri(fontSize: 12, color: Colors.teal.shade800, fontWeight: FontWeight.w600),
+                      ),
+                      const Spacer(),
+                      const Icon(Icons.access_time, color: Colors.grey, size: 14),
+                      const SizedBox(width: 4),
+                      Text(
+                        product['harvestTime'] as String? ?? 'আজ ভোর ৫:০০ AM',
+                        style: GoogleFonts.hindSiliguri(fontSize: 11.5, color: Colors.grey.shade600),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    product['description'] as String,
+                    style: GoogleFonts.hindSiliguri(fontSize: 12.5, color: Colors.grey.shade700, height: 1.35),
+                  ),
+                  const SizedBox(height: 16),
+                  Text('পরিমাণ নির্বাচন করুন:', style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 13.5)),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: () {
+                          if (selectedKg > 1) {
+                            setModalState(() => selectedKg -= 1);
+                          }
+                        },
+                        icon: const Icon(Icons.remove_circle_outline, color: Color(0xFF006064)),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).cardColor,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
                         child: Text(
-                          '$rating ($reviews জন ক্রেতা রেটিং দিয়েছেন)',
-                          style: GoogleFonts.hindSiliguri(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          '${selectedKg.toStringAsFixed(0)} ${product['unit']}',
+                          style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerRight,
-                        child: Text(
-                          'মজুদ: $stock',
-                          style: GoogleFonts.hindSiliguri(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF0277BD),
-                          ),
-                        ),
+                      IconButton(
+                        onPressed: () {
+                          setModalState(() => selectedKg += 1);
+                        },
+                        icon: const Icon(Icons.add_circle_outline, color: Color(0xFF006064)),
                       ),
-                    ),
-                  ],
-                ),
-                const Divider(height: 24),
-                Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: const Color(0xFF0277BD).withOpacity(0.1),
-                      child: const Icon(Icons.storefront, color: Color(0xFF0277BD)),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      const Spacer(),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Row(
-                            children: [
-                              Text(
-                                seller,
-                                style: GoogleFonts.hindSiliguri(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              const Icon(Icons.verified, size: 15, color: Colors.blue),
-                            ],
-                          ),
+                          Text('মোট মূল্য:', style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.grey.shade600)),
                           Text(
-                            location,
-                            style: GoogleFonts.hindSiliguri(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                            ),
+                            '৳ ${totalPrice.toStringAsFixed(0)}',
+                            style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w800, color: const Color(0xFF006064)),
                           ),
                         ],
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Text('কাটিং ও প্রসেসিং নির্বাচন:', style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 13.5)),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      'আস্ত মাছ (Whole Round)',
+                      'আঁশমুক্ত পেটি-গাদা টুকরো',
+                      'রেডি ফিলেট (Boneless)',
+                    ].map((cut) {
+                      final isSelected = selectedCutting == cut;
+                      return ChoiceChip(
+                        label: Text(cut, style: GoogleFonts.hindSiliguri(fontSize: 11, fontWeight: isSelected ? FontWeight.bold : FontWeight.w500)),
+                        selected: isSelected,
+                        selectedColor: const Color(0xFF006064),
+                        labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black87),
+                        onSelected: (val) => setModalState(() => selectedCutting = cut),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 14),
+                  Text('ডেলিভারি মেথড:', style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 13.5)),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      '🧊 বরফ ঢাকা থার্মোকল বক্স',
+                      '🚐 অক্সিজেন লাইভ ট্যাংক ভ্যান',
+                      '⚡ ৩ ঘন্টায় সুপার এক্সপ্রেস',
+                    ].map((del) {
+                      final isSelected = selectedDelivery == del;
+                      return ChoiceChip(
+                        label: Text(del, style: GoogleFonts.hindSiliguri(fontSize: 11, fontWeight: isSelected ? FontWeight.bold : FontWeight.w500)),
+                        selected: isSelected,
+                        selectedColor: const Color(0xFF0288D1),
+                        labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black87),
+                        onSelected: (val) => setModalState(() => selectedDelivery = del),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 20),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF16252F) : const Color(0xFFF4F9FA),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.teal.shade200.withValues(alpha: 0.5)),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  'পণ্যের বিবরণ:',
-                  style: GoogleFonts.hindSiliguri(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  description,
-                  style: GoogleFonts.hindSiliguri(
-                    fontSize: 13,
-                    color: isDark ? Colors.grey.shade300 : Colors.black87,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
                       children: [
-                        Text(
-                          'মূল্য (প্রতি কেজি)',
-                          style: GoogleFonts.hindSiliguri(
-                            fontSize: 12,
-                            color: Colors.grey,
+                        CircleAvatar(
+                          backgroundColor: const Color(0xFF006064).withValues(alpha: 0.15),
+                          child: const Icon(Icons.person, color: Color(0xFF006064)),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                product['seller'] as String,
+                                style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 13),
+                              ),
+                              Text(
+                                '${product['location']} • ভেরিফায়েড আড়তদার',
+                                style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.grey.shade600),
+                              ),
+                            ],
                           ),
                         ),
-                        Text(
-                          '৳ $price',
-                          style: GoogleFonts.poppins(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF0277BD),
-                          ),
+                        IconButton(
+                          icon: const Icon(Icons.call, color: Colors.green),
+                          tooltip: 'সরাসরি কল করুন',
+                          onPressed: () => _makePhoneCall(product['phone'] as String? ?? '01700000000'),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.chat_bubble_outline, color: Color(0xFF006064)),
+                          tooltip: 'হোয়াটসঅ্যাপ / চ্যাট',
+                          onPressed: () => _openWhatsApp(product['phone'] as String? ?? '01700000000'),
                         ),
                       ],
                     ),
-                    const SizedBox(width: 20),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          _addToCart(
-                            title,
-                            price.toString(),
-                            seller,
-                            location,
-                            imageUrl,
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF0277BD),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        icon: const Icon(Icons.add_shopping_cart, size: 20),
-                        label: Text(
-                          'কার্টে যোগ করুন',
-                          style: GoogleFonts.hindSiliguri(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Get.back();
+                            _addToCart(
+                              product['title'] as String,
+                              unitPrice.toString(),
+                              product['seller'] as String,
+                              product['location'] as String,
+                              product['imageUrl'] as String,
+                            );
+                          },
+                          icon: const Icon(Icons.add_shopping_cart, size: 18, color: Color(0xFF006064)),
+                          label: Text('কার্টে যোগ করুন', style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, color: const Color(0xFF006064))),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            side: const BorderSide(color: Color(0xFF006064), width: 1.5),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-              ],
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Get.back();
+                            _handleDirectPurchase(
+                              product['title'] as String,
+                              totalPrice,
+                              product['seller'] as String,
+                              product['imageUrl'] as String,
+                            );
+                          },
+                          icon: const Icon(Icons.flash_on, color: Colors.white, size: 18),
+                          label: Text('সরাসরি কিনুন', style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, color: Colors.white)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF006064),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            elevation: 4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      isDismissible: true,
+      enableDrag: true,
     );
   }
 
@@ -1406,24 +1544,18 @@ class _FishMarketplaceScreenState extends State<FishMarketplaceScreen> {
 
     Get.snackbar(
       'কার্টে যোগ করা হয়েছে 🛒',
-      '$title (১ কেজি) আপনার কার্টে যোগ করা হয়েছে।',
-      backgroundColor: const Color(0xFF0277BD),
+      '$title আপনার শপিং কার্টে যুক্ত হয়েছে।',
+      backgroundColor: const Color(0xFF006064),
       colorText: Colors.white,
       snackPosition: SnackPosition.BOTTOM,
       margin: const EdgeInsets.all(12),
-      borderRadius: 12,
+      borderRadius: 14,
       duration: const Duration(seconds: 3),
       mainButton: TextButton(
-        onPressed: () {
-          Get.to(() => const ShoppingCartScreen());
-        },
+        onPressed: () => Get.to(() => const ShoppingCartScreen()),
         child: Text(
           'কার্ট দেখুন',
-          style: GoogleFonts.hindSiliguri(
-            color: Colors.amber,
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-          ),
+          style: GoogleFonts.hindSiliguri(color: Colors.amberAccent, fontWeight: FontWeight.bold),
         ),
       ),
     );
@@ -1433,8 +1565,8 @@ class _FishMarketplaceScreenState extends State<FishMarketplaceScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       Get.snackbar(
-        'ত্রুটি',
-        'দয়া করে লগইন করুন',
+        'লগইন প্রয়োজন',
+        'মাছ কিনতে দয়া করে আপনার অ্যাকাউন্টে লগইন করুন',
         backgroundColor: Colors.red.shade100,
         colorText: Colors.red.shade900,
       );
@@ -1445,10 +1577,10 @@ class _FishMarketplaceScreenState extends State<FishMarketplaceScreen> {
       context: context,
       amount: price,
       productName: title,
-      customerName: user.displayName ?? "Fish Buyer",
-      customerEmail: user.email ?? "buyer@example.com",
-      customerPhone: "01700000000",
-      customerAddress: "Dhaka, Bangladesh",
+      customerName: user.displayName ?? 'Fish Buyer',
+      customerEmail: user.email ?? 'buyer@example.com',
+      customerPhone: '01700000000',
+      customerAddress: 'Dhaka, Bangladesh',
     );
 
     if (success) {
@@ -1464,8 +1596,8 @@ class _FishMarketplaceScreenState extends State<FishMarketplaceScreen> {
         totalAmount: price,
         status: 'Processing',
         statusStep: 2,
-        transportStatus: 'অর্ডার গৃহীত হয়েছে',
-        paymentStatus: 'Paid via SSLCommerz',
+        transportStatus: 'মাছ প্যাকেজিং ও কোল্ড ভ্যানে লোড হচ্ছে',
+        paymentStatus: 'Paid via SSLCommerz / AgroLink Escrow',
         createdAt: DateTime.now(),
       );
 
@@ -1473,5 +1605,20 @@ class _FishMarketplaceScreenState extends State<FishMarketplaceScreen> {
       await orderService.createOrder(newOrder);
       Get.to(() => const FishBuyerOrdersScreen());
     }
+  }
+
+  Widget _buildEmptySearchState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.search_off, size: 70, color: Colors.grey.shade400),
+          const SizedBox(height: 12),
+          Text('কোনো মাছের সন্ধান পাওয়া যায়নি', style: GoogleFonts.hindSiliguri(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 6),
+          Text('অন্য কোনো নাম বা ক্যাটাগরি দিয়ে চেষ্টা করুন', style: GoogleFonts.hindSiliguri(fontSize: 12, color: Colors.grey.shade600)),
+        ],
+      ),
+    );
   }
 }

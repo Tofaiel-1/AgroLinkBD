@@ -108,7 +108,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
       // Save product to Firestore
       final productData = {
         'sellerId': _userId,
+        'userId': _userId,
         'title': _titleController.text.trim(),
+        'name': _titleController.text.trim(),
         'description': _descriptionController.text.trim(),
         'price': double.parse(_priceController.text),
         'quantity': double.parse(_quantityController.text),

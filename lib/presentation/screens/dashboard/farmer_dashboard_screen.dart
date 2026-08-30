@@ -8,11 +8,10 @@ import 'package:agrolinkbd/presentation/screens/disease/disease_detection_screen
 import 'package:agrolinkbd/presentation/screens/ai/ai_assistant_screen.dart';
 import 'package:agrolinkbd/presentation/screens/profile/profile_screen.dart';
 import 'package:agrolinkbd/presentation/widgets/secure_balance_widget.dart';
-import 'package:agrolinkbd/presentation/widgets/global_announcement_banner.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:agrolinkbd/core/services/card_service.dart';
 import 'package:agrolinkbd/presentation/screens/card/card_preview_screen.dart' as agrolinkbd;
+import 'package:agrolinkbd/presentation/screens/home/widgets/premium_agro_services_section.dart';
 
 class FarmerDashboardScreen extends StatelessWidget {
   const FarmerDashboardScreen({super.key});
@@ -268,7 +267,12 @@ class FarmerDashboardScreen extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
+
+            // Premium Agro Services Section
+            const PremiumAgroServicesSection(),
+
+            const SizedBox(height: 20),
 
             // Weather Widget
             Container(

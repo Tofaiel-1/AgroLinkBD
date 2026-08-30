@@ -27,15 +27,20 @@ class _ProductDetailState extends State<ProductDetail> {
 
   Future<void> _loadSellerInfo() async {
     try {
-      final doc = await _firestore
-          .collection('users')
-          .doc(widget.product['userId'])
-          .get();
+      final sellerId = (widget.product['sellerId'] ?? widget.product['userId'] ?? '').toString();
+      if (sellerId.isNotEmpty) {
+        final doc = await _firestore
+            .collection('users')
+            .doc(sellerId)
+            .get();
 
-      setState(() {
-        _sellerInfo = doc.data();
-        _isLoadingSeller = false;
-      });
+        setState(() {
+          _sellerInfo = doc.data();
+          _isLoadingSeller = false;
+        });
+      } else {
+        setState(() => _isLoadingSeller = false);
+      }
     } catch (e) {
       debugPrint('Error loading seller info: $e');
       setState(() => _isLoadingSeller = false);

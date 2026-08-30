@@ -15,7 +15,6 @@ import 'package:agrolinkbd/presentation/screens/service_provider/premium_feature
 import 'package:agrolinkbd/presentation/screens/subscription/vip_subscription_paywall_screen.dart';
 import 'package:agrolinkbd/core/services/transaction_service.dart';
 import 'package:agrolinkbd/core/controllers/user_controller.dart';
-import 'package:agrolinkbd/presentation/widgets/universal_trust_badge_widget.dart';
 import 'dart:ui';
 
 class ServiceProviderDashboard extends ConsumerStatefulWidget {
@@ -283,7 +282,7 @@ class _ServiceProviderDashboardState extends ConsumerState<ServiceProviderDashbo
                                       Container(width: 1, height: 40, color: Colors.white.withOpacity(0.3)),
                                       _buildHeaderStat('সেবা সম্পন্ন', '১৪২ টি', Icons.task_alt_rounded),
                                       Container(width: 1, height: 40, color: Colors.white.withOpacity(0.3)),
-                                      _buildHeaderStat('রেটিং', '৪.৯', Icons.star_rounded, iconColor: Colors.amber),
+                                      _buildHeaderStat('সক্রিয় বুকিং', '৮ টি', Icons.event_available_rounded),
                                     ],
                                   ),
                                 ),
@@ -295,16 +294,6 @@ class _ServiceProviderDashboardState extends ConsumerState<ServiceProviderDashbo
                     ),
                   ],
                 ),
-              ),
-            ),
-
-            // ============================================
-            // UNIVERSAL TRUST & WORK-VERIFIED SCORE HEADER
-            // ============================================
-            SliverToBoxAdapter(
-              child: UniversalTrustHeaderWidget(
-                user: null,
-                onTap: () => Get.toNamed('/profile-settings'),
               ),
             ),
 

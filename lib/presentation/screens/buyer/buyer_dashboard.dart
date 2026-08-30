@@ -8,7 +8,7 @@ import 'package:agrolinkbd/presentation/screens/analytics/buyer_analytics.dart';
 import 'package:agrolinkbd/presentation/screens/maps/buyer_order_tracking_map.dart';
 import 'package:agrolinkbd/presentation/screens/microfinance/microfinance_kyc_screen.dart';
 import 'package:agrolinkbd/presentation/widgets/report_generation_card.dart';
-import 'package:agrolinkbd/presentation/widgets/universal_trust_badge_widget.dart';
+import 'package:agrolinkbd/presentation/widgets/global_announcement_banner.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 /// Buyer Role Dashboard
@@ -180,19 +180,7 @@ class _BuyerDashboardState extends State<BuyerDashboard>
               ),
             ),
 
-            // ============================================
-            // UNIVERSAL TRUST & WORK-VERIFIED SCORE HEADER
-            // ============================================
-            SliverToBoxAdapter(
-              child: Consumer<UserProvider>(
-                builder: (context, userProvider, _) {
-                  return UniversalTrustHeaderWidget(
-                    user: userProvider.currentUser,
-                    onTap: () => Get.toNamed('/profile-settings'),
-                  );
-                },
-              ),
-            ),
+
 
             // ============================================
             // SHOPPING OVERVIEW
