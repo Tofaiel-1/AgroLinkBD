@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:agrolinkbd/core/models/user_model.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 import 'package:agrolinkbd/presentation/screens/card/card_preview_screen.dart' as agrolinkbd;
 
 class GreetingSection extends StatefulWidget {
@@ -13,7 +14,7 @@ class GreetingSection extends StatefulWidget {
 }
 
 class _GreetingSectionState extends State<GreetingSection>
-    with SingleTickerProviderStateMixin {
+  with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -40,6 +41,8 @@ class _GreetingSectionState extends State<GreetingSection>
 
   @override
   Widget build(BuildContext context) {
+    final bool isBn = LanguageProvider.isBn(context);
+
     return SlideTransition(
       position: _slideAnimation,
       child: FadeTransition(
@@ -99,9 +102,9 @@ class _GreetingSectionState extends State<GreetingSection>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // Time-based greeting in Bengali
+                                // Time-based greeting
                                 Text(
-                                  _getBengaliGreeting(),
+                                  _getGreeting(isBn),
                                   style: GoogleFonts.poppins(
                                     color: Colors.white70,
                                     fontSize: 14,
@@ -136,7 +139,7 @@ class _GreetingSectionState extends State<GreetingSection>
                                     ),
                                   ),
                                   child: Text(
-                                    _getUserTypeText(widget.user?.userType),
+                                    _getUserTypeText(widget.user?.userType, isBn),
                                     style: GoogleFonts.roboto(
                                       color: Colors.white.withValues(alpha: 0.9),
                                       fontSize: 12,
@@ -165,7 +168,7 @@ class _GreetingSectionState extends State<GreetingSection>
                 },
                 icon: const Icon(Icons.qr_code, size: 32),
                 color: Colors.white,
-                tooltip: 'আমার কার্ড',
+                tooltip: isBn ? 'আমার কার্ড' : 'My Card',
               ),
             ],
           ),
@@ -174,37 +177,44 @@ class _GreetingSectionState extends State<GreetingSection>
     );
   }
 
-  String _getBengaliGreeting() {
+  String _getGreeting(bool isBn) {
     final hour = DateTime.now().hour;
     if (hour >= 5 && hour < 12) {
-      return 'শুভ সকাল'; // Suvo Sokal (Good Morning)
+      return isBn ? 'শুভ সকাল' : 'Good Morning';
     } else if (hour >= 12 && hour < 16) {
-      return 'শুভ দুপুর'; // Suvo Dupur (Good Afternoon)
+      return isBn ? 'শুভ দুপুর' : 'Good Afternoon';
     } else if (hour >= 16 && hour < 18) {
-      return 'শুভ বিকেল'; // Suvo Bikel (Good Evening/Late Afternoon)
+      return isBn ? 'শুভ বিকেল' : 'Good Evening';
     } else if (hour >= 18 && hour < 20) {
-      return 'শুভ সন্ধ্যা'; // Suvo Sondhya (Good Evening)
+      return isBn ? 'শুভ সন্ধ্যা' : 'Good Evening';
     } else {
-      return 'শুভ রাত্রি'; // Suvo Ratri (Good Night)
+      return isBn ? 'শুভ রাত্রি' : 'Good Night';
     }
   }
 
-  String _getUserTypeText(UserType? type) {
+  String _getUserTypeText(UserType? type, bool isBn) {
     switch (type) {
       case UserType.farmer:
-        return '🌾 Farmer';
+      case UserType.fishFarmer:
+        return isBn ? '🌾 কৃষক' : '🌾 Farmer';
       case UserType.buyer:
-        return '🛍️ Buyer';
+      case UserType.fishBuyer:
+        return isBn ? '🛍️ ক্রেতা' : '🛍️ Buyer';
       case UserType.driver:
-        return '🚗 Driver';
+      case UserType.fishDriver:
+        return isBn ? '🚗 চালক' : '🚗 Driver';
       case UserType.serviceProvider:
-        return '🔧 Service Provider';
+      case UserType.fishServiceProvider:
+      case UserType.expert:
+      case UserType.fishExpert:
+        return isBn ? '🔧 সেবাদাতা' : '🔧 Service Provider';
       case UserType.company:
-        return '🏢 Company';
       case UserType.seller:
-        return '🏢 Company';
+      case UserType.fishCompany:
+      case UserType.hatchery:
+        return isBn ? '🏢 কোম্পানি' : '🏢 Company';
       default:
-        return 'User';
+        return isBn ? 'ব্যবহারকারী' : 'User';
     }
   }
 }

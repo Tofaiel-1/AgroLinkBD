@@ -40,6 +40,29 @@ extension FarmTypeExtension on FarmType {
     }
   }
 
+  String get displayNameEn {
+    switch (this) {
+      case FarmType.fishPond:
+        return 'Commercial Fish Pond';
+      case FarmType.biofloc:
+        return 'Biofloc Tank Unit';
+      case FarmType.rasAquaculture:
+        return 'RAS Smart Aquaculture';
+      case FarmType.shrimpGher:
+        return 'Coastal Shrimp Gher';
+      case FarmType.hatchery:
+        return 'Hatchery & Broodstock Complex';
+      case FarmType.cropField:
+        return 'Advanced Crop Field';
+      case FarmType.greenhouse:
+        return 'Smart Greenhouse Shed';
+      case FarmType.dairyLivestock:
+        return 'Dairy & Livestock Farm';
+      case FarmType.mixedAgro:
+        return 'Integrated Fisheries & Agro Project';
+    }
+  }
+
   String get defaultImage {
     switch (this) {
       case FarmType.fishPond:

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 import 'package:agrolinkbd/presentation/screens/transport/upazila_transport_screen.dart';
 import 'package:agrolinkbd/presentation/screens/auction/auction_screen.dart';
 import 'package:agrolinkbd/presentation/screens/investment/investment_screen.dart';
@@ -18,6 +19,7 @@ class EnhancedQuickActionsGrid extends StatelessWidget {
     final size = MediaQuery.of(context).size;
     final isMobile = size.width < 600;
     final isTablet = size.width < 900;
+    final bool isBn = LanguageProvider.isBn(context);
 
     int crossAxisCount;
     if (isMobile) {
@@ -28,7 +30,7 @@ class EnhancedQuickActionsGrid extends StatelessWidget {
       crossAxisCount = 5;
     }
 
-    final actions = _getActions();
+    final actions = _getActions(context);
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24),
@@ -36,7 +38,7 @@ class EnhancedQuickActionsGrid extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'দ্রুত সেবা সমূহ ⚡',
+            isBn ? 'দ্রুত সেবা সমূহ ⚡' : 'Quick Actions ⚡',
             style: GoogleFonts.poppins(
               fontSize: isMobile ? 18 : 20,
               fontWeight: FontWeight.w700,
@@ -84,54 +86,55 @@ class EnhancedQuickActionsGrid extends StatelessWidget {
     );
   }
 
-  List<Map<String, dynamic>> _getActions() {
+  List<Map<String, dynamic>> _getActions(BuildContext context) {
+    final bool isBn = LanguageProvider.isBn(context);
     return [
       {
         'icon': Icons.qr_code,
-        'label': 'আমার কার্ড',
-        'subtitle': 'ডিজিটাল কার্ড',
+        'label': isBn ? 'আমার কার্ড' : 'My Card',
+        'subtitle': isBn ? 'ডিজিটাল কার্ড' : 'Digital ID',
         'color': const Color(0xFF2E7D32),
         'onTap': () => Get.to(() => const agrolinkbd.CardPreviewScreen()),
       },
       {
         'icon': Icons.agriculture,
-        'label': 'যন্ত্রপাতি',
-        'subtitle': 'ভাড়া নিন 🚜',
+        'label': isBn ? 'যন্ত্রপাতি' : 'Machinery',
+        'subtitle': isBn ? 'ভাড়া নিন 🚜' : 'Rent Now 🚜',
         'color': const Color(0xFF1976D2),
         'onTap': () => Get.to(() => const MachineryRentalScreen()),
       },
       {
         'icon': Icons.local_shipping,
-        'label': 'পরিবহন',
-        'subtitle': 'পণ্য পাঠান 🚚',
+        'label': isBn ? 'পরিবহন' : 'Transport',
+        'subtitle': isBn ? 'পণ্য পাঠান 🚚' : 'Send Crop 🚚',
         'color': const Color(0xFFFF6F00),
         'onTap': () => Get.to(() => const UpazilaTransportScreen()),
       },
       {
         'icon': Icons.video_call_rounded,
-        'label': 'ডাক্তার কল',
-        'subtitle': 'লাইভ পরামর্শ 🩺',
+        'label': isBn ? 'ডাক্তার কল' : 'Doctor Call',
+        'subtitle': isBn ? 'লাইভ পরামর্শ 🩺' : 'Live Consult 🩺',
         'color': const Color(0xFF6A1B9A),
         'onTap': () => Get.to(() => const AgriTelemedicineScreen()),
       },
       {
         'icon': Icons.assignment_turned_in,
-        'label': 'চাহিদা বোর্ড',
-        'subtitle': 'পাইকারি টেন্ডার 📋',
+        'label': isBn ? 'চাহিদা বোর্ড' : 'RFQ Board',
+        'subtitle': isBn ? 'পাইকারি টেন্ডার 📋' : 'Wholesale RFQ 📋',
         'color': const Color(0xFFC62828),
         'onTap': () => Get.to(() => const BuyerRfqBoardScreen()),
       },
       {
         'icon': Icons.gavel,
-        'label': 'নিলাম',
-        'subtitle': 'বিডিং করুন ⚖️',
+        'label': isBn ? 'নিলাম' : 'Auction',
+        'subtitle': isBn ? 'বিডিং করুন ⚖️' : 'Live Bidding ⚖️',
         'color': const Color(0xFF0097A7),
         'onTap': () => Get.to(() => const AuctionScreen()),
       },
       {
         'icon': Icons.attach_money,
-        'label': 'বিনিয়োগ',
-        'subtitle': 'লাভ করুন 📈',
+        'label': isBn ? 'বিনিয়োগ' : 'Investment',
+        'subtitle': isBn ? 'লাভ করুন 📈' : 'Agri Funds 📈',
         'color': const Color(0xFF388E3C),
         'onTap': () => Get.to(() => const InvestmentScreen()),
       },

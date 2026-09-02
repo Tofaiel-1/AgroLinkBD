@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:printing/printing.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 import '../../core/services/pdf/user_report_service.dart';
 
 class ReportGenerationCard extends StatefulWidget {
@@ -70,10 +71,18 @@ class _ReportGenerationCardState extends State<ReportGenerationCard> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bool isBn = LanguageProvider.isBn(context);
 
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+          width: 1,
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -94,25 +103,46 @@ class _ReportGenerationCardState extends State<ReportGenerationCard> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Activity Report', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
+                      Text(
+                        isBn ? 'অ্যাক্টিভিটি রিপোর্ট' : 'Activity Report',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                      ),
                       const SizedBox(height: 4),
-                      Text('Generate a detailed PDF ledger of your account activity.', 
-                        style: TextStyle(fontSize: 12, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600)),
+                      Text(
+                        isBn 
+                            ? 'আপনার একাউন্টের লেনদেন ও কার্যক্রমের বিস্তারিত পিডিএফ রিপোর্ট তৈরি করুন।'
+                            : 'Generate a detailed PDF ledger of your account activity.', 
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 20),
-            Text('Select Period', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: isDark ? Colors.grey.shade300 : Colors.grey.shade800)),
+            Text(
+              isBn ? 'সময়কাল নির্বাচন করুন' : 'Select Period',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.grey.shade300 : Colors.grey.shade800,
+              ),
+            ),
             const SizedBox(height: 8),
             Row(
               children: [
-                _buildPeriodChip('Today', ReportPeriod.daily, isDark),
+                _buildPeriodChip(isBn ? 'আজ' : 'Today', ReportPeriod.daily, isDark),
                 const SizedBox(width: 8),
-                _buildPeriodChip('This Week', ReportPeriod.weekly, isDark),
+                _buildPeriodChip(isBn ? 'এই সপ্তাহ' : 'This Week', ReportPeriod.weekly, isDark),
                 const SizedBox(width: 8),
-                _buildPeriodChip('This Month', ReportPeriod.monthly, isDark),
+                _buildPeriodChip(isBn ? 'এই মাস' : 'This Month', ReportPeriod.monthly, isDark),
               ],
             ),
             const SizedBox(height: 20),
@@ -121,9 +151,9 @@ class _ReportGenerationCardState extends State<ReportGenerationCard> {
               child: ElevatedButton.icon(
                 onPressed: _isGenerating ? null : _generateReport,
                 icon: _isGenerating
-                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                     : const Icon(Icons.picture_as_pdf),
-                label: Text(_isGenerating ? 'Generating...' : 'Generate My Report'),
+                label: Text(_isGenerating ? (isBn ? 'তৈরি হচ্ছে...' : 'Generating...') : (isBn ? 'পিডিএফ রিপোর্ট তৈরি করুন' : 'Generate My Report')),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: widget.color,
                   foregroundColor: Colors.white,

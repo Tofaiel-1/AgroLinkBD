@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:agrolinkbd/core/services/transaction_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:agrolinkbd/core/models/user_model.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 import 'package:flutter/services.dart';
 
 class DirectTransferScreen extends StatefulWidget {
@@ -24,7 +26,7 @@ class _DirectTransferScreenState extends State<DirectTransferScreen> {
   List<UserModel> _filteredRecipients = [];
   UserModel? _selectedRecipient;
   String _selectedPaymentMethod = 'bKash';
-  String _selectedReason = 'Tractor / Machine Rental';
+  String _selectedReasonKey = 'machine';
   
   bool _isLoadingRecipients = true;
   bool _isProcessing = false;
@@ -37,7 +39,6 @@ class _DirectTransferScreenState extends State<DirectTransferScreen> {
 
   Future<void> _fetchRecipients() async {
     try {
-      // Fetch all users and filter locally to handle any DB string format variations
       final snapshot = await FirebaseFirestore.instance.collection('users').get();
           
       final users = snapshot.docs.map((doc) {
@@ -62,7 +63,7 @@ class _DirectTransferScreenState extends State<DirectTransferScreen> {
     }
   }
 
-    void _showRecipientSearchDialog() {
+  void _showRecipientSearchDialog(bool isBn) {
     showDialog(
       context: context,
       builder: (context) {
@@ -77,16 +78,16 @@ class _DirectTransferScreenState extends State<DirectTransferScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
-                      'Select Recipient',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+                    Text(
+                      isBn ? 'প্রাপক নির্বাচন করুন' : 'Select Recipient',
+                      style: GoogleFonts.hindSiliguri(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
                     ),
                     const SizedBox(height: 16),
                     TextField(
-                      style: const TextStyle(color: Colors.black87),
+                      style: GoogleFonts.hindSiliguri(color: Colors.black87),
                       decoration: InputDecoration(
-                        hintText: 'Search by name or phone...',
-                        hintStyle: TextStyle(color: Colors.grey.shade600),
+                        hintText: isBn ? 'নাম বা ফোন নম্বর দিয়ে খুঁজুন...' : 'Search by name or phone...',
+                        hintStyle: GoogleFonts.hindSiliguri(color: Colors.grey.shade600),
                         prefixIcon: Icon(Icons.search, color: Colors.grey.shade600),
                         filled: true,
                         fillColor: Colors.grey.shade100,
@@ -122,7 +123,12 @@ class _DirectTransferScreenState extends State<DirectTransferScreen> {
                       child: _isLoadingRecipients
                           ? const Center(child: CircularProgressIndicator())
                           : _filteredRecipients.isEmpty
-                              ? const Center(child: Text('No users found', style: TextStyle(color: Colors.grey)))
+                              ? Center(
+                                  child: Text(
+                                    isBn ? 'কোনো ব্যবহারকারী পাওয়া যায়নি' : 'No users found',
+                                    style: GoogleFonts.hindSiliguri(color: Colors.grey),
+                                  ),
+                                )
                               : ListView.builder(
                                   itemCount: _filteredRecipients.length,
                                   itemBuilder: (context, index) {
@@ -137,13 +143,15 @@ class _DirectTransferScreenState extends State<DirectTransferScreen> {
                                           color: isDriver ? Colors.blue.shade800 : Colors.orange.shade800,
                                         ),
                                       ),
-                                      title: Text(user.name, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
-                                      subtitle: Text('${user.phone} • ${isDriver ? 'Driver' : 'Service Provider'}', style: TextStyle(color: Colors.grey.shade700)),
+                                      title: Text(user.name, style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, color: Colors.black87)),
+                                      subtitle: Text(
+                                        '${user.phone} • ${isDriver ? (isBn ? 'ড্রাইভার' : 'Driver') : (isBn ? 'সার্ভিস প্রোভাইডার' : 'Service Provider')}',
+                                        style: GoogleFonts.hindSiliguri(color: Colors.grey.shade700),
+                                      ),
                                       onTap: () {
                                         setState(() {
                                           _selectedRecipient = user;
                                         });
-                                        // Reset filter for next time
                                         _filteredRecipients = _recipients;
                                         Navigator.pop(context);
                                       },
@@ -161,45 +169,75 @@ class _DirectTransferScreenState extends State<DirectTransferScreen> {
     );
   }
 
-  void _submitTransfer() async {
+  void _submitTransfer(bool isBn) async {
     if (_selectedRecipient == null) {
-      Get.snackbar('Error', 'Please select a recipient first', backgroundColor: Colors.red.shade100);
+      Get.snackbar(
+        isBn ? 'ত্রুটি' : 'Error',
+        isBn ? 'প্রথমে একজন প্রাপক নির্বাচন করুন' : 'Please select a recipient first',
+        backgroundColor: Colors.red.shade100,
+      );
       return;
     }
 
     final accountNumber = _accountNumberController.text.trim();
     if (accountNumber.isEmpty) {
-      Get.snackbar('Error', 'Please enter recipient account number', backgroundColor: Colors.red.shade100);
+      Get.snackbar(
+        isBn ? 'ত্রুটি' : 'Error',
+        isBn ? 'প্রাপকের অ্যাকাউন্ট নম্বর দিন' : 'Please enter recipient account number',
+        backgroundColor: Colors.red.shade100,
+      );
       return;
     }
 
     if (_selectedPaymentMethod == 'bKash' || _selectedPaymentMethod == 'Nagad') {
       if (accountNumber.length < 11 || accountNumber.length > 14) {
-        Get.snackbar('Error', 'Invalid mobile number format', backgroundColor: Colors.red.shade100);
+        Get.snackbar(
+          isBn ? 'ত্রুটি' : 'Error',
+          isBn ? 'মোবাইল নম্বর ফরম্যাট সঠিক নয়' : 'Invalid mobile number format',
+          backgroundColor: Colors.red.shade100,
+        );
         return;
       }
     }
 
     if (_selectedPaymentMethod == 'Bank' && accountNumber.length > 16) {
-      Get.snackbar('Error', 'Bank account number cannot exceed 16 digits', backgroundColor: Colors.red.shade100);
+      Get.snackbar(
+        isBn ? 'ত্রুটি' : 'Error',
+        isBn ? 'ব্যাংক হিসাব নম্বর ১৬ ডিজিটের বেশি হতে পারে না' : 'Bank account number cannot exceed 16 digits',
+        backgroundColor: Colors.red.shade100,
+      );
       return;
     }
 
     final amountText = _amountController.text.trim();
     if (amountText.isEmpty) {
-      Get.snackbar('Error', 'Please enter an amount', backgroundColor: Colors.red.shade100);
+      Get.snackbar(
+        isBn ? 'ত্রুটি' : 'Error',
+        isBn ? 'টাকার পরিমাণ উল্লেখ করুন' : 'Please enter an amount',
+        backgroundColor: Colors.red.shade100,
+      );
       return;
     }
 
     final amount = double.tryParse(amountText);
     if (amount == null || amount <= 0) {
-      Get.snackbar('Error', 'Please enter a valid amount', backgroundColor: Colors.red.shade100);
+      Get.snackbar(
+        isBn ? 'ত্রুটি' : 'Error',
+        isBn ? 'সঠিক টাকার পরিমাণ দিন' : 'Please enter a valid amount',
+        backgroundColor: Colors.red.shade100,
+      );
       return;
     }
 
-    final finalReason = _selectedReason == 'Other (Please specify)' 
-        ? (_reasonController.text.isNotEmpty ? _reasonController.text : 'Payment for Services')
-        : _selectedReason;
+    final reasonMap = {
+      'machine': isBn ? 'ট্রাক্টর / মেশিন ভাড়া' : 'Tractor / Machine Rental',
+      'transport': isBn ? 'পরিবহন / ট্রাক ভাড়া' : 'Transport / Truck Fare',
+      'labor': isBn ? 'কৃষি শ্রমিক মজুরি' : 'Labor Payment',
+      'agri_inputs': isBn ? 'বীজ / সার / কীটনাশক' : 'Seeds / Fertilizer / Pesticide',
+      'other': _reasonController.text.isNotEmpty ? _reasonController.text : (isBn ? 'সেবা বাবদ পেমেন্ট' : 'Payment for Services'),
+    };
+
+    final finalReason = reasonMap[_selectedReasonKey] ?? (isBn ? 'সেবা বাবদ পেমেন্ট' : 'Payment for Services');
 
     setState(() => _isProcessing = true);
 
@@ -216,16 +254,24 @@ class _DirectTransferScreenState extends State<DirectTransferScreen> {
       if (success) {
         Get.back();
         Get.snackbar(
-          'Success', 
-          'Transfer request submitted for Admin approval.',
+          isBn ? 'সফল' : 'Success', 
+          isBn ? 'ট্রান্সফার সফলভাবে অ্যাডমিন অনুমোদনের জন্য জমা দেওয়া হয়েছে।' : 'Transfer request submitted for Admin approval.',
           backgroundColor: Colors.green.shade100,
           colorText: Colors.green.shade900,
         );
       } else {
-        Get.snackbar('Failed', 'Insufficient balance or transfer failed.', backgroundColor: Colors.red.shade100);
+        Get.snackbar(
+          isBn ? 'ব্যর্থ' : 'Failed',
+          isBn ? 'পর্যাপ্ত ব্যালেন্স নেই বা ট্রান্সফার ব্যর্থ হয়েছে।' : 'Insufficient balance or transfer failed.',
+          backgroundColor: Colors.red.shade100,
+        );
       }
     } catch (e) {
-      Get.snackbar('Error', 'Transfer failed: $e', backgroundColor: Colors.red.shade100);
+      Get.snackbar(
+        isBn ? 'ত্রুটি' : 'Error',
+        '${isBn ? 'ট্রান্সফার ব্যর্থ হয়েছে:' : 'Transfer failed:'} $e',
+        backgroundColor: Colors.red.shade100,
+      );
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
@@ -233,10 +279,23 @@ class _DirectTransferScreenState extends State<DirectTransferScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isBn = LanguageProvider.isBn(context);
+
+    final reasonItems = [
+      {'key': 'machine', 'label': isBn ? 'ট্রাক্টর / মেশিন ভাড়া' : 'Tractor / Machine Rental'},
+      {'key': 'transport', 'label': isBn ? 'পরিবহন / ট্রাক ভাড়া' : 'Transport / Truck Fare'},
+      {'key': 'labor', 'label': isBn ? 'কৃষি শ্রমিক মজুরি' : 'Labor Payment'},
+      {'key': 'agri_inputs', 'label': isBn ? 'বীজ / সার / কীটনাশক' : 'Seeds / Fertilizer / Pesticide'},
+      {'key': 'other', 'label': isBn ? 'অন্যান্য (বিবরণ দিন)' : 'Other (Please specify)'},
+    ];
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: const Text('Direct Transfer'),
+        title: Text(
+          isBn ? 'সরাসরি পেমেন্ট' : 'Direct Transfer',
+          style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: const Color(0xFF2E7D32),
         elevation: 0,
       ),
@@ -245,13 +304,13 @@ class _DirectTransferScreenState extends State<DirectTransferScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Select Recipient',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+            Text(
+              isBn ? 'প্রাপক নির্বাচন করুন' : 'Select Recipient',
+              style: GoogleFonts.hindSiliguri(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
             ),
             const SizedBox(height: 12),
             InkWell(
-              onTap: _isLoadingRecipients ? null : _showRecipientSearchDialog,
+              onTap: _isLoadingRecipients ? null : () => _showRecipientSearchDialog(isBn),
               borderRadius: BorderRadius.circular(12),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -274,11 +333,11 @@ class _DirectTransferScreenState extends State<DirectTransferScreen> {
                           children: [
                             Text(
                               _selectedRecipient!.name,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87),
+                              style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87),
                             ),
                             Text(
                               _selectedRecipient!.phone,
-                              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                              style: GoogleFonts.hindSiliguri(color: Colors.grey.shade600, fontSize: 13),
                             ),
                           ],
                         ),
@@ -288,8 +347,10 @@ class _DirectTransferScreenState extends State<DirectTransferScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          _isLoadingRecipients ? 'Loading recipients...' : 'Search for Driver or Provider...',
-                          style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
+                          _isLoadingRecipients 
+                              ? (isBn ? 'প্রাপকদের লোড হচ্ছে...' : 'Loading recipients...')
+                              : (isBn ? 'ড্রাইভার বা প্রোভাইডার খুঁজুন...' : 'Search for Driver or Provider...'),
+                          style: GoogleFonts.hindSiliguri(color: Colors.grey.shade600, fontSize: 15),
                         ),
                       ),
                     ],
@@ -299,9 +360,9 @@ class _DirectTransferScreenState extends State<DirectTransferScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
-              'Reason / Purpose',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+            Text(
+              isBn ? 'পেমেন্টের কারণ / উদ্দেশ্য' : 'Reason / Purpose',
+              style: GoogleFonts.hindSiliguri(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
             ),
             const SizedBox(height: 12),
             Container(
@@ -313,41 +374,41 @@ class _DirectTransferScreenState extends State<DirectTransferScreen> {
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
-                  value: _selectedReason,
+                  value: _selectedReasonKey,
                   isExpanded: true,
-                  items: const [
-                    DropdownMenuItem(value: 'Tractor / Machine Rental', child: Text('Tractor / Machine Rental', style: TextStyle(color: Colors.black87))),
-                    DropdownMenuItem(value: 'Transport / Truck Fare', child: Text('Transport / Truck Fare', style: TextStyle(color: Colors.black87))),
-                    DropdownMenuItem(value: 'Labor Payment', child: Text('Labor Payment', style: TextStyle(color: Colors.black87))),
-                    DropdownMenuItem(value: 'Seeds / Fertilizer / Pesticide', child: Text('Seeds / Fertilizer / Pesticide', style: TextStyle(color: Colors.black87))),
-                    DropdownMenuItem(value: 'Other (Please specify)', child: Text('Other (Please specify)', style: TextStyle(color: Colors.black87))),
-                  ],
+                  items: reasonItems.map((item) {
+                    return DropdownMenuItem(
+                      value: item['key'],
+                      child: Text(item['label']!, style: GoogleFonts.hindSiliguri(color: Colors.black87)),
+                    );
+                  }).toList(),
                   onChanged: (val) {
-                    if (val != null) setState(() => _selectedReason = val);
+                    if (val != null) setState(() => _selectedReasonKey = val);
                   },
                 ),
               ),
             ),
-            if (_selectedReason == 'Other (Please specify)') ...[
+            if (_selectedReasonKey == 'other') ...[
               const SizedBox(height: 12),
               TextField(
                 controller: _reasonController,
                 decoration: InputDecoration(
-                  hintText: 'Type your reason...',
+                  hintText: isBn ? 'কারণ লিখুন...' : 'Type your reason...',
+                  hintStyle: GoogleFonts.hindSiliguri(color: Colors.grey.shade400),
                   filled: true,
                   fillColor: Colors.white,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
+                    borderSide: BorderSide(color: Colors.grey.shade300),
                   ),
                 ),
-                style: const TextStyle(color: Colors.black87),
+                style: GoogleFonts.hindSiliguri(color: Colors.black87),
               ),
             ],
             const SizedBox(height: 24),
-            const Text(
-              'Payment Method',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+            Text(
+              isBn ? 'পেমেন্ট মেথড' : 'Payment Method',
+              style: GoogleFonts.hindSiliguri(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
             ),
             const SizedBox(height: 12),
             Container(
@@ -361,10 +422,10 @@ class _DirectTransferScreenState extends State<DirectTransferScreen> {
                 child: DropdownButton<String>(
                   value: _selectedPaymentMethod,
                   isExpanded: true,
-                  items: const [
-                    DropdownMenuItem(value: 'bKash', child: Text('bKash', style: TextStyle(color: Colors.black87))),
-                    DropdownMenuItem(value: 'Nagad', child: Text('Nagad', style: TextStyle(color: Colors.black87))),
-                    DropdownMenuItem(value: 'Bank', child: Text('Bank Transfer', style: TextStyle(color: Colors.black87))),
+                  items: [
+                    DropdownMenuItem(value: 'bKash', child: Text('bKash (বিকাশ)', style: GoogleFonts.hindSiliguri(color: Colors.black87))),
+                    DropdownMenuItem(value: 'Nagad', child: Text('Nagad (নগদ)', style: GoogleFonts.hindSiliguri(color: Colors.black87))),
+                    DropdownMenuItem(value: 'Bank', child: Text(isBn ? 'ব্যাংক ট্রান্সফার' : 'Bank Transfer', style: GoogleFonts.hindSiliguri(color: Colors.black87))),
                   ],
                   onChanged: (val) {
                     if (val != null) setState(() => _selectedPaymentMethod = val);
@@ -373,9 +434,9 @@ class _DirectTransferScreenState extends State<DirectTransferScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
-              'Account / Mobile Number',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+            Text(
+              isBn ? 'অ্যাকাউন্ট / মোবাইল নম্বর' : 'Account / Mobile Number',
+              style: GoogleFonts.hindSiliguri(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -384,21 +445,22 @@ class _DirectTransferScreenState extends State<DirectTransferScreen> {
               maxLength: _selectedPaymentMethod == 'Bank' ? 16 : 14,
               inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9+]'))],
               decoration: InputDecoration(
-                counterText: '', // Hide the length counter below the textfield
-                hintText: 'Enter recipient number',
+                counterText: '',
+                hintText: isBn ? 'প্রাপকের অ্যাকাউন্ট নম্বর দিন' : 'Enter recipient number',
+                hintStyle: GoogleFonts.hindSiliguri(color: Colors.grey.shade400),
                 filled: true,
                 fillColor: Colors.white,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+                  borderSide: BorderSide(color: Colors.grey.shade300),
                 ),
               ),
-              style: const TextStyle(color: Colors.black87),
+              style: GoogleFonts.hindSiliguri(color: Colors.black87),
             ),
             const SizedBox(height: 24),
-            const Text(
-              'Enter Amount',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+            Text(
+              isBn ? 'টাকার পরিমাণ' : 'Enter Amount',
+              style: GoogleFonts.hindSiliguri(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -406,22 +468,23 @@ class _DirectTransferScreenState extends State<DirectTransferScreen> {
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
                 prefixText: '৳ ',
-                hintText: 'e.g. 500',
+                hintText: isBn ? 'যেমন: ৫০০' : 'e.g. 500',
+                hintStyle: GoogleFonts.hindSiliguri(color: Colors.grey.shade400),
                 filled: true,
                 fillColor: Colors.white,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+                  borderSide: BorderSide(color: Colors.grey.shade300),
                 ),
               ),
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
+              style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
             ),
             const SizedBox(height: 40),
             SizedBox(
               width: double.infinity,
               height: 54,
               child: ElevatedButton(
-                onPressed: _isProcessing ? null : _submitTransfer,
+                onPressed: _isProcessing ? null : () => _submitTransfer(isBn),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2E7D32),
                   shape: RoundedRectangleBorder(
@@ -430,9 +493,9 @@ class _DirectTransferScreenState extends State<DirectTransferScreen> {
                 ),
                 child: _isProcessing 
                   ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text(
-                      'Transfer Now',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                  : Text(
+                      isBn ? 'পেমেন্ট সম্পন্ন করুন' : 'Transfer Now',
+                      style: GoogleFonts.hindSiliguri(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
               ),
             ),

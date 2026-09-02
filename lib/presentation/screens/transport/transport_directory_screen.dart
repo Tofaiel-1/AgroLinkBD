@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 import 'package:agrolinkbd/presentation/widgets/driver_card.dart';
 import 'package:agrolinkbd/core/services/location_service.dart';
 
 class TransportDirectoryScreen extends StatefulWidget {
-  const TransportDirectoryScreen({Key? key}) : super(key: key);
+  const TransportDirectoryScreen({super.key});
 
   @override
   State<TransportDirectoryScreen> createState() => _TransportDirectoryScreenState();
@@ -41,6 +42,7 @@ class _TransportDirectoryScreenState extends State<TransportDirectoryScreen> {
   Widget build(BuildContext context) {
     const Color primaryGreen = Color(0xFF2E7D32);
     const Color lightBackground = Color(0xFFF5F7FA);
+    final bool isBn = LanguageProvider.isBn(context);
 
     return Scaffold(
       backgroundColor: lightBackground,
@@ -49,7 +51,7 @@ class _TransportDirectoryScreenState extends State<TransportDirectoryScreen> {
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black87),
         title: Text(
-          'Transport Directory',
+          isBn ? 'পরিবহন ও ড্রাইভার ডিরেক্টরি 🚛' : 'Transport & Driver Directory 🚛',
           style: GoogleFonts.hindSiliguri(
             color: Colors.black87,
             fontWeight: FontWeight.bold,
@@ -72,13 +74,13 @@ class _TransportDirectoryScreenState extends State<TransportDirectoryScreen> {
                   String displayTitle = '';
                   switch (size) {
                     case 'Small':
-                      displayTitle = 'Small Pickup';
+                      displayTitle = isBn ? 'ছোট পিকআপ (১-২ টন)' : 'Small Pickup (1-2 Ton)';
                       break;
                     case 'Mid':
-                      displayTitle = 'Mid Truck';
+                      displayTitle = isBn ? 'মাঝারি ট্রাক (৩-৫ টন)' : 'Mid Truck (3-5 Ton)';
                       break;
                     case 'Big':
-                      displayTitle = 'Big Truck';
+                      displayTitle = isBn ? 'বড় ট্রাক (৭-১৫ টন)' : 'Big Truck (7-15 Ton)';
                       break;
                   }
 
@@ -125,10 +127,10 @@ class _TransportDirectoryScreenState extends State<TransportDirectoryScreen> {
                 Expanded(
                   child: Text(
                     _isLoadingLocation
-                        ? 'Getting your current location...'
+                        ? (isBn ? 'আপনার জিপিএস অবস্থান সনাক্ত হচ্ছে...' : 'Getting your current location...')
                         : (_currentPosition != null
-                            ? 'Showing drivers near your location'
-                            : 'Location unavailable. Showing all drivers.'),
+                            ? (isBn ? 'আপনার নিকটবর্তী সক্রিয় ড্রাইভারদের তালিকা' : 'Showing drivers near your location')
+                            : (isBn ? 'অবস্থান পাওয়া যায়নি। সব ড্রাইভার দেখানো হচ্ছে।' : 'Location unavailable. Showing all drivers.')),
                     style: GoogleFonts.hindSiliguri(
                       color: primaryGreen,
                       fontWeight: FontWeight.w600,
@@ -154,8 +156,6 @@ class _TransportDirectoryScreenState extends State<TransportDirectoryScreen> {
                   .collection('users')
                   .where('userType', isEqualTo: 'Driver')
                   .where('vehicleSize', isEqualTo: _selectedSize)
-                  // Note: Real app should filter 'isAvailable' == true
-                  // .where('isAvailable', isEqualTo: true) 
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting && !_isLoadingLocation) {
@@ -178,7 +178,7 @@ class _TransportDirectoryScreenState extends State<TransportDirectoryScreen> {
                         Icon(Icons.local_shipping_outlined, size: 64, color: Colors.grey.shade400),
                         const SizedBox(height: 16),
                         Text(
-                          'No drivers found in this category',
+                          isBn ? 'এই ক্যাটাগরিতে কোনো ড্রাইভার পাওয়া যায়নি' : 'No drivers found in this category',
                           style: GoogleFonts.hindSiliguri(
                             fontSize: 16,
                             color: Colors.grey.shade600,
@@ -229,11 +229,13 @@ class _TransportDirectoryScreenState extends State<TransportDirectoryScreen> {
                     
                     return DriverCard(
                       driverId: data['id'],
-                      name: data['name'] ?? 'Unknown Driver',
+                      name: data['name'] ?? (isBn ? 'নামবিহীন ড্রাইভার' : 'Unknown Driver'),
                       phone: data['phone'] ?? 'N/A',
-                      vehicleType: data['vehicleSize'] == 'Small' ? 'Pickup' : 'Truck',
+                      vehicleType: data['vehicleSize'] == 'Small' 
+                          ? (isBn ? 'পিকআপ' : 'Pickup')
+                          : (isBn ? 'ট্রাক' : 'Truck'),
                       vehicleNumber: data['vehicleNumber'] ?? 'Unknown',
-                      capacity: data['capacity'] ?? 'Unknown',
+                      capacity: data['capacity'] ?? (isBn ? 'অজ্ঞাত' : 'Unknown'),
                       profileImageUrl: data['profileImageUrl'],
                       distanceInKm: data['distanceInKm'],
                       perKmRate: (data['perKmRate'] as num?)?.toDouble() ?? 50.0,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 
 class TrendingProductsSection extends StatelessWidget {
   const TrendingProductsSection({super.key});
@@ -8,6 +9,7 @@ class TrendingProductsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final isMobile = size.width < 600;
+    final bool isBn = LanguageProvider.isBn(context);
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24),
@@ -18,7 +20,7 @@ class TrendingProductsSection extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'ট্রেন্ডিং পণ্য',
+                isBn ? 'ট্রেন্ডিং পণ্য' : 'Trending Products',
                 style: GoogleFonts.poppins(
                   fontSize: isMobile ? 18 : 20,
                   fontWeight: FontWeight.w700,
@@ -28,7 +30,7 @@ class TrendingProductsSection extends StatelessWidget {
               TextButton(
                 onPressed: () {},
                 child: Text(
-                  'সব দেখুন',
+                  isBn ? 'সব দেখুন' : 'See All',
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -46,7 +48,7 @@ class TrendingProductsSection extends StatelessWidget {
                 5,
                 (index) => Padding(
                   padding: const EdgeInsets.only(right: 12),
-                  child: _buildProductCard(isMobile),
+                  child: _buildProductCard(isMobile, isBn),
                 ),
               ),
             ),
@@ -56,7 +58,7 @@ class TrendingProductsSection extends StatelessWidget {
     );
   }
 
-  Widget _buildProductCard(bool isMobile) {
+  Widget _buildProductCard(bool isMobile, bool isBn) {
     return Container(
       width: isMobile ? 140 : 160,
       decoration: BoxDecoration(
@@ -64,7 +66,7 @@ class TrendingProductsSection extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -97,7 +99,7 @@ class TrendingProductsSection extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'তাজা সবজি',
+                  isBn ? 'তাজা সবজি' : 'Fresh Veggies',
                   style: GoogleFonts.poppins(
                     fontSize: isMobile ? 12 : 13,
                     fontWeight: FontWeight.w600,
@@ -108,7 +110,7 @@ class TrendingProductsSection extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'সরাসরি খামার থেকে',
+                  isBn ? 'সরাসরি খামার থেকে' : 'Direct from farm',
                   style: GoogleFonts.roboto(
                     fontSize: 10,
                     fontWeight: FontWeight.w400,
@@ -122,7 +124,7 @@ class TrendingProductsSection extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      '৳ ৮৫',
+                      isBn ? '৳ ৮৫' : '৳ 85',
                       style: GoogleFonts.poppins(
                         fontSize: isMobile ? 13 : 14,
                         fontWeight: FontWeight.w700,

@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:agrolinkbd/core/models/phase2_models/farm_models.dart';
 import 'package:agrolinkbd/core/services/phase2_services/farm_service.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 
 class AddEditFarmScreen extends StatefulWidget {
   final Farm? farm;
@@ -28,70 +29,75 @@ class _AddEditFarmScreenState extends State<AddEditFarmScreen> {
   late TextEditingController _customImageUrlController;
 
   FarmType _selectedFarmType = FarmType.fishPond;
-  String _selectedSoil = 'দোআঁশ (Loam)';
-  String _selectedWaterSource = 'নদীর মিষ্টি পানি ও গভীর নলকূপ';
-  String _selectedBioSecurity = 'Grade A+ (SPF Certified)';
+  String _selectedSoil = 'loam';
+  String _selectedWaterSource = 'river_sweet';
+  String _selectedBioSecurity = 'grade_a';
   String _selectedImageUrl = 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=900&auto=format&fit=crop&q=80';
 
-  final List<String> _soilTypes = [
-    'দোআঁশ (Loam)',
-    'বেলে দোআঁশ (Sandy Loam)',
-    'এঁটেল দোআঁশ (Clay Loam)',
-    'পলি দোআঁশ (Silt Loam)',
-    'পলি (Silt)',
-    'এঁটেল (Clay)',
-    'বেলে (Sandy)',
-    'পিট মাটি (Peat)',
-    'এসিড সালফেট মাটি (Acid Sulphate)',
-    'কালো মাটি (Black Soil)',
-    'লাল মাটি (Red Soil)',
+  final List<Map<String, String>> _soilTypes = [
+    {'id': 'loam', 'bn': 'দোআঁশ (Loam)', 'en': 'Loam Soil'},
+    {'id': 'sandy_loam', 'bn': 'বেলে দোআঁশ (Sandy Loam)', 'en': 'Sandy Loam'},
+    {'id': 'clay_loam', 'bn': 'এঁটেল দোআঁশ (Clay Loam)', 'en': 'Clay Loam'},
+    {'id': 'silt_loam', 'bn': 'পলি দোআঁশ (Silt Loam)', 'en': 'Silt Loam'},
+    {'id': 'silt', 'bn': 'পলি মাটি (Silt)', 'en': 'Silt Soil'},
+    {'id': 'clay', 'bn': 'এঁটেল মাটি (Clay)', 'en': 'Clay Soil'},
+    {'id': 'sandy', 'bn': 'বেলে মাটি (Sandy)', 'en': 'Sandy Soil'},
+    {'id': 'peat', 'bn': 'পিট মাটি (Peat)', 'en': 'Peat Soil'},
+    {'id': 'black', 'bn': 'কালো মাটি (Black Soil)', 'en': 'Black Soil'},
+    {'id': 'red', 'bn': 'লাল মাটি (Red Soil)', 'en': 'Red Soil'},
   ];
 
-  final List<String> _waterSources = [
-    'নদীর মিষ্টি পানি ও গভীর নলকূপ',
-    'গভীর সাবমারসিবল নলকূপ',
-    'জোয়ার-ভাটার লবণাক্ত খাঁড়ি গেট',
-    'বৃষ্টি ও প্রাকৃতিক ক্যানেল',
-    'ফিল্টার্ড আরএএস রিসার্কুলেশন প্ল্যান্ট',
-    'ভূগর্ভস্থ স্প্রিং ওয়াটার',
+  final List<Map<String, String>> _waterSources = [
+    {'id': 'river_sweet', 'bn': 'নদীর মিষ্টি পানি ও গভীর নলকূপ', 'en': 'Freshwater River & Deep Tubewell'},
+    {'id': 'submersible', 'bn': 'গভীর সাবমারসিবল নলকূপ', 'en': 'Deep Submersible Tubewell'},
+    {'id': 'tidal_saline', 'bn': 'জোয়ার-ভাটার লবণাক্ত খাঁড়ি গেট', 'en': 'Tidal Saline Estuary / Canal'},
+    {'id': 'rain_canal', 'bn': 'বৃষ্টি ও প্রাকৃতিক ক্যানেল', 'en': 'Rainwater & Natural Canal'},
+    {'id': 'ras_recirc', 'bn': 'ফিল্টার্ড আরএএস প্ল্যান্ট', 'en': 'Filtered RAS Plant'},
+    {'id': 'spring', 'bn': 'ভূগর্ভস্থ স্প্রিং ওয়াটার', 'en': 'Underground Spring Water'},
   ];
 
-  final List<String> _bioSecurityGrades = [
-    'Grade A+ (SPF Certified)',
-    'ইইউ এক্সপোর্ট কোয়ালিটি সার্টিফাইড',
-    'হাইজিনিক ইনডোর সিস্টেম',
-    'স্ট্যান্ডার্ড কমার্শিয়াল ফার্ম গ্রেড',
-    'অর্গানিক বায়ো-সার্টিফাইড',
+  final List<Map<String, String>> _bioSecurityGrades = [
+    {'id': 'grade_a', 'bn': 'Grade A+ (SPF Certified)', 'en': 'Grade A+ (SPF Certified)'},
+    {'id': 'eu_export', 'bn': 'ইইউ এক্সপোর্ট কোয়ালিটি সার্টিফাইড', 'en': 'EU Export Certified Standard'},
+    {'id': 'indoor_clean', 'bn': 'হাইজিনিক ইনডোর সিস্টেম', 'en': 'Hygienic Indoor Facility'},
+    {'id': 'commercial', 'bn': 'স্ট্যান্ডার্ড কমার্শিয়াল ফার্ম গ্রেড', 'en': 'Standard Commercial Farm Grade'},
+    {'id': 'organic', 'bn': 'অর্গানিক বায়ো-সার্টিফাইড', 'en': 'Organic Bio-Certified'},
   ];
 
   final List<Map<String, dynamic>> _presetPhotos = [
     {
-      'title': 'মেগা কার্প পুকুর',
+      'titleBn': 'মেগা কার্প পুকুর',
+      'titleEn': 'Mega Carp Pond',
       'url': 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=900&auto=format&fit=crop&q=80',
       'type': FarmType.fishPond,
     },
     {
-      'title': 'সাতক্ষীরা চিংড়ি ঘের',
+      'titleBn': 'সাতক্ষীরা চিংড়ি ঘের',
+      'titleEn': 'Satkhira Shrimp Gher',
       'url': 'https://images.unsplash.com/photo-1559742811-822873691df8?w=900&auto=format&fit=crop&q=80',
       'type': FarmType.shrimpGher,
     },
     {
-      'title': 'সার্কুলার বায়োফ্লক',
+      'titleBn': 'সার্কুলার বায়োফ্লক',
+      'titleEn': 'Circular Biofloc',
       'url': 'https://images.unsplash.com/photo-1524704654690-b56c05c78a00?w=900&auto=format&fit=crop&q=80',
       'type': FarmType.biofloc,
     },
     {
-      'title': 'আরএএস ইনডোর হ্যাচারি',
+      'titleBn': 'আরএএস ইনডোর হ্যাচারি',
+      'titleEn': 'RAS Indoor Hatchery',
       'url': 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=900&auto=format&fit=crop&q=80',
       'type': FarmType.rasAquaculture,
     },
     {
-      'title': 'আধুনিক শস্য খেত',
+      'titleBn': 'আধুনিক শস্য খেত',
+      'titleEn': 'Modern Crop Field',
       'url': 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=900&auto=format&fit=crop&q=80',
       'type': FarmType.cropField,
     },
     {
-      'title': 'স্মার্ট গ্রিনহাউস',
+      'titleBn': 'স্মার্ট গ্রিনহাউস',
+      'titleEn': 'Smart Greenhouse',
       'url': 'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?w=900&auto=format&fit=crop&q=80',
       'type': FarmType.greenhouse,
     },
@@ -102,9 +108,9 @@ class _AddEditFarmScreenState extends State<AddEditFarmScreen> {
     super.initState();
     _nameController = TextEditingController(text: widget.farm?.name ?? '');
     _locationController = TextEditingController(text: widget.farm?.location ?? '');
-    _areaController = TextEditingController(text: widget.farm != null ? widget.farm!.area.toString() : '২.৫');
-    _waterAreaController = TextEditingController(text: widget.farm != null ? widget.farm!.area.toString() : '২.০');
-    _pondsCountController = TextEditingController(text: widget.farm != null ? widget.farm!.pondCount.toString() : '৪');
+    _areaController = TextEditingController(text: widget.farm != null ? widget.farm!.area.toString() : '2.5');
+    _waterAreaController = TextEditingController(text: widget.farm != null ? widget.farm!.area.toString() : '2.0');
+    _pondsCountController = TextEditingController(text: widget.farm != null ? widget.farm!.pondCount.toString() : '4');
     _managerNameController = TextEditingController(text: widget.farm?.farmManagerName ?? '');
     _managerPhoneController = TextEditingController(text: widget.farm?.managerPhone ?? '');
     _customImageUrlController = TextEditingController();
@@ -134,7 +140,7 @@ class _AddEditFarmScreenState extends State<AddEditFarmScreen> {
     super.dispose();
   }
 
-  Future<void> _saveFarm() async {
+  Future<void> _saveFarm(bool isBn) async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
@@ -153,7 +159,7 @@ class _AddEditFarmScreenState extends State<AddEditFarmScreen> {
         crops: widget.farm?.crops ?? [],
         established: widget.farm?.established ?? DateTime.now(),
         soilType: _selectedSoil,
-        farmTypeStr: _selectedFarmType.displayNameBn,
+        farmTypeStr: isBn ? _selectedFarmType.displayNameBn : _selectedFarmType.displayNameEn,
         waterSource: _selectedWaterSource,
         bioSecurityRating: _selectedBioSecurity,
         pondCount: int.tryParse(_pondsCountController.text.trim()) ?? 1,
@@ -174,7 +180,9 @@ class _AddEditFarmScreenState extends State<AddEditFarmScreen> {
         Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(widget.farm == null ? 'ফার্ম সফলভাবে ফায়ারবেসে যোগ করা হয়েছে' : 'ফার্ম তথ্য সফলভাবে আপডেট হয়েছে'),
+            content: Text(widget.farm == null 
+                ? (isBn ? 'ফার্ম সফলভাবে ফায়ারবেসে যোগ করা হয়েছে' : 'Farm added successfully')
+                : (isBn ? 'ফার্ম তথ্য সফলভাবে আপডেট হয়েছে' : 'Farm updated successfully')),
             backgroundColor: const Color(0xFF006064),
           ),
         );
@@ -182,7 +190,7 @@ class _AddEditFarmScreenState extends State<AddEditFarmScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('ত্রুটি: ${e.toString()}'), backgroundColor: Colors.red),
+          SnackBar(content: Text('${isBn ? "ত্রুটি:" : "Error:"} ${e.toString()}'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -193,6 +201,7 @@ class _AddEditFarmScreenState extends State<AddEditFarmScreen> {
   @override
   Widget build(BuildContext context) {
     const Color deepAqua = Color(0xFF006064);
+    final bool isBn = LanguageProvider.isBn(context);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF2F6F9),
@@ -200,7 +209,9 @@ class _AddEditFarmScreenState extends State<AddEditFarmScreen> {
         backgroundColor: deepAqua,
         elevation: 0,
         title: Text(
-          widget.farm == null ? 'নতুন খামার / ফার্ম যুক্ত করুন' : 'ফার্ম তথ্য সম্পাদনা',
+          widget.farm == null 
+              ? (isBn ? 'নতুন খামার / ফার্ম যুক্ত করুন' : 'Add New Farm / Plot')
+              : (isBn ? 'ফার্ম তথ্য সম্পাদনা' : 'Edit Farm Details'),
           style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 18),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
@@ -217,16 +228,17 @@ class _AddEditFarmScreenState extends State<AddEditFarmScreen> {
                   children: [
                     // Section 1: Farm Type
                     _buildCard(
-                      title: '১. খামারের ধরন ও ক্যাটাগরি',
+                      title: isBn ? '১. খামারের ধরন ও ক্যাটাগরি' : '1. Farm Type & Category',
                       icon: Icons.category_rounded,
                       child: Wrap(
                         spacing: 8,
                         runSpacing: 8,
                         children: FarmType.values.map((type) {
                           final isSelected = _selectedFarmType == type;
+                          final label = isBn ? type.displayNameBn : type.displayNameEn;
                           return ChoiceChip(
                             label: Text(
-                              type.displayNameBn,
+                              label,
                               style: GoogleFonts.hindSiliguri(
                                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                                 color: isSelected ? Colors.white : Colors.black87,
@@ -253,7 +265,7 @@ class _AddEditFarmScreenState extends State<AddEditFarmScreen> {
 
                     // Section 2: Real Farm Photo Preview & Presets
                     _buildCard(
-                      title: '২. খামারের আসল ছবি (Real Photo)',
+                      title: isBn ? '২. খামারের আসল ছবি (Real Photo)' : '2. Farm Photo & Presets',
                       icon: Icons.photo_camera_rounded,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -275,7 +287,10 @@ class _AddEditFarmScreenState extends State<AddEditFarmScreen> {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          Text('অথেনটিক ফটো প্রিসেট থেকে বেছে নিন:', style: GoogleFonts.hindSiliguri(fontSize: 12.5, fontWeight: FontWeight.bold)),
+                          Text(
+                            isBn ? 'অথেনটিক ফটো প্রিসেট থেকে বেছে নিন:' : 'Choose from high-res farm presets:',
+                            style: GoogleFonts.hindSiliguri(fontSize: 12.5, fontWeight: FontWeight.bold),
+                          ),
                           const SizedBox(height: 8),
                           SizedBox(
                             height: 75,
@@ -286,6 +301,7 @@ class _AddEditFarmScreenState extends State<AddEditFarmScreen> {
                               itemBuilder: (context, index) {
                                 final photo = _presetPhotos[index];
                                 final isSelected = _selectedImageUrl == photo['url'];
+                                final title = isBn ? photo['titleBn'] : photo['titleEn'];
                                 return GestureDetector(
                                   onTap: () {
                                     setState(() {
@@ -313,7 +329,7 @@ class _AddEditFarmScreenState extends State<AddEditFarmScreen> {
                                             left: 4,
                                             right: 4,
                                             child: Text(
-                                              photo['title'],
+                                              title,
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
                                               style: GoogleFonts.hindSiliguri(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.bold),
@@ -334,24 +350,24 @@ class _AddEditFarmScreenState extends State<AddEditFarmScreen> {
 
                     // Section 3: Farm Details
                     _buildCard(
-                      title: '৩. খামারের বিস্তারিত তথ্য',
+                      title: isBn ? '৩. খামারের বিস্তারিত তথ্য' : '3. Farm Specifics & Infrastructure',
                       icon: Icons.info_outline_rounded,
                       child: Column(
                         children: [
                           _buildTextField(
                             controller: _nameController,
-                            label: 'খামারের নাম *',
-                            hint: 'যেমন: পদ্মা ড্রিম এগ্রো অ্যান্ড ফিশারিজ',
+                            label: isBn ? 'খামারের নাম *' : 'Farm Name *',
+                            hint: isBn ? 'যেমন: পদ্মা ড্রিম এগ্রো অ্যান্ড ফিশারিজ' : 'e.g., Green Valley Agri Farm',
                             icon: Icons.landscape,
-                            validator: (v) => v!.isEmpty ? 'নাম আবশ্যক' : null,
+                            validator: (v) => v!.isEmpty ? (isBn ? 'নাম আবশ্যক' : 'Name is required') : null,
                           ),
                           const SizedBox(height: 12),
                           _buildTextField(
                             controller: _locationController,
-                            label: 'খামার অবস্থান (উপজেলা, জেলা) *',
-                            hint: 'যেমন: চাঁদপুর সদর, চাঁদপুর',
+                            label: isBn ? 'খামার অবস্থান (উপজেলা, জেলা) *' : 'Location (Upazila, District) *',
+                            hint: isBn ? 'যেমন: চাঁদপুর সদর, চাঁদপুর' : 'e.g., Bogura Sadar, Bogura',
                             icon: Icons.location_on,
-                            validator: (v) => v!.isEmpty ? 'অবস্থান দিন' : null,
+                            validator: (v) => v!.isEmpty ? (isBn ? 'অবস্থান দিন' : 'Location is required') : null,
                           ),
                           const SizedBox(height: 12),
                           Row(
@@ -359,17 +375,17 @@ class _AddEditFarmScreenState extends State<AddEditFarmScreen> {
                               Expanded(
                                 child: _buildTextField(
                                   controller: _areaController,
-                                  label: 'মোট জমি (হেক্টর/একর)',
+                                  label: isBn ? 'মোট জমি (হেক্টর/একর)' : 'Total Land (Acres)',
                                   icon: Icons.aspect_ratio,
                                   keyboardType: TextInputType.number,
-                                  validator: (v) => v!.isEmpty ? 'আয়তন দিন' : null,
+                                  validator: (v) => v!.isEmpty ? (isBn ? 'আয়তন দিন' : 'Required') : null,
                                 ),
                               ),
                               const SizedBox(width: 10),
                               Expanded(
                                 child: _buildTextField(
                                   controller: _waterAreaController,
-                                  label: 'মোট জলাশয় (একর)',
+                                  label: isBn ? 'মোট জলাশয় (একর)' : 'Water Area (Acres)',
                                   icon: Icons.water_drop,
                                   keyboardType: TextInputType.number,
                                 ),
@@ -382,7 +398,7 @@ class _AddEditFarmScreenState extends State<AddEditFarmScreen> {
                               Expanded(
                                 child: _buildTextField(
                                   controller: _pondsCountController,
-                                  label: 'পুকুর / ট্যাংক সংখ্যা',
+                                  label: isBn ? 'পুকুর / প্লট সংখ্যা' : 'Ponds / Plots Count',
                                   icon: Icons.format_list_numbered,
                                   keyboardType: TextInputType.number,
                                 ),
@@ -392,11 +408,14 @@ class _AddEditFarmScreenState extends State<AddEditFarmScreen> {
                                 child: DropdownButtonFormField<String>(
                                   value: _selectedSoil,
                                   decoration: InputDecoration(
-                                    labelText: 'মাটির ধরন',
+                                    labelText: isBn ? 'মাটির ধরন' : 'Soil Type',
                                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                                     contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
                                   ),
-                                  items: _soilTypes.map((s) => DropdownMenuItem(value: s, child: Text(s, style: GoogleFonts.hindSiliguri(fontSize: 12)))).toList(),
+                                  items: _soilTypes.map((s) => DropdownMenuItem(
+                                    value: s['id']!,
+                                    child: Text(isBn ? s['bn']! : s['en']!, style: GoogleFonts.hindSiliguri(fontSize: 12)),
+                                  )).toList(),
                                   onChanged: (val) {
                                     if (val != null) setState(() => _selectedSoil = val);
                                   },
@@ -408,11 +427,14 @@ class _AddEditFarmScreenState extends State<AddEditFarmScreen> {
                           DropdownButtonFormField<String>(
                             value: _selectedWaterSource,
                             decoration: InputDecoration(
-                              labelText: 'পানির প্রধান উৎস',
+                              labelText: isBn ? 'পানির প্রধান উৎস' : 'Main Water Source',
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                               prefixIcon: const Icon(Icons.waves, color: deepAqua),
                             ),
-                            items: _waterSources.map((w) => DropdownMenuItem(value: w, child: Text(w, style: GoogleFonts.hindSiliguri(fontSize: 12.5)))).toList(),
+                            items: _waterSources.map((w) => DropdownMenuItem(
+                              value: w['id']!,
+                              child: Text(isBn ? w['bn']! : w['en']!, style: GoogleFonts.hindSiliguri(fontSize: 12.5)),
+                            )).toList(),
                             onChanged: (val) {
                               if (val != null) setState(() => _selectedWaterSource = val);
                             },
@@ -421,11 +443,14 @@ class _AddEditFarmScreenState extends State<AddEditFarmScreen> {
                           DropdownButtonFormField<String>(
                             value: _selectedBioSecurity,
                             decoration: InputDecoration(
-                              labelText: 'বায়োসিকিউরিটি রেটিং',
+                              labelText: isBn ? 'বায়োসিকিউরিটি রেটিং' : 'Biosecurity Grade',
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                               prefixIcon: const Icon(Icons.verified_user, color: Colors.green),
                             ),
-                            items: _bioSecurityGrades.map((b) => DropdownMenuItem(value: b, child: Text(b, style: GoogleFonts.hindSiliguri(fontSize: 12.5)))).toList(),
+                            items: _bioSecurityGrades.map((b) => DropdownMenuItem(
+                              value: b['id']!,
+                              child: Text(isBn ? b['bn']! : b['en']!, style: GoogleFonts.hindSiliguri(fontSize: 12.5)),
+                            )).toList(),
                             onChanged: (val) {
                               if (val != null) setState(() => _selectedBioSecurity = val);
                             },
@@ -436,8 +461,8 @@ class _AddEditFarmScreenState extends State<AddEditFarmScreen> {
                               Expanded(
                                 child: _buildTextField(
                                   controller: _managerNameController,
-                                  label: 'ম্যানেজার নাম',
-                                  hint: 'মোঃ তোফায়েল আহমেদ',
+                                  label: isBn ? 'ম্যানেজার নাম' : 'Manager Name',
+                                  hint: isBn ? 'যেমন: মোঃ করিম' : 'e.g., Md. Karim',
                                   icon: Icons.person,
                                 ),
                               ),
@@ -445,7 +470,7 @@ class _AddEditFarmScreenState extends State<AddEditFarmScreen> {
                               Expanded(
                                 child: _buildTextField(
                                   controller: _managerPhoneController,
-                                  label: 'ম্যানেজার ফোন',
+                                  label: isBn ? 'ম্যানেজার ফোন' : 'Manager Phone',
                                   hint: '01711223344',
                                   icon: Icons.phone,
                                   keyboardType: TextInputType.phone,
@@ -460,10 +485,12 @@ class _AddEditFarmScreenState extends State<AddEditFarmScreen> {
 
                     // Save Button
                     ElevatedButton.icon(
-                      onPressed: _saveFarm,
+                      onPressed: () => _saveFarm(isBn),
                       icon: const Icon(Icons.cloud_upload_rounded, color: Colors.white),
                       label: Text(
-                        widget.farm == null ? 'খামার ফায়ারবেসে সংরক্ষণ করুন' : 'আপডেট সম্পন্ন করুন',
+                        widget.farm == null 
+                            ? (isBn ? 'খামার ফায়ারবেসে সংরক্ষণ করুন' : 'Save Farm to Database')
+                            : (isBn ? 'আপডেট সম্পন্ন করুন' : 'Save Changes'),
                         style: GoogleFonts.hindSiliguri(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                       style: ElevatedButton.styleFrom(

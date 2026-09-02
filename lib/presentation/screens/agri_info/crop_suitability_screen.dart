@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:agrolinkbd/core/models/agri_info_model.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 
 /// Crop Suitability Screen — Google Maps + List View
 class CropSuitabilityScreen extends StatefulWidget {
@@ -18,28 +19,29 @@ class _CropSuitabilityScreenState extends State<CropSuitabilityScreen> {
 
   static const Color primaryGreen = Color(0xFF2E7D32);
 
-  static const Map<String, String> _seasonLabels = {
-    'all': 'সব মৌসুম',
-    'rabi': 'রবি',
-    'kharif1': 'খরিফ-১',
-    'kharif2': 'খরিফ-২',
-  };
-
   static const Map<String, Color> _suitabilityColors = {
     'high': Color(0xFF2E7D32),
     'medium': Color(0xFFE65100),
     'low': Color(0xFFC62828),
   };
 
-  static const Map<String, String> _suitabilityLabels = {
-    'high': 'অত্যন্ত উপযুক্ত',
-    'medium': 'মোটামুটি উপযুক্ত',
-    'low': 'কম উপযুক্ত',
-  };
-
   @override
   Widget build(BuildContext context) {
     final data = widget.data;
+    final bool isBn = LanguageProvider.isBn(context);
+
+    final seasonLabels = {
+      'all': isBn ? 'সব মৌসুম' : 'All Seasons',
+      'rabi': isBn ? 'রবি' : 'Rabi',
+      'kharif1': isBn ? 'খরিফ-১' : 'Kharif-1',
+      'kharif2': isBn ? 'খরিফ-২' : 'Kharif-2',
+    };
+
+    final suitabilityLabels = {
+      'high': isBn ? 'অত্যন্ত উপযুক্ত' : 'Highly Suitable',
+      'medium': isBn ? 'মোটামুটি উপযুক্ত' : 'Moderately Suitable',
+      'low': isBn ? 'কম উপযুক্ত' : 'Less Suitable',
+    };
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
@@ -53,11 +55,15 @@ class _CropSuitabilityScreenState extends State<CropSuitabilityScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('ফসল উপযোগিতা',
-                style: GoogleFonts.hindSiliguri(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              isBn ? 'ফসল উপযোগিতা' : 'Crop Suitability',
+              style: GoogleFonts.hindSiliguri(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             if (data != null)
-              Text('${data.zilla} › ${data.upazila}',
-                  style: GoogleFonts.hindSiliguri(color: Colors.white70, fontSize: 11)),
+              Text(
+                '${data.zilla} › ${data.upazila}',
+                style: GoogleFonts.hindSiliguri(color: Colors.white70, fontSize: 11),
+              ),
           ],
         ),
         actions: [
@@ -65,7 +71,7 @@ class _CropSuitabilityScreenState extends State<CropSuitabilityScreen> {
           Container(
             margin: const EdgeInsets.only(right: 8),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
@@ -78,16 +84,16 @@ class _CropSuitabilityScreenState extends State<CropSuitabilityScreen> {
         ],
       ),
       body: data == null
-          ? _buildNoData()
+          ? _buildNoData(isBn)
           : Column(
               children: [
                 // Season filter chips
-                _buildSeasonFilter(),
+                _buildSeasonFilter(seasonLabels),
                 // Content
                 Expanded(
                   child: _showMap
-                      ? _buildMapView(data)
-                      : _buildListView(data),
+                      ? _buildMapView(data, suitabilityLabels, isBn)
+                      : _buildListView(data, suitabilityLabels, isBn),
                 ),
               ],
             ),
@@ -100,7 +106,7 @@ class _CropSuitabilityScreenState extends State<CropSuitabilityScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: active ? Colors.white.withOpacity(0.3) : Colors.transparent,
+          color: active ? Colors.white.withValues(alpha: 0.3) : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Icon(icon, color: Colors.white, size: 20),
@@ -108,14 +114,14 @@ class _CropSuitabilityScreenState extends State<CropSuitabilityScreen> {
     );
   }
 
-  Widget _buildSeasonFilter() {
+  Widget _buildSeasonFilter(Map<String, String> seasonLabels) {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
-          children: _seasonLabels.entries.map((e) {
+          children: seasonLabels.entries.map((e) {
             final active = _filterSeason == e.key;
             return Padding(
               padding: const EdgeInsets.only(right: 8),
@@ -135,14 +141,16 @@ class _CropSuitabilityScreenState extends State<CropSuitabilityScreen> {
     );
   }
 
-  Widget _buildListView(UpazilaCropData data) {
+  Widget _buildListView(UpazilaCropData data, Map<String, String> suitabilityLabels, bool isBn) {
     final crops = data.suitableCrops.where((c) =>
         _filterSeason == 'all' || c.season == _filterSeason).toList();
 
     if (crops.isEmpty) {
       return Center(
-        child: Text('এই মৌসুমে কোনো ফসলের তথ্য নেই',
-            style: GoogleFonts.hindSiliguri(color: Colors.grey.shade600)),
+        child: Text(
+          isBn ? 'এই মৌসুমে কোনো ফসলের তথ্য নেই' : 'No crop information found for this season',
+          style: GoogleFonts.hindSiliguri(color: Colors.grey.shade600),
+        ),
       );
     }
 
@@ -152,7 +160,7 @@ class _CropSuitabilityScreenState extends State<CropSuitabilityScreen> {
       itemBuilder: (ctx, i) {
         final c = crops[i];
         final color = _suitabilityColors[c.suitability] ?? primaryGreen;
-        final label = _suitabilityLabels[c.suitability] ?? '';
+        final label = suitabilityLabels[c.suitability] ?? '';
         return Card(
           elevation: 2,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -165,7 +173,7 @@ class _CropSuitabilityScreenState extends State<CropSuitabilityScreen> {
                 Container(
                   width: 56, height: 56,
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(Icons.grass, color: color, size: 28),
@@ -177,25 +185,33 @@ class _CropSuitabilityScreenState extends State<CropSuitabilityScreen> {
                     children: [
                       Row(
                         children: [
-                          Text(c.cropName,
-                              style: GoogleFonts.hindSiliguri(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
-                          const Spacer(),
+                          Expanded(
+                            child: Text(
+                              c.cropName,
+                              style: GoogleFonts.hindSiliguri(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
-                              color: color.withOpacity(0.1),
+                              color: color.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: color.withOpacity(0.3)),
+                              border: Border.all(color: color.withValues(alpha: 0.3)),
                             ),
-                            child: Text(label,
-                                style: GoogleFonts.hindSiliguri(fontSize: 11, color: color, fontWeight: FontWeight.w600)),
+                            child: Text(
+                              label,
+                              style: GoogleFonts.hindSiliguri(fontSize: 11, color: color, fontWeight: FontWeight.w600),
+                            ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 6),
                       Row(
                         children: [
-                          _tag(Icons.calendar_month, c.seasonBn, Colors.blue.shade600),
+                          _tag(Icons.calendar_month, isBn ? c.seasonBn : c.season, Colors.blue.shade600),
                           const SizedBox(width: 12),
                           _tag(Icons.grain, c.variety, Colors.brown.shade400),
                         ],
@@ -204,8 +220,10 @@ class _CropSuitabilityScreenState extends State<CropSuitabilityScreen> {
                       // Yield bar
                       Row(
                         children: [
-                          Text('উৎপাদন: ${c.yieldTonPerHa} টন/হেক্টর',
-                              style: GoogleFonts.hindSiliguri(fontSize: 12, color: Colors.grey.shade600)),
+                          Text(
+                            isBn ? 'উৎপাদন: ${c.yieldTonPerHa} টন/হেক্টর' : 'Yield: ${c.yieldTonPerHa} ton/ha',
+                            style: GoogleFonts.hindSiliguri(fontSize: 12, color: Colors.grey.shade600),
+                          ),
                           const Spacer(),
                           SizedBox(
                             width: 80,
@@ -232,9 +250,7 @@ class _CropSuitabilityScreenState extends State<CropSuitabilityScreen> {
     );
   }
 
-  Widget _buildMapView(UpazilaCropData data) {
-    // Show a styled placeholder with location info and crop markers
-    // In production, replace with actual GoogleMap widget
+  Widget _buildMapView(UpazilaCropData data, Map<String, String> suitabilityLabels, bool isBn) {
     return Stack(
       children: [
         // Map background placeholder
@@ -260,7 +276,7 @@ class _CropSuitabilityScreenState extends State<CropSuitabilityScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10)],
+                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10)],
                 ),
                 child: Column(
                   children: [
@@ -285,13 +301,15 @@ class _CropSuitabilityScreenState extends State<CropSuitabilityScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12)],
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 12)],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('এলাকার উপযুক্ত ফসল',
-                    style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 14)),
+                Text(
+                  isBn ? 'এলাকার উপযুক্ত ফসল' : 'Suitable Crops for Area',
+                  style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 8, runSpacing: 6,
@@ -300,9 +318,9 @@ class _CropSuitabilityScreenState extends State<CropSuitabilityScreen> {
                     return Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        color: color.withOpacity(0.1),
+                        color: color.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: color.withOpacity(0.3)),
+                        border: Border.all(color: color.withValues(alpha: 0.3)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -334,9 +352,12 @@ class _CropSuitabilityScreenState extends State<CropSuitabilityScreen> {
     );
   }
 
-  Widget _buildNoData() {
+  Widget _buildNoData(bool isBn) {
     return Center(
-      child: Text('তথ্য পাওয়া যায়নি', style: GoogleFonts.hindSiliguri(fontSize: 16, color: Colors.grey)),
+      child: Text(
+        isBn ? 'তথ্য পাওয়া যায়নি' : 'No Information Found',
+        style: GoogleFonts.hindSiliguri(fontSize: 16, color: Colors.grey),
+      ),
     );
   }
 }
@@ -345,7 +366,7 @@ class _MapPatternPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.green.shade200.withOpacity(0.4)
+      ..color = Colors.green.shade200.withValues(alpha: 0.4)
       ..strokeWidth = 1.5
       ..style = PaintingStyle.stroke;
 
@@ -358,7 +379,7 @@ class _MapPatternPainter extends CustomPainter {
     }
 
     // Draw some "field" areas
-    final fieldPaint = Paint()..color = Colors.green.shade300.withOpacity(0.3);
+    final fieldPaint = Paint()..color = Colors.green.shade300.withValues(alpha: 0.3);
     canvas.drawRRect(RRect.fromRectAndRadius(
         Rect.fromLTWH(size.width * 0.1, size.height * 0.1, size.width * 0.3, size.height * 0.25), const Radius.circular(8)), fieldPaint);
     canvas.drawRRect(RRect.fromRectAndRadius(

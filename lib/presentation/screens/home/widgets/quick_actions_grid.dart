@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 import 'package:agrolinkbd/presentation/screens/transport/transport_screen.dart';
 import 'package:agrolinkbd/presentation/screens/auction/auction_screen.dart';
 import 'package:agrolinkbd/presentation/screens/investment/investment_screen.dart';
@@ -37,13 +38,15 @@ class _QuickActionsGridState extends State<QuickActionsGrid>
 
   @override
   Widget build(BuildContext context) {
+    final bool isBn = LanguageProvider.isBn(context);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'দ্রুত সেবা',
+            isBn ? 'দ্রুত সেবা' : 'Quick Actions',
             style: GoogleFonts.poppins(
               fontSize: 22,
               fontWeight: FontWeight.w700,
@@ -61,9 +64,9 @@ class _QuickActionsGridState extends State<QuickActionsGrid>
               mainAxisSpacing: 14,
               childAspectRatio: 0.82,
             ),
-            itemCount: _getActions().length,
+            itemCount: _getActions(isBn).length,
             itemBuilder: (context, index) {
-              final action = _getActions()[index];
+              final action = _getActions(isBn)[index];
               return _buildAnimatedCard(index, action);
             },
           ),
@@ -93,40 +96,40 @@ class _QuickActionsGridState extends State<QuickActionsGrid>
     );
   }
 
-  List<Map<String, dynamic>> _getActions() {
+  List<Map<String, dynamic>> _getActions(bool isBn) {
     return [
       {
         'icon': Icons.shopping_cart,
-        'label': 'Marketplace',
+        'label': isBn ? 'মার্কেটপ্লেস' : 'Marketplace',
         'onTap': () => Get.to(() => const MarketplaceScreen()),
       },
       {
         'icon': Icons.agriculture,
-        'label': 'Machinery',
+        'label': isBn ? 'যন্ত্রপাতি' : 'Machinery',
         'onTap': () => Get.to(() => const MachineryRentalScreen()),
       },
       {
         'icon': Icons.local_shipping,
-        'label': 'Transport',
+        'label': isBn ? 'পরিবহন' : 'Transport',
         'onTap': () => Get.to(() => const TransportScreen()),
       },
       {
         'icon': Icons.gavel,
-        'label': 'Auction',
+        'label': isBn ? 'নিলাম' : 'Auction',
         'onTap': () => Get.to(() => const AuctionScreen()),
       },
       {
         'icon': Icons.attach_money,
-        'label': 'Investment',
+        'label': isBn ? 'বিনিয়োগ' : 'Investment',
         'onTap': () => Get.to(() => const InvestmentScreen()),
       },
       {
         'icon': Icons.science,
-        'label': 'Soil Testing',
+        'label': isBn ? 'মাটি পরীক্ষা' : 'Soil Testing',
         'onTap': () {
           Get.snackbar(
-            'মাটি পরীক্ষা',
-            'শীঘ্রই আসছে',
+            isBn ? 'মাটি পরীক্ষা' : 'Soil Testing',
+            isBn ? 'শীঘ্রই আসছে' : 'Coming Soon',
             backgroundColor: const Color(0xFF2E7D32),
             colorText: Colors.white,
             borderRadius: 12,
@@ -137,11 +140,11 @@ class _QuickActionsGridState extends State<QuickActionsGrid>
       },
       {
         'icon': Icons.mic,
-        'label': 'Advisor',
+        'label': isBn ? 'পরামর্শ' : 'Advisor',
         'onTap': () {
           Get.snackbar(
-            'কৃষক পরামর্শ',
-            'শীঘ্রই আসছে',
+            isBn ? 'কৃষক পরামর্শ' : 'Farmer Advisor',
+            isBn ? 'শীঘ্রই আসছে' : 'Coming Soon',
             backgroundColor: const Color(0xFF2E7D32),
             colorText: Colors.white,
             borderRadius: 12,
@@ -152,11 +155,11 @@ class _QuickActionsGridState extends State<QuickActionsGrid>
       },
       {
         'icon': Icons.calendar_today,
-        'label': 'Calendar',
+        'label': isBn ? 'ক্যালেন্ডার' : 'Calendar',
         'onTap': () {
           Get.snackbar(
-            'ক্যালেন্ডার',
-            'শীঘ্রই আসছে',
+            isBn ? 'ক্যালেন্ডার' : 'Calendar',
+            isBn ? 'শীঘ্রই আসছে' : 'Coming Soon',
             backgroundColor: const Color(0xFF2E7D32),
             colorText: Colors.white,
             borderRadius: 12,
@@ -167,11 +170,11 @@ class _QuickActionsGridState extends State<QuickActionsGrid>
       },
       {
         'icon': Icons.business,
-        'label': 'Farming',
+        'label': isBn ? 'চাষাবাদ' : 'Farming',
         'onTap': () {
           Get.snackbar(
-            'চুক্তি চাষাবাদ',
-            'শীঘ্রই আসছে',
+            isBn ? 'চুক্তি চাষাবাদ' : 'Contract Farming',
+            isBn ? 'শীঘ্রই আসছে' : 'Coming Soon',
             backgroundColor: const Color(0xFF2E7D32),
             colorText: Colors.white,
             borderRadius: 12,

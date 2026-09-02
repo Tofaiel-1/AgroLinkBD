@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'package:agrolinkbd/core/providers/user_provider.dart';
+import 'package:agrolinkbd/core/services/vip_subscription_service.dart';
 import 'package:agrolinkbd/presentation/screens/payment/mfs_payment_checkout_screen.dart';
 
 class VipSubscriptionPaywallScreen extends StatefulWidget {
@@ -16,6 +17,8 @@ class VipSubscriptionPaywallScreen extends StatefulWidget {
 
 class _VipSubscriptionPaywallScreenState extends State<VipSubscriptionPaywallScreen> {
   int _selectedPlanIndex = 1; // Default to Seasonal / Recommended
+  bool _isProcessingSsl = false;
+  final VipSubscriptionService _vipService = VipSubscriptionService();
 
   final List<Map<String, dynamic>> _plans = [
     {
@@ -43,6 +46,89 @@ class _VipSubscriptionPaywallScreenState extends State<VipSubscriptionPaywallScr
       'color': const Color(0xFF006064),
     },
   ];
+
+  Future<void> _handleSslCommerzPayment(BuildContext context, Map<String, dynamic> selected) async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final user = userProvider.currentUser;
+
+    setState(() => _isProcessingSsl = true);
+
+    try {
+      final success = await _vipService.initiateSslCommerzPayment(
+        context,
+        userId: user?.id ?? 'guest_user',
+        userName: user?.name ?? 'Valued Trader',
+        userPhone: user?.phone ?? '01700000000',
+        userEmail: user?.email ?? 'trader@agrolinkbd.com',
+        amount: selected['price'],
+        planName: selected['name'],
+      );
+
+      if (success) {
+        final expiryDate = DateTime.now().add(selected['duration'] as Duration);
+        await userProvider.upgradeToPremium(expiryDate);
+        if (mounted) {
+          setState(() {});
+          _showVipSuccessDialog(selected['name'], expiryDate);
+        }
+      }
+    } catch (e) {
+      debugPrint('VIP SSL Payment Error: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isProcessingSsl = false);
+      }
+    }
+  }
+
+  void _showVipSuccessDialog(String planName, DateTime expiryDate) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                color: Color(0xFFFFF8E1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.workspace_premium, size: 60, color: Color(0xFFE65100)),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'ভিআইপি সক্রিয় হয়েছে! 👑',
+              style: GoogleFonts.hindSiliguri(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'আপনার $planName সফলভাবে সক্রিয় করা হয়েছে। মেয়াদ: ${expiryDate.day}/${expiryDate.month}/${expiryDate.year}',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.hindSiliguri(fontSize: 14, color: Colors.grey.shade700),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFE65100),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                child: Text('ধন্যবাদ', style: GoogleFonts.hindSiliguri(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   final List<Map<String, dynamic>> _premiumFeatures = [
     {
@@ -253,10 +339,41 @@ class _VipSubscriptionPaywallScreenState extends State<VipSubscriptionPaywallScr
             }),
 
             const SizedBox(height: 16),
+            // Primary SSLCommerz Payment Button
             SizedBox(
               width: double.infinity,
               height: 52,
               child: ElevatedButton.icon(
+                onPressed: _isProcessingSsl
+                    ? null
+                    : () => _handleSslCommerzPayment(context, _plans[_selectedPlanIndex]),
+                icon: _isProcessingSsl
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      )
+                    : const Icon(Icons.flash_on, color: Colors.amberAccent),
+                label: Text(
+                  _isProcessingSsl
+                      ? 'এসএসএল গেটওয়ে লোড হচ্ছে...'
+                      : 'SSLCommerz দিয়ে তাৎক্ষণিক আনলক (৳${_plans[_selectedPlanIndex]['price'].toInt()}) 🚀',
+                  style: GoogleFonts.hindSiliguri(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1B5E20), // Premium Forest Green
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  elevation: 4,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // Secondary MFS Checkout Button
+            SizedBox(
+              width: double.infinity,
+              height: 46,
+              child: OutlinedButton.icon(
                 onPressed: () async {
                   final selected = _plans[_selectedPlanIndex];
                   final result = await Get.to(() => MfsPaymentCheckoutScreen(
@@ -271,13 +388,13 @@ class _VipSubscriptionPaywallScreenState extends State<VipSubscriptionPaywallScr
                     setState(() {});
                   }
                 },
-                icon: const Icon(Icons.flash_on, color: Colors.white),
+                icon: const Icon(Icons.account_balance_wallet_outlined, size: 18, color: Color(0xFFE65100)),
                 label: Text(
-                  'পেমেন্ট করে আনলক করুন (৳${_plans[_selectedPlanIndex]['price'].toInt()}) 🚀',
-                  style: GoogleFonts.hindSiliguri(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                  'বিকাশ / নগদ / কার্ড এমএফএস চেকআউট',
+                  style: GoogleFonts.hindSiliguri(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFFE65100)),
                 ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: deepAmber,
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Color(0xFFE65100)),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
               ),

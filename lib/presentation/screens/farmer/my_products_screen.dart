@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
+import 'package:agrolinkbd/presentation/screens/bazaar/add_product_screen.dart';
 
 /// My Products Screen - Farmers manage their listed products
 class MyProductsScreen extends StatefulWidget {
@@ -14,39 +16,51 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
   final List<Map<String, dynamic>> products = [
     {
       'id': 1,
-      'name': 'টাটকা টমেটো',
+      'nameBn': 'টাটকা টমেটো',
+      'nameEn': 'Fresh Tomatoes',
       'quantity': 100,
       'price': 45,
-      'category': 'সবজি',
-      'status': 'সক্রিয়',
+      'categoryBn': 'সবজি',
+      'categoryEn': 'Vegetables',
+      'status': 'active',
       'orders': 12,
     },
     {
       'id': 2,
-      'name': 'জৈব পেঁয়াজ',
+      'nameBn': 'জৈব পেঁয়াজ',
+      'nameEn': 'Organic Onions',
       'quantity': 50,
       'price': 35,
-      'category': 'সবজি',
-      'status': 'সক্রিয়',
+      'categoryBn': 'সবজি',
+      'categoryEn': 'Vegetables',
+      'status': 'active',
       'orders': 8,
     },
     {
       'id': 3,
-      'name': 'মানসম্পন্ন আলু',
+      'nameBn': 'মানসম্পন্ন আলু',
+      'nameEn': 'Quality Potatoes',
       'quantity': 200,
       'price': 25,
-      'category': 'সবজি',
-      'status': 'স্টক শেষ',
+      'categoryBn': 'সবজি',
+      'categoryEn': 'Vegetables',
+      'status': 'sold_out',
       'orders': 15,
     },
   ];
 
   @override
   Widget build(BuildContext context) {
+    final bool isBn = LanguageProvider.isBn(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('আমার পণ্য'),
+        title: Text(
+          isBn ? 'আমার পণ্য ও দোকান' : 'My Shop & Products',
+          style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, color: Colors.white),
+        ),
         backgroundColor: const Color(0xFF2E7D32),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: products.isEmpty
           ? Center(
@@ -60,8 +74,8 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'কোন পণ্য নেই',
-                    style: GoogleFonts.poppins(
+                    isBn ? 'কোন পণ্য নেই' : 'No products listed',
+                    style: GoogleFonts.hindSiliguri(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
                       color: Colors.grey.shade600,
@@ -69,12 +83,15 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton.icon(
-                    onPressed: () =>
-                        Get.snackbar('পণ্য যোগ করুন', 'ফর্ম খুলছে'),
-                    icon: const Icon(Icons.add),
-                    label: const Text('নতুন পণ্য যোগ করুন'),
+                    onPressed: () => Get.to(() => const AddProductScreen()),
+                    icon: const Icon(Icons.add, color: Colors.white),
+                    label: Text(
+                      isBn ? 'নতুন পণ্য যোগ করুন' : 'Add New Product',
+                      style: GoogleFonts.hindSiliguri(color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF2E7D32),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
                 ],
@@ -85,21 +102,27 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
               itemCount: products.length,
               itemBuilder: (context, index) {
                 final product = products[index];
+                final bool isActive = product['status'] == 'active';
+                final String name = isBn ? product['nameBn'] : product['nameEn'];
+                final String statusText = isActive 
+                    ? (isBn ? 'সক্রিয়' : 'Active') 
+                    : (isBn ? 'স্টক শেষ' : 'Sold Out');
+
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
                       ],
                     ),
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(14),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -112,10 +135,10 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    product['name'],
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
+                                    name,
+                                    style: GoogleFonts.hindSiliguri(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
                                       color: Colors.black87,
                                     ),
                                     maxLines: 1,
@@ -123,9 +146,9 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    '${product['quantity']} কেজি • ৳${product['price']}/কেজি',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 12,
+                                    '${product['quantity']} ${isBn ? "কেজি" : "kg"} • ৳${product['price']}/${isBn ? "কেজি" : "kg"}',
+                                    style: GoogleFonts.hindSiliguri(
+                                      fontSize: 12.5,
                                       color: Colors.grey.shade600,
                                     ),
                                   ),
@@ -138,19 +161,17 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: product['status'] == 'সক্রিয়'
-                                    ? Colors.green.withOpacity(0.1)
-                                    : Colors.orange.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(4),
+                                color: isActive
+                                    ? Colors.green.withValues(alpha: 0.1)
+                                    : Colors.orange.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
-                                product['status'],
-                                style: GoogleFonts.poppins(
-                                  fontSize: 10,
-                                  color: product['status'] == 'সক্রিয়'
-                                      ? Colors.green
-                                      : Colors.orange,
-                                  fontWeight: FontWeight.w600,
+                                statusText,
+                                style: GoogleFonts.hindSiliguri(
+                                  fontSize: 11,
+                                  color: isActive ? Colors.green.shade800 : Colors.orange.shade800,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
@@ -164,15 +185,15 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
                             Row(
                               children: [
                                 const Icon(
-                                  Icons.shopping_cart,
+                                  Icons.shopping_cart_outlined,
                                   size: 16,
                                   color: Colors.grey,
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  '${product['orders']} অর্ডার',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 11,
+                                  '${product['orders']} ${isBn ? "অর্ডার সম্পন্ন" : "Orders Completed"}',
+                                  style: GoogleFonts.hindSiliguri(
+                                    fontSize: 11.5,
                                     color: Colors.grey.shade600,
                                   ),
                                 ),
@@ -185,24 +206,43 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
                         Row(
                           children: [
                             Expanded(
-                              child: TextButton(
+                              child: OutlinedButton.icon(
                                 onPressed: () {
-                                  Get.snackbar(
-                                      'সম্পাদনা', 'পণ্য সম্পাদনা স্ক্রিন');
+                                  Get.to(() => const AddProductScreen());
                                 },
-                                child: const Text('সম্পাদনা'),
+                                icon: const Icon(Icons.edit, size: 14, color: Color(0xFF2E7D32)),
+                                label: Text(
+                                  isBn ? 'সম্পাদনা' : 'Edit',
+                                  style: GoogleFonts.hindSiliguri(
+                                    color: const Color(0xFF2E7D32),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  side: const BorderSide(color: Color(0xFF2E7D32)),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
                               ),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
-                              child: TextButton(
+                              child: OutlinedButton.icon(
                                 onPressed: () {
-                                  Get.snackbar(
-                                      'মুছে ফেলুন', 'পণ্য মুছে ফেলা হয়েছে');
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(isBn ? 'পণ্য মুছে ফেলা হয়েছে' : 'Product deleted'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
                                 },
-                                child: const Text(
-                                  'মুছুন',
-                                  style: TextStyle(color: Colors.red),
+                                icon: const Icon(Icons.delete_outline, size: 14, color: Colors.red),
+                                label: Text(
+                                  isBn ? 'মুছুন' : 'Delete',
+                                  style: GoogleFonts.hindSiliguri(color: Colors.red, fontWeight: FontWeight.bold),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  side: const BorderSide(color: Colors.red),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                 ),
                               ),
                             ),
@@ -216,10 +256,8 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
             ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: const Color(0xFF2E7D32),
-        onPressed: () {
-          Get.snackbar('নতুন পণ্য', 'যোগ করার ফর্ম খুলছে');
-        },
-        child: const Icon(Icons.add),
+        onPressed: () => Get.to(() => const AddProductScreen()),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }

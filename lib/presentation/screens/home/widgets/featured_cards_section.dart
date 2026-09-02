@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 
 class FeaturedCardsSection extends StatelessWidget {
   const FeaturedCardsSection({super.key});
@@ -8,6 +9,7 @@ class FeaturedCardsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final isMobile = size.width < 600;
+    final bool isBn = LanguageProvider.isBn(context);
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24),
@@ -15,7 +17,7 @@ class FeaturedCardsSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'গুরুত্বপূর্ণ তথ্য',
+            isBn ? 'গুরুত্বপূর্ণ তথ্য' : 'Key Insights',
             style: GoogleFonts.poppins(
               fontSize: isMobile ? 18 : 20,
               fontWeight: FontWeight.w700,
@@ -32,22 +34,22 @@ class FeaturedCardsSection extends StatelessWidget {
             mainAxisSpacing: isMobile ? 12 : 16,
             children: [
               _buildInfoCard(
-                title: 'বাজার মূল্য',
-                subtitle: 'বর্তমান দাম',
+                title: isBn ? 'বাজার মূল্য' : 'Market Price',
+                subtitle: isBn ? 'বর্তমান দাম' : 'Current Rates',
                 icon: Icons.trending_up,
                 color: const Color(0xFF66BB6A),
                 bgColor: const Color(0xFFE8F5E9),
               ),
               _buildInfoCard(
-                title: 'আবহাওয়া',
-                subtitle: 'আজকের পূর্বাভাস',
+                title: isBn ? 'আবহাওয়া' : 'Weather',
+                subtitle: isBn ? 'আজকের পূর্বাভাস' : "Today's Forecast",
                 icon: Icons.cloud,
                 color: const Color(0xFF42A5F5),
                 bgColor: const Color(0xFFE3F2FD),
               ),
               _buildInfoCard(
-                title: 'কৃষি টিপস',
-                subtitle: 'দৈনিক পরামর্শ',
+                title: isBn ? 'কৃষি টিপস' : 'Agri Tips',
+                subtitle: isBn ? 'দৈনিক পরামর্শ' : 'Daily Advisory',
                 icon: Icons.lightbulb,
                 color: const Color(0xFFFFA726),
                 bgColor: const Color(0xFFFFF3E0),
@@ -72,13 +74,13 @@ class FeaturedCardsSection extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
         border: Border.all(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           width: 1,
         ),
       ),

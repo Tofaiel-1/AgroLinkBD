@@ -22,28 +22,32 @@ class _InventoryScreenState extends State<InventoryScreen> {
     _inventoryStream = _farmService.getInventoryStream();
   }
 
-  Color _getCategoryColor(String category) {
+  String _getCategoryName(String category, bool isBn) {
+    if (!isBn) return category;
     switch (category) {
-      case 'Fertilizer': return Colors.green;
-      case 'Seeds': return Colors.orange;
-      case 'Chemicals': return Colors.red;
-      case 'Fuel': return Colors.brown;
-      case 'Equipment': return Colors.blueGrey;
-      default: return Colors.grey;
+      case 'Fertilizer': return 'সার';
+      case 'Seeds': return 'বীজ ও চারা';
+      case 'Chemicals': return 'কীটনাশক ও বালাইনাশক';
+      case 'Fuel': return 'জ্বালানি';
+      case 'Equipment': return 'যন্ত্রপাতি';
+      default: return 'অন্যান্য';
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final bool isBn = LanguageProvider.isBn(context);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         backgroundColor: const Color(0xFF795548),
         elevation: 0,
         title: Text(
-          LanguageProvider.isBn(context) ? 'মালামাল ও মজুত' : 'Inventory Management',
-          style: GoogleFonts.openSans(fontWeight: FontWeight.bold, color: Colors.white),
+          isBn ? 'মালামাল ও মজুত (স্টক)' : 'Inventory & Stock Management',
+          style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, color: Colors.white),
         ),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: StreamBuilder<List<FarmInventoryItem>>(
         stream: _inventoryStream,
@@ -73,9 +77,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildStat('Total Items', totalItems.toString()),
-                      _buildStat('Categories', categories.toString()),
-                      _buildStat('Low Stock', lowStock.toString()),
+                      _buildStat(isBn ? 'মোট মালামাল' : 'Total Items', totalItems.toString()),
+                      _buildStat(isBn ? 'ক্যাটাগরি' : 'Categories', categories.toString()),
+                      _buildStat(isBn ? 'স্বল্প স্টক' : 'Low Stock', lowStock.toString()),
                     ],
                   ),
                 ),
@@ -90,13 +94,13 @@ class _InventoryScreenState extends State<InventoryScreen> {
                               padding: const EdgeInsets.all(32.0),
                               child: Center(
                                 child: Text(
-                                  'No items in inventory',
-                                  style: GoogleFonts.openSans(color: Colors.grey),
+                                  isBn ? 'ইনভেন্টরিতে কোনো মালামাল নেই' : 'No items in inventory',
+                                  style: GoogleFonts.hindSiliguri(color: Colors.grey, fontSize: 16),
                                 ),
                               ),
                             )
                           ]
-                        : items.map((item) => _buildInventoryCard(item)).toList(),
+                        : items.map((item) => _buildInventoryCard(item, isBn)).toList(),
                   ),
                 ),
               ),
@@ -122,7 +126,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
       children: [
         Text(
           value,
-          style: GoogleFonts.openSans(
+          style: GoogleFonts.poppins(
             color: Colors.white,
             fontSize: 24,
             fontWeight: FontWeight.bold,
@@ -130,17 +134,25 @@ class _InventoryScreenState extends State<InventoryScreen> {
         ),
         Text(
           label,
-          style: GoogleFonts.openSans(
-            color: Colors.white.withOpacity(0.8),
-            fontSize: 14,
+          style: GoogleFonts.hindSiliguri(
+            color: Colors.white.withValues(alpha: 0.8),
+            fontSize: 13,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildInventoryCard(FarmInventoryItem item) {
-    final status = item.quantity <= 0 ? 'Out of Stock' : (item.quantity < 10 ? 'Low Stock' : 'In Stock');
+  Widget _buildInventoryCard(FarmInventoryItem item, bool isBn) {
+    String status = 'In Stock';
+    if (item.quantity <= 0) {
+      status = isBn ? 'স্টক শেষ' : 'Out of Stock';
+    } else if (item.quantity < 10) {
+      status = isBn ? 'স্বল্প স্টক' : 'Low Stock';
+    } else {
+      status = isBn ? 'স্টকে আছে' : 'In Stock';
+    }
+
     final color = item.quantity <= 0 ? Colors.red : (item.quantity < 10 ? Colors.orange : Colors.green);
     
     return Container(
@@ -151,7 +163,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFCBD5E1).withOpacity(0.3),
+            color: const Color(0xFFCBD5E1).withValues(alpha: 0.3),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -174,7 +186,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
               children: [
                 Text(
                   item.name,
-                  style: GoogleFonts.openSans(
+                  style: GoogleFonts.hindSiliguri(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                     color: const Color(0xFF2D3748),
@@ -182,8 +194,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  item.category,
-                  style: GoogleFonts.openSans(
+                  _getCategoryName(item.category, isBn),
+                  style: GoogleFonts.hindSiliguri(
                     fontSize: 13,
                     color: const Color(0xFF718096),
                   ),
@@ -196,9 +208,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
             children: [
               Text(
                 '${item.quantity.toStringAsFixed(1)} ${item.unit}',
-                style: GoogleFonts.openSans(
+                style: GoogleFonts.poppins(
                   fontWeight: FontWeight.bold,
-                  fontSize: 18,
+                  fontSize: 17,
                   color: const Color(0xFF2D3748),
                 ),
               ),
@@ -206,13 +218,13 @@ class _InventoryScreenState extends State<InventoryScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   status,
-                  style: GoogleFonts.openSans(
-                    fontSize: 10,
+                  style: GoogleFonts.hindSiliguri(
+                    fontSize: 11,
                     fontWeight: FontWeight.bold,
                     color: color,
                   ),

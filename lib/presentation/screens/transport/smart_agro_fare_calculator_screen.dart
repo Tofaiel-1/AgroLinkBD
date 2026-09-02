@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 import 'package:agrolinkbd/core/services/location_service.dart';
 import 'package:agrolinkbd/core/services/road_distance_fare_service.dart';
 import 'package:agrolinkbd/presentation/screens/transport/transport_directory_screen.dart';
@@ -64,12 +65,13 @@ class _SmartAgroFareCalculatorScreenState extends State<SmartAgroFareCalculatorS
   Widget build(BuildContext context) {
     const primaryGreen = Color(0xFF2E7D32);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bool isBn = LanguageProvider.isBn(context);
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF4F6F8),
       appBar: AppBar(
         title: Text(
-          'স্মার্ট কৃষি পরিবহন ভাড়া ক্যালকুলেটর 🚛',
+          isBn ? 'স্মার্ট কৃষি পরিবহন ভাড়া ক্যালকুলেটর 🚛' : 'Smart Agri Transport Fare Calculator 🚛',
           style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 17),
         ),
         backgroundColor: primaryGreen,
@@ -93,7 +95,7 @@ class _SmartAgroFareCalculatorScreenState extends State<SmartAgroFareCalculatorS
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.green.withOpacity(0.3),
+                    color: Colors.green.withValues(alpha: 0.3),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -108,12 +110,14 @@ class _SmartAgroFareCalculatorScreenState extends State<SmartAgroFareCalculatorS
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '১০০% ফ্রি লাইভ রোড রাউটিং ও দূরত্ব 🛣️',
+                          isBn ? '১০০% ফ্রি লাইভ রোড রাউটিং ও দূরত্ব 🛣️' : '100% Free Live Road Routing & Distance 🛣️',
                           style: GoogleFonts.hindSiliguri(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
                         ),
                         Text(
-                          'ওপেনস্ট্রিটম্যাপ ও ওএসআরএম ইঞ্জিন দিয়ে যেকোনো উপজেলার সঠিক সড়ক দূরত্ব ও ফেয়ার হিসাব।',
-                          style: GoogleFonts.hindSiliguri(color: Colors.white.withOpacity(0.9), fontSize: 11),
+                          isBn 
+                              ? 'ওপেনস্ট্রিটম্যাপ ও ওএসআরএম ইঞ্জিন দিয়ে যেকোনো উপজেলার সঠিক সড়ক দূরত্ব ও ফেয়ার হিসাব।'
+                              : 'Accurate road distance & standard fare calculations for any upazila powered by OSRM.',
+                          style: GoogleFonts.hindSiliguri(color: Colors.white.withValues(alpha: 0.9), fontSize: 11),
                         ),
                       ],
                     ),
@@ -136,32 +140,42 @@ class _SmartAgroFareCalculatorScreenState extends State<SmartAgroFareCalculatorS
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('যাত্রার রুট নির্ধারণ', style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 15)),
+                        Text(
+                          isBn ? 'যাত্রার রুট নির্ধারণ' : 'Set Travel Route',
+                          style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 15),
+                        ),
                         TextButton.icon(
                           onPressed: _detectGpsPickup,
                           icon: const Icon(Icons.my_location, size: 16, color: primaryGreen),
-                          label: Text('জিপিএস লোকেশন', style: GoogleFonts.hindSiliguri(color: primaryGreen, fontWeight: FontWeight.bold, fontSize: 12)),
+                          label: Text(
+                            isBn ? 'জিপিএস লোকেশন' : 'GPS Location',
+                            style: GoogleFonts.hindSiliguri(color: primaryGreen, fontWeight: FontWeight.bold, fontSize: 12),
+                          ),
                         ),
                       ],
                     ),
                     if (_detectedGpsName != null)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 10),
-                        child: Text('📍 সনাক্তকৃত অবস্থান: $_detectedGpsName', style: GoogleFonts.hindSiliguri(color: Colors.green.shade800, fontSize: 11, fontWeight: FontWeight.w600)),
+                        child: Text(
+                          '${isBn ? "📍 সনাক্তকৃত অবস্থান" : "📍 Detected Location"}: $_detectedGpsName',
+                          style: GoogleFonts.hindSiliguri(color: Colors.green.shade800, fontSize: 11, fontWeight: FontWeight.w600),
+                        ),
                       ),
                     
                     // Pickup District
                     DropdownButtonFormField<String>(
-                      value: _pickupDistrict,
+                      initialValue: _pickupDistrict,
                       decoration: InputDecoration(
-                        labelText: 'লোডিং পয়েন্ট (উৎপাদনস্থল/মোকাম)',
+                        labelText: isBn ? 'লোডিং পয়েন্ট (উৎপাদনস্থল/মোকাম)' : 'Loading Point (Origin)',
                         prefixIcon: const Icon(Icons.trip_origin, color: Colors.green),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       ),
                       items: _districts.map((d) {
                         final bn = LocationService.bdDistrictMap[d]?['nameBn'] ?? d;
-                        return DropdownMenuItem(value: d, child: Text('$bn ($d)', style: GoogleFonts.hindSiliguri(fontSize: 13)));
+                        final label = isBn ? '$bn ($d)' : d;
+                        return DropdownMenuItem(value: d, child: Text(label, style: GoogleFonts.hindSiliguri(fontSize: 13)));
                       }).toList(),
                       onChanged: (val) {
                         if (val != null) {
@@ -174,16 +188,17 @@ class _SmartAgroFareCalculatorScreenState extends State<SmartAgroFareCalculatorS
 
                     // Dropoff District
                     DropdownButtonFormField<String>(
-                      value: _dropoffDistrict,
+                      initialValue: _dropoffDistrict,
                       decoration: InputDecoration(
-                        labelText: 'আনলোডিং পয়েন্ট (গন্তব্য/বাজার)',
+                        labelText: isBn ? 'আনলোডিং পয়েন্ট (গন্তব্য/বাজার)' : 'Unloading Point (Destination)',
                         prefixIcon: const Icon(Icons.location_on, color: Colors.red),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       ),
                       items: _districts.map((d) {
                         final bn = LocationService.bdDistrictMap[d]?['nameBn'] ?? d;
-                        return DropdownMenuItem(value: d, child: Text('$bn ($d)', style: GoogleFonts.hindSiliguri(fontSize: 13)));
+                        final label = isBn ? '$bn ($d)' : d;
+                        return DropdownMenuItem(value: d, child: Text(label, style: GoogleFonts.hindSiliguri(fontSize: 13)));
                       }).toList(),
                       onChanged: (val) {
                         if (val != null) {
@@ -208,19 +223,23 @@ class _SmartAgroFareCalculatorScreenState extends State<SmartAgroFareCalculatorS
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('গাড়ির ধরণ ও ক্ষমতা নির্বাচন করুন', style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 15)),
+                    Text(
+                      isBn ? 'গাড়ির ধরণ ও ক্ষমতা নির্বাচন করুন' : 'Select Vehicle Type & Capacity',
+                      style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 15),
+                    ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<AgroVehicleType>(
-                      value: _selectedVehicle,
+                      initialValue: _selectedVehicle,
                       decoration: InputDecoration(
                         prefixIcon: const Icon(Icons.local_shipping, color: primaryGreen),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       ),
                       items: RoadDistanceFareService.vehicleRates.entries.map((e) {
+                        final name = isBn ? e.value['nameBn'] : (e.value['nameEn'] ?? e.value['nameBn']);
                         return DropdownMenuItem(
                           value: e.key,
-                          child: Text('${e.value['nameBn']} • ${e.value['capacity']}', style: GoogleFonts.hindSiliguri(fontSize: 13)),
+                          child: Text('$name • ${e.value['capacity']}', style: GoogleFonts.hindSiliguri(fontSize: 13)),
                         );
                       }).toList(),
                       onChanged: (val) {
@@ -235,10 +254,16 @@ class _SmartAgroFareCalculatorScreenState extends State<SmartAgroFareCalculatorS
                     // Backhaul return trip toggle
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: Text('ফিরতি খালি গাড়ির ট্রিপ (Backhaul)', style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 13)),
-                      subtitle: Text('গাড়ি আনলোড শেষে খালি ফেরার পথে ৪০% পর্যন্ত ডিসকাউন্ট', style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.grey.shade600)),
+                      title: Text(
+                        isBn ? 'ফিরতি খালি গাড়ির ট্রিপ (Backhaul)' : 'Return Trip Discount (Backhaul)',
+                        style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                      subtitle: Text(
+                        isBn ? 'গাড়ি আনলোড শেষে খালি ফেরার পথে ৪০% পর্যন্ত ডিসকাউন্ট' : 'Up to 40% discount for returning empty vehicles',
+                        style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.grey.shade600),
+                      ),
                       value: _isReturnTrip,
-                      activeColor: Colors.orange.shade700,
+                      activeThumbColor: Colors.orange.shade700,
                       onChanged: (val) {
                         setState(() => _isReturnTrip = val);
                         _calculateFare();
@@ -262,7 +287,7 @@ class _SmartAgroFareCalculatorScreenState extends State<SmartAgroFareCalculatorS
                   border: Border.all(color: _isReturnTrip ? Colors.orange : primaryGreen, width: 1.5),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
+                      color: Colors.black.withValues(alpha: 0.06),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
@@ -274,7 +299,10 @@ class _SmartAgroFareCalculatorScreenState extends State<SmartAgroFareCalculatorS
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('প্রাক্কলিত সড়ক দূরত্ব ও সময়', style: GoogleFonts.hindSiliguri(fontSize: 13, color: Colors.grey.shade600)),
+                        Text(
+                          isBn ? 'প্রাক্কলিত সড়ক দূরত্ব ও সময়' : 'Estimated Distance & Travel Time',
+                          style: GoogleFonts.hindSiliguri(fontSize: 13, color: Colors.grey.shade600),
+                        ),
                         if (_estimate!.isRoadRoutingOnline)
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -291,7 +319,10 @@ class _SmartAgroFareCalculatorScreenState extends State<SmartAgroFareCalculatorS
                       children: [
                         const Icon(Icons.straighten, color: primaryGreen, size: 22),
                         const SizedBox(width: 6),
-                        Text('${_estimate!.distanceKm} কিমি', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 18)),
+                        Text(
+                          '${_estimate!.distanceKm} ${isBn ? "কিমি" : "km"}',
+                          style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 18),
+                        ),
                         const SizedBox(width: 16),
                         const Icon(Icons.timer_outlined, color: Colors.orange, size: 22),
                         const SizedBox(width: 6),
@@ -301,23 +332,36 @@ class _SmartAgroFareCalculatorScreenState extends State<SmartAgroFareCalculatorS
                     const Divider(height: 24),
 
                     // Fare Breakdown
-                    _buildFareRow('মূল ভাড়া (Base Fare)', '৳${_estimate!.baseFare.toInt()}'),
-                    _buildFareRow('দূরত্ব ভাড়া (${_estimate!.distanceKm} কিমি)', '৳${_estimate!.distanceFare.toInt()}'),
+                    _buildFareRow(isBn ? 'মূল ভাড়া (Base Fare)' : 'Base Fare', '৳${_estimate!.baseFare.toInt()}'),
+                    _buildFareRow(
+                      isBn ? 'দূরত্ব ভাড়া (${_estimate!.distanceKm} কিমি)' : 'Distance Fare (${_estimate!.distanceKm} km)',
+                      '৳${_estimate!.distanceFare.toInt()}',
+                    ),
                     if (_estimate!.tollFee > 0)
-                      _buildFareRow('সেতু ও হাইওয়ে টোল ফি', '৳${_estimate!.tollFee.toInt()}', isToll: true),
+                      _buildFareRow(isBn ? 'সেতু ও হাইওয়ে টোল ফি' : 'Bridge & Highway Tolls', '৳${_estimate!.tollFee.toInt()}', isToll: true),
                     if (_estimate!.applicableTolls.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(left: 10, bottom: 4),
-                        child: Text('টোল: ${_estimate!.applicableTolls.join(", ")}', style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.grey.shade600)),
+                        child: Text(
+                          '${isBn ? "টোল" : "Tolls"}: ${_estimate!.applicableTolls.join(", ")}',
+                          style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.grey.shade600),
+                        ),
                       ),
                     if (_isReturnTrip)
-                      _buildFareRow('ফিরতি ট্রিপ ডিসকাউন্ট (-৪০%)', '- ৳${((_estimate!.baseFare + _estimate!.distanceFare + _estimate!.tollFee) - _estimate!.totalFare).toInt()}', isDiscount: true),
+                      _buildFareRow(
+                        isBn ? 'ফিরতি ট্রিপ ডিসকাউন্ট (-৪০%)' : 'Return Trip Discount (-40%)',
+                        '- ৳${((_estimate!.baseFare + _estimate!.distanceFare + _estimate!.tollFee) - _estimate!.totalFare).toInt()}',
+                        isDiscount: true,
+                      ),
 
                     const Divider(height: 20),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('সর্বমোট প্রস্তাবিত ভাড়া:', style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 16)),
+                        Text(
+                          isBn ? 'সর্বমোট প্রস্তাবিত ভাড়া:' : 'Total Estimated Fare:',
+                          style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
                         Text(
                           '৳${_estimate!.totalFare.toInt()}',
                           style: GoogleFonts.hindSiliguri(
@@ -339,7 +383,10 @@ class _SmartAgroFareCalculatorScreenState extends State<SmartAgroFareCalculatorS
                               Get.to(() => const TransportDirectoryScreen());
                             },
                             icon: const Icon(Icons.phone_in_talk, color: Colors.white, size: 18),
-                            label: Text('ড্রাইভার খুঁজুন ও কল দিন', style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 14)),
+                            label: Text(
+                              isBn ? 'ড্রাইভার খুঁজুন ও কল দিন' : 'Find Drivers & Call',
+                              style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 14),
+                            ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: primaryGreen,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:agrolinkbd/core/models/agri_info_model.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 
 /// ফসল বিন্যাস Screen — বর্তমান ও লাভজনক ফসল বিন্যাস
-/// Matches Image 4 & Image 5 style from BARC app
 class CropPatternScreen extends StatefulWidget {
   final UpazilaCropData? data;
   const CropPatternScreen({super.key, this.data});
@@ -34,6 +34,7 @@ class _CropPatternScreenState extends State<CropPatternScreen>
   @override
   Widget build(BuildContext context) {
     final data = widget.data;
+    final bool isBn = LanguageProvider.isBn(context);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
@@ -47,18 +48,25 @@ class _CropPatternScreenState extends State<CropPatternScreen>
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('ফসল বিন্যাস',
-                style: GoogleFonts.hindSiliguri(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              isBn ? 'ফসল বিন্যাস' : 'Crop Pattern',
+              style: GoogleFonts.hindSiliguri(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             if (data != null)
-              Text('${data.division} › ${data.zilla} › ${data.upazila}',
-                  style: GoogleFonts.hindSiliguri(color: Colors.white70, fontSize: 11)),
+              Text(
+                '${data.division} › ${data.zilla} › ${data.upazila}',
+                style: GoogleFonts.hindSiliguri(color: Colors.white70, fontSize: 11),
+              ),
           ],
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.save_alt, color: Colors.white),
-            tooltip: 'সংরক্ষণ করুন',
-            onPressed: () => Get.snackbar('সংরক্ষিত', 'তথ্য সংরক্ষণ করা হয়েছে'),
+            tooltip: isBn ? 'সংরক্ষণ করুন' : 'Save',
+            onPressed: () => Get.snackbar(
+              isBn ? 'সংরক্ষিত' : 'Saved',
+              isBn ? 'তথ্য সংরক্ষণ করা হয়েছে' : 'Pattern data saved',
+            ),
           ),
         ],
         bottom: TabBar(
@@ -67,25 +75,25 @@ class _CropPatternScreenState extends State<CropPatternScreen>
           indicatorWeight: 3,
           labelStyle: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 14),
           unselectedLabelStyle: GoogleFonts.hindSiliguri(fontSize: 13),
-          tabs: const [
-            Tab(text: 'বর্তমান বিন্যাস'),
-            Tab(text: 'লাভজনক বিন্যাস'),
+          tabs: [
+            Tab(text: isBn ? 'বর্তমান বিন্যাস' : 'Current Pattern'),
+            Tab(text: isBn ? 'লাভজনক বিন্যাস' : 'Profitable Pattern'),
           ],
         ),
       ),
       body: data == null
-          ? _buildNoData()
+          ? _buildNoData(isBn)
           : TabBarView(
               controller: _tabController,
               children: [
-                _buildCurrentPatternTable(data),
-                _buildProfitablePatternTable(data),
+                _buildCurrentPatternTable(data, isBn),
+                _buildProfitablePatternTable(data, isBn),
               ],
             ),
     );
   }
 
-  Widget _buildNoData() {
+  Widget _buildNoData(bool isBn) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -93,7 +101,7 @@ class _CropPatternScreenState extends State<CropPatternScreen>
           Icon(Icons.view_module_outlined, size: 64, color: Colors.grey.shade400),
           const SizedBox(height: 16),
           Text(
-            'এলাকার তথ্য পাওয়া যায়নি',
+            isBn ? 'এলাকার তথ্য পাওয়া যায়নি' : 'No region information found',
             style: GoogleFonts.hindSiliguri(fontSize: 16, color: Colors.grey.shade600),
           ),
         ],
@@ -102,9 +110,9 @@ class _CropPatternScreenState extends State<CropPatternScreen>
   }
 
   // ================================================================
-  // বর্তমান ফসল বিন্যাস — Table (Image 4 style)
+  // বর্তমান ফসল বিন্যাস — Table
   // ================================================================
-  Widget _buildCurrentPatternTable(UpazilaCropData data) {
+  Widget _buildCurrentPatternTable(UpazilaCropData data, bool isBn) {
     final all = data.cropPatterns;
     final current = all.where((p) => p.isCurrent).toList();
     final displayList = current.isNotEmpty ? current : all;
@@ -123,7 +131,9 @@ class _CropPatternScreenState extends State<CropPatternScreen>
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'বর্তমানে কৃষকরা এই বিন্যাস অনুসরণ করছেন',
+                  isBn 
+                      ? 'বর্তমানে কৃষকরা এই বিন্যাস অনুসরণ করছেন'
+                      : 'Patterns currently practiced by local farmers',
                   style: GoogleFonts.hindSiliguri(fontSize: 12, color: Colors.green.shade800),
                 ),
               ),
@@ -147,10 +157,10 @@ class _CropPatternScreenState extends State<CropPatternScreen>
                     TableRow(
                       decoration: const BoxDecoration(color: headerGreen),
                       children: [
-                        _headerCell('ফসল বিন্যাস'),
-                        _headerCell('লাভ (প্রতি\nশতাংশ)'),
-                        _headerCell('আয়-ব্যয় অনুপাত\n(ভি. সি.)'),
-                        _headerCell('আয়-ব্যয় অনুপাত\n(টি. সি.)'),
+                        _headerCell(isBn ? 'ফসল বিন্যাস' : 'Crop Pattern'),
+                        _headerCell(isBn ? 'লাভ (প্রতি\nশতাংশ)' : 'Profit (per\ndecimal)'),
+                        _headerCell(isBn ? 'আয়-ব্যয় অনুপাত\n(ভি. সি.)' : 'B-C Ratio\n(V.C.)'),
+                        _headerCell(isBn ? 'আয়-ব্যয় অনুপাত\n(টি. সি.)' : 'B-C Ratio\n(T.C.)'),
                       ],
                     ),
                     // Data rows
@@ -176,15 +186,15 @@ class _CropPatternScreenState extends State<CropPatternScreen>
             ),
           ),
         ),
-        _buildLegend(),
+        _buildLegend(isBn),
       ],
     );
   }
 
   // ================================================================
-  // লাভজনক ফসল বিন্যাস — Table (Image 5 style)
+  // লাভজনক ফসল বিন্যাস — Table
   // ================================================================
-  Widget _buildProfitablePatternTable(UpazilaCropData data) {
+  Widget _buildProfitablePatternTable(UpazilaCropData data, bool isBn) {
     final sorted = [...data.cropPatterns]
       ..sort((a, b) => b.profitIndex.compareTo(a.profitIndex));
 
@@ -200,7 +210,9 @@ class _CropPatternScreenState extends State<CropPatternScreen>
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'মুনাফার ভিত্তিতে সর্বোচ্চ লাভজনক ফসল বিন্যাস',
+                  isBn 
+                      ? 'মুনাফার ভিত্তিতে সর্বোচ্চ লাভজনক ফসল বিন্যাস'
+                      : 'Most profitable crop patterns ranked by return',
                   style: GoogleFonts.hindSiliguri(fontSize: 12, color: Colors.orange.shade800),
                 ),
               ),
@@ -223,10 +235,10 @@ class _CropPatternScreenState extends State<CropPatternScreen>
                     TableRow(
                       decoration: const BoxDecoration(color: headerGreen),
                       children: [
-                        _headerCell('রবি'),
-                        _headerCell('খরিফ[১]'),
-                        _headerCell('খরিফ[২]'),
-                        _headerCell('মুনাফা *'),
+                        _headerCell(isBn ? 'রবি' : 'Rabi'),
+                        _headerCell(isBn ? 'খরিফ[১]' : 'Kharif[1]'),
+                        _headerCell(isBn ? 'খরিফ[২]' : 'Kharif[2]'),
+                        _headerCell(isBn ? 'মুনাফা *' : 'Profit *'),
                       ],
                     ),
                     // Data rows
@@ -260,7 +272,9 @@ class _CropPatternScreenState extends State<CropPatternScreen>
           padding: const EdgeInsets.all(12),
           color: Colors.grey.shade50,
           child: Text(
-            '* মুনাফা = নিট আয় প্রতি শতাংশ (টাকা) | উৎস: BARC কৃষি তথ্য',
+            isBn 
+                ? '* মুনাফা = নিট আয় প্রতি শতাংশ (টাকা) | উৎস: BARC কৃষি তথ্য'
+                : '* Profit = Net income per decimal (BDT) | Source: BARC Agri Data',
             style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.grey.shade600),
           ),
         ),
@@ -334,7 +348,7 @@ class _CropPatternScreenState extends State<CropPatternScreen>
     );
   }
 
-  Widget _buildLegend() {
+  Widget _buildLegend(bool isBn) {
     return Container(
       padding: const EdgeInsets.all(12),
       color: Colors.grey.shade50,
@@ -342,8 +356,14 @@ class _CropPatternScreenState extends State<CropPatternScreen>
         spacing: 16,
         runSpacing: 4,
         children: [
-          Text('ভি.সি. = ভ্যারিয়েবল কস্ট', style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.grey.shade600)),
-          Text('টি.সি. = টোটাল কস্ট', style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.grey.shade600)),
+          Text(
+            isBn ? 'ভি.সি. = ভ্যারিয়েবল কস্ট' : 'V.C. = Variable Cost',
+            style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.grey.shade600),
+          ),
+          Text(
+            isBn ? 'টি.সি. = টোটাল কস্ট' : 'T.C. = Total Cost',
+            style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.grey.shade600),
+          ),
         ],
       ),
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import 'package:agrolinkbd/core/models/order_model.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 import 'package:agrolinkbd/presentation/screens/transport/order_qr_delivery_screen.dart';
 
 class MachineryRentalScreen extends StatefulWidget {
@@ -17,69 +18,90 @@ class _MachineryRentalScreenState extends State<MachineryRentalScreen> {
   final List<Map<String, dynamic>> _machineryList = [
     {
       'id': 'MCH-01',
-      'title': 'কুভোটা কম্বাইন হার্ভেস্টার (Kubota DC-70)',
+      'titleBn': 'কুভোটা কম্বাইন হার্ভেস্টার (Kubota DC-70)',
+      'titleEn': 'Kubota Combine Harvester (DC-70)',
       'category': 'harvester',
-      'providerName': 'মেসার্স বগুড়া এগ্রো সার্ভিস (ভেরিফাইড পার্টনার ⭐)',
-      'location': 'বগুড়া সদর ও শেরপুর জোন',
+      'providerNameBn': 'মেসার্স বগুড়া এগ্রো সার্ভিস (ভেরিফাইড পার্টনার ⭐)',
+      'providerNameEn': 'M/S Bogura Agro Services (Verified Partner ⭐)',
+      'locationBn': 'বগুড়া সদর ও শেরপুর জোন',
+      'locationEn': 'Bogura Sadar & Sherpur Zone',
       'pricePerBigha': 1400.0,
-      'priceUnit': 'বিঘা',
+      'priceUnitBn': 'বিঘা',
+      'priceUnitEn': 'Bigha',
       'rating': 4.9,
       'totalRentals': 142,
       'operatorIncluded': true,
       'fuelIncluded': true,
       'imageUrl': 'https://images.unsplash.com/photo-1592982537447-7440770cbfc9?w=600&auto=format&fit=crop&q=60',
-      'description': 'ধান ও গম দ্রুত কাটা, মাড়াই ও বস্তাজাতকরণ। প্রতি ঘণ্টায় ২ বিঘা জমি সম্পন্ন।',
+      'descriptionBn': 'ধান ও গম দ্রুত কাটা, মাড়াই ও বস্তাজাতকরণ। প্রতি ঘণ্টায় ২ বিঘা জমি সম্পন্ন।',
+      'descriptionEn': 'High-speed paddy & wheat harvesting, threshing & bagging. Covers 2 bigha per hour.',
     },
     {
       'id': 'MCH-02',
-      'title': 'মাহিন্দ্রা ৪৭৫ ডিআই ট্রাক্টর (Mahindra 42HP)',
+      'titleBn': 'মাহিন্দ্রা ৪৭৫ ডিআই ট্রাক্টর (Mahindra 42HP)',
+      'titleEn': 'Mahindra 475 DI Tractor (42HP)',
       'category': 'tractor',
-      'providerName': 'আলমগীর মেকানাইজড ফার্ম',
-      'location': 'নাটোর ও ঈশ্বরদী জোন',
+      'providerNameBn': 'আলমগীর মেকানাইজড ফার্ম',
+      'providerNameEn': 'Alamgir Mechanized Farm',
+      'locationBn': 'নাটোর ও ঈশ্বরদী জোন',
+      'locationEn': 'Natore & Ishwardi Zone',
       'pricePerBigha': 650.0,
-      'priceUnit': 'বিঘা চাষ',
+      'priceUnitBn': 'বিঘা চাষ',
+      'priceUnitEn': 'Bigha Tillage',
       'rating': 4.8,
       'totalRentals': 89,
       'operatorIncluded': true,
       'fuelIncluded': false,
       'imageUrl': 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=600&auto=format&fit=crop&q=60',
-      'description': 'গভীর জমি চাষ ও মাটি মসৃণকরণ রোটোভেটর সহ। অভিজ্ঞ ড্রাইভার সহ সরবরাহ।',
+      'descriptionBn': 'গভীর জমি চাষ ও মাটি মসৃণকরণ রোটোভেটর সহ। অভিজ্ঞ ড্রাইভার সহ সরবরাহ।',
+      'descriptionEn': 'Deep tillage and soil smoothing with rotavator. Supplied with an experienced driver.',
     },
     {
       'id': 'MCH-03',
-      'title': 'ডিজেআই এগ্রাস টি৪০ স্প্রেয়ার ড্রোন (DJI Agras T40)',
+      'titleBn': 'ডিজেআই এগ্রাস টি৪০ স্প্রেয়ার ড্রোন (DJI Agras T40)',
+      'titleEn': 'DJI Agras T40 Sprayer Drone',
       'category': 'drone',
-      'providerName': 'স্মার্ট ড্রোন এগ্রো সল্যুশনস',
-      'location': 'রংপুর ও দিনাজপুর জোন',
+      'providerNameBn': 'স্মার্ট ড্রোন এগ্রো সল্যুশনস',
+      'providerNameEn': 'Smart Drone Agro Solutions',
+      'locationBn': 'রংপুর ও দিনাজপুর জোন',
+      'locationEn': 'Rangpur & Dinajpur Zone',
       'pricePerBigha': 250.0,
-      'priceUnit': 'বিঘা স্প্রে',
+      'priceUnitBn': 'বিঘা স্প্রে',
+      'priceUnitEn': 'Bigha Spray',
       'rating': 5.0,
       'totalRentals': 210,
       'operatorIncluded': true,
       'fuelIncluded': true,
       'imageUrl': 'https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=600&auto=format&fit=crop&q=60',
-      'description': 'কীটনাশক ও তরল সার সুষম স্প্রে। মাত্র ১০ মিনিটে ৫ বিঘা জমি কভার করে।',
+      'descriptionBn': 'কীটনাশক ও তরল সার সুষম স্প্রে। মাত্র ১০ মিনিটে ৫ বিঘা জমি কভার করে।',
+      'descriptionEn': 'Uniform spray of pesticides and liquid fertilizer. Covers 5 bighas in just 10 mins.',
     },
     {
       'id': 'MCH-04',
-      'title': 'সোলার ইরিগেশন সেন্ট্রিফিউগাল পাম্প (7.5 HP)',
+      'titleBn': 'সোলার ইরিগেশন সেন্ট্রিফিউগাল পাম্প (7.5 HP)',
+      'titleEn': 'Solar Centrifugal Irrigation Pump (7.5 HP)',
       'category': 'irrigation',
-      'providerName': 'গ্রিন পাওয়ার ইরিগেশন',
-      'location': 'যশোর ও ঝিনাইদহ জোন',
+      'providerNameBn': 'গ্রিন পাওয়ার ইরিগেশন',
+      'providerNameEn': 'Green Power Irrigation',
+      'locationBn': 'যশোর ও ঝিনাইদহ জোন',
+      'locationEn': 'Jashore & Jhenaidah Zone',
       'pricePerBigha': 400.0,
-      'priceUnit': 'দিন / পানি সেচ',
+      'priceUnitBn': 'দিন / পানি সেচ',
+      'priceUnitEn': 'Day / Irrigation',
       'rating': 4.7,
       'totalRentals': 64,
       'operatorIncluded': false,
       'fuelIncluded': true,
       'imageUrl': 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=600&auto=format&fit=crop&q=60',
-      'description': 'সৌরবিদ্যুৎ চালিত নিরবচ্ছিন্ন সেচ ব্যবস্থা। জ্বালানি খরচ সাশ্রয়ী।',
+      'descriptionBn': 'সৌরবিদ্যুৎ চালিত নিরবচ্ছিন্ন সেচ ব্যবস্থা। জ্বালানি খরচ সাশ্রয়ী।',
+      'descriptionEn': 'Solar powered continuous irrigation system. Zero fuel expenses.',
     },
   ];
 
   @override
   Widget build(BuildContext context) {
     const primaryGreen = Color(0xFF2E7D32);
+    final bool isBn = LanguageProvider.isBn(context);
 
     final filteredList = _selectedCategory == 'all'
         ? _machineryList
@@ -91,7 +113,7 @@ class _MachineryRentalScreenState extends State<MachineryRentalScreen> {
         backgroundColor: primaryGreen,
         iconTheme: const IconThemeData(color: Colors.white),
         title: Text(
-          'কৃষি যন্ত্রপাতি ও হার্ভেস্টার ভাড়া 🚜',
+          isBn ? 'কৃষি যন্ত্রপাতি ও হার্ভেস্টার ভাড়া 🚜' : 'Agri Machinery & Rental 🚜',
           style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white),
         ),
         elevation: 0,
@@ -112,7 +134,9 @@ class _MachineryRentalScreenState extends State<MachineryRentalScreen> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    '🔒 এগ্রোলিংক মেশিনারি এস্ক্রো: কাজ সন্তোষজনকভাবে সম্পন্ন হওয়ার পর ওটিপি যাচাই সাপেক্ষে মালিকের ভাড়া পরিশোধ হবে।',
+                    isBn 
+                        ? '🔒 এগ্রোলিংক মেশিনারি এস্ক্রো: কাজ সন্তোষজনকভাবে সম্পন্ন হওয়ার পর ওটিপি যাচাই সাপেক্ষে মালিকের ভাড়া পরিশোধ হবে।'
+                        : '🔒 AgroLink Machinery Escrow: Payment is held safely and released to the owner upon OTP verification.',
                     style: GoogleFonts.hindSiliguri(
                       fontSize: 12,
                       color: const Color(0xFFE65100),
@@ -130,15 +154,15 @@ class _MachineryRentalScreenState extends State<MachineryRentalScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
-                _buildFilterChip('সব যন্ত্রপাতি', 'all'),
+                _buildFilterChip(isBn ? 'সব যন্ত্রপাতি' : 'All Machinery', 'all'),
                 const SizedBox(width: 8),
-                _buildFilterChip('🌾 হার্ভেস্টার', 'harvester'),
+                _buildFilterChip(isBn ? '🌾 হার্ভেস্টার' : '🌾 Harvester', 'harvester'),
                 const SizedBox(width: 8),
-                _buildFilterChip('🚜 ট্রাক্টর ও চাষ', 'tractor'),
+                _buildFilterChip(isBn ? '🚜 ট্রাক্টর ও চাষ' : '🚜 Tractor & Tillage', 'tractor'),
                 const SizedBox(width: 8),
-                _buildFilterChip('🚁 স্প্রেয়ার ড্রোন', 'drone'),
+                _buildFilterChip(isBn ? '🚁 স্প্রেয়ার ড্রোন' : '🚁 Sprayer Drone', 'drone'),
                 const SizedBox(width: 8),
-                _buildFilterChip('💧 সেচ পাম্প', 'irrigation'),
+                _buildFilterChip(isBn ? '💧 সেচ পাম্প' : '💧 Irrigation Pump', 'irrigation'),
               ],
             ),
           ),
@@ -150,7 +174,7 @@ class _MachineryRentalScreenState extends State<MachineryRentalScreen> {
               itemCount: filteredList.length,
               itemBuilder: (context, index) {
                 final item = filteredList[index];
-                return _buildMachineryCard(item, primaryGreen);
+                return _buildMachineryCard(item, primaryGreen, isBn);
               },
             ),
           ),
@@ -180,7 +204,13 @@ class _MachineryRentalScreenState extends State<MachineryRentalScreen> {
     );
   }
 
-  Widget _buildMachineryCard(Map<String, dynamic> item, Color primaryGreen) {
+  Widget _buildMachineryCard(Map<String, dynamic> item, Color primaryGreen, bool isBn) {
+    final title = isBn ? item['titleBn'] : item['titleEn'];
+    final providerName = isBn ? item['providerNameBn'] : item['providerNameEn'];
+    final location = isBn ? item['locationBn'] : item['locationEn'];
+    final description = isBn ? item['descriptionBn'] : item['descriptionEn'];
+    final priceUnit = isBn ? item['priceUnitBn'] : item['priceUnitEn'];
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -188,7 +218,7 @@ class _MachineryRentalScreenState extends State<MachineryRentalScreen> {
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -221,7 +251,7 @@ class _MachineryRentalScreenState extends State<MachineryRentalScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.7),
+                    color: Colors.black.withValues(alpha: 0.7),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -229,7 +259,7 @@ class _MachineryRentalScreenState extends State<MachineryRentalScreen> {
                       const Icon(Icons.star, color: Colors.amber, size: 14),
                       const SizedBox(width: 4),
                       Text(
-                        '${item['rating']} (${item['totalRentals']} বার ভাড়া)',
+                        isBn ? '${item['rating']} (${item['totalRentals']} বার ভাড়া)' : '${item['rating']} (${item['totalRentals']} rentals)',
                         style: GoogleFonts.poppins(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
                       ),
                     ],
@@ -245,7 +275,7 @@ class _MachineryRentalScreenState extends State<MachineryRentalScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  item['title'],
+                  title,
                   style: GoogleFonts.hindSiliguri(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -254,7 +284,7 @@ class _MachineryRentalScreenState extends State<MachineryRentalScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  item['providerName'],
+                  providerName,
                   style: GoogleFonts.hindSiliguri(fontSize: 12, color: const Color(0xFF2E7D32), fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 4),
@@ -262,12 +292,12 @@ class _MachineryRentalScreenState extends State<MachineryRentalScreen> {
                   children: [
                     const Icon(Icons.location_on_outlined, size: 14, color: Colors.grey),
                     const SizedBox(width: 4),
-                    Text(item['location'], style: GoogleFonts.hindSiliguri(fontSize: 12, color: Colors.grey.shade600)),
+                    Text(location, style: GoogleFonts.hindSiliguri(fontSize: 12, color: Colors.grey.shade600)),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  item['description'],
+                  description,
                   style: GoogleFonts.hindSiliguri(fontSize: 12, color: Colors.grey.shade700, height: 1.3),
                 ),
                 const SizedBox(height: 12),
@@ -276,11 +306,11 @@ class _MachineryRentalScreenState extends State<MachineryRentalScreen> {
                 Row(
                   children: [
                     if (item['operatorIncluded'] == true) ...[
-                      _featureBadge('👨‍🌾 চালক/অপারেটর সহ', Colors.blue),
+                      _featureBadge(isBn ? '👨‍🌾 চালক/অপারেটর সহ' : '👨‍🌾 Operator Included', Colors.blue),
                       const SizedBox(width: 8),
                     ],
                     if (item['fuelIncluded'] == true) ...[
-                      _featureBadge('⛽ জ্বালানি সহ', Colors.orange),
+                      _featureBadge(isBn ? '⛽ জ্বালানি সহ' : '⛽ Fuel Included', Colors.orange),
                     ],
                   ],
                 ),
@@ -295,9 +325,9 @@ class _MachineryRentalScreenState extends State<MachineryRentalScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('ভাড়া মূল্য:', style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.grey.shade600)),
+                        Text(isBn ? 'ভাড়া মূল্য:' : 'Rate:', style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.grey.shade600)),
                         Text(
-                          '৳ ${(item['pricePerBigha'] as double).toStringAsFixed(0)} / ${item['priceUnit']}',
+                          '৳ ${(item['pricePerBigha'] as double).toStringAsFixed(0)} / $priceUnit',
                           style: GoogleFonts.hindSiliguri(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -307,10 +337,10 @@ class _MachineryRentalScreenState extends State<MachineryRentalScreen> {
                       ],
                     ),
                     ElevatedButton.icon(
-                      onPressed: () => _showBookingModal(item),
+                      onPressed: () => _showBookingModal(item, isBn),
                       icon: const Icon(Icons.calendar_month, color: Colors.white, size: 16),
                       label: Text(
-                        'বুকিং করুন ⚡',
+                        isBn ? 'বুকিং করুন ⚡' : 'Book Now ⚡',
                         style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
                       ),
                       style: ElevatedButton.styleFrom(
@@ -344,8 +374,11 @@ class _MachineryRentalScreenState extends State<MachineryRentalScreen> {
     );
   }
 
-  void _showBookingModal(Map<String, dynamic> item) {
+  void _showBookingModal(Map<String, dynamic> item, bool isBn) {
     int bighaCount = 5;
+    final title = isBn ? item['titleBn'] : item['titleEn'];
+    final providerName = isBn ? item['providerNameBn'] : item['providerNameEn'];
+    final priceUnit = isBn ? item['priceUnitBn'] : item['priceUnitEn'];
 
     showModalBottomSheet(
       context: context,
@@ -357,7 +390,7 @@ class _MachineryRentalScreenState extends State<MachineryRentalScreen> {
         return StatefulBuilder(
           builder: (context, setModalState) {
             final double basePrice = (item['pricePerBigha'] as double) * bighaCount;
-            final double platformCut = basePrice * 0.05; // 5% Platform Revenue
+            final double platformCut = basePrice * 0.05;
             final double totalCharge = basePrice;
             final double providerNet = basePrice - platformCut;
 
@@ -381,11 +414,11 @@ class _MachineryRentalScreenState extends State<MachineryRentalScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'যন্ত্রপাতি ভাড়া বুকিং',
+                    isBn ? 'যন্ত্রপাতি ভাড়া বুকিং' : 'Machinery Rental Booking',
                     style: GoogleFonts.hindSiliguri(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   Text(
-                    item['title'],
+                    title,
                     style: GoogleFonts.hindSiliguri(fontSize: 13, color: Colors.grey.shade700),
                   ),
                   const SizedBox(height: 16),
@@ -394,7 +427,10 @@ class _MachineryRentalScreenState extends State<MachineryRentalScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('জমির পরিমাণ (${item['priceUnit']}):', style: GoogleFonts.hindSiliguri(fontSize: 14, fontWeight: FontWeight.w600)),
+                      Text(
+                        '${isBn ? 'জমির পরিমাণ' : 'Land Area'} ($priceUnit):',
+                        style: GoogleFonts.hindSiliguri(fontSize: 14, fontWeight: FontWeight.w600),
+                      ),
                       Row(
                         children: [
                           IconButton(
@@ -429,7 +465,10 @@ class _MachineryRentalScreenState extends State<MachineryRentalScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text('মোট ভাড়া ($bighaCount বিঘা):', style: GoogleFonts.hindSiliguri(fontSize: 13)),
+                            Text(
+                              '${isBn ? 'মোট ভাড়া' : 'Total Rent'} ($bighaCount $priceUnit):',
+                              style: GoogleFonts.hindSiliguri(fontSize: 13),
+                            ),
                             Text('৳ ${basePrice.toStringAsFixed(0)}', style: GoogleFonts.hindSiliguri(fontSize: 13, fontWeight: FontWeight.bold)),
                           ],
                         ),
@@ -437,15 +476,24 @@ class _MachineryRentalScreenState extends State<MachineryRentalScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text('প্ল্যাটফর্ম সার্ভিস ও বীমা (৫%):', style: GoogleFonts.hindSiliguri(fontSize: 12, color: Colors.grey.shade700)),
-                            Text('৳ ${platformCut.toStringAsFixed(0)} (অন্তর্ভুক্ত)', style: GoogleFonts.hindSiliguri(fontSize: 12, color: Colors.green.shade900)),
+                            Text(
+                              isBn ? 'প্ল্যাটফর্ম সার্ভিস ও বীমা (৫%):' : 'Platform & Insurance (5%):',
+                              style: GoogleFonts.hindSiliguri(fontSize: 12, color: Colors.grey.shade700),
+                            ),
+                            Text(
+                              '৳ ${platformCut.toStringAsFixed(0)} ${isBn ? '(অন্তর্ভুক্ত)' : '(included)'}',
+                              style: GoogleFonts.hindSiliguri(fontSize: 12, color: Colors.green.shade900),
+                            ),
                           ],
                         ),
                         const Divider(height: 12),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text('এস্ক্রোতে জমা হবে:', style: GoogleFonts.hindSiliguri(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF2E7D32))),
+                            Text(
+                              isBn ? 'এস্ক্রোতে জমা হবে:' : 'Held in Escrow:',
+                              style: GoogleFonts.hindSiliguri(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF2E7D32)),
+                            ),
                             Text('৳ ${totalCharge.toStringAsFixed(0)}', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF2E7D32))),
                           ],
                         ),
@@ -464,11 +512,11 @@ class _MachineryRentalScreenState extends State<MachineryRentalScreen> {
                           id: 'MCH-${DateTime.now().millisecondsSinceEpoch % 10000}',
                           buyerId: 'farmer_user',
                           farmerId: 'provider_user',
-                          farmerName: item['providerName'],
-                          productName: '${item['title']} ($bighaCount বিঘা)',
+                          farmerName: providerName,
+                          productName: '$title ($bighaCount $priceUnit)',
                           productImageUrl: item['imageUrl'],
                           quantity: bighaCount.toDouble(),
-                          unit: item['priceUnit'],
+                          unit: priceUnit,
                           totalAmount: totalCharge,
                           platformFee: platformCut,
                           farmerPayout: providerNet,
@@ -476,22 +524,24 @@ class _MachineryRentalScreenState extends State<MachineryRentalScreen> {
                           batchCode: 'BATCH-MCH-7192',
                           status: 'pending',
                           statusStep: 1,
-                          transportStatus: 'বুকিং নিশ্চিত',
+                          transportStatus: isBn ? 'বুকিং নিশ্চিত' : 'Booking Confirmed',
                           paymentStatus: 'paid',
                           escrowStatus: 'held',
                           createdAt: DateTime.now(),
                         );
                         Get.to(() => OrderQrDeliveryScreen(order: sampleOrder, isDriverView: false));
                         Get.snackbar(
-                          '✅ বুকিং নিশ্চিত ও টাকা এস্ক্রো লকড!',
-                          'কাজ শেষ হলে ওটিপি কোড দিয়ে পেমেন্ট রিলিজ করুন।',
+                          isBn ? '✅ বুকিং নিশ্চিত ও টাকা এস্ক্রো লকড!' : '✅ Booking Confirmed & Escrow Funded!',
+                          isBn 
+                              ? 'কাজ শেষ হলে ওটিপি কোড দিয়ে পেমেন্ট রিলিজ করুন।'
+                              : 'Release payment to the operator via OTP code once work is completed.',
                           backgroundColor: const Color(0xFF2E7D32),
                           colorText: Colors.white,
                         );
                       },
                       icon: const Icon(Icons.lock_clock, color: Colors.white),
                       label: Text(
-                        'এস্ক্রোতে নিশ্চিত বুক করুন 🔒',
+                        isBn ? 'এস্ক্রোতে নিশ্চিত বুক করুন 🔒' : 'Confirm Escrow Booking 🔒',
                         style: GoogleFonts.hindSiliguri(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                       style: ElevatedButton.styleFrom(

@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:agrolinkbd/presentation/widgets/weather_card_widget.dart';
 import 'package:agrolinkbd/presentation/screens/transport/upazila_transport_screen.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 
 /// Emergency & Weather Services Screen (জরুরি সেবা ও আবহাওয়া কেন্দ্র)
 class EmergencyWeatherServicesScreen extends StatelessWidget {
@@ -12,7 +13,8 @@ class EmergencyWeatherServicesScreen extends StatelessWidget {
   static const Color primaryGreen = Color(0xFF2E7D32);
   static const Color alertRed = Color(0xFFD32F2F);
 
-  Future<void> _makeCall(String phoneNumber) async {
+  Future<void> _makeCall(BuildContext context, String phoneNumber) async {
+    final bool isBn = LanguageProvider.isBn(context);
     final Uri launchUri = Uri(
       scheme: 'tel',
       path: phoneNumber,
@@ -21,16 +23,23 @@ class EmergencyWeatherServicesScreen extends StatelessWidget {
       if (await canLaunchUrl(launchUri)) {
         await launchUrl(launchUri);
       } else {
-        Get.snackbar('কল করা সম্ভব নয়', 'ফোন ডায়ালার চালু করতে সমস্যা হয়েছে: $phoneNumber');
+        Get.snackbar(
+          isBn ? 'কল করা সম্ভব নয়' : 'Call Failed',
+          isBn ? 'ফোন ডায়ালার চালু করতে সমস্যা হয়েছে: $phoneNumber' : 'Could not launch dialer for: $phoneNumber',
+        );
       }
     } catch (e) {
-      Get.snackbar('কল নম্বর', 'জরুরি হেল্পলাইন: $phoneNumber');
+      Get.snackbar(
+        isBn ? 'কল নম্বর' : 'Helpline Number',
+        isBn ? 'জরুরি হেল্পলাইন: $phoneNumber' : 'Emergency Hotline: $phoneNumber',
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bool isBn = LanguageProvider.isBn(context);
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF4F6F8),
@@ -42,7 +51,7 @@ class EmergencyWeatherServicesScreen extends StatelessWidget {
           onPressed: () => Get.back(),
         ),
         title: Text(
-          'জরুরি সেবা ও আবহাওয়া কেন্দ্র',
+          isBn ? 'জরুরি সেবা ও আবহাওয়া কেন্দ্র' : 'Emergency & Weather Center',
           style: GoogleFonts.hindSiliguri(
             color: Colors.white,
             fontSize: 20,
@@ -90,7 +99,7 @@ class EmergencyWeatherServicesScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'জরুরি কৃষি ও দুর্যোগ সেবা',
+                          isBn ? 'জরুরি কৃষি ও দুর্যোগ সেবা' : 'Emergency Agri & Disaster Support',
                           style: GoogleFonts.hindSiliguri(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -98,7 +107,9 @@ class EmergencyWeatherServicesScreen extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          'যেকোনো প্রাকৃতিক দুর্যোগ বা শস্য রক্ষায় দ্রুত সাহায্য নিন',
+                          isBn
+                              ? 'যেকোনো প্রাকৃতিক দুর্যোগ বা শস্য রক্ষায় দ্রুত সাহায্য নিন'
+                              : 'Get rapid assistance during adverse weather & emergencies',
                           style: GoogleFonts.hindSiliguri(
                             fontSize: 12,
                             color: Colors.white70,
@@ -114,7 +125,7 @@ class EmergencyWeatherServicesScreen extends StatelessWidget {
 
             // Live Weather System Component
             Text(
-              '🌤️ লাইভ আবহাওয়া ও পূর্বাভাস সিস্টেম',
+              isBn ? '🌤️ লাইভ আবহাওয়া ও পূর্বাভাস সিস্টেম' : '🌤️ Live Weather & Forecast System',
               style: GoogleFonts.hindSiliguri(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -127,7 +138,7 @@ class EmergencyWeatherServicesScreen extends StatelessWidget {
 
             // Emergency Helplines Section
             Text(
-              '📞 জরুরি হটলাইন নম্বরসমূহ',
+              isBn ? '📞 জরুরি হটলাইন নম্বরসমূহ' : '📞 Emergency Helpline Numbers',
               style: GoogleFonts.hindSiliguri(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -136,8 +147,9 @@ class EmergencyWeatherServicesScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             _buildHelplineCard(
-              title: 'কৃষি কল সেন্টার (সরকারি)',
-              subtitle: 'ফসল, সার ও পোকা দমনের বিনামূল্যে পরামর্শ',
+              context: context,
+              title: isBn ? 'কৃষি কল সেন্টার (সরকারি)' : 'Agri Call Center (Govt)',
+              subtitle: isBn ? 'ফসল, সার ও পোকা দমনের বিনামূল্যে পরামর্শ' : 'Free advisory on crops, fertilizer & pest control',
               number: '16123',
               icon: Icons.phone_in_talk,
               color: Colors.green.shade700,
@@ -145,8 +157,9 @@ class EmergencyWeatherServicesScreen extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             _buildHelplineCard(
-              title: 'দুর্যোগ পূর্বাভাস ও সহায়তায়',
-              subtitle: 'বাংলাদেশ আবহাওয়া অধিদপ্তর জরুরি হেল্পলাইন',
+              context: context,
+              title: isBn ? 'দুর্যোগ পূর্বাভাস ও সহায়তায়' : 'Disaster Warning & Relief',
+              subtitle: isBn ? 'বাংলাদেশ আবহাওয়া অধিদপ্তর জরুরি হেল্পলাইন' : 'BMD Early Warning Hotline',
               number: '1090',
               icon: Icons.thunderstorm_outlined,
               color: Colors.amber.shade900,
@@ -154,8 +167,9 @@ class EmergencyWeatherServicesScreen extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             _buildHelplineCard(
-              title: 'জাতীয় জরুরি সেবা',
-              subtitle: 'যেকোনো জরুরি পুলিশ, ফায়ার বা অ্যাম্বুলেন্স',
+              context: context,
+              title: isBn ? 'জাতীয় জরুরি সেবা' : 'National Emergency Service',
+              subtitle: isBn ? 'যেকোনো জরুরি পুলিশ, ফায়ার বা অ্যাম্বুলেন্স' : 'National Police, Fire Service, Ambulance',
               number: '999',
               icon: Icons.emergency,
               color: alertRed,
@@ -165,7 +179,7 @@ class EmergencyWeatherServicesScreen extends StatelessWidget {
 
             // Quick Emergency Action Buttons Grid
             Text(
-              '🚀 দ্রুত জরুরি সেবাসমূহ',
+              isBn ? '🚀 দ্রুত জরুরি সেবাসমূহ' : '🚀 Quick Emergency Services',
               style: GoogleFonts.hindSiliguri(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -182,16 +196,16 @@ class EmergencyWeatherServicesScreen extends StatelessWidget {
               childAspectRatio: 1.3,
               children: [
                 _buildActionTile(
-                  title: 'জরুরি শস্য পরিবহন',
-                  subtitle: 'দ্রুত ট্রাক বা পিকআপ খুঁজুন',
+                  title: isBn ? 'জরুরি শস্য পরিবহন' : 'Crop Transport',
+                  subtitle: isBn ? 'দ্রুত ট্রাক বা পিকআপ খুঁজুন' : 'Find truck or pickup nearby',
                   icon: Icons.local_shipping,
                   color: Colors.blue.shade700,
                   isDark: isDark,
                   onTap: () => Get.to(() => const UpazilaTransportScreen()),
                 ),
                 _buildActionTile(
-                  title: 'কৃষি তথ্য কেন্দ্র',
-                  subtitle: 'মাটি ও ফসল জোন চেক করুন',
+                  title: isBn ? 'কৃষি তথ্য কেন্দ্র' : 'Agri Info Hub',
+                  subtitle: isBn ? 'মাটি ও ফসল জোন চেক করুন' : 'Check soil & crop zones',
                   icon: Icons.eco,
                   color: primaryGreen,
                   isDark: isDark,
@@ -207,6 +221,7 @@ class EmergencyWeatherServicesScreen extends StatelessWidget {
   }
 
   Widget _buildHelplineCard({
+    required BuildContext context,
     required String title,
     required String subtitle,
     required String number,
@@ -263,7 +278,7 @@ class EmergencyWeatherServicesScreen extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           ElevatedButton.icon(
-            onPressed: () => _makeCall(number),
+            onPressed: () => _makeCall(context, number),
             icon: const Icon(Icons.call, size: 16, color: Colors.white),
             label: Text(
               number,

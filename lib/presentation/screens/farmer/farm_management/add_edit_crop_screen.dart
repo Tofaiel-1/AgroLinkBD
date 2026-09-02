@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:agrolinkbd/core/models/phase2_models/farm_models.dart';
 import 'package:agrolinkbd/core/services/phase2_services/farm_service.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 
 class AddEditCropScreen extends StatefulWidget {
   final CropPlanting? crop;
@@ -58,11 +59,11 @@ class _AddEditCropScreenState extends State<AddEditCropScreen> {
     super.dispose();
   }
 
-  Future<void> _saveCrop() async {
+  Future<void> _saveCrop(bool isBn) async {
     if (!_formKey.currentState!.validate()) return;
     if (_farmIdController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a farm first')),
+        SnackBar(content: Text(isBn ? 'প্রথমে একটি খামার নির্বাচন করুন' : 'Please select a farm first')),
       );
       return;
     }
@@ -71,7 +72,7 @@ class _AddEditCropScreenState extends State<AddEditCropScreen> {
 
     try {
       final crop = CropPlanting(
-        id: widget.crop?.id ?? '', // Service assigns ID on create
+        id: widget.crop?.id ?? '',
         userId: widget.crop?.userId ?? '', 
         farmId: _farmIdController.text,
         cropName: _nameController.text.trim(),
@@ -87,15 +88,15 @@ class _AddEditCropScreenState extends State<AddEditCropScreen> {
 
       if (widget.crop == null) {
         await _farmService.addCropPlanting(crop);
-      } else {
-        // Implement updateCropPlanting later if needed
       }
 
       if (mounted) {
         Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(widget.crop == null ? 'Crop added successfully' : 'Crop updated successfully'),
+            content: Text(widget.crop == null 
+                ? (isBn ? 'ফসল ট্র্যাকিং সফলভাবে যোগ করা হয়েছে' : 'Crop added successfully')
+                : (isBn ? 'ফসল তথ্য সফলভাবে আপডেট হয়েছে' : 'Crop updated successfully')),
             backgroundColor: Colors.green,
           ),
         );
@@ -104,7 +105,7 @@ class _AddEditCropScreenState extends State<AddEditCropScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: ${e.toString()}'),
+            content: Text('${isBn ? "ত্রুটি:" : "Error:"} ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -118,14 +119,18 @@ class _AddEditCropScreenState extends State<AddEditCropScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isBn = LanguageProvider.isBn(context);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         backgroundColor: const Color(0xFF8BC34A),
         elevation: 0,
         title: Text(
-          widget.crop == null ? 'Add New Crop' : 'Edit Crop',
-          style: GoogleFonts.openSans(fontWeight: FontWeight.bold, color: Colors.white),
+          widget.crop == null 
+              ? (isBn ? 'নতুন ফসল ট্র্যাক করুন' : 'Add New Crop')
+              : (isBn ? 'ফসল সম্পাদনা' : 'Edit Crop'),
+          style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -142,19 +147,20 @@ class _AddEditCropScreenState extends State<AddEditCropScreen> {
                         ? Padding(
                             padding: const EdgeInsets.only(bottom: 16.0),
                             child: Text(
-                              'You need to create a Farm first!',
-                              style: GoogleFonts.openSans(color: Colors.red, fontWeight: FontWeight.bold),
+                              isBn ? 'আপনাকে প্রথমে একটি খামার তৈরি করতে হবে!' : 'You need to create a Farm first!',
+                              style: GoogleFonts.hindSiliguri(color: Colors.red, fontWeight: FontWeight.bold),
                             ),
                           )
                         : DropdownButtonFormField<String>(
                             value: _farmIdController.text.isNotEmpty ? _farmIdController.text : null,
                             decoration: InputDecoration(
-                              labelText: 'Select Farm',
+                              labelText: isBn ? 'খামার নির্বাচন করুন' : 'Select Farm',
+                              labelStyle: GoogleFonts.hindSiliguri(),
                               prefixIcon: const Icon(Icons.landscape, color: Color(0xFF8BC34A)),
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
                             ),
                             items: _myFarms.map((farm) {
-                              return DropdownMenuItem(value: farm.id, child: Text(farm.name));
+                              return DropdownMenuItem(value: farm.id, child: Text(farm.name, style: GoogleFonts.hindSiliguri()));
                             }).toList(),
                             onChanged: (val) {
                               if (val != null) setState(() => _farmIdController.text = val);
@@ -163,9 +169,9 @@ class _AddEditCropScreenState extends State<AddEditCropScreen> {
                     const SizedBox(height: 16),
                     _buildTextField(
                       controller: _nameController,
-                      label: 'Crop Name (e.g., Tomato)',
+                      label: isBn ? 'ফসলের নাম (যেমন: টমেটো, ব্রি ধান-২৮)' : 'Crop Name (e.g., Tomato, BRRI Dhan-28)',
                       icon: Icons.grass,
-                      validator: (value) => value!.isEmpty ? 'Please enter a crop name' : null,
+                      validator: (value) => value!.isEmpty ? (isBn ? 'ফসলের নাম দিন' : 'Please enter a crop name') : null,
                     ),
                     const SizedBox(height: 16),
                     Row(
@@ -173,7 +179,7 @@ class _AddEditCropScreenState extends State<AddEditCropScreen> {
                         Expanded(
                           child: _buildTextField(
                             controller: _areaController,
-                            label: 'Area (ha)',
+                            label: isBn ? 'জমির পরিমাণ (হেক্টর/একর)' : 'Area (ha / acre)',
                             icon: Icons.aspect_ratio,
                             keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           ),
@@ -182,7 +188,7 @@ class _AddEditCropScreenState extends State<AddEditCropScreen> {
                         Expanded(
                           child: _buildTextField(
                             controller: _yieldController,
-                            label: 'Est. Yield (kg)',
+                            label: isBn ? 'প্রত্যাশিত ফলন (কেজি/মণ)' : 'Est. Yield (kg / maund)',
                             icon: Icons.analytics,
                             keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           ),
@@ -193,16 +199,17 @@ class _AddEditCropScreenState extends State<AddEditCropScreen> {
                     DropdownButtonFormField<String>(
                       value: _statusController.text,
                       decoration: InputDecoration(
-                        labelText: 'Stage',
+                        labelText: isBn ? 'ফসলের বর্তমান পর্যায়' : 'Growth Stage',
+                        labelStyle: GoogleFonts.hindSiliguri(),
                         prefixIcon: const Icon(Icons.timeline, color: Color(0xFF8BC34A)),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
                       ),
-                      items: const [
-                        DropdownMenuItem(value: 'planning', child: Text('Planning')),
-                        DropdownMenuItem(value: 'planted', child: Text('Planted')),
-                        DropdownMenuItem(value: 'growing', child: Text('Growing')),
-                        DropdownMenuItem(value: 'ready_to_harvest', child: Text('Ready to Harvest')),
-                        DropdownMenuItem(value: 'harvested', child: Text('Harvested')),
+                      items: [
+                        DropdownMenuItem(value: 'planning', child: Text(isBn ? 'পরিকল্পনা (Planning)' : 'Planning', style: GoogleFonts.hindSiliguri())),
+                        DropdownMenuItem(value: 'planted', child: Text(isBn ? 'রোপিত (Planted)' : 'Planted', style: GoogleFonts.hindSiliguri())),
+                        DropdownMenuItem(value: 'growing', child: Text(isBn ? 'বর্ধমান (Growing)' : 'Growing', style: GoogleFonts.hindSiliguri())),
+                        DropdownMenuItem(value: 'ready_to_harvest', child: Text(isBn ? 'ফসল কাটার সময় (Ready)' : 'Ready to Harvest', style: GoogleFonts.hindSiliguri())),
+                        DropdownMenuItem(value: 'harvested', child: Text(isBn ? 'সংগৃহীত (Harvested)' : 'Harvested', style: GoogleFonts.hindSiliguri())),
                       ],
                       onChanged: (val) {
                         if (val != null) setState(() => _statusController.text = val);
@@ -210,7 +217,7 @@ class _AddEditCropScreenState extends State<AddEditCropScreen> {
                     ),
                     const SizedBox(height: 40),
                     ElevatedButton(
-                      onPressed: _myFarms.isEmpty ? null : _saveCrop,
+                      onPressed: _myFarms.isEmpty ? null : () => _saveCrop(isBn),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF8BC34A),
                         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -220,8 +227,10 @@ class _AddEditCropScreenState extends State<AddEditCropScreen> {
                         elevation: 4,
                       ),
                       child: Text(
-                        widget.crop == null ? 'Add Crop' : 'Save Changes',
-                        style: GoogleFonts.openSans(
+                        widget.crop == null 
+                            ? (isBn ? 'ফসল যোগ করুন' : 'Add Crop')
+                            : (isBn ? 'সংরক্ষণ করুন' : 'Save Changes'),
+                        style: GoogleFonts.hindSiliguri(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
@@ -246,14 +255,14 @@ class _AddEditCropScreenState extends State<AddEditCropScreen> {
       controller: controller,
       keyboardType: keyboardType,
       validator: validator,
-      style: GoogleFonts.openSans(
+      style: GoogleFonts.hindSiliguri(
         fontSize: 15,
         fontWeight: FontWeight.w600,
         color: const Color(0xFF2D3748),
       ),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: GoogleFonts.openSans(color: Colors.grey.shade600),
+        labelStyle: GoogleFonts.hindSiliguri(color: Colors.grey.shade600),
         prefixIcon: Icon(icon, color: const Color(0xFF8BC34A)),
         filled: true,
         fillColor: Colors.white,

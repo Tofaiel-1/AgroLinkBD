@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:agrolinkbd/core/services/location_service.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 
 class TransportBookingScreen extends StatefulWidget {
   final String driverId;
@@ -43,24 +44,11 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
   double _estimatedFare = 0.0;
   String _locationDisplayText = 'GPS লোকেশন নেওয়া হচ্ছে...';
 
-  // Predefined destination suggestions (common agricultural hubs in Bangladesh)
-  final List<String> _destinationSuggestions = [
-    'ঢাকা কাওরান বাজার',
-    'চট্টগ্রাম খাতুনগঞ্জ',
-    'রাজশাহী সাহেব বাজার',
-    'বগুড়া সাতমাথা',
-    'সিলেট বন্দর বাজার',
-    'নাটোর বড় হাট',
-    'যশোর বেনাপোল',
-    'কুমিল্লা মনোহরপুর',
-  ];
-
   @override
   void initState() {
     super.initState();
     _estimatedFare = widget.baseFare;
 
-    // If distance already passed from previous screen
     if (widget.distanceInKm != null) {
       _distanceController.text = widget.distanceInKm!.toStringAsFixed(1);
       _calculateFare();
@@ -95,10 +83,11 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
   }
 
   Future<void> _fetchCurrentLocation() async {
+    final bool isBn = LanguageProvider.isBn(context);
     setState(() {
       _isLoadingLocation = true;
       _locationError = false;
-      _locationDisplayText = 'GPS লোকেশন ও রুট হিসাব করা হচ্ছে...';
+      _locationDisplayText = isBn ? 'GPS লোকেশন ও রুট হিসাব করা হচ্ছে...' : 'Fetching GPS & route...';
     });
 
     final locationService = LocationService();
@@ -123,34 +112,33 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
         setState(() {
           _isLoadingLocation = false;
           _locationError = true;
-          _locationDisplayText = 'GPS লোকেশন পাওয়া যায়নি (ম্যানুয়ালি ঠিকানা দিন)';
+          _locationDisplayText = isBn ? 'GPS লোকেশন পাওয়া যায়নি (ম্যানুয়ালি ঠিকানা দিন)' : 'GPS unavailable (enter address manually)';
         });
       }
     }
   }
 
-  Future<void> _submitBooking() async {
+  Future<void> _submitBooking(bool isBn) async {
     if (!_formKey.currentState!.validate()) return;
 
     if (_currentPosition == null && _locationError) {
-      // Allow booking even without GPS, but warn
       final confirm = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: Text('GPS ছাড়া বুকিং', style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold)),
+          title: Text(isBn ? 'GPS ছাড়া বুকিং' : 'Booking Without GPS', style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold)),
           content: Text(
-            'আপনার GPS লোকেশন পাওয়া যায়নি। তবুও বুকিং করতে চান?',
+            isBn ? 'আপনার GPS লোকেশন পাওয়া যায়নি। তবুও বুকিং করতে চান?' : 'Your GPS location was not found. Do you still want to proceed?',
             style: GoogleFonts.hindSiliguri(),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: Text('না', style: GoogleFonts.hindSiliguri()),
+              child: Text(isBn ? 'না' : 'No', style: GoogleFonts.hindSiliguri()),
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(ctx, true),
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2E7D32)),
-              child: Text('হ্যাঁ, বুক করুন', style: GoogleFonts.hindSiliguri(color: Colors.white)),
+              child: Text(isBn ? 'হ্যাঁ, বুক করুন' : 'Yes, Book', style: GoogleFonts.hindSiliguri(color: Colors.white)),
             ),
           ],
         ),
@@ -179,7 +167,7 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
         'baseFare': widget.baseFare,
         'perKmRate': widget.perKmRate,
         'estimatedFare': _estimatedFare,
-        'status': 'pending', // pending → accepted → completed
+        'status': 'pending',
         'timestamp': FieldValue.serverTimestamp(),
       };
 
@@ -187,7 +175,6 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
           .collection('transport_bookings')
           .add(bookingData);
 
-      // Also notify the driver (add to driver's notifications sub-collection)
       await FirebaseFirestore.instance
           .collection('users')
           .doc(widget.driverId)
@@ -195,8 +182,8 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
           .add({
         'type': 'booking_request',
         'bookingId': docRef.id,
-        'farmerName': 'কৃষক',
-        'message': 'নতুন ট্রিপ রিকোয়েস্ট: ${_dropoffController.text.trim()}',
+        'farmerName': isBn ? 'কৃষক' : 'Farmer',
+        'message': '${isBn ? 'নতুন ট্রিপ রিকোয়েস্ট' : 'New Trip Request'}: ${_dropoffController.text.trim()}',
         'estimatedFare': _estimatedFare,
         'isRead': false,
         'timestamp': FieldValue.serverTimestamp(),
@@ -205,8 +192,8 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
       if (mounted) {
         Get.back();
         Get.snackbar(
-          '✅ বুকিং সফল!',
-          '${widget.driverName} এর কাছে আপনার অনুরোধ পাঠানো হয়েছে।',
+          isBn ? '✅ বুকিং সফল!' : '✅ Booking Placed!',
+          isBn ? '${widget.driverName} এর কাছে আপনার অনুরোধ পাঠানো হয়েছে।' : 'Your request has been sent to ${widget.driverName}.',
           backgroundColor: Colors.green,
           colorText: Colors.white,
           duration: const Duration(seconds: 4),
@@ -216,8 +203,8 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
     } catch (e) {
       if (mounted) {
         Get.snackbar(
-          'ত্রুটি',
-          'বুকিং করতে সমস্যা হয়েছে: $e',
+          isBn ? 'ত্রুটি' : 'Error',
+          '${isBn ? 'বুকিং করতে সমস্যা হয়েছে:' : 'Failed to book transport:'} $e',
           backgroundColor: Colors.red,
           colorText: Colors.white,
         );
@@ -230,6 +217,29 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
   @override
   Widget build(BuildContext context) {
     const Color primaryGreen = Color(0xFF2E7D32);
+    final bool isBn = LanguageProvider.isBn(context);
+
+    final destinationSuggestions = isBn
+        ? [
+            'ঢাকা কাওরান বাজার',
+            'চট্টগ্রাম খাতুনগঞ্জ',
+            'রাজশাহী সাহেব বাজার',
+            'বগুড়া সাতমাথা',
+            'সিলেট বন্দর বাজার',
+            'নাটোর বড় হাট',
+            'যশোর বেনাপোল',
+            'কুমিল্লা মনোহরপুর',
+          ]
+        : [
+            'Dhaka Karwan Bazar',
+            'Chittagong Khatunganj',
+            'Rajshahi Shaheb Bazar',
+            'Bogra Satmatha',
+            'Sylhet Bandar Bazar',
+            'Natore Boro Haat',
+            'Jashore Benapole',
+            'Cumilla Manoharpur',
+          ];
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
@@ -238,7 +248,7 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black87),
         title: Text(
-          'ট্রিপ বুক করুন 🚛',
+          isBn ? 'ট্রিপ বুক করুন 🚛' : 'Book Transport 🚛',
           style: GoogleFonts.hindSiliguri(
             color: Colors.black87,
             fontWeight: FontWeight.bold,
@@ -259,15 +269,15 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [primaryGreen.withOpacity(0.08), Colors.white],
+                    colors: [primaryGreen.withValues(alpha: 0.08), Colors.white],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: primaryGreen.withOpacity(0.2)),
+                  border: Border.all(color: primaryGreen.withValues(alpha: 0.2)),
                   boxShadow: [
                     BoxShadow(
-                      color: primaryGreen.withOpacity(0.05),
+                      color: primaryGreen.withValues(alpha: 0.05),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -278,7 +288,7 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: primaryGreen.withOpacity(0.1),
+                        color: primaryGreen.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(Icons.local_shipping, color: primaryGreen, size: 32),
@@ -307,9 +317,15 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
                           const SizedBox(height: 4),
                           Row(
                             children: [
-                              _infoChip('বেস ৳${widget.baseFare.toStringAsFixed(0)}', Colors.green.shade700),
+                              _infoChip(
+                                isBn ? 'বেস ৳${widget.baseFare.toStringAsFixed(0)}' : 'Base ৳${widget.baseFare.toStringAsFixed(0)}',
+                                Colors.green.shade700,
+                              ),
                               const SizedBox(width: 6),
-                              _infoChip('৳${widget.perKmRate.toStringAsFixed(0)}/কিমি', Colors.orange.shade700),
+                              _infoChip(
+                                isBn ? '৳${widget.perKmRate.toStringAsFixed(0)}/কিমি' : '৳${widget.perKmRate.toStringAsFixed(0)}/km',
+                                Colors.orange.shade700,
+                              ),
                             ],
                           ),
                         ],
@@ -320,7 +336,7 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
               ),
               const SizedBox(height: 20),
 
-              _sectionTitle('ট্রিপ বিবরণ'),
+              _sectionTitle(isBn ? 'ট্রিপ বিবরণ' : 'Trip Details'),
               const SizedBox(height: 12),
 
               // GPS Pickup Location Card
@@ -359,7 +375,7 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'পিকআপ লোকেশন (আপনার অবস্থান)',
+                            isBn ? 'পিকআপ লোকেশন (আপনার অবস্থান)' : 'Pickup Location (Your Position)',
                             style: GoogleFonts.hindSiliguri(
                               fontSize: 12,
                               color: Colors.grey.shade500,
@@ -380,7 +396,7 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
-                                      'GPS খুঁজছে...',
+                                      isBn ? 'GPS খুঁজছে...' : 'Locating GPS...',
                                       style: GoogleFonts.hindSiliguri(fontSize: 14, color: Colors.grey),
                                     ),
                                   ],
@@ -400,7 +416,7 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
                       IconButton(
                         onPressed: _fetchCurrentLocation,
                         icon: const Icon(Icons.refresh, color: Color(0xFF2E7D32)),
-                        tooltip: 'আবার চেষ্টা করুন',
+                        tooltip: isBn ? 'আবার চেষ্টা করুন' : 'Retry GPS',
                         iconSize: 20,
                       ),
                   ],
@@ -412,8 +428,8 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
               TextFormField(
                 controller: _dropoffController,
                 decoration: InputDecoration(
-                  labelText: 'গন্তব্য ঠিকানা *',
-                  hintText: 'যেমন: ঢাকা কাওরান বাজার',
+                  labelText: isBn ? 'গন্তব্য ঠিকানা *' : 'Destination Address *',
+                  hintText: isBn ? 'যেমন: ঢাকা কাওরান বাজার' : 'e.g., Karwan Bazar, Dhaka',
                   prefixIcon: const Icon(Icons.location_on, color: Colors.redAccent),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   filled: true,
@@ -424,7 +440,7 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
                 style: GoogleFonts.hindSiliguri(),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'গন্তব্য ঠিকানা দিন';
+                    return isBn ? 'গন্তব্য ঠিকানা দিন' : 'Enter destination address';
                   }
                   return null;
                 },
@@ -436,11 +452,11 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
                 height: 36,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
-                  itemCount: _destinationSuggestions.length,
+                  itemCount: destinationSuggestions.length,
                   separatorBuilder: (_, __) => const SizedBox(width: 8),
                   itemBuilder: (context, i) {
                     return GestureDetector(
-                      onTap: () => _dropoffController.text = _destinationSuggestions[i],
+                      onTap: () => _dropoffController.text = destinationSuggestions[i],
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
@@ -449,7 +465,7 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
                           border: Border.all(color: Colors.green.shade200),
                         ),
                         child: Text(
-                          _destinationSuggestions[i],
+                          destinationSuggestions[i],
                           style: GoogleFonts.hindSiliguri(
                             fontSize: 12,
                             color: Colors.green.shade800,
@@ -468,22 +484,22 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
                 controller: _distanceController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: InputDecoration(
-                  labelText: 'আনুমানিক দূরত্ব (কিলোমিটার) *',
-                  hintText: 'যেমন: ১৫',
+                  labelText: isBn ? 'আনুমানিক দূরত্ব (কিলোমিটার) *' : 'Approximate Distance (km) *',
+                  hintText: isBn ? 'যেমন: ১৫' : 'e.g., 15',
                   prefixIcon: const Icon(Icons.route, color: Colors.grey),
-                  suffixText: 'কিমি',
+                  suffixText: isBn ? 'কিমি' : 'km',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   filled: true,
                   fillColor: Colors.white,
                   labelStyle: GoogleFonts.hindSiliguri(),
                   hintStyle: GoogleFonts.hindSiliguri(color: Colors.grey.shade400),
-                  helperText: 'দূরত্ব দিলে ভাড়া স্বয়ংক্রিয়ভাবে হিসাব হবে',
+                  helperText: isBn ? 'দূরত্ব দিলে ভাড়া স্বয়ংক্রিয়ভাবে হিসাব হবে' : 'Fare will auto-calculate based on km',
                   helperStyle: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.grey.shade500),
                 ),
                 style: GoogleFonts.hindSiliguri(),
                 validator: (value) {
-                  if (value == null || value.isEmpty) return 'দূরত্ব দিন';
-                  if (double.tryParse(value) == null) return 'সঠিক সংখ্যা দিন';
+                  if (value == null || value.isEmpty) return isBn ? 'দূরত্ব দিন' : 'Enter distance';
+                  if (double.tryParse(value) == null) return isBn ? 'সঠিক সংখ্যা দিন' : 'Enter a valid number';
                   return null;
                 },
               ),
@@ -494,8 +510,8 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
                 controller: _goodsDescController,
                 maxLines: 2,
                 decoration: InputDecoration(
-                  labelText: 'মালামালের বিবরণ',
-                  hintText: 'যেমন: ৫০০ কেজি ধান, ২০০ কেজি আলু',
+                  labelText: isBn ? 'মালামালের বিবরণ' : 'Goods / Cargo Description',
+                  hintText: isBn ? 'যেমন: ৫০০ কেজি ধান, ২০০ কেজি আলু' : 'e.g., 500 kg rice, 200 kg potato',
                   prefixIcon: const Icon(Icons.inventory_2, color: Colors.grey),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   filled: true,
@@ -512,7 +528,7 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Colors.green.shade50, Colors.green.shade100.withOpacity(0.5)],
+                    colors: [Colors.green.shade50, Colors.green.shade100.withValues(alpha: 0.5)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -527,7 +543,7 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
                         const Icon(Icons.receipt_long, color: Color(0xFF2E7D32), size: 20),
                         const SizedBox(width: 8),
                         Text(
-                          'ভাড়ার হিসাব',
+                          isBn ? 'ভাড়ার হিসাব' : 'Fare Breakdown',
                           style: GoogleFonts.hindSiliguri(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -537,22 +553,28 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    _fareRow('বেস ভাড়া:', '৳${widget.baseFare.toStringAsFixed(0)}'),
-                    const SizedBox(height: 8),
                     _fareRow(
-                      'দূরত্ব খরচ:',
-                      _distanceController.text.isNotEmpty && double.tryParse(_distanceController.text) != null
-                          ? '${_distanceController.text} কিমি × ৳${widget.perKmRate.toStringAsFixed(0)} = ৳${(double.tryParse(_distanceController.text)! * widget.perKmRate).toStringAsFixed(0)}'
-                          : 'দূরত্ব দিন',
+                      isBn ? 'বেস ভাড়া:' : 'Base Fare:',
+                      '৳${widget.baseFare.toStringAsFixed(0)}',
                     ),
                     const SizedBox(height: 8),
-                    _fareRow('প্ল্যাটফর্ম প্রটেকশন ফি (৫%):', '৳${(_estimatedFare * 0.05).toStringAsFixed(0)}'),
+                    _fareRow(
+                      isBn ? 'দূরত্ব খরচ:' : 'Distance Cost:',
+                      _distanceController.text.isNotEmpty && double.tryParse(_distanceController.text) != null
+                          ? '${_distanceController.text} ${isBn ? 'কিমি' : 'km'} × ৳${widget.perKmRate.toStringAsFixed(0)} = ৳${(double.tryParse(_distanceController.text)! * widget.perKmRate).toStringAsFixed(0)}'
+                          : (isBn ? 'দূরত্ব দিন' : 'Enter distance'),
+                    ),
+                    const SizedBox(height: 8),
+                    _fareRow(
+                      isBn ? 'প্ল্যাটফর্ম প্রটেকশন ফি (৫%):' : 'Platform Protection (5%):',
+                      '৳${(_estimatedFare * 0.05).toStringAsFixed(0)}',
+                    ),
                     const Divider(height: 20, color: Colors.green),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'মোট প্রদেয় ভাড়া:',
+                          isBn ? 'মোট প্রদেয় ভাড়া:' : 'Total Payable Fare:',
                           style: GoogleFonts.hindSiliguri(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
@@ -574,7 +596,7 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'চালক নেট আয় পাবেন (৯৫%):',
+                          isBn ? 'চালক নেট আয় পাবেন (৯৫%):' : 'Driver Net Payout (95%):',
                           style: GoogleFonts.hindSiliguri(
                             fontSize: 12,
                             color: Colors.grey.shade700,
@@ -604,7 +626,9 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
-                              '🔒 ভাড়া এস্ক্রোতে সুরক্ষিত থাকবে এবং গন্তব্যে পৌঁছার পর ওটিপি দিলে চালকের ওয়ালেটে জমা হবে।',
+                              isBn
+                                  ? '🔒 ভাড়া এস্ক্রোতে সুরক্ষিত থাকবে এবং গন্তব্যে পৌঁছার পর ওটিপি দিলে চালকের ওয়ালেটে জমা হবে।'
+                                  : '🔒 Fare is safely held in escrow and released to the driver upon delivery OTP confirmation.',
                               style: GoogleFonts.hindSiliguri(fontSize: 10, color: const Color(0xFF0D47A1)),
                             ),
                           ),
@@ -620,7 +644,7 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: _isSubmitting ? null : _submitBooking,
+                  onPressed: _isSubmitting ? null : () => _submitBooking(isBn),
                   icon: _isSubmitting
                       ? const SizedBox(
                           height: 20,
@@ -629,7 +653,9 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
                         )
                       : const Icon(Icons.check_circle_outline),
                   label: Text(
-                    _isSubmitting ? 'পাঠানো হচ্ছে...' : 'বুকিং নিশ্চিত করুন',
+                    _isSubmitting
+                        ? (isBn ? 'পাঠানো হচ্ছে...' : 'Sending Request...')
+                        : (isBn ? 'বুকিং নিশ্চিত করুন' : 'Confirm Transport Booking'),
                     style: GoogleFonts.hindSiliguri(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -649,7 +675,9 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
               // Note
               Center(
                 child: Text(
-                  '📞 বুকিং নিশ্চিত হলে চালক আপনাকে ফোন করবেন',
+                  isBn 
+                      ? '📞 বুকিং নিশ্চিত হলে চালক আপনাকে ফোন করবেন'
+                      : '📞 Driver will contact you upon booking confirmation',
                   style: GoogleFonts.hindSiliguri(
                     fontSize: 13,
                     color: Colors.grey.shade600,
@@ -680,7 +708,7 @@ class _TransportBookingScreenState extends State<TransportBookingScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(

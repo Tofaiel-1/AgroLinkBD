@@ -187,6 +187,7 @@ class _FarmManagementScreenState extends State<FarmManagementScreen> {
   }
 
   Widget _buildSliverAppBar() {
+    final bool isBn = LanguageProvider.isBn(context);
     return SliverAppBar(
       expandedHeight: 160.0,
       pinned: true,
@@ -200,11 +201,11 @@ class _FarmManagementScreenState extends State<FarmManagementScreen> {
       flexibleSpace: FlexibleSpaceBar(
         titlePadding: const EdgeInsets.only(left: 20, bottom: 20),
         title: Text(
-          LanguageProvider.isBn(context) ? 'আমার খামার সমূহ' : 'Agro Dashboard',
-          style: GoogleFonts.openSans(
+          isBn ? 'আমার খামার সমূহ' : 'My Farms & Plots',
+          style: GoogleFonts.hindSiliguri(
             fontWeight: FontWeight.bold,
             color: Colors.white,
-            fontSize: 22,
+            fontSize: 20,
           ),
         ),
         background: Container(
@@ -228,7 +229,7 @@ class _FarmManagementScreenState extends State<FarmManagementScreen> {
                 top: -40,
                 child: CircleAvatar(
                   radius: 100,
-                  backgroundColor: Colors.white.withOpacity(0.08),
+                  backgroundColor: Colors.white.withValues(alpha: 0.08),
                 ),
               ),
               Positioned(
@@ -236,7 +237,7 @@ class _FarmManagementScreenState extends State<FarmManagementScreen> {
                 bottom: -20,
                 child: CircleAvatar(
                   radius: 60,
-                  backgroundColor: Colors.white.withOpacity(0.05),
+                  backgroundColor: Colors.white.withValues(alpha: 0.05),
                 ),
               ),
               Positioned(
@@ -249,7 +250,7 @@ class _FarmManagementScreenState extends State<FarmManagementScreen> {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),

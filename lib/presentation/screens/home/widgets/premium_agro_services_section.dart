@@ -82,9 +82,9 @@ class PremiumAgroServicesSection extends StatelessWidget {
             children: [
               _buildServiceTile(
                 context: context,
-                title: isBn ? 'কৃষি ও মৎস্য ডাক্তার 🩺' : 'Agri & Fish Doctor',
+                title: isBn ? 'কৃষি ও মৎস্য ডাক্তার 🩺' : 'Agri & Fish Doctor 🩺',
                 subtitle: isBn ? 'লাইভ ভিডিও কল পরামর্শ' : 'Live Specialist Consult',
-                badge: '৳৩০ টোকেন',
+                badge: isBn ? '৳৩০ টোকেন' : '৳30 Token',
                 badgeColor: Colors.purple,
                 icon: Icons.video_camera_front_outlined,
                 color: const Color(0xFF6A1B9A),
@@ -93,9 +93,9 @@ class PremiumAgroServicesSection extends StatelessWidget {
               ),
               _buildServiceTile(
                 context: context,
-                title: isBn ? 'পাইকারি চাহিদা বোর্ড 📋' : 'Bulk RFQ Board',
+                title: isBn ? 'পাইকারি চাহিদা বোর্ড 📋' : 'Bulk RFQ Board 📋',
                 subtitle: isBn ? 'পাইকারদের বড় টেন্ডার' : 'Wholesale Tenders',
-                badge: 'বড় ডিল ⚡',
+                badge: isBn ? 'বড় ডিল ⚡' : 'Bulk Deal ⚡',
                 badgeColor: Colors.red,
                 icon: Icons.assignment_outlined,
                 color: const Color(0xFFC62828),
@@ -104,9 +104,9 @@ class PremiumAgroServicesSection extends StatelessWidget {
               ),
               _buildServiceTile(
                 context: context,
-                title: isBn ? 'মেশিনারি ও হার্ভেস্টার 🚜' : 'Machinery Rental',
-                subtitle: isBn ? 'ট্রাক্টর ও কম্বাইন ভাড়া' : 'Harvester & Drone Rental',
-                badge: 'এস্ক্রো সুরক্ষিত',
+                title: isBn ? 'মেশিনারি ও হার্ভেস্টার 🚜' : 'Machinery Rental 🚜',
+                subtitle: isBn ? 'ট্রাক্টর ও কম্বাইন ভাড়া' : 'Tractor & Harvester',
+                badge: isBn ? 'এস্ক্রো সুরক্ষিত' : 'Escrow Protected',
                 badgeColor: Colors.amber.shade900,
                 icon: Icons.agriculture_outlined,
                 color: const Color(0xFFE65100),
@@ -115,9 +115,9 @@ class PremiumAgroServicesSection extends StatelessWidget {
               ),
               _buildServiceTile(
                 context: context,
-                title: isBn ? 'উপজেলা ট্রান্সপোর্ট 🚚' : 'Upazila Transport',
+                title: isBn ? 'উপজেলা ট্রান্সপোর্ট 🚚' : 'Upazila Transport 🚚',
                 subtitle: isBn ? 'পিকআপ ও ট্রাক বুকিং' : 'Live Truck GPS Booking',
-                badge: '৫% প্ল্যাটফর্ম সেফটি',
+                badge: isBn ? '৫% প্ল্যাটফর্ম সেফটি' : '5% Platform Safety',
                 badgeColor: Colors.blue,
                 icon: Icons.local_shipping_outlined,
                 color: const Color(0xFF1565C0),
@@ -165,7 +165,7 @@ class PremiumAgroServicesSection extends StatelessWidget {
                       Row(
                         children: [
                           Text(
-                            'ACI & Lal Teer পার্টনার জোন',
+                            isBn ? 'ACI ও লাল তীর পার্টনার জোন' : 'ACI & Lal Teer Partner Zone',
                             style: GoogleFonts.hindSiliguri(
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
@@ -180,7 +180,7 @@ class PremiumAgroServicesSection extends StatelessWidget {
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
-                              'SPONSORED',
+                              isBn ? 'স্পন্সরড' : 'SPONSORED',
                               style: GoogleFonts.poppins(
                                 fontSize: 8,
                                 fontWeight: FontWeight.bold,
@@ -192,7 +192,9 @@ class PremiumAgroServicesSection extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'সার্টিফাইড হাইব্রিড বীজ ও ফিডে আকর্ষণীয় ছাড়',
+                        isBn 
+                            ? 'সার্টিফাইড হাইব্রিড বীজ ও ফিডে আকর্ষণীয় ছাড়' 
+                            : 'Attractive discounts on certified hybrid seeds & feed',
                         style: GoogleFonts.hindSiliguri(
                           fontSize: 11,
                           color: Colors.white.withValues(alpha: 0.85),
@@ -226,12 +228,12 @@ class PremiumAgroServicesSection extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withValues(alpha: 0.25), width: 1.2),
+          border: Border.all(color: color.withValues(alpha: isDark ? 0.35 : 0.25), width: 1.2),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+              color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.03),
               blurRadius: 8,
               offset: const Offset(0, 3),
             ),

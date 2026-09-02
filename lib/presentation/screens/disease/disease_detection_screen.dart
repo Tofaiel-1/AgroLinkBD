@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 import 'disease_result_screen.dart';
 
 class DiseaseDetectionScreen extends StatefulWidget {
@@ -50,14 +52,16 @@ class _DiseaseDetectionScreenState extends State<DiseaseDetectionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isBn = LanguageProvider.isBn(context);
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
-          'রোগ নির্ণয়',
-          style: TextStyle(color: Colors.white),
+        title: Text(
+          isBn ? 'রোগ নির্ণয় 🌿' : 'Disease Detection 🌿',
+          style: GoogleFonts.hindSiliguri(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -83,13 +87,13 @@ class _DiseaseDetectionScreenState extends State<DiseaseDetectionScreen> {
                   Icon(
                     Icons.camera_alt_outlined,
                     size: 100,
-                    color: Colors.white.withOpacity(0.5),
+                    color: Colors.white.withValues(alpha: 0.5),
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'ক্যামেরা লোড হচ্ছে...',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.7),
+                    isBn ? 'ক্যামেরা লোড হচ্ছে...' : 'Loading camera...',
+                    style: GoogleFonts.hindSiliguri(
+                      color: Colors.white.withValues(alpha: 0.7),
                       fontSize: 16,
                     ),
                   ),
@@ -118,15 +122,15 @@ class _DiseaseDetectionScreenState extends State<DiseaseDetectionScreen> {
               margin: const EdgeInsets.symmetric(horizontal: 32),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.6),
+                color: Colors.black.withValues(alpha: 0.6),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Text(
-                'পাতার ছবি নিন',
+              child: Text(
+                isBn ? 'পাতার স্পষ্ট ছবি নিন' : 'Take a Clear Leaf Photo',
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: GoogleFonts.hindSiliguri(
                   color: Colors.white,
-                  fontSize: 20,
+                  fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -144,13 +148,13 @@ class _DiseaseDetectionScreenState extends State<DiseaseDetectionScreen> {
                   margin: const EdgeInsets.symmetric(horizontal: 32),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.6),
+                    color: Colors.black.withValues(alpha: 0.6),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Text(
-                    'পাতাকে ফ্রেমের মধ্যে রাখুন',
+                  child: Text(
+                    isBn ? 'আক্রান্ত পাতাকে ফ্রেমের মধ্যে রাখুন' : 'Keep infected leaf inside the frame',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: GoogleFonts.hindSiliguri(
                       color: Colors.white,
                       fontSize: 14,
                     ),

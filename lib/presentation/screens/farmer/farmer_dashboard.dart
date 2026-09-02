@@ -25,6 +25,7 @@ import 'package:agrolinkbd/presentation/widgets/weather_card_widget.dart';
 import 'package:agrolinkbd/presentation/screens/agri_info/emergency_weather_services_screen.dart';
 import 'package:agrolinkbd/presentation/screens/notifications/farmer_notifications.dart';
 import 'package:agrolinkbd/presentation/screens/home/widgets/premium_agro_services_section.dart';
+import 'package:agrolinkbd/presentation/screens/analytics/farmer_analytics.dart';
 
 class FarmerDashboard extends StatefulWidget {
   const FarmerDashboard({super.key});
@@ -113,26 +114,43 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
     super.dispose();
   }
 
+  String _getTimeGreeting(BuildContext context) {
+    final hour = DateTime.now().hour;
+    if (hour >= 5 && hour < 12) {
+      return FarmerTranslations.tr(context, 'good_morning');
+    } else if (hour >= 12 && hour < 16) {
+      return FarmerTranslations.tr(context, 'good_afternoon');
+    } else if (hour >= 16 && hour < 19) {
+      return FarmerTranslations.tr(context, 'good_evening');
+    } else {
+      return FarmerTranslations.tr(context, 'good_night');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Nature inspired color palette
-    const Color emeraldGreen = Color(0xFF2E7D32);
-    const Color earthyBrown = Color(0xFF795548);
-    const Color cleanWhite = Color(0xFFFFFFFF);
-    const Color lightBackground = Color(0xFFF5F7FA);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bool isBn = LanguageProvider.isBn(context);
+
+    // Nature inspired dynamic color palette
+    final Color emeraldGreen = isDark ? const Color(0xFF66BB6A) : const Color(0xFF2E7D32);
+    final Color earthyBrown = isDark ? const Color(0xFFA1887F) : const Color(0xFF795548);
+    final Color screenBg = isDark ? const Color(0xFF121212) : const Color(0xFFF5F7FA);
+    final Color headerBg = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final Color primaryText = isDark ? Colors.white : Colors.black87;
+    final Color secondaryText = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
 
     return Scaffold(
-      backgroundColor: lightBackground,
+      backgroundColor: screenBg,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(70),
         child: Container(
           padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
           decoration: BoxDecoration(
-            color: cleanWhite,
+            color: headerBg,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 2),
               ),
@@ -160,12 +178,12 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
                             final photo = up.currentUser?.profileImage;
                             return CircleAvatar(
                               radius: 20,
-                              backgroundColor: emeraldGreen.withOpacity(0.15),
+                              backgroundColor: emeraldGreen.withValues(alpha: 0.15),
                               backgroundImage: (photo != null && photo.isNotEmpty)
                                   ? NetworkImage(photo) as ImageProvider
                                   : null,
                               child: (photo == null || photo.isEmpty)
-                                  ? const Icon(Icons.person, color: Color(0xFF2E7D32), size: 22)
+                                  ? Icon(Icons.person, color: emeraldGreen, size: 22)
                                   : null,
                             );
                           },
@@ -179,35 +197,35 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
                           String upa = user?.upazila ?? '';
                           String dist = user?.district ?? '';
                           if (dist.toLowerCase() == 'joypurhat' || (upa.isEmpty && dist.isEmpty)) {
-                            upa = 'গুরুদাসপুর';
-                            dist = 'নাটোর';
+                            upa = isBn ? 'গুরুদাসপুর' : 'Gurudaspur';
+                            dist = isBn ? 'নাটোর' : 'Natore';
                           }
                           if (upa.isEmpty && user?.address != null) {
                             final addr = user!.address!.toLowerCase();
                             if (addr.contains('gurudaspur') || addr.contains('গুরুদাসপুর')) {
-                              upa = 'গুরুদাসপুর';
-                              dist = 'নাটোর';
+                              upa = isBn ? 'গুরুদাসপুর' : 'Gurudaspur';
+                              dist = isBn ? 'নাটোর' : 'Natore';
                             } else if (addr.contains('singra') || addr.contains('সিংড়া')) {
-                              upa = 'সিংড়া';
-                              dist = 'নাটোর';
+                              upa = isBn ? 'সিংড়া' : 'Singra';
+                              dist = isBn ? 'নাটোর' : 'Natore';
                             } else if (addr.contains('natore') || addr.contains('নাটোর')) {
-                              upa = 'নাটোর সদর';
-                              dist = 'নাটোর';
+                              upa = isBn ? 'নাটোর সদর' : 'Natore Sadar';
+                              dist = isBn ? 'নাটোর' : 'Natore';
                             }
                           }
                           final locText = upa.isNotEmpty
                               ? '$upa, $dist'
-                              : (dist.isNotEmpty ? dist : 'গুরুদাসপুর, নাটোর');
+                              : (dist.isNotEmpty ? dist : (isBn ? 'গুরুদাসপুর, নাটোর' : 'Gurudaspur, Natore'));
 
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                '${FarmerTranslations.tr(context, 'good_morning')},',
+                                '${_getTimeGreeting(context)},',
                                 style: GoogleFonts.hindSiliguri(
                                   fontSize: 12,
-                                  color: Colors.grey.shade600,
+                                  color: secondaryText,
                                 ),
                               ),
                               Text(
@@ -215,7 +233,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
                                 style: GoogleFonts.hindSiliguri(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
+                                  color: primaryText,
                                   height: 1.1,
                                 ),
                               ),
@@ -243,86 +261,86 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
                 Row(
                   children: [
                     GestureDetector(
-                      onTap: () {
-                        Get.to(() => WalletScreen(userId: _userId))?.then((_) => _fetchBalance());
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: emeraldGreen.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: emeraldGreen.withOpacity(0.3)),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.account_balance_wallet, size: 16, color: emeraldGreen),
-                            const SizedBox(width: 4),
-                            StreamBuilder<DocumentSnapshot>(
-                              stream: FirebaseFirestore.instance.collection('cards').doc(_userId).snapshots(),
-                              builder: (context, snapshot) {
-                                String? walletPin;
-                                if (snapshot.hasData && snapshot.data!.data() != null) {
-                                  walletPin = (snapshot.data!.data() as Map<String, dynamic>)['walletPin'];
-                                }
-                                
-                                return SecureBalanceWidget(
-                                  balance: _balance,
-                                  pin: walletPin,
-                                  pinFieldType: 'walletBalance',
-                                  textColor: emeraldGreen,
-                                  fontSize: 14.0,
-                                  label: 'Tap to view',
-                                );
-                              }
-                            ),
-                          ],
-                        ),
-                      ),
+                  onTap: () {
+                    Get.to(() => WalletScreen(userId: _userId))?.then((_) => _fetchBalance());
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: emeraldGreen.withValues(alpha: isDark ? 0.2 : 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: emeraldGreen.withValues(alpha: 0.3)),
                     ),
-                    const SizedBox(width: 12),
-                    GestureDetector(
-                      onTap: () => Get.to(() => const FarmerNotificationsScreen()),
-                      child: StreamBuilder<QuerySnapshot>(
-                        stream: FirebaseFirestore.instance
-                            .collection('users')
-                            .doc(_userId)
-                            .collection('notifications')
-                            .where('isRead', isEqualTo: false)
-                            .snapshots(),
-                        builder: (context, snap) {
-                          final count = snap.hasData ? snap.data!.docs.length : 0;
-                          return Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              const Icon(Icons.notifications_outlined, color: Colors.black87, size: 28),
-                              if (count > 0)
-                                Positioned(
-                                  right: -4,
-                                  top: -4,
-                                  child: Container(
-                                    padding: const EdgeInsets.all(4),
-                                    decoration: const BoxDecoration(
-                                      color: Colors.red,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Text(
-                                      count > 9 ? '9+' : '$count',
-                                      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                                    ),
-                                  ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.account_balance_wallet, size: 16, color: emeraldGreen),
+                        const SizedBox(width: 4),
+                        StreamBuilder<DocumentSnapshot>(
+                          stream: FirebaseFirestore.instance.collection('cards').doc(_userId).snapshots(),
+                          builder: (context, snapshot) {
+                            String? walletPin;
+                            if (snapshot.hasData && snapshot.data!.data() != null) {
+                              walletPin = (snapshot.data!.data() as Map<String, dynamic>)['walletPin'];
+                            }
+                            
+                            return SecureBalanceWidget(
+                              balance: _balance,
+                              pin: walletPin,
+                              pinFieldType: 'walletBalance',
+                              textColor: emeraldGreen,
+                              fontSize: 14.0,
+                              label: FarmerTranslations.tr(context, 'tap_to_view'),
+                            );
+                          }
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                GestureDetector(
+                  onTap: () => Get.to(() => const FarmerNotificationsScreen()),
+                  child: StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(_userId)
+                        .collection('notifications')
+                        .where('isRead', isEqualTo: false)
+                        .snapshots(),
+                    builder: (context, snap) {
+                      final count = snap.hasData ? snap.data!.docs.length : 0;
+                      return Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Icon(Icons.notifications_outlined, color: primaryText, size: 28),
+                          if (count > 0)
+                            Positioned(
+                              right: -4,
+                              top: -4,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
                                 ),
-                            ],
-                          );
-                        },
-                      ),
-                    ),
-                  ],
+                                child: Text(
+                                  count > 9 ? '9+' : '$count',
+                                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
                 ),
               ],
             ),
-          ),
+          ],
         ),
       ),
+    ),
+  ),
       body: FadeTransition(
         opacity: _fadeAnimation,
         child: CustomScrollView(
@@ -333,72 +351,11 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 1. Hire a Truck Transport Banner
-                    InkWell(
-                      onTap: () => Get.to(() => const UpazilaTransportScreen()),
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: Colors.orange.shade700.withValues(alpha: 0.35),
-                            width: 1.2,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.orange.shade700.withValues(alpha: 0.08),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: Colors.orange.shade50,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(Icons.local_shipping, color: Colors.orange.shade800, size: 24),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    LanguageProvider.isBn(context) ? 'জরুরি ট্রাক ও পরিবহন ভাড়া 🚛' : 'Hire a Truck Transport 🚛',
-                                    style: GoogleFonts.hindSiliguri(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.orange.shade900,
-                                    ),
-                                  ),
-                                  Text(
-                                    FarmerTranslations.tr(context, 'emergency_transport'),
-                                    style: GoogleFonts.hindSiliguri(
-                                      fontSize: 11,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Icon(Icons.arrow_forward_ios, size: 14, color: Colors.orange.shade800),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
                     // Global Announcements Banner
                     const GlobalAnnouncementBanner(),
                     const SizedBox(height: 12),
                     
-                    // 2. Sleek & Compact Weather Card
+                    // 1. Sleek & Compact Weather Card
                     Consumer<UserProvider>(
                       builder: (context, userProvider, _) {
                         final user = userProvider.currentUser;
@@ -410,6 +367,112 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
                       },
                     ),
                     const SizedBox(height: 16),
+
+                    // Masterclass Live Farm Analytics Bento Card
+                    GestureDetector(
+                      onTap: () => Get.to(() => const FarmerAnalyticsScreen()),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: isDark
+                                ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
+                                : [const Color(0xFF006A4E), const Color(0xFF1B5E20)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF006A4E).withValues(alpha: 0.28),
+                              blurRadius: 14,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(alpha: 0.2),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: const Icon(Icons.analytics_rounded, color: Colors.white, size: 22),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          isBn ? 'খামার বিশ্লেষণ ও স্মার্ট ইনসাইটস 📊' : 'Farm Analytics & Insights 📊',
+                                          style: GoogleFonts.hindSiliguri(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        Text(
+                                          isBn ? 'রিয়েল-টাইম আয়, ব্যয়, ফলন ও এআই বাজার পূর্বাভাস' : 'Real-time ROI, Yield & AI Market Forecast',
+                                          style: GoogleFonts.hindSiliguri(
+                                            fontSize: 11,
+                                            color: Colors.white.withValues(alpha: 0.85),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 16),
+                              ],
+                            ),
+                            const SizedBox(height: 14),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                children: [
+                                  Column(
+                                    children: [
+                                      Text('স্বাস্থ্য সূচক', style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.white.withValues(alpha: 0.8))),
+                                      const SizedBox(height: 2),
+                                      Text('৮৮% (চমৎকার)', style: GoogleFonts.hindSiliguri(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.amberAccent)),
+                                    ],
+                                  ),
+                                  Container(height: 24, width: 1, color: Colors.white.withValues(alpha: 0.25)),
+                                  Column(
+                                    children: [
+                                      Text('চলতি লাভ মার্জিন', style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.white.withValues(alpha: 0.8))),
+                                      const SizedBox(height: 2),
+                                      Text('+৩৯.৫% 🚀', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white)),
+                                    ],
+                                  ),
+                                  Container(height: 24, width: 1, color: Colors.white.withValues(alpha: 0.25)),
+                                  Column(
+                                    children: [
+                                      Text('পিডিএফ রিপোর্ট', style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.white.withValues(alpha: 0.8))),
+                                      const SizedBox(height: 2),
+                                      Text('সার্টিফাইড ✓', style: GoogleFonts.hindSiliguri(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.lightGreenAccent)),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
                     
                     // 2. Quick Actions Grid
                     Text(
@@ -417,64 +480,64 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
                       style: GoogleFonts.hindSiliguri(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: primaryText,
                       ),
                     ),
                     const SizedBox(height: 16),
                     _buildQuickActionsGrid(context, emeraldGreen, earthyBrown),
                     const SizedBox(height: 24),
 
-                    // Premium Agro Services Section (Right below Quick Actions)
+                    // Premium Agro Services Section
                     PremiumAgroServicesSection(
-                      isBn: LanguageProvider.isBn(context),
+                      isBn: isBn,
                       padding: EdgeInsets.zero,
                     ),
                     const SizedBox(height: 24),
 
                     // 3. Today's Tasks
                     Text(
-                      LanguageProvider.isBn(context) ? 'আজকের কাজ (Daily Tasks)' : 'Daily Tasks',
+                      FarmerTranslations.tr(context, 'daily_tasks'),
                       style: GoogleFonts.hindSiliguri(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: primaryText,
                       ),
                     ),
                     const SizedBox(height: 12),
-                    _buildTasksChecklist(emeraldGreen),
+                    _buildTasksChecklist(emeraldGreen, isDark),
                     const SizedBox(height: 24),
 
                     // 4. Market Price Ticker
                     Text(
-                      LanguageProvider.isBn(context) ? 'লাইভ বাজার দর' : 'Live Market Price',
+                      FarmerTranslations.tr(context, 'live_market_price'),
                       style: GoogleFonts.hindSiliguri(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: primaryText,
                       ),
                     ),
                     const SizedBox(height: 12),
-                    _buildMarketPriceTicker(),
+                    _buildMarketPriceTicker(isDark),
                     const SizedBox(height: 24),
                     
                     // 5. Activity Report Generation
                     Text(
-                      LanguageProvider.isBn(context) ? 'অ্যাক্টিভিটি রিপোর্ট' : 'Activity Report',
+                      FarmerTranslations.tr(context, 'activity_report'),
                       style: GoogleFonts.hindSiliguri(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: primaryText,
                       ),
                     ),
                     const SizedBox(height: 12),
                     Consumer<UserProvider>(
                       builder: (context, userProvider, _) {
                         return ReportGenerationCard(
-                          userName: userProvider.currentUser?.name ?? 'কৃষক',
+                          userName: userProvider.currentUser?.name ?? FarmerTranslations.tr(context, 'farmer'),
                           userId: _userId,
                           userRole: 'farmer',
-                          amount1Label: LanguageProvider.isBn(context) ? 'মোট আয়' : 'Total Income',
-                          amount2Label: LanguageProvider.isBn(context) ? 'মোট খরচ' : 'Total Expense',
+                          amount1Label: FarmerTranslations.tr(context, 'total_income'),
+                          amount2Label: FarmerTranslations.tr(context, 'total_expense'),
                           color: emeraldGreen,
                         );
                       }
@@ -492,110 +555,113 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
   }
 
   Widget _buildQuickActionsGrid(BuildContext context, Color emeraldGreen, Color earthyBrown) {
-    final bool isBn = LanguageProvider.isBn(context);
     return GridView.count(
       physics: const NeverScrollableScrollPhysics(),
       shrinkWrap: true,
       crossAxisCount: 4,
-      mainAxisSpacing: 12,
-      crossAxisSpacing: 12,
-      childAspectRatio: 0.85,
+      mainAxisSpacing: 10,
+      crossAxisSpacing: 10,
+      childAspectRatio: 0.76,
       children: [
         // Row 1
         _ActionCard(
-          title: isBn ? 'ফসল বিক্রি' : 'Sell Crop',
+          title: FarmerTranslations.tr(context, 'sell_crop'),
           icon: Icons.storefront,
           color: emeraldGreen,
           onTap: () => Get.to(() => const AddProductScreen()),
         ),
         _ActionCard(
-          title: isBn ? 'জরুরি সেবা' : 'Emergency',
+          title: FarmerTranslations.tr(context, 'emergency'),
           icon: Icons.emergency_rounded,
           color: Colors.red.shade700,
           onTap: () => Get.to(() => const EmergencyWeatherServicesScreen()),
         ),
         _ActionCard(
-          title: isBn ? 'রোগ নির্ণয়' : 'Disease Check',
+          title: FarmerTranslations.tr(context, 'disease_check'),
           icon: Icons.biotech,
           color: Colors.teal.shade700,
           onTap: () => Get.to(() => const DiseaseDetectionScreen()),
         ),
         _ActionCard(
-          title: isBn ? 'ফসল উপযোগিতা' : 'Suitability',
+          title: FarmerTranslations.tr(context, 'crop_suitability'),
           icon: Icons.agriculture,
           color: Colors.green.shade600,
           onTap: () => Get.to(() => const AgriInfoHubScreen(initialFeature: 'suitability')),
         ),
         _ActionCard(
-          title: isBn ? 'সার সুপারিশ' : 'Fertilizer',
+          title: FarmerTranslations.tr(context, 'fertilizer_rec'),
           icon: Icons.science,
           color: Colors.lightGreen.shade700,
           onTap: () => Get.to(() => const AgriInfoHubScreen(initialFeature: 'fertilizer')),
         ),
         // Row 2
         _ActionCard(
-          title: isBn ? 'ফসল জোন' : 'Crop Zone',
+          title: FarmerTranslations.tr(context, 'crop_zone'),
           icon: Icons.map,
           color: Colors.blue.shade600,
           onTap: () => Get.to(() => const AgriInfoHubScreen(initialFeature: 'zone')),
         ),
         _ActionCard(
-          title: isBn ? 'ফসল বিন্যাস' : 'Crop Pattern',
+          title: FarmerTranslations.tr(context, 'crop_pattern'),
           icon: Icons.view_module,
           color: Colors.orange.shade600,
           onTap: () => Get.to(() => const AgriInfoHubScreen(initialFeature: 'pattern')),
         ),
         _ActionCard(
-          title: isBn ? 'সংরক্ষিত' : 'Saved Data',
+          title: FarmerTranslations.tr(context, 'saved_data'),
           icon: Icons.bookmark,
           color: Colors.indigo.shade500,
           onTap: () => Get.to(() => const SavedAgriDataScreen()),
         ),
         _ActionCard(
-          title: isBn ? 'মাটির গুণাগুণ' : 'Soil Health',
+          title: FarmerTranslations.tr(context, 'soil_health'),
           icon: Icons.landscape,
           color: earthyBrown,
           onTap: () => Get.to(() => const AgriInfoHubScreen(initialFeature: 'soil')),
         ),
         // Row 3
         _ActionCard(
-          title: isBn ? 'বিশেষজ্ঞ' : 'Expert',
+          title: FarmerTranslations.tr(context, 'agri_expert'),
           icon: Icons.support_agent,
           color: Colors.indigo.shade600,
           onTap: () => Get.to(() => const AgriInfoHubScreen(initialFeature: 'disease')),
         ),
         _ActionCard(
-          title: isBn ? 'পরিবহন' : 'Transport',
+          title: FarmerTranslations.tr(context, 'transport'),
           icon: Icons.local_shipping,
           color: earthyBrown,
           onTap: () => Get.to(() => const UpazilaTransportScreen()),
         ),
         _ActionCard(
-          title: isBn ? 'পেমেন্ট' : 'Payment',
+          title: FarmerTranslations.tr(context, 'payment'),
           icon: Icons.payment,
           color: Colors.orange.shade700,
           onTap: () => Get.to(() => DirectTransferScreen(senderId: _userId)),
         ),
         _ActionCard(
-          title: isBn ? 'লোন/ঋণ' : 'Agri Loan',
+          title: FarmerTranslations.tr(context, 'agri_loan'),
           icon: Icons.account_balance_rounded,
           color: Colors.blue.shade700,
           onTap: () {
-            Get.to(() => MicrofinanceKycScreen(userRole: 'farmer', loanType: 'Farmer Crop Loan'));
+            Get.to(() => const MicrofinanceKycScreen(userRole: 'farmer', loanType: 'Farmer Crop Loan'));
           },
         ),
       ],
     );
   }
 
-  Widget _buildTasksChecklist(Color emeraldGreen) {
+  Widget _buildTasksChecklist(Color emeraldGreen, bool isDark) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -617,7 +683,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
                     duration: const Duration(milliseconds: 300),
                     style: GoogleFonts.hindSiliguri(
                       fontSize: 16,
-                      color: task['completed'] ? Colors.grey : Colors.black87,
+                      color: task['completed'] ? Colors.grey : (isDark ? Colors.white : Colors.black87),
                       decoration: task['completed'] ? TextDecoration.lineThrough : TextDecoration.none,
                     ),
                     child: Text(LanguageProvider.isBn(context) ? task['title'] : (task['titleEN'] ?? task['title'])),
@@ -630,7 +696,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
                 ),
               ),
               if (index < _tasks.length - 1)
-                Divider(height: 1, color: Colors.grey.shade200, indent: 16, endIndent: 16),
+                Divider(height: 1, color: isDark ? Colors.grey.shade800 : Colors.grey.shade200, indent: 16, endIndent: 16),
             ],
           );
         }).toList(),
@@ -638,7 +704,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
     );
   }
 
-  Widget _buildMarketPriceTicker() {
+  Widget _buildMarketPriceTicker(bool isDark) {
     final List<Map<String, dynamic>> prices = [
       {'crop': 'বোরো ধান', 'cropEN': 'Boro Rice', 'price': '৳১২০০/মণ', 'priceEN': '৳1200/maund', 'trend': 'up', 'color': Colors.green},
       {'crop': 'আলু', 'cropEN': 'Potato', 'price': '৳৩৫/কেজি', 'priceEN': '৳35/kg', 'trend': 'down', 'color': Colors.red},
@@ -661,11 +727,15 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
             margin: const EdgeInsets.only(right: 12),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
               borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+                width: 1,
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
                   blurRadius: 8,
                   offset: const Offset(0, 4),
                 ),
@@ -680,7 +750,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
                   style: GoogleFonts.hindSiliguri(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: isDark ? Colors.white : Colors.black87,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -692,7 +762,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
                       style: GoogleFonts.poppins(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: Colors.grey.shade700,
+                        color: isDark ? Colors.grey.shade300 : Colors.grey.shade700,
                       ),
                     ),
                     Icon(
@@ -751,6 +821,8 @@ class _ActionCardState extends State<_ActionCard> with SingleTickerProviderState
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return GestureDetector(
       onTapDown: (_) => _controller.forward(),
       onTapUp: (_) {
@@ -762,44 +834,52 @@ class _ActionCardState extends State<_ActionCard> with SingleTickerProviderState
         scale: _scaleAnimation,
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: widget.color.withValues(alpha: isDark ? 0.35 : 0.15),
+              width: 1.0,
+            ),
             boxShadow: [
               BoxShadow(
-                color: widget.color.withOpacity(0.15),
+                color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               ),
             ],
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: widget.color.withOpacity(0.1),
-                  shape: BoxShape.circle,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 6.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: widget.color.withValues(alpha: isDark ? 0.2 : 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(widget.icon, size: 22, color: widget.color),
                 ),
-                child: Icon(widget.icon, size: 26, color: widget.color),
-              ),
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Text(
-                  widget.title,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.hindSiliguri(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                    height: 1.1,
+                const SizedBox(height: 5),
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      widget.title,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.hindSiliguri(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white : Colors.black87,
+                        height: 1.1,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

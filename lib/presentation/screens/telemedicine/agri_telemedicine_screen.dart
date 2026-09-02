@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 
 class AgriTelemedicineScreen extends StatefulWidget {
   const AgriTelemedicineScreen({super.key});
@@ -15,54 +16,73 @@ class _AgriTelemedicineScreenState extends State<AgriTelemedicineScreen> {
   final List<Map<String, dynamic>> _doctors = [
     {
       'id': 'DOC-01',
-      'name': 'কৃষিবিদ ড. মো: আসাদুজ্জামান',
-      'title': 'বিসিএস (কৃষি ক্যাডার) • সাবেক সিনিয়র সাইন্টিফিক অফিসার, BARI',
+      'nameBn': 'কৃষিবিদ ড. মো: আসাদুজ্জামান',
+      'nameEn': 'Dr. Md. Asaduzzaman (Agriculturist)',
+      'titleBn': 'বিসিএস (কৃষি ক্যাডার) • সাবেক সিনিয়র সাইন্টিফিক অফিসার, BARI',
+      'titleEn': 'BCS (Agri Cadre) • Former Senior Scientific Officer, BARI',
       'specialty': 'crop',
       'specialtyBn': 'শস্য ও উদ্যানতত্ত্ব বিশেষজ্ঞ 🌾',
+      'specialtyEn': 'Crop & Horticulture Specialist 🌾',
       'rating': 4.9,
       'consultations': 1250,
       'fee': 50,
       'isOnline': true,
-      'experience': '১৫+ বছর',
-      'location': 'গাজীপুর / বগুড়া রিসার্চ স্টেশন',
+      'experienceBn': '১৫+ বছর',
+      'experienceEn': '15+ Years',
+      'locationBn': 'গাজীপুর / বগুড়া রিসার্চ স্টেশন',
+      'locationEn': 'Gazipur / Bogura Research Station',
       'imageUrl': 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=400&auto=format&fit=crop&q=60',
-      'availableTime': 'আজ বিকাল ৪:০০ - রাত ৯:০০',
+      'availableTimeBn': 'আজ বিকাল ৪:০০ - রাত ৯:০০',
+      'availableTimeEn': 'Today 4:00 PM - 9:00 PM',
     },
     {
       'id': 'DOC-02',
-      'name': 'ড. ফারহানা ইয়াসমিন',
-      'title': 'সিনিয়র রিসার্চার • বাংলাদেশ মৎস্য গবেষণা ইনস্টিটিউট (BFRI)',
+      'nameBn': 'ড. ফারহানা ইয়াসমিন',
+      'nameEn': 'Dr. Farhana Yasmin',
+      'titleBn': 'সিনিয়র রিসার্চার • বাংলাদেশ মৎস্য গবেষণা ইনস্টিটিউট (BFRI)',
+      'titleEn': 'Senior Researcher • Bangladesh Fisheries Research Institute (BFRI)',
       'specialty': 'fish',
       'specialtyBn': 'মাছের রোগ ও পানি ব্যবস্থাপনা 🐟',
+      'specialtyEn': 'Fish Disease & Aqua Quality Specialist 🐟',
       'rating': 4.9,
       'consultations': 890,
       'fee': 40,
       'isOnline': true,
-      'experience': '১২+ বছর',
-      'location': 'ময়মনসিংহ রিসার্চ হেডকোয়ার্টার',
+      'experienceBn': '১২+ বছর',
+      'experienceEn': '12+ Years',
+      'locationBn': 'ময়মনসিংহ রিসার্চ হেডকোয়ার্টার',
+      'locationEn': 'Mymensingh Research HQ',
       'imageUrl': 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&auto=format&fit=crop&q=60',
-      'availableTime': 'আজ দুপুর ৩:০০ - সন্ধ্যা ৭:০০',
+      'availableTimeBn': 'আজ দুপুর ৩:০০ - সন্ধ্যা ৭:০০',
+      'availableTimeEn': 'Today 3:00 PM - 7:00 PM',
     },
     {
       'id': 'DOC-03',
-      'name': 'কৃষিবিদ রফিকুল ইসলাম',
-      'title': 'উপসহকারী কৃষি কর্মকর্তা (DAE) • প্ল্যান্ট ডক্টর',
+      'nameBn': 'কৃষিবিদ রফিকুল ইসলাম',
+      'nameEn': 'Rafiqul Islam (Agriculturist)',
+      'titleBn': 'উপসহকারী কৃষি কর্মকর্তা (DAE) • প্ল্যান্ট ডক্টর',
+      'titleEn': 'Sub-Assistant Agriculture Officer (DAE) • Plant Doctor',
       'specialty': 'crop',
       'specialtyBn': 'কীটপতঙ্গ ও বালাইনাশক বিশেষজ্ঞ 🌿',
+      'specialtyEn': 'Pest & Pesticide Specialist 🌿',
       'rating': 4.8,
       'consultations': 2100,
       'fee': 30,
       'isOnline': false,
-      'experience': '১০+ বছর',
-      'location': 'রাজশাহী কৃষি সম্প্রসারণ অধিদপ্তর',
+      'experienceBn': '১০+ বছর',
+      'experienceEn': '10+ Years',
+      'locationBn': 'রাজশাহী কৃষি সম্প্রসারণ অধিদপ্তর',
+      'locationEn': 'DAE Rajshahi Division',
       'imageUrl': 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=400&auto=format&fit=crop&q=60',
-      'availableTime': 'আগামীকাল সকাল ৯:০০ - দুপুর ১:০০',
+      'availableTimeBn': 'আগামীকাল সকাল ৯:০০ - দুপুর ১:০০',
+      'availableTimeEn': 'Tomorrow 9:00 AM - 1:00 PM',
     },
   ];
 
   @override
   Widget build(BuildContext context) {
     const primaryGreen = Color(0xFF2E7D32);
+    final bool isBn = LanguageProvider.isBn(context);
 
     final filteredDoctors = _selectedSpecialty == 'all'
         ? _doctors
@@ -74,7 +94,7 @@ class _AgriTelemedicineScreenState extends State<AgriTelemedicineScreen> {
         backgroundColor: primaryGreen,
         iconTheme: const IconThemeData(color: Colors.white),
         title: Text(
-          'কৃষি ও মৎস্য ডাক্তার 🩺',
+          isBn ? 'কৃষি ও মৎস্য ডাক্তার 🩺' : 'Agri & Fishery Doctor 🩺',
           style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white),
         ),
         elevation: 0,
@@ -85,9 +105,9 @@ class _AgriTelemedicineScreenState extends State<AgriTelemedicineScreen> {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [primaryGreen, const Color(0xFF1B5E20)],
+                colors: [primaryGreen, Color(0xFF1B5E20)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -99,7 +119,7 @@ class _AgriTelemedicineScreenState extends State<AgriTelemedicineScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'লাইভ বিশেষজ্ঞ পরামর্শ সেবা',
+                      isBn ? 'লাইভ বিশেষজ্ঞ পরামর্শ সেবা' : 'Live Expert Consultation',
                       style: GoogleFonts.hindSiliguri(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
                     Container(
@@ -109,7 +129,7 @@ class _AgriTelemedicineScreenState extends State<AgriTelemedicineScreen> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        'সরকারি বিশেষজ্ঞ',
+                        isBn ? 'সরকারি বিশেষজ্ঞ' : 'Govt Specialists',
                         style: GoogleFonts.hindSiliguri(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.black87),
                       ),
                     ),
@@ -117,8 +137,10 @@ class _AgriTelemedicineScreenState extends State<AgriTelemedicineScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'ফসলের পোকা-মাকড়, মাছের মড়ক বা মাটির সমস্যায় সরাসরি অডিও/ভিডিও কলে বিসিএস কর্মকর্তা ও গবেষকদের পরামর্শ নিন।',
-                  style: GoogleFonts.hindSiliguri(fontSize: 12, color: Colors.white.withOpacity(0.9), height: 1.3),
+                  isBn 
+                      ? 'ফসলের পোকা-মাকড়, মাছের মড়ক বা মাটির সমস্যায় সরাসরি অডিও/ভিডিও কলে বিসিএস কর্মকর্তা ও গবেষকদের পরামর্শ নিন।'
+                      : 'Get direct audio/video call consultations with BCS officers and agricultural researchers for crop pests, fish diseases, and soil issues.',
+                  style: GoogleFonts.hindSiliguri(fontSize: 12, color: Colors.white.withValues(alpha: 0.9), height: 1.3),
                 ),
               ],
             ),
@@ -130,11 +152,11 @@ class _AgriTelemedicineScreenState extends State<AgriTelemedicineScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
-                _filterChip('সব বিশেষজ্ঞ', 'all'),
+                _filterChip(isBn ? 'সব বিশেষজ্ঞ' : 'All Specialists', 'all'),
                 const SizedBox(width: 8),
-                _filterChip('🌾 শস্য ও শাকসবজি', 'crop'),
+                _filterChip(isBn ? '🌾 শস্য ও শাকসবজি' : '🌾 Crop & Vegetables', 'crop'),
                 const SizedBox(width: 8),
-                _filterChip('🐟 মৎস্য ও চিংড়ি', 'fish'),
+                _filterChip(isBn ? '🐟 মৎস্য ও চিংড়ি' : '🐟 Fishery & Aqua', 'fish'),
               ],
             ),
           ),
@@ -146,7 +168,7 @@ class _AgriTelemedicineScreenState extends State<AgriTelemedicineScreen> {
               itemCount: filteredDoctors.length,
               itemBuilder: (context, index) {
                 final doc = filteredDoctors[index];
-                return _buildDoctorCard(doc, primaryGreen);
+                return _buildDoctorCard(doc, primaryGreen, isBn);
               },
             ),
           ),
@@ -176,8 +198,11 @@ class _AgriTelemedicineScreenState extends State<AgriTelemedicineScreen> {
     );
   }
 
-  Widget _buildDoctorCard(Map<String, dynamic> doc, Color primaryGreen) {
+  Widget _buildDoctorCard(Map<String, dynamic> doc, Color primaryGreen, bool isBn) {
     final isOnline = doc['isOnline'] == true;
+    final name = isBn ? doc['nameBn'] : doc['nameEn'];
+    final title = isBn ? doc['titleBn'] : doc['titleEn'];
+    final specialtyText = isBn ? doc['specialtyBn'] : doc['specialtyEn'];
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -186,7 +211,7 @@ class _AgriTelemedicineScreenState extends State<AgriTelemedicineScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -234,7 +259,7 @@ class _AgriTelemedicineScreenState extends State<AgriTelemedicineScreen> {
                       children: [
                         Expanded(
                           child: Text(
-                            doc['name'],
+                            name,
                             style: GoogleFonts.hindSiliguri(
                               fontSize: 15,
                               fontWeight: FontWeight.bold,
@@ -260,13 +285,13 @@ class _AgriTelemedicineScreenState extends State<AgriTelemedicineScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      doc['title'],
+                      title,
                       style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.grey.shade700),
                       maxLines: 2,
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      doc['specialtyBn'],
+                      specialtyText,
                       style: GoogleFonts.hindSiliguri(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF2E7D32)),
                     ),
                   ],
@@ -285,9 +310,12 @@ class _AgriTelemedicineScreenState extends State<AgriTelemedicineScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('পরামর্শ ফি (টোকেন):', style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.grey.shade600)),
                   Text(
-                    '৳ ${doc['fee']} / কল',
+                    isBn ? 'পরামর্শ ফি (টোকেন):' : 'Fee (Token):',
+                    style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.grey.shade600),
+                  ),
+                  Text(
+                    isBn ? '৳ ${doc['fee']} / কল' : '৳ ${doc['fee']} / call',
                     style: GoogleFonts.poppins(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -297,10 +325,12 @@ class _AgriTelemedicineScreenState extends State<AgriTelemedicineScreen> {
                 ],
               ),
               ElevatedButton.icon(
-                onPressed: () => _bookConsultation(doc),
+                onPressed: () => _bookConsultation(doc, isBn),
                 icon: const Icon(Icons.video_call_rounded, color: Colors.white, size: 18),
                 label: Text(
-                  isOnline ? 'সরাসরি কল বুক করুন' : 'অ্যাপয়েন্টমেন্ট নিন',
+                  isOnline 
+                      ? (isBn ? 'সরাসরি কল বুক করুন' : 'Book Call')
+                      : (isBn ? 'অ্যাপয়েন্টমেন্ট নিন' : 'Appointment'),
                   style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white),
                 ),
                 style: ElevatedButton.styleFrom(
@@ -316,7 +346,7 @@ class _AgriTelemedicineScreenState extends State<AgriTelemedicineScreen> {
     );
   }
 
-  void _bookConsultation(Map<String, dynamic> doc) {
+  void _bookConsultation(Map<String, dynamic> doc, bool isBn) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
@@ -324,6 +354,8 @@ class _AgriTelemedicineScreenState extends State<AgriTelemedicineScreen> {
         final fee = doc['fee'] as int;
         final platformCut = (fee * 0.30).toStringAsFixed(0);
         final doctorPayout = (fee * 0.70).toStringAsFixed(0);
+        final name = isBn ? doc['nameBn'] : doc['nameEn'];
+        final title = isBn ? doc['titleBn'] : doc['titleEn'];
 
         return Padding(
           padding: const EdgeInsets.all(20),
@@ -336,14 +368,14 @@ class _AgriTelemedicineScreenState extends State<AgriTelemedicineScreen> {
                   const Icon(Icons.verified, color: Color(0xFF2E7D32)),
                   const SizedBox(width: 8),
                   Text(
-                    'টোকেন পেমেন্ট ও ভিডিও কল রুম',
+                    isBn ? 'টোকেন পেমেন্ট ও ভিডিও কল রুম' : 'Token Payment & Video Call Room',
                     style: GoogleFonts.hindSiliguri(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
               Text(
-                'বিশেষজ্ঞ: ${doc['name']}\nপদবি: ${doc['title']}',
+                '${isBn ? 'বিশেষজ্ঞ' : 'Specialist'}: $name\n${isBn ? 'পদবি' : 'Title'}: $title',
                 style: GoogleFonts.hindSiliguri(fontSize: 13, color: Colors.grey.shade800),
               ),
               const SizedBox(height: 12),
@@ -359,7 +391,7 @@ class _AgriTelemedicineScreenState extends State<AgriTelemedicineScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('মোট কনসাল্টেশন ফি:', style: GoogleFonts.hindSiliguri(fontSize: 13)),
+                        Text(isBn ? 'মোট কনসাল্টেশন ফি:' : 'Total Consultation Fee:', style: GoogleFonts.hindSiliguri(fontSize: 13)),
                         Text('৳ $fee', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold)),
                       ],
                     ),
@@ -367,8 +399,14 @@ class _AgriTelemedicineScreenState extends State<AgriTelemedicineScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('ডাক্তার পাবেন (৭০%): ৳ $doctorPayout', style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.grey.shade700)),
-                        Text('প্ল্যাটফর্ম চার্জ (৩০%): ৳ $platformCut', style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.green.shade900, fontWeight: FontWeight.bold)),
+                        Text(
+                          isBn ? 'ডাক্তার পাবেন (৭০%): ৳ $doctorPayout' : 'Doctor payout (70%): ৳ $doctorPayout',
+                          style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.grey.shade700),
+                        ),
+                        Text(
+                          isBn ? 'প্ল্যাটফর্ম চার্জ (৩০%): ৳ $platformCut' : 'Platform fee (30%): ৳ $platformCut',
+                          style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.green.shade900, fontWeight: FontWeight.bold),
+                        ),
                       ],
                     ),
                   ],
@@ -381,8 +419,10 @@ class _AgriTelemedicineScreenState extends State<AgriTelemedicineScreen> {
                   onPressed: () {
                     Navigator.pop(ctx);
                     Get.snackbar(
-                      '🎉 কল বুকিং সম্পন্ন!',
-                      'ড. ${doc['name']} এর সাথে আপনার ভিডিও কনসাল্টেশন টোকেন সফল হয়েছে। রুম আইডি: #AGRI-${DateTime.now().millisecondsSinceEpoch % 10000}',
+                      isBn ? '🎉 কল বুকিং সম্পন্ন!' : '🎉 Consultation Booked!',
+                      isBn 
+                          ? '$name এর সাথে আপনার ভিডিও কনসাল্টেশন টোকেন সফল হয়েছে। রুম আইডি: #AGRI-${DateTime.now().millisecondsSinceEpoch % 10000}'
+                          : 'Your video consultation token with $name is confirmed. Room ID: #AGRI-${DateTime.now().millisecondsSinceEpoch % 10000}',
                       backgroundColor: const Color(0xFF2E7D32),
                       colorText: Colors.white,
                       duration: const Duration(seconds: 4),
@@ -390,7 +430,9 @@ class _AgriTelemedicineScreenState extends State<AgriTelemedicineScreen> {
                   },
                   icon: const Icon(Icons.payment, color: Colors.white),
                   label: Text(
-                    'বিকাশ/নগদে ৳$fee পরিশোধ করে কল শুরু করুন',
+                    isBn 
+                        ? 'বিকাশ/নগদে ৳$fee পরিশোধ করে কল শুরু করুন'
+                        : 'Pay ৳$fee via bKash/Nagad & Start Call',
                     style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
                   ),
                   style: ElevatedButton.styleFrom(

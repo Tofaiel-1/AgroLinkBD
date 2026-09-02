@@ -633,16 +633,27 @@ class _BazaarProductsState extends State<BazaarProducts> {
                                               ),
                                               const SizedBox(width: 8),
                                               ElevatedButton(
-                                                onPressed: () {
-                                                  SSLCommerzService.initiatePayment(
+                                                onPressed: () async {
+                                                  final itemPrice = double.tryParse(price) ?? 0.0;
+                                                  final totalAmount = itemPrice * selectedQuantity;
+                                                  final user = FirebaseAuth.instance.currentUser;
+                                                  final success = await SSLCommerzService.initiatePayment(
                                                     context: context,
-                                                    amount: double.tryParse(price) ?? 0.0 * selectedQuantity,
-                                                    productName: name,
-                                                    customerName: "Buyer User",
-                                                    customerEmail: "buyer@example.com",
-                                                    customerPhone: "01700000000",
+                                                    amount: totalAmount,
+                                                    productName: '$name ($selectedQuantity $unit)',
+                                                    customerName: user?.displayName ?? "Buyer User",
+                                                    customerEmail: user?.email ?? "buyer@agrolinkbd.com",
+                                                    customerPhone: user?.phoneNumber ?? "01700000000",
                                                     customerAddress: "Dhaka, Bangladesh",
                                                   );
+                                                  if (success && context.mounted) {
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      SnackBar(
+                                                        content: Text('$name সফলভাবে অর্ডার সম্পন্ন হয়েছে! 🎉'),
+                                                        backgroundColor: Colors.green,
+                                                      ),
+                                                    );
+                                                  }
                                                 },
                                                 style: ElevatedButton.styleFrom(
                                                   backgroundColor: const Color(0xFF1976D2),

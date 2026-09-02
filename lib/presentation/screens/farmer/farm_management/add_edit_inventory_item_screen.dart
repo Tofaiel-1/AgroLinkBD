@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:agrolinkbd/core/models/phase2_models/farm_models.dart';
 import 'package:agrolinkbd/core/services/phase2_services/farm_service.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 
 class AddEditInventoryItemScreen extends StatefulWidget {
   final FarmInventoryItem? item;
@@ -23,16 +24,22 @@ class _AddEditInventoryItemScreenState extends State<AddEditInventoryItemScreen>
   String _selectedCategory = 'Fertilizer';
   String _selectedUnit = 'kg';
 
-  final List<String> _categories = [
-    'Fertilizer',
-    'Seeds',
-    'Chemicals',
-    'Fuel',
-    'Equipment',
-    'Other'
+  final List<Map<String, String>> _categories = [
+    {'id': 'Fertilizer', 'bn': 'সার (Fertilizer)', 'en': 'Fertilizer'},
+    {'id': 'Seeds', 'bn': 'বীজ ও চারা (Seeds)', 'en': 'Seeds'},
+    {'id': 'Chemicals', 'bn': 'কীটনাশক ও বালাইনাশক (Chemicals)', 'en': 'Chemicals'},
+    {'id': 'Fuel', 'bn': 'জ্বালানি (Fuel)', 'en': 'Fuel'},
+    {'id': 'Equipment', 'bn': 'যন্ত্রপাতি (Equipment)', 'en': 'Equipment'},
+    {'id': 'Other', 'bn': 'অন্যান্য (Other)', 'en': 'Other'},
   ];
 
-  final List<String> _units = ['kg', 'liter', 'piece', 'ton', 'bag'];
+  final List<Map<String, String>> _units = [
+    {'id': 'kg', 'bn': 'কেজি', 'en': 'kg'},
+    {'id': 'liter', 'bn': 'লিটার', 'en': 'liter'},
+    {'id': 'piece', 'bn': 'টি / পিস', 'en': 'piece'},
+    {'id': 'ton', 'bn': 'টন', 'en': 'ton'},
+    {'id': 'bag', 'bn': 'বস্তা', 'en': 'bag'},
+  ];
 
   @override
   void initState() {
@@ -52,7 +59,7 @@ class _AddEditInventoryItemScreenState extends State<AddEditInventoryItemScreen>
     super.dispose();
   }
 
-  Future<void> _saveItem() async {
+  Future<void> _saveItem(bool isBn) async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
@@ -77,13 +84,16 @@ class _AddEditInventoryItemScreenState extends State<AddEditInventoryItemScreen>
       if (mounted) {
         Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Item saved successfully'), backgroundColor: Colors.green),
+          SnackBar(
+            content: Text(isBn ? 'মালামাল সফলভাবে সংরক্ষণ করা হয়েছে' : 'Inventory item saved successfully'),
+            backgroundColor: Colors.green,
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('${isBn ? "ত্রুটি:" : "Error:"} $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -93,14 +103,18 @@ class _AddEditInventoryItemScreenState extends State<AddEditInventoryItemScreen>
 
   @override
   Widget build(BuildContext context) {
+    final bool isBn = LanguageProvider.isBn(context);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         backgroundColor: const Color(0xFF795548),
         elevation: 0,
         title: Text(
-          widget.item == null ? 'Add Inventory Item' : 'Edit Inventory Item',
-          style: GoogleFonts.openSans(fontWeight: FontWeight.bold, color: Colors.white),
+          widget.item == null 
+              ? (isBn ? 'নতুন মালামাল যোগ করুন' : 'Add Inventory Item')
+              : (isBn ? 'মালামাল সম্পাদনা' : 'Edit Inventory Item'),
+          style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -115,15 +129,15 @@ class _AddEditInventoryItemScreenState extends State<AddEditInventoryItemScreen>
                   children: [
                     TextFormField(
                       controller: _nameController,
-                      validator: (value) => value == null || value.isEmpty ? 'Enter item name' : null,
-                      decoration: _inputDecoration('Item Name (e.g. Urea)', Icons.inventory_2),
+                      validator: (value) => value == null || value.isEmpty ? (isBn ? 'নাম লিখুন' : 'Enter item name') : null,
+                      decoration: _inputDecoration(isBn ? 'মালামালের নাম (যেমন: ইউরিয়া সার)' : 'Item Name (e.g. Urea Fertilizer)', Icons.inventory_2),
                     ),
                     const SizedBox(height: 16),
                     _buildDropdown<String>(
-                      label: 'Category',
+                      label: isBn ? 'ক্যাটাগরি' : 'Category',
                       icon: Icons.category,
                       value: _selectedCategory,
-                      items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                      items: _categories.map((c) => DropdownMenuItem(value: c['id']!, child: Text(isBn ? c['bn']! : c['en']!))).toList(),
                       onChanged: (val) => setState(() => _selectedCategory = val!),
                     ),
                     const SizedBox(height: 16),
@@ -135,21 +149,21 @@ class _AddEditInventoryItemScreenState extends State<AddEditInventoryItemScreen>
                             controller: _quantityController,
                             keyboardType: const TextInputType.numberWithOptions(decimal: true),
                             validator: (value) {
-                              if (value == null || value.isEmpty) return 'Required';
-                              if (double.tryParse(value) == null) return 'Invalid';
+                              if (value == null || value.isEmpty) return isBn ? 'পরিমাণ আবশ্যক' : 'Required';
+                              if (double.tryParse(value) == null) return isBn ? 'সঠিক সংখ্যা দিন' : 'Invalid';
                               return null;
                             },
-                            decoration: _inputDecoration('Quantity', Icons.scale),
+                            decoration: _inputDecoration(isBn ? 'পরিমাণ' : 'Quantity', Icons.scale),
                           ),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
-                          flex: 1,
+                          flex: 2,
                           child: _buildDropdown<String>(
-                            label: 'Unit',
+                            label: isBn ? 'একক' : 'Unit',
                             icon: Icons.square_foot,
                             value: _selectedUnit,
-                            items: _units.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
+                            items: _units.map((u) => DropdownMenuItem(value: u['id']!, child: Text(isBn ? u['bn']! : u['en']!))).toList(),
                             onChanged: (val) => setState(() => _selectedUnit = val!),
                           ),
                         ),
@@ -160,23 +174,23 @@ class _AddEditInventoryItemScreenState extends State<AddEditInventoryItemScreen>
                       controller: _valueController,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       validator: (value) {
-                        if (value == null || value.isEmpty) return 'Enter value';
-                        if (double.tryParse(value) == null) return 'Invalid';
+                        if (value == null || value.isEmpty) return isBn ? 'মূল্য লিখুন' : 'Enter value';
+                        if (double.tryParse(value) == null) return isBn ? 'সঠিক মূল্য দিন' : 'Invalid';
                         return null;
                       },
-                      decoration: _inputDecoration('Estimated Value Per Unit (৳)', Icons.attach_money),
+                      decoration: _inputDecoration(isBn ? 'আনুমানিক একক প্রতি মূল্য (৳)' : 'Estimated Value Per Unit (৳)', Icons.attach_money),
                     ),
                     const SizedBox(height: 40),
                     ElevatedButton(
-                      onPressed: _saveItem,
+                      onPressed: () => _saveItem(isBn),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF795548),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       ),
                       child: Text(
-                        'Save Item',
-                        style: GoogleFonts.openSans(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                        isBn ? 'সংরক্ষণ করুন' : 'Save Item',
+                        style: GoogleFonts.hindSiliguri(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                     ),
                   ],
@@ -189,7 +203,7 @@ class _AddEditInventoryItemScreenState extends State<AddEditInventoryItemScreen>
   InputDecoration _inputDecoration(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
-      labelStyle: GoogleFonts.openSans(color: Colors.grey.shade600),
+      labelStyle: GoogleFonts.hindSiliguri(color: Colors.grey.shade600),
       prefixIcon: Icon(icon, color: const Color(0xFF795548)),
       filled: true,
       fillColor: Colors.white,

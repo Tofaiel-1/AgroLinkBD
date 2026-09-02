@@ -118,6 +118,8 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
             final districts = tempDiv != null ? (BDLocationData.districtsByDivision[tempDiv] ?? []) : [];
             final upazilas = tempDist != null ? (BDLocationData.upazilasByDistrict[tempDist] ?? []) : [];
 
+            final isBn = LanguageProvider.isBn(context);
+
             return Padding(
               padding: EdgeInsets.only(
                 left: 20,
@@ -133,7 +135,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'অবস্থান নির্বাচন করুন',
+                        isBn ? 'অবস্থান নির্বাচন করুন' : 'Select Location',
                         style: GoogleFonts.hindSiliguri(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -150,7 +152,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                   // Division Dropdown
                   DropdownButtonFormField<String>(
                     initialValue: tempDiv,
-                    hint: const Text('বিভাগ নির্বাচন করুন'),
+                    hint: Text(isBn ? 'বিভাগ নির্বাচন করুন' : 'Select Division'),
                     items: divisions.map((div) => DropdownMenuItem<String>(value: div, child: Text(div))).toList(),
                     onChanged: (val) {
                       setModalState(() {
@@ -160,7 +162,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                       });
                     },
                     decoration: InputDecoration(
-                      labelText: 'বিভাগ',
+                      labelText: isBn ? 'বিভাগ' : 'Division',
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
@@ -169,7 +171,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                   // District Dropdown
                   DropdownButtonFormField<String>(
                     initialValue: tempDist,
-                    hint: const Text('জেলা নির্বাচন করুন'),
+                    hint: Text(isBn ? 'জেলা নির্বাচন করুন' : 'Select District'),
                     items: districts.map((dist) => DropdownMenuItem<String>(value: dist, child: Text(dist))).toList(),
                     onChanged: (val) {
                       setModalState(() {
@@ -178,7 +180,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                       });
                     },
                     decoration: InputDecoration(
-                      labelText: 'জেলা',
+                      labelText: isBn ? 'জেলা' : 'District',
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
@@ -188,11 +190,11 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                   if (upazilas.isNotEmpty)
                     DropdownButtonFormField<String>(
                       initialValue: tempUpa,
-                      hint: const Text('উপজেলা নির্বাচন করুন'),
+                      hint: Text(isBn ? 'উপজেলা নির্বাচন করুন' : 'Select Upazila'),
                       items: upazilas.map((upa) => DropdownMenuItem<String>(value: upa, child: Text(upa))).toList(),
                       onChanged: (val) => setModalState(() => tempUpa = val),
                       decoration: InputDecoration(
-                        labelText: 'উপজেলা',
+                        labelText: isBn ? 'উপজেলা' : 'Upazila',
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
@@ -214,7 +216,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       child: Text(
-                        'আবহাওয়া আপডেট করুন',
+                        isBn ? 'আবহাওয়া আপডেট করুন' : 'Update Weather',
                         style: GoogleFonts.hindSiliguri(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                     ),
@@ -253,7 +255,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'বিস্তারিত আবহাওয়া পূর্বাভাস',
+                        LanguageProvider.isBn(context) ? 'বিস্তারিত আবহাওয়া পূর্বাভাস' : 'Detailed Weather Forecast',
                         style: GoogleFonts.hindSiliguri(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -286,7 +288,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                     children: [
                       // 24-Hour Forecast Section
                       Text(
-                        '২৪ ঘণ্টার পূর্বাভাস',
+                        LanguageProvider.isBn(context) ? '২৪ ঘণ্টার পূর্বাভাস' : '24-Hour Forecast',
                         style: GoogleFonts.hindSiliguri(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -352,7 +354,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
 
                       // 7-Day Extended Forecast Section
                       Text(
-                        '৭ দিনের আবহাওয়া পূর্বাভাস',
+                        LanguageProvider.isBn(context) ? '৭ দিনের আবহাওয়া পূর্বাভাস' : '7-Day Extended Forecast',
                         style: GoogleFonts.hindSiliguri(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -389,7 +391,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                                     const SizedBox(width: 8),
                                     if (d.rainProbability > 0)
                                       Text(
-                                        '${d.rainProbability}% বৃষ্টি',
+                                        '${d.rainProbability}% ${LanguageProvider.isBn(context) ? "বৃষ্টি" : "Rain"}',
                                         style: GoogleFonts.hindSiliguri(
                                           fontSize: 12,
                                           color: Colors.blue.shade600,
@@ -427,7 +429,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
 
                       // Extra Weather Metrics Breakdown
                       Text(
-                        'পরিবেশ ও বায়ুমণ্ডলীয় মেট্রিক্স',
+                        LanguageProvider.isBn(context) ? 'পরিবেশ ও বায়ুমণ্ডলীয় মেট্রিক্স' : 'Environmental Metrics',
                         style: GoogleFonts.hindSiliguri(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -444,18 +446,18 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                         crossAxisSpacing: 10,
                         children: [
                           _buildDetailGridCard('☀️ UV Index', weather.uvIndex.toStringAsFixed(1), isDark),
-                          _buildDetailGridCard('🌧️ বৃষ্টিপাত', '${weather.rainMm.toStringAsFixed(1)} mm', isDark),
-                          _buildDetailGridCard('💨 বাতাসের দিক', weather.windDirectionText, isDark),
-                          _buildDetailGridCard('🌡️ অনুভব তাপমাত্রা', '${weather.feelsLike.toStringAsFixed(1)}°C', isDark),
-                          _buildDetailGridCard('⏲️ বায়ুচাপ', '${weather.pressureHpa.toStringAsFixed(0)} hPa', isDark),
-                          _buildDetailGridCard('☁️ মেঘের ঘনত্ব', '${weather.cloudCoverPercent}%', isDark),
+                          _buildDetailGridCard(LanguageProvider.isBn(context) ? '🌧️ বৃষ্টিপাত' : '🌧️ Rainfall', '${weather.rainMm.toStringAsFixed(1)} mm', isDark),
+                          _buildDetailGridCard(LanguageProvider.isBn(context) ? '💨 বাতাসের দিক' : '💨 Wind Direction', weather.windDirectionText, isDark),
+                          _buildDetailGridCard(LanguageProvider.isBn(context) ? '🌡️ অনুভব তাপমাত্রা' : '🌡️ Feels Like', '${weather.feelsLike.toStringAsFixed(1)}°C', isDark),
+                          _buildDetailGridCard(LanguageProvider.isBn(context) ? '⏲️ বায়ুচাপ' : '⏲️ Pressure', '${weather.pressureHpa.toStringAsFixed(0)} hPa', isDark),
+                          _buildDetailGridCard(LanguageProvider.isBn(context) ? '☁️ মেঘের ঘনত্ব' : '☁️ Cloud Cover', '${weather.cloudCoverPercent}%', isDark),
                         ],
                       ),
                       const SizedBox(height: 24),
 
                       // Live Weather News & Agriculture Advisories Section
                       Text(
-                        '📰 সর্বশেষ আবহাওয়া সংবাদ ও কৃষি পরামর্শ',
+                        LanguageProvider.isBn(context) ? '📰 সর্বশেষ আবহাওয়া সংবাদ ও কৃষি পরামর্শ' : '📰 Latest Weather News & Agri Advisory',
                         style: GoogleFonts.hindSiliguri(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -481,7 +483,9 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    '${weather.locationName} এলাকার আবহাওয়া বিশেষ বুলেটিন',
+                                    LanguageProvider.isBn(context) 
+                                        ? '${weather.locationName} এলাকার আবহাওয়া বিশেষ বুলেটিন'
+                                        : '${weather.locationName} Area Weather Bulletin',
                                     style: GoogleFonts.hindSiliguri(
                                       fontSize: 14,
                                       fontWeight: FontWeight.bold,
@@ -507,14 +511,16 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  'উৎস: বাংলাদেশ আবহাওয়া অধিদপ্তর ও Open-Meteo Live',
+                                  LanguageProvider.isBn(context) 
+                                      ? 'উৎস: বাংলাদেশ আবহাওয়া অধিদপ্তর ও Open-Meteo Live'
+                                      : 'Source: Bangladesh Meteorological Dept & Open-Meteo',
                                   style: GoogleFonts.hindSiliguri(
                                     fontSize: 11,
                                     color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                                   ),
                                 ),
                                 Text(
-                                  'আপডেট: এইমাত্র',
+                                  LanguageProvider.isBn(context) ? 'আপডেট: এইমাত্র' : 'Update: Just now',
                                   style: GoogleFonts.hindSiliguri(
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
@@ -656,7 +662,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                           });
                         }
                       },
-                      tooltip: 'জিপিএস অবস্থান ব্যবহার করুন',
+                      tooltip: LanguageProvider.isBn(context) ? 'জিপিএস অবস্থান ব্যবহার করুন' : 'Use GPS Location',
                     ),
                     const SizedBox(width: 8),
                     IconButton(
@@ -664,7 +670,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                       padding: const EdgeInsets.all(4),
                       icon: const Icon(Icons.refresh, color: Colors.white, size: 18),
                       onPressed: _loadWeather,
-                      tooltip: 'আবহাওয়া রিফ্রেশ করুন',
+                      tooltip: LanguageProvider.isBn(context) ? 'আবহাওয়া রিফ্রেশ করুন' : 'Refresh Weather',
                     ),
                   ],
                 ),
@@ -738,13 +744,15 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                   Container(height: 20, width: 1, color: Colors.white24),
                   _buildMetricItem(
                     icon: Icons.air,
-                    label: 'বাতাস (${weather.windDirectionText})',
+                    label: LanguageProvider.isBn(context) 
+                        ? 'বাতাস (${weather.windDirectionText})'
+                        : 'Wind (${weather.windDirectionText})',
                     value: '${weather.windSpeedKmH.toStringAsFixed(1)} km/h',
                   ),
                   Container(height: 20, width: 1, color: Colors.white24),
                   _buildMetricItem(
                     icon: Icons.water_drop,
-                    label: 'আর্দ্রতা',
+                    label: LanguageProvider.isBn(context) ? 'আর্দ্রতা' : 'Humidity',
                     value: '${weather.humidity}%',
                   ),
                 ],
@@ -793,7 +801,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'পরবর্তী ৩ ঘণ্টার বৃষ্টির সম্ভাবনা',
+                        LanguageProvider.isBn(context) ? 'পরবর্তী ৩ ঘণ্টার বৃষ্টির সম্ভাবনা' : 'Next 3-Hour Rain Probability',
                         style: GoogleFonts.hindSiliguri(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -801,7 +809,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                         ),
                       ),
                       Text(
-                        'বিস্তারিত দেখুন →',
+                        LanguageProvider.isBn(context) ? 'বিস্তারিত দেখুন →' : 'View Details →',
                         style: GoogleFonts.hindSiliguri(
                           fontSize: 11,
                           color: Colors.amber.shade300,

@@ -2,11 +2,13 @@ import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:agrolinkbd/core/controllers/user_controller.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 import 'microfinance_repayment_screen.dart';
 
 const _kBg      = Color(0xFF0D1B3E);
@@ -23,26 +25,30 @@ const _kSubtext = Color(0xFFAEB8CC);
 // ─────────────────────────────────────────────
 class _DocItem {
   final String id;
-  final String title;
-  final String subtitle;
+  final String titleBn;
+  final String titleEn;
+  final String subtitleBn;
+  final String subtitleEn;
   final IconData icon;
   final Color color;
-  final List<String> roles; // which roles need this doc
-  bool uploaded;
+  final List<String> roles;
+  bool uploaded = false;
   String? fileName;
   XFile? localFile;
 
   _DocItem({
     required this.id,
-    required this.title,
-    required this.subtitle,
+    required this.titleBn,
+    required this.titleEn,
+    required this.subtitleBn,
+    required this.subtitleEn,
     required this.icon,
     required this.color,
     required this.roles,
-    this.uploaded = false,
-    this.fileName,
-    this.localFile,
   });
+
+  String getTitle(bool isBn) => isBn ? titleBn : titleEn;
+  String getSubtitle(bool isBn) => isBn ? subtitleBn : subtitleEn;
 }
 
 // ─────────────────────────────────────────────
@@ -70,7 +76,7 @@ class _MicrofinanceKycScreenState extends State<MicrofinanceKycScreen>
 
   late final List<_DocItem> _docs;
 
-  int _currentStep = 1; // 1: Upload Docs, 2: Review, 3: Submit
+  int _currentStep = 1;
   bool _isSubmitting = false;
 
   @override
@@ -79,40 +85,50 @@ class _MicrofinanceKycScreenState extends State<MicrofinanceKycScreen>
     _docs = [
       _DocItem(
         id: 'nid',
-        title: 'National ID Card (NID)',
-        subtitle: 'Upload front & back clearly',
+        titleBn: 'জাতীয় পরিচয়পত্র (NID)',
+        titleEn: 'National ID Card (NID)',
+        subtitleBn: 'সামনে ও পেছনের স্পষ্ট ছবি দিন',
+        subtitleEn: 'Upload front & back clearly',
         icon: Icons.badge_rounded,
         color: _kGreen,
         roles: ['farmer', 'buyer', 'driver', 'company'],
       ),
       _DocItem(
         id: 'driving',
-        title: 'Driving License',
-        subtitle: 'Valid & non-expired',
+        titleBn: 'ড্রাইভিং লাইসেন্স',
+        titleEn: 'Driving License',
+        subtitleBn: 'বৈধ ও মেয়াদযুক্ত',
+        subtitleEn: 'Valid & non-expired',
         icon: Icons.drive_eta_rounded,
         color: _kAmber,
         roles: ['driver'],
       ),
       _DocItem(
         id: 'trade',
-        title: 'Trade License',
-        subtitle: 'Issued by City Corporation',
+        titleBn: 'ট্রেড লাইসেন্স',
+        titleEn: 'Trade License',
+        subtitleBn: 'ইউনিয়ন পরিষদ বা পৌরসভা কর্তৃক প্রদত্ত',
+        subtitleEn: 'Issued by City Corporation / Union',
         icon: Icons.business_center_rounded,
         color: _kBlue,
         roles: ['buyer', 'company'],
       ),
       _DocItem(
         id: 'tin',
-        title: 'TIN Certificate',
-        subtitle: 'Tax Identification Number',
+        titleBn: 'টিআইএন সার্টিফিকেট',
+        titleEn: 'TIN Certificate',
+        subtitleBn: 'কর শনাক্তকরণ নম্বর',
+        subtitleEn: 'Tax Identification Number',
         icon: Icons.receipt_long_rounded,
-        color: Color(0xFF8B5CF6),
+        color: const Color(0xFF8B5CF6),
         roles: ['company'],
       ),
       _DocItem(
         id: 'land',
-        title: 'Land Ownership Proof',
-        subtitle: 'Khatian or deed document',
+        titleBn: 'জমির মালিকানার প্রমাণ',
+        titleEn: 'Land Ownership Proof',
+        subtitleBn: 'খতিয়ান, পরচা বা দলিলের কপি',
+        subtitleEn: 'Khatian or deed document',
         icon: Icons.landscape_rounded,
         color: _kGreen,
         roles: ['farmer'],
@@ -179,6 +195,8 @@ class _MicrofinanceKycScreenState extends State<MicrofinanceKycScreen>
 
   @override
   Widget build(BuildContext context) {
+    final bool isBn = LanguageProvider.isBn(context);
+
     return Scaffold(
       backgroundColor: _kBg,
       body: Stack(
@@ -187,20 +205,20 @@ class _MicrofinanceKycScreenState extends State<MicrofinanceKycScreen>
           SafeArea(
             child: Column(
               children: [
-                _buildHeader(),
-                _buildProgressSection(),
-                _buildStepIndicator(),
+                _buildHeader(isBn),
+                _buildProgressSection(isBn),
+                _buildStepIndicator(isBn),
                 Expanded(
                   child: CustomScrollView(
                     physics: const BouncingScrollPhysics(),
                     slivers: [
-                      SliverToBoxAdapter(child: _buildLoanInfoBanner()),
+                      SliverToBoxAdapter(child: _buildLoanInfoBanner(isBn)),
                       SliverToBoxAdapter(
                         child: Padding(
                           padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
                           child: Text(
-                            'Required Documents',
-                            style: const TextStyle(
+                            isBn ? 'প্রয়োজনীয় কাগজপত্র / নথি' : 'Required Documents',
+                            style: GoogleFonts.hindSiliguri(
                               color: _kText, fontSize: 16,
                               fontWeight: FontWeight.w700,
                             ),
@@ -211,12 +229,12 @@ class _MicrofinanceKycScreenState extends State<MicrofinanceKycScreen>
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                         sliver: SliverList(
                           delegate: SliverChildBuilderDelegate(
-                            (ctx, i) => _buildDocWidget(_visibleDocs[i]),
+                            (ctx, i) => _buildDocWidget(_visibleDocs[i], isBn),
                             childCount: _visibleDocs.length,
                           ),
                         ),
                       ),
-                      SliverToBoxAdapter(child: _buildSubmitSection()),
+                      SliverToBoxAdapter(child: _buildSubmitSection(isBn)),
                       const SliverToBoxAdapter(child: SizedBox(height: 40)),
                     ],
                   ),
@@ -232,9 +250,9 @@ class _MicrofinanceKycScreenState extends State<MicrofinanceKycScreen>
   // ── Orbs ──────────────────────────────────
   Widget _buildOrbs() => Stack(children: [
         Positioned(top: -60, right: -60,
-            child: _orb(220, _kBlue.withOpacity(0.10))),
+            child: _orb(220, _kBlue.withValues(alpha: 0.10))),
         Positioned(bottom: -100, left: -40,
-            child: _orb(280, _kGreen.withOpacity(0.08))),
+            child: _orb(280, _kGreen.withValues(alpha: 0.08))),
       ]);
 
   Widget _orb(double size, Color color) => Container(
@@ -243,7 +261,7 @@ class _MicrofinanceKycScreenState extends State<MicrofinanceKycScreen>
       );
 
   // ── Header ────────────────────────────────
-  Widget _buildHeader() => Padding(
+  Widget _buildHeader(bool isBn) => Padding(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
         child: Row(
           children: [
@@ -252,15 +270,21 @@ class _MicrofinanceKycScreenState extends State<MicrofinanceKycScreen>
               child: _glassBtn(Icons.arrow_back_ios_new_rounded),
             ),
             const SizedBox(width: 16),
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('KYC Verification',
-                      style: TextStyle(color: _kText, fontSize: 20,
-                          fontWeight: FontWeight.w700, letterSpacing: -0.4)),
-                  Text('Upload your documents securely',
-                      style: TextStyle(color: _kSubtext, fontSize: 12)),
+                  Text(
+                    isBn ? 'কেওয়াইসি যাচাইকরণ' : 'KYC Verification',
+                    style: GoogleFonts.hindSiliguri(
+                      color: _kText, fontSize: 20,
+                      fontWeight: FontWeight.w700, letterSpacing: -0.4,
+                    ),
+                  ),
+                  Text(
+                    isBn ? 'আপনার নথিপত্র নিরাপদে আপলোড করুন' : 'Upload your documents securely',
+                    style: GoogleFonts.hindSiliguri(color: _kSubtext, fontSize: 12),
+                  ),
                 ],
               ),
             ),
@@ -286,7 +310,7 @@ class _MicrofinanceKycScreenState extends State<MicrofinanceKycScreen>
       );
 
   // ── Progress Bar ──────────────────────────
-  Widget _buildProgressSection() {
+  Widget _buildProgressSection(bool isBn) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
       child: Column(
@@ -295,14 +319,17 @@ class _MicrofinanceKycScreenState extends State<MicrofinanceKycScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Application Progress',
-                  style: TextStyle(color: _kSubtext, fontSize: 12)),
+              Text(
+                isBn ? 'আবেদন অগ্রগতি' : 'Application Progress',
+                style: GoogleFonts.hindSiliguri(color: _kSubtext, fontSize: 12),
+              ),
               AnimatedBuilder(
                 animation: _progressAnim,
                 builder: (_, __) => Text(
                   '${(_progressAnim.value * 100).round()}%',
-                  style: const TextStyle(
-                      color: _kGreen, fontSize: 12, fontWeight: FontWeight.w700),
+                  style: GoogleFonts.poppins(
+                    color: _kGreen, fontSize: 12, fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ],
@@ -312,7 +339,7 @@ class _MicrofinanceKycScreenState extends State<MicrofinanceKycScreen>
             borderRadius: BorderRadius.circular(8),
             child: Stack(
               children: [
-                Container(height: 8, color: Colors.white.withOpacity(0.08)),
+                Container(height: 8, color: Colors.white.withValues(alpha: 0.08)),
                 AnimatedBuilder(
                   animation: _progressAnim,
                   builder: (_, __) => FractionallySizedBox(
@@ -336,8 +363,8 @@ class _MicrofinanceKycScreenState extends State<MicrofinanceKycScreen>
   }
 
   // ── Step Indicator ────────────────────────
-  Widget _buildStepIndicator() {
-    final steps = ['Upload Docs', 'Review', 'Submit'];
+  Widget _buildStepIndicator(bool isBn) {
+    final steps = isBn ? ['নথি আপলোড', 'পর্যালোচনা', 'জমা দিন'] : ['Upload Docs', 'Review', 'Submit'];
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
       child: Row(
@@ -359,8 +386,8 @@ class _MicrofinanceKycScreenState extends State<MicrofinanceKycScreen>
                           color: done
                               ? _kGreen
                               : active
-                                  ? _kGreen.withOpacity(0.2)
-                                  : Colors.white.withOpacity(0.05),
+                                  ? _kGreen.withValues(alpha: 0.2)
+                                  : Colors.white.withValues(alpha: 0.05),
                           border: Border.all(
                             color: done || active ? _kGreen : _kBorder,
                             width: 2,
@@ -370,7 +397,7 @@ class _MicrofinanceKycScreenState extends State<MicrofinanceKycScreen>
                           child: done
                               ? const Icon(Icons.check, color: Colors.white, size: 16)
                               : Text('${i + 1}',
-                                  style: TextStyle(
+                                  style: GoogleFonts.poppins(
                                     color: active ? _kGreen : _kSubtext,
                                     fontSize: 13,
                                     fontWeight: FontWeight.w700,
@@ -379,7 +406,7 @@ class _MicrofinanceKycScreenState extends State<MicrofinanceKycScreen>
                       ),
                       const SizedBox(height: 4),
                       Text(label,
-                          style: TextStyle(
+                          style: GoogleFonts.hindSiliguri(
                             color: active ? _kGreen : _kSubtext,
                             fontSize: 10,
                             fontWeight: active ? FontWeight.w600 : FontWeight.normal,
@@ -391,7 +418,7 @@ class _MicrofinanceKycScreenState extends State<MicrofinanceKycScreen>
                   Expanded(
                     child: Container(
                       height: 2,
-                      color: done ? _kGreen : Colors.white.withOpacity(0.08),
+                      color: done ? _kGreen : Colors.white.withValues(alpha: 0.08),
                     ),
                   ),
               ],
@@ -403,7 +430,7 @@ class _MicrofinanceKycScreenState extends State<MicrofinanceKycScreen>
   }
 
   // ── Loan banner ───────────────────────────
-  Widget _buildLoanInfoBanner() => Padding(
+  Widget _buildLoanInfoBanner(bool isBn) => Padding(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(16),
@@ -412,9 +439,9 @@ class _MicrofinanceKycScreenState extends State<MicrofinanceKycScreen>
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: _kBlue.withOpacity(0.12),
+                color: _kBlue.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: _kBlue.withOpacity(0.3)),
+                border: Border.all(color: _kBlue.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
@@ -425,11 +452,15 @@ class _MicrofinanceKycScreenState extends State<MicrofinanceKycScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(widget.loanType,
-                            style: const TextStyle(
+                            style: GoogleFonts.hindSiliguri(
                                 color: _kText, fontSize: 13, fontWeight: FontWeight.w600)),
                         const SizedBox(height: 2),
-                        const Text('All documents are encrypted and stored securely.',
-                            style: TextStyle(color: _kSubtext, fontSize: 11)),
+                        Text(
+                          isBn 
+                              ? 'সকল নথি এনক্রিপ্ট করে নিরাপদে সংরক্ষণ করা হয়।'
+                              : 'All documents are encrypted and stored securely.',
+                          style: GoogleFonts.hindSiliguri(color: _kSubtext, fontSize: 11),
+                        ),
                       ],
                     ),
                   ),
@@ -441,7 +472,7 @@ class _MicrofinanceKycScreenState extends State<MicrofinanceKycScreen>
       );
 
   // ── Document upload widget ────────────────
-  Widget _buildDocWidget(_DocItem doc) {
+  Widget _buildDocWidget(_DocItem doc, bool isBn) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: ClipRRect(
@@ -452,15 +483,15 @@ class _MicrofinanceKycScreenState extends State<MicrofinanceKycScreen>
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               color: doc.uploaded
-                  ? doc.color.withOpacity(0.08)
+                  ? doc.color.withValues(alpha: 0.08)
                   : _kGlass,
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color: doc.uploaded ? doc.color.withOpacity(0.5) : _kBorder,
+                color: doc.uploaded ? doc.color.withValues(alpha: 0.5) : _kBorder,
                 style: doc.uploaded ? BorderStyle.solid : BorderStyle.solid,
               ),
               boxShadow: doc.uploaded
-                  ? [BoxShadow(color: doc.color.withOpacity(0.1), blurRadius: 16)]
+                  ? [BoxShadow(color: doc.color.withValues(alpha: 0.1), blurRadius: 16)]
                   : null,
             ),
             child: Row(
@@ -469,9 +500,9 @@ class _MicrofinanceKycScreenState extends State<MicrofinanceKycScreen>
                 Container(
                   width: 50, height: 50,
                   decoration: BoxDecoration(
-                    color: doc.color.withOpacity(0.12),
+                    color: doc.color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: doc.color.withOpacity(0.3)),
+                    border: Border.all(color: doc.color.withValues(alpha: 0.3)),
                   ),
                   child: Icon(doc.icon, color: doc.color, size: 24),
                 ),
@@ -481,14 +512,20 @@ class _MicrofinanceKycScreenState extends State<MicrofinanceKycScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(doc.title,
-                          style: const TextStyle(
-                              color: _kText, fontSize: 14, fontWeight: FontWeight.w600)),
+                      Text(
+                        doc.getTitle(isBn),
+                        style: GoogleFonts.hindSiliguri(
+                          color: _kText, fontSize: 14, fontWeight: FontWeight.w600,
+                        ),
+                      ),
                       const SizedBox(height: 3),
-                      Text(doc.uploaded ? doc.fileName! : doc.subtitle,
-                          style: TextStyle(
-                              color: doc.uploaded ? doc.color : _kSubtext,
-                              fontSize: 11)),
+                      Text(
+                        doc.uploaded ? doc.fileName! : doc.getSubtitle(isBn),
+                        style: GoogleFonts.hindSiliguri(
+                          color: doc.uploaded ? doc.color : _kSubtext,
+                          fontSize: 11,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -502,13 +539,13 @@ class _MicrofinanceKycScreenState extends State<MicrofinanceKycScreen>
                     decoration: BoxDecoration(
                       color: doc.uploaded
                           ? doc.color
-                          : Colors.white.withOpacity(0.06),
+                          : Colors.white.withValues(alpha: 0.06),
                       shape: BoxShape.circle,
                       border: Border.all(
                         color: doc.uploaded ? doc.color : _kBorder,
                       ),
                       boxShadow: doc.uploaded
-                          ? [BoxShadow(color: doc.color.withOpacity(0.4), blurRadius: 10)]
+                          ? [BoxShadow(color: doc.color.withValues(alpha: 0.4), blurRadius: 10)]
                           : null,
                     ),
                     child: Icon(
@@ -529,7 +566,7 @@ class _MicrofinanceKycScreenState extends State<MicrofinanceKycScreen>
   }
 
   // ── Submit section ────────────────────────
-  Widget _buildSubmitSection() => Padding(
+  Widget _buildSubmitSection(bool isBn) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -542,17 +579,21 @@ class _MicrofinanceKycScreenState extends State<MicrofinanceKycScreen>
                   child: Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: _kAmber.withOpacity(0.08),
+                      color: _kAmber.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: _kAmber.withOpacity(0.3)),
+                      border: Border.all(color: _kAmber.withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       children: [
                         const Icon(Icons.warning_amber_rounded, color: _kAmber, size: 18),
                         const SizedBox(width: 10),
-                        Text(
-                          'Upload ${_visibleDocs.where((d) => !d.uploaded).length} more document(s) to continue.',
-                          style: const TextStyle(color: _kAmber, fontSize: 12),
+                        Expanded(
+                          child: Text(
+                            isBn
+                                ? 'পরবর্তী ধাপে যেতে আরও ${_visibleDocs.where((d) => !d.uploaded).length} টি নথি আপলোড করুন।'
+                                : 'Upload ${_visibleDocs.where((d) => !d.uploaded).length} more document(s) to continue.',
+                            style: GoogleFonts.hindSiliguri(color: _kAmber, fontSize: 12),
+                          ),
                         ),
                       ],
                     ),
@@ -566,7 +607,7 @@ class _MicrofinanceKycScreenState extends State<MicrofinanceKycScreen>
                 width: double.infinity,
                 height: 54,
                 child: ElevatedButton.icon(
-                  onPressed: _isSubmitting ? null : _submitApplication,
+                  onPressed: _isSubmitting ? null : () => _submitApplication(isBn),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _kGreen,
                     foregroundColor: Colors.white,
@@ -574,36 +615,37 @@ class _MicrofinanceKycScreenState extends State<MicrofinanceKycScreen>
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    shadowColor: _kGreen.withOpacity(0.4),
+                    shadowColor: _kGreen.withValues(alpha: 0.4),
                   ),
                   icon: _isSubmitting 
                       ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                       : const Icon(Icons.send_rounded, size: 20),
-                  label: Text(_isSubmitting ? 'Submitting...' : 'Submit Application',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                  label: Text(
+                    _isSubmitting ? (isBn ? 'জমা হচ্ছে...' : 'Submitting...') : (isBn ? 'আবেদন জমা দিন' : 'Submit Application'),
+                    style: GoogleFonts.hindSiliguri(fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
                 ),
               ),
             const SizedBox(height: 12),
-            const Center(
+            Center(
               child: Text(
-                '🔒  256-bit SSL encrypted · Data never shared',
-                style: TextStyle(color: _kSubtext, fontSize: 11),
+                isBn ? '🔒  ২৫৬-বিট এসএসএল এনক্রিপ্টেড · ডেটা সম্পূর্ণ গোপন রাখা হয়' : '🔒  256-bit SSL encrypted · Data never shared',
+                style: GoogleFonts.hindSiliguri(color: _kSubtext, fontSize: 11),
               ),
             ),
           ],
         ),
       );
 
-  Future<void> _submitApplication() async {
+  Future<void> _submitApplication(bool isBn) async {
     setState(() => _isSubmitting = true);
     
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) throw Exception('User not logged in');
+      if (user == null) throw Exception(isBn ? 'ইউজার লগইন নেই' : 'User not logged in');
 
       Map<String, String> uploadedUrls = {};
       
-      // Upload files to Firebase Storage
       for (var doc in _visibleDocs) {
         if (doc.localFile != null) {
           final ref = FirebaseStorage.instance
@@ -612,8 +654,6 @@ class _MicrofinanceKycScreenState extends State<MicrofinanceKycScreen>
           
           final bytes = await File(doc.localFile!.path).readAsBytes();
           
-          // Using putData instead of putFile to bypass Resumable Upload bugs
-          // which sometimes cause 404 on Android when App Check is missing
           await ref.putData(
             bytes, 
             SettableMetadata(contentType: 'image/jpeg')
@@ -624,7 +664,6 @@ class _MicrofinanceKycScreenState extends State<MicrofinanceKycScreen>
         }
       }
 
-      // Save application to Firestore
       await FirebaseFirestore.instance.collection('microfinance_applications').add({
         'userId': user.uid,
         'name': userController.userName.isEmpty ? 'Unknown User' : userController.userName,
@@ -633,24 +672,28 @@ class _MicrofinanceKycScreenState extends State<MicrofinanceKycScreen>
         'userRole': widget.userRole,
         'loanType': widget.loanType,
         'documents': uploadedUrls,
-        'status': 'pending', // Use 'pending' to match admin screen logic
+        'status': 'pending',
         'createdAt': FieldValue.serverTimestamp(),
       });
 
       Get.off(() => const MicrofinanceRepaymentScreen());
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✅ Application submitted successfully!'),
-          backgroundColor: _kGreen,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(isBn ? '✅ আবেদন সফলভাবে জমা দেওয়া হয়েছে!' : '✅ Application submitted successfully!'),
+            backgroundColor: _kGreen,
+          ),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('❌ Error: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ ${isBn ? 'ত্রুটি' : 'Error'}: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);

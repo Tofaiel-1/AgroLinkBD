@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'package:agrolinkbd/core/providers/user_provider.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 import 'package:agrolinkbd/core/models/user_model.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -57,51 +58,65 @@ class _GlobalAnnouncementBannerState extends State<GlobalAnnouncementBanner> {
     super.dispose();
   }
 
-  List<Map<String, dynamic>> _getDemoAnnouncements(UserModel user) {
+  List<Map<String, dynamic>> _getDemoAnnouncements(UserModel user, bool isBn) {
     if (user.userType == UserType.farmer) {
       return [
         {
-          'title': 'সার ও বীজে বিশেষ ছাড়!',
-          'details': 'আগামী ৭ দিন পর্যন্ত ইউরিয়া সারে ১০% ক্যাশব্যাক। বিস্তারিত জানতে অফার পেইজ ভিজিট করুন। (Demo)',
+          'title': isBn ? 'সার ও বীজে বিশেষ ছাড়!' : 'Special Offer on Seeds & Fertilizer!',
+          'details': isBn 
+              ? 'ইউরিয়া ও ডিএপি সারে ১০% ক্যাশব্যাক অফার চলছে। বিস্তারিত জানতে অফার দেখুন।' 
+              : '10% cashback ongoing on Urea & DAP fertilizers. Check offers for details.',
           'priority': 'High',
         },
         {
-          'title': 'বৃষ্টির সতর্কবার্তা',
-          'details': 'আগামীকাল আপনার এলাকায় ভারী বৃষ্টির সম্ভাবনা রয়েছে। দয়া করে আপনার ফসল பாதுகாப்பভাবে রাখুন। (Demo)',
+          'title': isBn ? 'বৃষ্টির সতর্কবার্তা 🌧️' : 'Rain Alert 🌧️',
+          'details': isBn 
+              ? 'আগামীকাল আপনার এলাকায় বৃষ্টির সম্ভাবনা রয়েছে। দয়া করে আপনার ফসল নিরাপদে রাখুন।' 
+              : 'Rain expected in your area tomorrow. Please keep your crops safe.',
           'priority': 'Normal',
         },
       ];
     } else if (user.userType == UserType.buyer) {
       return [
         {
-          'title': 'পণ্য ডেলিভারি আপডেট',
-          'details': 'আজকের সকল পাইকারি অর্ডারের ডেলিভারি বিকেল ৫ টার মধ্যে সম্পন্ন হবে। (Demo)',
+          'title': isBn ? 'পণ্য ডেলিভারি আপডেট 🚚' : 'Product Delivery Update 🚚',
+          'details': isBn 
+              ? 'আজকের সকল পাইকারি অর্ডারের ডেলিভারি বিকেল ৫ টার মধ্যে সম্পন্ন হবে।' 
+              : 'All wholesale order deliveries today will be completed by 5 PM.',
           'priority': 'Normal',
         },
         {
-          'title': 'নতুন কৃষিপণ্য',
-          'details': 'রাজশাহীর বিখ্যাত আম এখন অ্যাগ্রোলিংক-এ আকর্ষণীয় মূল্যে পাওয়া যাচ্ছে। (Demo)',
+          'title': isBn ? 'নতুন ফসলের বাজার 🥭' : 'Fresh Produce Market 🥭',
+          'details': isBn 
+              ? 'রাজশাহীর বিখ্যাত আম ও টাটকা শাকসবজি এখন সাশ্রয়ী পাইকারি মূল্যে পাওয়া যাচ্ছে।' 
+              : 'Fresh seasonal fruits and produce now available at wholesale prices.',
           'priority': 'High',
         },
       ];
     } else if (user.userType == UserType.driver) {
       return [
         {
-          'title': 'রাস্তার সতর্কতা',
-          'details': 'মহাসড়কে আজ অতিরিক্ত ট্রাফিক থাকতে পারে। সাবধানে গাড়ি চালান। (Demo)',
+          'title': isBn ? 'রাস্তার সতর্কতা ⚠️' : 'Road Safety Alert ⚠️',
+          'details': isBn 
+              ? 'মহাসড়কে আজ অতিরিক্ত ট্রাফিক থাকতে পারে। সাবধানে গাড়ি চালান।' 
+              : 'Heavy traffic expected on highways today. Please drive safely.',
           'priority': 'High',
         },
         {
-          'title': 'নতুন ট্রিপ বোনাস',
-          'details': 'আজকের প্রথম ৩টি ট্রিপ সম্পূর্ণ করলেই পাচ্ছেন ১০০ টাকা এক্সট্রা বোনাস! (Demo)',
+          'title': isBn ? 'নতুন ট্রিপ বোনাস 🎁' : 'New Trip Bonus 🎁',
+          'details': isBn 
+              ? 'আজকের প্রথম ৩টি ট্রিপ সম্পূর্ণ করলেই পাচ্ছেন ১০০ টাকা এক্সট্রা বোনাস!' 
+              : 'Complete first 3 trips today to get ৳100 extra cash bonus!',
           'priority': 'Normal',
         },
       ];
     } else {
       return [
         {
-          'title': 'সিস্টেম আপডেট',
-          'details': 'আমাদের অ্যাপের নতুন ভার্সন এসেছে, অনুগ্রহ করে আপডেট করে নিন। (Demo)',
+          'title': isBn ? 'সিস্টেম আপডেট 🔔' : 'System Notice 🔔',
+          'details': isBn 
+              ? 'আমাদের অ্যাপের নতুন ফিচার এসেছে, উন্নত সেবার জন্য সক্রিয় থাকুন।' 
+              : 'New features have arrived, stay active for enhanced services.',
           'priority': 'Low',
         },
       ];
@@ -111,6 +126,7 @@ class _GlobalAnnouncementBannerState extends State<GlobalAnnouncementBanner> {
   @override
   Widget build(BuildContext context) {
     if (!_isVisible) return const SizedBox.shrink();
+    final bool isBn = LanguageProvider.isBn(context);
 
     return Consumer<UserProvider>(
       builder: (context, userProvider, _) {
@@ -150,7 +166,7 @@ class _GlobalAnnouncementBannerState extends State<GlobalAnnouncementBanner> {
 
             // If no real announcements, fallback to role-based demo ones
             if (itemsToShow.isEmpty) {
-              itemsToShow = _getDemoAnnouncements(currentUser);
+              itemsToShow = _getDemoAnnouncements(currentUser, isBn);
             }
 
             if (itemsToShow.isEmpty) return const SizedBox.shrink();
@@ -166,7 +182,7 @@ class _GlobalAnnouncementBannerState extends State<GlobalAnnouncementBanner> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
+                    color: Colors.black.withValues(alpha: 0.08),
                     blurRadius: 20,
                     offset: const Offset(0, 8),
                   ),
@@ -212,7 +228,7 @@ class _GlobalAnnouncementBannerState extends State<GlobalAnnouncementBanner> {
                                   height: 6,
                                   width: 6 + (10 * selectedness),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.4 + (0.6 * selectedness)),
+                                    color: Colors.white.withValues(alpha: 0.4 + (0.6 * selectedness)),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                 );
@@ -234,7 +250,7 @@ class _GlobalAnnouncementBannerState extends State<GlobalAnnouncementBanner> {
                         child: Container(
                           padding: const EdgeInsets.all(4),
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.1),
+                            color: Colors.black.withValues(alpha: 0.1),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(Icons.close, size: 16, color: Colors.white70),
@@ -264,22 +280,22 @@ class _GlobalAnnouncementBannerState extends State<GlobalAnnouncementBanner> {
       case 'High':
         gradientColors = [const Color(0xFFFF416C), const Color(0xFFFF4B2B)];
         icon = Icons.campaign_rounded;
-        iconBgColor = Colors.white.withOpacity(0.2);
+        iconBgColor = Colors.white.withValues(alpha: 0.2);
         break;
       case 'Normal':
         gradientColors = [const Color(0xFF4A00E0), const Color(0xFF8E2DE2)];
         icon = Icons.info_outline_rounded;
-        iconBgColor = Colors.white.withOpacity(0.2);
+        iconBgColor = Colors.white.withValues(alpha: 0.2);
         break;
       case 'Low':
         gradientColors = [const Color(0xFF11998e), const Color(0xFF38ef7d)];
         icon = Icons.notifications_active_rounded;
-        iconBgColor = Colors.white.withOpacity(0.2);
+        iconBgColor = Colors.white.withValues(alpha: 0.2);
         break;
       default:
         gradientColors = [const Color(0xFF36D1DC), const Color(0xFF5B86E5)];
         icon = Icons.campaign_rounded;
-        iconBgColor = Colors.white.withOpacity(0.2);
+        iconBgColor = Colors.white.withValues(alpha: 0.2);
     }
 
     return Container(
@@ -299,7 +315,7 @@ class _GlobalAnnouncementBannerState extends State<GlobalAnnouncementBanner> {
             decoration: BoxDecoration(
               color: iconBgColor,
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.white.withOpacity(0.4), width: 1),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 1),
             ),
             child: Icon(icon, color: Colors.white, size: 28),
           ),
@@ -327,7 +343,7 @@ class _GlobalAnnouncementBannerState extends State<GlobalAnnouncementBanner> {
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.hindSiliguri(
                     fontSize: 13,
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withValues(alpha: 0.9),
                     height: 1.3,
                   ),
                 ),

@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'dart:math';
 import 'package:agrolinkbd/core/services/ai_disease_service.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class DiseaseResultScreen extends StatefulWidget {
@@ -39,7 +39,7 @@ class _DiseaseResultScreenState extends State<DiseaseResultScreen> {
         } else {
           setState(() {
             _isError = true;
-            _errorMessage = aiResponse?['error']?.toString() ?? 'অজানা কারণ';
+            _errorMessage = aiResponse?['error']?.toString();
             _isAnalyzing = false;
           });
         }
@@ -55,43 +55,17 @@ class _DiseaseResultScreenState extends State<DiseaseResultScreen> {
     }
   }
 
-  void _fallbackToMockData() {
-    setState(() {
-      _aiResult = {
-        "image_quality": "Good",
-        "quality_reason": "ছবিটি পরিষ্কার এবং পাতার গঠন স্পষ্টভাবে দেখা যাচ্ছে। (Demo)",
-        "action_required": "",
-        "plant_detected": true,
-        "plant_part": "Leaf",
-        "plant_identified": "টমেটো (Tomato)",
-        "plant_confidence": 98,
-        "diagnosis_status": "Success",
-        "disease_name": "লেট ব্লাইট (Late Blight)",
-        "disease_confidence": 94,
-        "observed_symptoms": [
-          "পাতার প্রান্তে অনিয়মিত কালচে দাগ",
-          "দাগের চারদিকে ফ্যাকাশে হলুদ আভা",
-          "পাতা দ্রুত শুকিয়ে যাচ্ছে"
-        ],
-        "severity": "Moderate",
-        "reasoning": "লক্ষণগুলো ফাইটোফথোরা ইনফেস্টান্স (Phytophthora infestans) ছত্রাকজনিত লেট ব্লাইট রোগের সাথে সম্পূর্ণ মিলে যায়।",
-        "recommendations": [
-          "আক্রান্ত পাতাগুলো দ্রুত তুলে পুড়িয়ে ফেলুন।",
-          "মেনকোজেব বা মেটালিক্সিল গ্রুপের ছত্রাকনাশক (যেমন: রিডোমিল গোল্ড) প্রতি লিটার পানিতে ২ গ্রাম মিশিয়ে স্প্রে করুন।",
-          "গাছের গোড়ায় যেন পানি না জমে সেদিকে খেয়াল রাখুন।"
-        ],
-        "reliability": "High"
-      };
-      _isAnalyzing = false;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
+    final bool isBn = LanguageProvider.isBn(context);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: Text('এআই বিশ্লেষণ রিপোর্ট', style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold)),
+        title: Text(
+          isBn ? 'এআই বিশ্লেষণ রিপোর্ট' : 'AI Analysis Report',
+          style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
         elevation: 0,
@@ -112,9 +86,9 @@ class _DiseaseResultScreenState extends State<DiseaseResultScreen> {
               ),
               child: _isAnalyzing
                   ? Container(
-                      color: Colors.black.withOpacity(0.7),
+                      color: Colors.black.withValues(alpha: 0.7),
                       child: Column(
-                         mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           const CircularProgressIndicator(
                             valueColor: AlwaysStoppedAnimation<Color>(Colors.greenAccent),
@@ -122,7 +96,7 @@ class _DiseaseResultScreenState extends State<DiseaseResultScreen> {
                           ),
                           const SizedBox(height: 24),
                           Text(
-                            'AI বিশ্লেষণ করছে...',
+                            isBn ? 'AI বিশ্লেষণ করছে...' : 'AI is Analyzing...',
                             style: GoogleFonts.hindSiliguri(
                               color: Colors.white,
                               fontSize: 22,
@@ -131,10 +105,12 @@ class _DiseaseResultScreenState extends State<DiseaseResultScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'ছবির মান, গাছের ধরন ও রোগের লক্ষণ স্ক্যান করা হচ্ছে\nদয়া করে অপেক্ষা করুন।',
+                            isBn
+                                ? 'ছবির মান, গাছের ধরন ও রোগের লক্ষণ স্ক্যান করা হচ্ছে\nদয়া করে অপেক্ষা করুন।'
+                                : 'Scanning image quality, plant type & disease symptoms.\nPlease wait.',
                             textAlign: TextAlign.center,
                             style: GoogleFonts.hindSiliguri(
-                              color: Colors.white.withOpacity(0.8),
+                              color: Colors.white.withValues(alpha: 0.8),
                               fontSize: 15,
                             ),
                           ),
@@ -152,7 +128,7 @@ class _DiseaseResultScreenState extends State<DiseaseResultScreen> {
                     const Icon(Icons.error_outline, size: 60, color: Colors.red),
                     const SizedBox(height: 16),
                     Text(
-                      'বিশ্লেষণ ব্যর্থ হয়েছে',
+                      isBn ? 'বিশ্লেষণ ব্যর্থ হয়েছে' : 'Analysis Failed',
                       style: GoogleFonts.hindSiliguri(fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
@@ -163,7 +139,7 @@ class _DiseaseResultScreenState extends State<DiseaseResultScreen> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        _errorMessage ?? 'অজানা এরর। ইন্টারনেট কানেকশন চেক করুন।',
+                        _errorMessage ?? (isBn ? 'অজানা এরর। ইন্টারনেট কানেকশন চেক করুন।' : 'Unknown error. Check internet connection.'),
                         textAlign: TextAlign.center,
                         style: GoogleFonts.hindSiliguri(fontSize: 14, color: Colors.red.shade900),
                       ),
@@ -173,14 +149,14 @@ class _DiseaseResultScreenState extends State<DiseaseResultScreen> {
               ),
 
             if (!_isAnalyzing && !_isError && _aiResult != null)
-              _buildReportBody(),
+              _buildReportBody(isBn),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildReportBody() {
+  Widget _buildReportBody(bool isBn) {
     final result = _aiResult!;
     
     final bool isQualityPoor = result['image_quality'] == 'Poor';
@@ -203,7 +179,9 @@ class _DiseaseResultScreenState extends State<DiseaseResultScreen> {
               const Icon(Icons.warning_amber_rounded, size: 64, color: Colors.red),
               const SizedBox(height: 16),
               Text(
-                isPlantNotDetected ? 'কোনো গাছ শনাক্ত করা যায়নি!' : 'ছবির কোয়ালিটি খুবই খারাপ!',
+                isBn
+                    ? (isPlantNotDetected ? 'কোনো গাছ শনাক্ত করা যায়নি!' : 'ছবির কোয়ালিটি খুবই খারাপ!')
+                    : (isPlantNotDetected ? 'No plant detected!' : 'Poor image quality!'),
                 textAlign: TextAlign.center,
                 style: GoogleFonts.hindSiliguri(
                   fontSize: 20,
@@ -230,7 +208,7 @@ class _DiseaseResultScreenState extends State<DiseaseResultScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        result['action_required'] ?? 'দয়া করে পর্যাপ্ত আলোতে গাছের পাতার একটি পরিষ্কার ছবি তুলুন।',
+                        result['action_required'] ?? (isBn ? 'দয়া করে পর্যাপ্ত আলোতে গাছের পাতার একটি পরিষ্কার ছবি তুলুন।' : 'Please take a clear photo of the leaf with good lighting.'),
                         style: GoogleFonts.hindSiliguri(fontSize: 14, fontWeight: FontWeight.bold),
                       ),
                     ),
@@ -254,8 +232,8 @@ class _DiseaseResultScreenState extends State<DiseaseResultScreen> {
               Expanded(
                 child: _buildInfoChip(
                   icon: Icons.grass,
-                  title: 'গাছের নাম',
-                  value: result['plant_identified'] ?? 'অজানা গাছ',
+                  title: isBn ? 'গাছের নাম' : 'Plant Name',
+                  value: result['plant_identified'] ?? (isBn ? 'অজানা গাছ' : 'Unknown Plant'),
                   color: Colors.green,
                 ),
               ),
@@ -263,7 +241,7 @@ class _DiseaseResultScreenState extends State<DiseaseResultScreen> {
               Expanded(
                 child: _buildInfoChip(
                   icon: Icons.analytics,
-                  title: 'শনাক্তকরণ নির্ভুলতা',
+                  title: isBn ? 'শনাক্তকরণ নির্ভুলতা' : 'Detection Accuracy',
                   value: '${result['plant_confidence'] ?? 0}%',
                   color: Colors.blue,
                 ),
@@ -275,17 +253,17 @@ class _DiseaseResultScreenState extends State<DiseaseResultScreen> {
           // Disease Status Card
           if (status == 'Healthy')
             _buildStatusCard(
-              title: 'আপনার গাছটি সম্পূর্ণ সুস্থ আছে!',
+              title: isBn ? 'আপনার গাছটি সম্পূর্ণ সুস্থ আছে!' : 'Your plant is completely healthy!',
               icon: Icons.check_circle_outline,
               color: Colors.green,
               bgColor: Colors.green.shade50,
             )
           else if (status == 'Success' || status == 'Known')
-            _buildDiseaseCard(result)
+            _buildDiseaseCard(result, isBn)
           else
             _buildStatusCard(
-              title: 'রোগটি সঠিকভাবে শনাক্ত করা যায়নি।',
-              subtitle: 'দয়া করে কৃষি বিশেষজ্ঞের পরামর্শ নিন অথবা আরও পরিষ্কার ছবি দিন।',
+              title: isBn ? 'রোগটি সঠিকভাবে শনাক্ত করা যায়নি।' : 'Disease could not be identified accurately.',
+              subtitle: isBn ? 'দয়া করে কৃষি বিশেষজ্ঞের পরামর্শ নিন অথবা আরও পরিষ্কার ছবি দিন।' : 'Please consult an agriculture expert or provide a clearer photo.',
               icon: Icons.help_outline,
               color: Colors.orange.shade800,
               bgColor: Colors.orange.shade50,
@@ -295,7 +273,10 @@ class _DiseaseResultScreenState extends State<DiseaseResultScreen> {
 
           // Reasoning & Symptoms
           if (result['observed_symptoms'] != null && (result['observed_symptoms'] as List).isNotEmpty) ...[
-            Text('পর্যবেক্ষণকৃত লক্ষণসমূহ:', style: GoogleFonts.hindSiliguri(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              isBn ? 'পর্যবেক্ষণকৃত লক্ষণসমূহ:' : 'Observed Symptoms:',
+              style: GoogleFonts.hindSiliguri(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
             ...((result['observed_symptoms'] as List).map((s) => Padding(
               padding: const EdgeInsets.only(bottom: 4.0),
@@ -311,7 +292,10 @@ class _DiseaseResultScreenState extends State<DiseaseResultScreen> {
           ],
 
           if (result['reasoning'] != null && result['reasoning'].toString().isNotEmpty) ...[
-             Text('বিশ্লেষণের কারণ:', style: GoogleFonts.hindSiliguri(fontSize: 18, fontWeight: FontWeight.bold)),
+             Text(
+               isBn ? 'বিশ্লেষণের কারণ:' : 'Analysis Reasoning:',
+               style: GoogleFonts.hindSiliguri(fontSize: 18, fontWeight: FontWeight.bold),
+             ),
              const SizedBox(height: 8),
              Container(
                width: double.infinity,
@@ -324,7 +308,10 @@ class _DiseaseResultScreenState extends State<DiseaseResultScreen> {
 
           // Recommendations
           if (result['recommendations'] != null && (result['recommendations'] as List).isNotEmpty) ...[
-            Text('প্রতিকার ও পরামর্শ:', style: GoogleFonts.hindSiliguri(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              isBn ? 'প্রতিকার ও পরামর্শ:' : 'Remedies & Recommendations:',
+              style: GoogleFonts.hindSiliguri(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(16),
@@ -365,10 +352,16 @@ class _DiseaseResultScreenState extends State<DiseaseResultScreen> {
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () {
-                  Get.snackbar('Marketplace', 'কীটনাশক কেনার পেজে রিডাইরেক্ট করা হচ্ছে...');
+                  Get.snackbar(
+                    isBn ? 'মার্কেটপ্লেস' : 'Marketplace',
+                    isBn ? 'কীটনাশক কেনার পেজে রিডাইরেক্ট করা হচ্ছে...' : 'Redirecting to treatment marketplace...',
+                  );
                 },
                 icon: const Icon(Icons.shopping_cart),
-                label: Text('ওষুধ কিনুন (Marketplace)', style: GoogleFonts.hindSiliguri(fontSize: 16, fontWeight: FontWeight.bold)),
+                label: Text(
+                  isBn ? 'ওষুধ কিনুন (Marketplace)' : 'Buy Treatment (Marketplace)',
+                  style: GoogleFonts.hindSiliguri(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green.shade600,
                   foregroundColor: Colors.white,
@@ -382,10 +375,16 @@ class _DiseaseResultScreenState extends State<DiseaseResultScreen> {
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: () {
-                Get.snackbar('Expert', 'কৃষি বিশেষজ্ঞের সাথে কল কানেক্ট করা হচ্ছে...');
+                Get.snackbar(
+                  isBn ? 'বিশেষজ্ঞ' : 'Expert',
+                  isBn ? 'কৃষি বিশেষজ্ঞের সাথে কল কানেক্ট করা হচ্ছে...' : 'Connecting to agri specialist...',
+                );
               },
               icon: const Icon(Icons.support_agent),
-              label: Text('বিশেষজ্ঞের সাথে কথা বলুন', style: GoogleFonts.hindSiliguri(fontSize: 16, fontWeight: FontWeight.bold)),
+              label: Text(
+                isBn ? 'বিশেষজ্ঞের সাথে কথা বলুন' : 'Consult an Agri Expert',
+                style: GoogleFonts.hindSiliguri(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.green.shade700,
                 side: BorderSide(color: Colors.green.shade700),
@@ -407,7 +406,7 @@ class _DiseaseResultScreenState extends State<DiseaseResultScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2)),
         ],
       ),
       child: Column(
@@ -434,7 +433,7 @@ class _DiseaseResultScreenState extends State<DiseaseResultScreen> {
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
@@ -450,7 +449,7 @@ class _DiseaseResultScreenState extends State<DiseaseResultScreen> {
     );
   }
 
-  Widget _buildDiseaseCard(Map<String, dynamic> result) {
+  Widget _buildDiseaseCard(Map<String, dynamic> result, bool isBn) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -473,13 +472,13 @@ class _DiseaseResultScreenState extends State<DiseaseResultScreen> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              'রোগ শনাক্ত হয়েছে',
+              isBn ? 'রোগ শনাক্ত হয়েছে' : 'Disease Detected',
               style: GoogleFonts.hindSiliguri(color: Colors.red.shade800, fontWeight: FontWeight.bold, fontSize: 12),
             ),
           ),
           const SizedBox(height: 12),
           Text(
-            result['disease_name'] ?? 'অজানা রোগ',
+            result['disease_name'] ?? (isBn ? 'অজানা রোগ' : 'Unknown Disease'),
             textAlign: TextAlign.center,
             style: GoogleFonts.hindSiliguri(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.red.shade900),
           ),
@@ -487,9 +486,15 @@ class _DiseaseResultScreenState extends State<DiseaseResultScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildMiniChip('তীব্রতা: ${result['severity'] ?? 'N/A'}', Colors.orange),
+              _buildMiniChip(
+                isBn ? 'তীব্রতা: ${result['severity'] ?? 'N/A'}' : 'Severity: ${result['severity'] ?? 'N/A'}',
+                Colors.orange,
+              ),
               const SizedBox(width: 8),
-              _buildMiniChip('নিশ্চয়তা: ${result['disease_confidence'] ?? 0}%', Colors.blue),
+              _buildMiniChip(
+                isBn ? 'নিশ্চয়তা: ${result['disease_confidence'] ?? 0}%' : 'Confidence: ${result['disease_confidence'] ?? 0}%',
+                Colors.blue,
+              ),
             ],
           )
         ],
@@ -500,7 +505,11 @@ class _DiseaseResultScreenState extends State<DiseaseResultScreen> {
   Widget _buildMiniChip(String text, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: color.withOpacity(0.3))),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
       child: Text(text, style: GoogleFonts.hindSiliguri(fontSize: 12, fontWeight: FontWeight.bold, color: color)),
     );
   }

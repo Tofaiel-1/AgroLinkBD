@@ -4,22 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:get/get.dart';
 import 'package:agrolinkbd/core/services/transport_data_seeder.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 import 'package:agrolinkbd/presentation/screens/transport/transport_booking_screen.dart';
-
-/*
-  ========================================================================
-  FIRESTORE COMPOSITE INDEX REQUIREMENT:
-  ========================================================================
-  Collection ID: users
-  Fields to index:
-    - userType: Ascending
-    - district: Ascending
-    - upazila: Ascending
-    - vehicleSize: Ascending
-    - isAvailable: Ascending
-  (All ascending). Run app, check debug console for Firebase link to auto-create index.
-  ========================================================================
-*/
 
 class UpazilaTransportScreen extends StatefulWidget {
   const UpazilaTransportScreen({Key? key}) : super(key: key);
@@ -41,13 +27,6 @@ class _UpazilaTransportScreenState extends State<UpazilaTransportScreen>
   final List<String> _vehicleSizes = ['Small', 'Mid', 'Big'];
   String _selectedSize = 'Small';
   bool _isSeeding = false;
-
-  // Bangla labels for vehicle sizes
-  final Map<String, String> _sizeLabels = {
-    'Small': 'ছোট (১-২ টন)',
-    'Mid': 'মাঝারি (৩-৫ টন)',
-    'Big': 'বড় (৬+ টন)',
-  };
 
   @override
   void initState() {
@@ -84,6 +63,13 @@ class _UpazilaTransportScreenState extends State<UpazilaTransportScreen>
   Widget build(BuildContext context) {
     const Color primaryGreen = Color(0xFF2E7D32);
     const Color accentOrange = Color(0xFFFF9800);
+    final bool isBn = LanguageProvider.isBn(context);
+
+    final Map<String, String> sizeLabels = {
+      'Small': isBn ? 'ছোট (১-২ টন)' : 'Small (1-2 Ton)',
+      'Mid': isBn ? 'মাঝারি (৩-৫ টন)' : 'Mid (3-5 Ton)',
+      'Big': isBn ? 'বড় (৬+ টন)' : 'Big (6+ Ton)',
+    };
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7F6),
@@ -92,7 +78,7 @@ class _UpazilaTransportScreenState extends State<UpazilaTransportScreen>
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black87),
         title: Text(
-          'পরিবহন খুঁজুন 🚛',
+          isBn ? 'পরিবহন খুঁজুন 🚛' : 'Find Transport 🚛',
           style: GoogleFonts.hindSiliguri(
             color: Colors.black87,
             fontWeight: FontWeight.bold,
@@ -112,15 +98,15 @@ class _UpazilaTransportScreenState extends State<UpazilaTransportScreen>
                 )
               : IconButton(
                   icon: const Icon(Icons.refresh, color: primaryGreen),
-                  tooltip: 'ডেটা রিফ্রেশ করুন',
+                  tooltip: isBn ? 'ডেটা রিফ্রেশ করুন' : 'Refresh Data',
                   onPressed: () async {
                     setState(() => _isSeeding = true);
                     try {
                       await TransportDataSeeder.seedDatabase();
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('ড্রাইভার তথ্য আপডেট হয়েছে!'),
+                          SnackBar(
+                            content: Text(isBn ? 'ড্রাইভার তথ্য আপডেট হয়েছে!' : 'Driver data updated!'),
                             backgroundColor: Colors.green,
                           ),
                         );
@@ -151,7 +137,7 @@ class _UpazilaTransportScreenState extends State<UpazilaTransportScreen>
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: Colors.black.withValues(alpha: 0.04),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -165,7 +151,7 @@ class _UpazilaTransportScreenState extends State<UpazilaTransportScreen>
                     const Icon(Icons.location_on, color: Color(0xFF2E7D32), size: 18),
                     const SizedBox(width: 6),
                     Text(
-                      'এলাকা নির্বাচন করুন',
+                      isBn ? 'এলাকা নির্বাচন করুন' : 'Select Location',
                       style: GoogleFonts.hindSiliguri(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
@@ -180,7 +166,7 @@ class _UpazilaTransportScreenState extends State<UpazilaTransportScreen>
                     Expanded(
                       child: _buildDropdown(
                         icon: Icons.map,
-                        hint: 'জেলা',
+                        hint: isBn ? 'জেলা' : 'District',
                         value: _selectedDistrict,
                         items: _locations.keys.toList(),
                         onChanged: (val) {
@@ -195,7 +181,7 @@ class _UpazilaTransportScreenState extends State<UpazilaTransportScreen>
                     Expanded(
                       child: _buildDropdown(
                         icon: Icons.location_on,
-                        hint: 'উপজেলা',
+                        hint: isBn ? 'উপজেলা' : 'Upazila',
                         value: _selectedUpazila,
                         items: _selectedDistrict != null ? _locations[_selectedDistrict!]! : [],
                         onChanged: (val) {
@@ -220,7 +206,7 @@ class _UpazilaTransportScreenState extends State<UpazilaTransportScreen>
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8),
+                BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8),
               ],
             ),
             child: TabBar(
@@ -235,9 +221,9 @@ class _UpazilaTransportScreenState extends State<UpazilaTransportScreen>
               unselectedLabelStyle: GoogleFonts.hindSiliguri(fontWeight: FontWeight.w500, fontSize: 13),
               indicatorSize: TabBarIndicatorSize.tab,
               tabs: [
-                Tab(text: 'ছোট ১-২টন'),
-                Tab(text: 'মাঝারি ৩-৫টন'),
-                Tab(text: 'বড় ৬+টন'),
+                Tab(text: isBn ? 'ছোট ১-২টন' : 'Small 1-2 Ton'),
+                Tab(text: isBn ? 'মাঝারি ৩-৫টন' : 'Mid 3-5 Ton'),
+                Tab(text: isBn ? 'বড় ৬+টন' : 'Big 6+ Ton'),
               ],
             ),
           ),
@@ -249,7 +235,7 @@ class _UpazilaTransportScreenState extends State<UpazilaTransportScreen>
             child: _selectedDistrict == null || _selectedUpazila == null
                 ? Center(
                     child: Text(
-                      'জেলা ও উপজেলা নির্বাচন করুন',
+                      isBn ? 'জেলা ও উপজেলা নির্বাচন করুন' : 'Select District & Upazila',
                       style: GoogleFonts.hindSiliguri(color: Colors.grey.shade600, fontSize: 16),
                     ),
                   )
@@ -279,7 +265,9 @@ class _UpazilaTransportScreenState extends State<UpazilaTransportScreen>
                                 const Icon(Icons.error_outline, color: Colors.red, size: 48),
                                 const SizedBox(height: 12),
                                 Text(
-                                  'ডেটা লোড হয়নি।\nFirestore Index তৈরি করুন।',
+                                  isBn 
+                                      ? 'ডেটা লোড হয়নি।\nFirestore Index তৈরি করুন।'
+                                      : 'Failed to load data.\nPlease build Firestore Index.',
                                   textAlign: TextAlign.center,
                                   style: GoogleFonts.hindSiliguri(color: Colors.red, fontSize: 15),
                                 ),
@@ -301,7 +289,7 @@ class _UpazilaTransportScreenState extends State<UpazilaTransportScreen>
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.05),
+                                      color: Colors.black.withValues(alpha: 0.05),
                                       blurRadius: 10,
                                     )
                                   ],
@@ -310,7 +298,9 @@ class _UpazilaTransportScreenState extends State<UpazilaTransportScreen>
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                '$_selectedUpazila-তে\n${_sizeLabels[_selectedSize]} গাড়ি পাওয়া যায়নি',
+                                isBn 
+                                    ? '$_selectedUpazila-তে\n${sizeLabels[_selectedSize]} গাড়ি পাওয়া যায়নি'
+                                    : 'No ${sizeLabels[_selectedSize]} vehicles found in $_selectedUpazila',
                                 textAlign: TextAlign.center,
                                 style: GoogleFonts.hindSiliguri(
                                   fontSize: 17,
@@ -327,7 +317,7 @@ class _UpazilaTransportScreenState extends State<UpazilaTransportScreen>
                                 },
                                 icon: const Icon(Icons.refresh, color: Color(0xFF2E7D32)),
                                 label: Text(
-                                  'ড্রাইভার যোগ করুন (Demo)',
+                                  isBn ? 'ড্রাইভার যোগ করুন (Demo)' : 'Seed Drivers (Demo)',
                                   style: GoogleFonts.hindSiliguri(color: const Color(0xFF2E7D32)),
                                 ),
                               ),
@@ -345,7 +335,7 @@ class _UpazilaTransportScreenState extends State<UpazilaTransportScreen>
                             child: Row(
                               children: [
                                 Text(
-                                  '${drivers.length} জন ড্রাইভার পাওয়া গেছে',
+                                  isBn ? '${drivers.length} জন ড্রাইভার পাওয়া গেছে' : '${drivers.length} driver(s) found',
                                   style: GoogleFonts.hindSiliguri(
                                     color: primaryGreen,
                                     fontWeight: FontWeight.w600,
@@ -362,7 +352,7 @@ class _UpazilaTransportScreenState extends State<UpazilaTransportScreen>
                               itemCount: drivers.length,
                               itemBuilder: (context, index) {
                                 final data = drivers[index].data() as Map<String, dynamic>;
-                                return _buildDriverCard(data, primaryGreen, accentOrange);
+                                return _buildDriverCard(data, primaryGreen, accentOrange, isBn);
                               },
                             ),
                           ),
@@ -418,9 +408,9 @@ class _UpazilaTransportScreenState extends State<UpazilaTransportScreen>
     );
   }
 
-  Widget _buildDriverCard(Map<String, dynamic> data, Color primary, Color accent) {
+  Widget _buildDriverCard(Map<String, dynamic> data, Color primary, Color accent, bool isBn) {
     final String driverId = data['uid'] ?? '';
-    final String name = data['name'] ?? 'ড্রাইভার';
+    final String name = data['name'] ?? (isBn ? 'ড্রাইভার' : 'Driver');
     final String vehicleType = data['vehicleType'] ?? 'Tata Ace';
     final String capacity = data['capacity'] ?? 'N/A';
     final String phone = data['phone'] ?? '';
@@ -438,7 +428,7 @@ class _UpazilaTransportScreenState extends State<UpazilaTransportScreen>
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -455,11 +445,11 @@ class _UpazilaTransportScreenState extends State<UpazilaTransportScreen>
                 Container(
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: primary.withOpacity(0.2), width: 2),
+                    border: Border.all(color: primary.withValues(alpha: 0.2), width: 2),
                   ),
                   child: CircleAvatar(
                     radius: 30,
-                    backgroundColor: primary.withOpacity(0.1),
+                    backgroundColor: primary.withValues(alpha: 0.1),
                     backgroundImage: profileImageUrl != null && profileImageUrl.isNotEmpty
                         ? NetworkImage(profileImageUrl)
                         : null,
@@ -488,7 +478,7 @@ class _UpazilaTransportScreenState extends State<UpazilaTransportScreen>
                         children: [
                           _chip(Icons.local_shipping, vehicleType, Colors.blue.shade700, Colors.blue.shade50),
                           const SizedBox(width: 6),
-                          _chip(Icons.fitness_center, capacity, accent, accent.withOpacity(0.1)),
+                          _chip(Icons.fitness_center, capacity, accent, accent.withValues(alpha: 0.1)),
                         ],
                       ),
                       const SizedBox(height: 4),
@@ -497,7 +487,9 @@ class _UpazilaTransportScreenState extends State<UpazilaTransportScreen>
                           Icon(Icons.star, size: 14, color: Colors.amber.shade700),
                           const SizedBox(width: 3),
                           Text(
-                            '${rating.toStringAsFixed(1)} • $totalTrips ট্রিপ',
+                            isBn 
+                                ? '${rating.toStringAsFixed(1)} • $totalTrips ট্রিপ'
+                                : '${rating.toStringAsFixed(1)} • $totalTrips Trips',
                             style: GoogleFonts.hindSiliguri(
                               fontSize: 12,
                               color: Colors.grey.shade600,
@@ -531,7 +523,7 @@ class _UpazilaTransportScreenState extends State<UpazilaTransportScreen>
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: primary.withOpacity(0.3),
+                        color: primary.withValues(alpha: 0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 3),
                       ),
@@ -541,7 +533,7 @@ class _UpazilaTransportScreenState extends State<UpazilaTransportScreen>
                     onPressed: () => _makePhoneCall(phone),
                     icon: const Icon(Icons.call, color: Colors.white),
                     iconSize: 22,
-                    tooltip: 'কল করুন',
+                    tooltip: isBn ? 'কল করুন' : 'Call Driver',
                   ),
                 ),
               ],
@@ -560,7 +552,7 @@ class _UpazilaTransportScreenState extends State<UpazilaTransportScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'ভাড়ার হার',
+                        isBn ? 'ভাড়ার হার' : 'Fare Rate',
                         style: GoogleFonts.hindSiliguri(
                           fontSize: 12,
                           color: Colors.grey.shade500,
@@ -570,16 +562,22 @@ class _UpazilaTransportScreenState extends State<UpazilaTransportScreen>
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          _fareChip('বেস ভাড়া ৳${baseFare.toStringAsFixed(0)}', Colors.green.shade700),
+                          _fareChip(
+                            isBn ? 'বেস ভাড়া ৳${baseFare.toStringAsFixed(0)}' : 'Base ৳${baseFare.toStringAsFixed(0)}',
+                            Colors.green.shade700,
+                          ),
                           const SizedBox(width: 8),
-                          _fareChip('৳${perKmRate.toStringAsFixed(0)}/কিমি', Colors.orange.shade700),
+                          _fareChip(
+                            isBn ? '৳${perKmRate.toStringAsFixed(0)}/কিমি' : '৳${perKmRate.toStringAsFixed(0)}/km',
+                            Colors.orange.shade700,
+                          ),
                         ],
                       ),
                     ],
                   ),
                 ),
 
-                // Book Now Button - THE MISSING FEATURE!
+                // Book Now Button
                 ElevatedButton.icon(
                   onPressed: () {
                     Get.to(() => TransportBookingScreen(
@@ -593,7 +591,7 @@ class _UpazilaTransportScreenState extends State<UpazilaTransportScreen>
                   },
                   icon: const Icon(Icons.bookmark_add, size: 18),
                   label: Text(
-                    'বুক করুন',
+                    isBn ? 'বুক করুন' : 'Book Now',
                     style: GoogleFonts.hindSiliguri(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
@@ -646,9 +644,9 @@ class _UpazilaTransportScreenState extends State<UpazilaTransportScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(
         text,

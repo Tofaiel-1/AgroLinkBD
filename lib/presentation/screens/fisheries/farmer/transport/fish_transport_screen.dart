@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 import 'package:agrolinkbd/core/providers/user_provider.dart';
 import 'package:agrolinkbd/core/models/fish_transport_model.dart';
 import 'package:agrolinkbd/core/services/fish_auction_service.dart';
@@ -14,15 +15,26 @@ class FishTransportScreen extends StatefulWidget {
 }
 
 class _FishTransportScreenState extends State<FishTransportScreen> {
-  final _pickupLocationController = TextEditingController(text: 'সিংড়া বাজার, চলনবিল, নাটোর');
-  final _dropoffLocationController = TextEditingController(text: 'যাত্রাবাড়ী মৎস্য আড়ত, ঢাকা');
+  final _pickupLocationController = TextEditingController();
+  final _dropoffLocationController = TextEditingController();
   final _weightController = TextEditingController(text: '600');
-  final _fishTypeController = TextEditingController(text: 'জ্যান্ত রুই ও কাতলা');
+  final _fishTypeController = TextEditingController();
   final _distanceController = TextEditingController(text: '210');
 
   FishVehicleType _selectedVehicle = FishVehicleType.oxygenPickup;
-  DateTime _pickupTime = DateTime.now().add(const Duration(hours: 4));
+  final DateTime _pickupTime = DateTime.now().add(const Duration(hours: 4));
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final isBn = LanguageProvider.isBn(context);
+      _pickupLocationController.text = isBn ? 'সিংড়া বাজার, চলনবিল, নাটোর' : 'Singra Bazaar, Chalan Beel, Natore';
+      _dropoffLocationController.text = isBn ? 'যাত্রাবাড়ী মৎস্য আড়ত, ঢাকা' : 'Jatrabari Fish Depot, Dhaka';
+      _fishTypeController.text = isBn ? 'জ্যান্ত রুই ও কাতল' : 'Live Rui & Katla';
+    });
+  }
 
   @override
   void dispose() {
@@ -40,7 +52,7 @@ class _FishTransportScreenState extends State<FishTransportScreen> {
     double perKm = 28.0;
 
     if (_selectedVehicle == FishVehicleType.oxygenPickup) {
-      baseRate = 3500.0; // oxygen cylinder & aeration kit included
+      baseRate = 3500.0;
       perKm = 35.0;
     } else if (_selectedVehicle == FishVehicleType.insulatedIceVan) {
       baseRate = 3000.0;
@@ -50,7 +62,7 @@ class _FishTransportScreenState extends State<FishTransportScreen> {
     return baseRate + (km * perKm);
   }
 
-  void _bookTransport() {
+  void _bookTransport(bool isBn) {
     setState(() => _isLoading = true);
 
     final userProvider = Provider.of<UserProvider>(context, listen: false);
@@ -65,13 +77,13 @@ class _FishTransportScreenState extends State<FishTransportScreen> {
     final newBooking = FishTransportBookingModel(
       id: 'TR-FISH-${DateTime.now().millisecondsSinceEpoch}',
       userId: user?.id ?? 'farmer_demo',
-      userName: user?.name ?? 'মৎস্য খামারি',
+      userName: user?.name ?? (isBn ? 'মৎস্য খামারি' : 'Fish Farmer'),
       userPhone: user?.phone ?? '01711000000',
       vehicleType: _selectedVehicle,
       pickupLocation: _pickupLocationController.text,
-      pickupDistrict: user?.district ?? 'নাটোর',
+      pickupDistrict: user?.district ?? (isBn ? 'নাটোর' : 'Natore'),
       dropoffLocation: _dropoffLocationController.text,
-      dropoffDistrict: 'ঢাকা',
+      dropoffDistrict: isBn ? 'ঢাকা' : 'Dhaka',
       fishType: _fishTypeController.text,
       fishWeightKg: double.tryParse(_weightController.text) ?? 500.0,
       isLiveFish: _selectedVehicle == FishVehicleType.oxygenPickup,
@@ -79,9 +91,9 @@ class _FishTransportScreenState extends State<FishTransportScreen> {
       estimatedDistanceKm: double.tryParse(_distanceController.text) ?? 200.0,
       estimatedCost: fare,
       status: FishTransportStatus.driverAssigned,
-      driverName: 'মোঃ বাবুল মিয়া (অক্সিজেন স্পেশালিস্ট ড্রাইভার)',
+      driverName: isBn ? 'মোঃ বাবুল মিয়া (অক্সিজেন স্পেশালিস্ট ড্রাইভার)' : 'Md. Babul Miah (Oxygen Specialist Driver)',
       driverPhone: '01712345678',
-      vehicleNumber: 'ঢাকা মেট্রো-ন ১২-৩৪৫৬',
+      vehicleNumber: 'Dhaka Metro-N 12-3456',
       createdAt: DateTime.now(),
     );
 
@@ -90,8 +102,10 @@ class _FishTransportScreenState extends State<FishTransportScreen> {
     setState(() => _isLoading = false);
 
     Get.snackbar(
-      'পরিবহন বুকিং নিশ্চিত হয়েছে! 🚚',
-      'নিকটস্থ অক্সিজেন ফিশ ভ্যান ড্রাইভার অ্যাসাইন করা হয়েছে। ড্রাইভার আপনাকে কল করবেন।',
+      isBn ? 'পরিবহন বুকিং নিশ্চিত হয়েছে! 🚚' : 'Transport Booking Confirmed! 🚚',
+      isBn 
+          ? 'নিকটস্থ অক্সিজেন ফিশ ভ্যান ড্রাইভার অ্যাসাইন করা হয়েছে। ড্রাইভার আপনাকে কল করবেন।'
+          : 'Nearest oxygen fish van driver assigned. The driver will contact you shortly.',
       backgroundColor: const Color(0xFF006064),
       colorText: Colors.white,
       duration: const Duration(seconds: 4),
@@ -102,6 +116,7 @@ class _FishTransportScreenState extends State<FishTransportScreen> {
   Widget build(BuildContext context) {
     const Color deepAqua = Color(0xFF006064);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bool isBn = LanguageProvider.isBn(context);
 
     final auctionService = Get.isRegistered<FishAuctionService>()
         ? Get.find<FishAuctionService>()
@@ -113,7 +128,7 @@ class _FishTransportScreenState extends State<FishTransportScreen> {
       backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF5F7FA),
       appBar: AppBar(
         title: Text(
-          'মাছ পরিবহন ও অক্সিজেন ভ্যান',
+          isBn ? 'মাছ পরিবহন ও অক্সিজেন ভ্যান' : 'Fish Transport & Oxygen Van',
           style: GoogleFonts.hindSiliguri(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -149,7 +164,7 @@ class _FishTransportScreenState extends State<FishTransportScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'জ্যান্ত মাছ পরিবহনে ৩০-৫০% বেশি দর পান',
+                          isBn ? 'জ্যান্ত মাছ পরিবহনে ৩০-৫০% বেশি দর পান' : 'Earn 30-50% Higher Prices for Live Fish',
                           style: GoogleFonts.hindSiliguri(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -158,7 +173,9 @@ class _FishTransportScreenState extends State<FishTransportScreen> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'অক্সিজেন সিলিন্ডার ভ্যান ও ইনসুলেটেড আইস ট্রাক দিয়ে মাছ তাজা অবস্থায় আড়তে পৌঁছান।',
+                          isBn
+                              ? 'অক্সিজেন সিলিন্ডার ভ্যান ও ইনসুলেটেড আইস ট্রাক দিয়ে মাছ তাজা অবস্থায় আড়তে পৌঁছান।'
+                              : 'Transport live & fresh fish directly to major city depots with aeration kits.',
                           style: GoogleFonts.hindSiliguri(fontSize: 12, color: Colors.white70),
                         ),
                       ],
@@ -170,7 +187,7 @@ class _FishTransportScreenState extends State<FishTransportScreen> {
 
             const SizedBox(height: 20),
             Text(
-              'গাড়ির ধরন নির্বাচন করুন',
+              isBn ? 'গাড়ির ধরন নির্বাচন করুন' : 'Select Vehicle Type',
               style: GoogleFonts.hindSiliguri(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
@@ -179,15 +196,15 @@ class _FishTransportScreenState extends State<FishTransportScreen> {
               children: [
                 _buildVehicleSelectCard(
                   FishVehicleType.oxygenPickup,
-                  'লাইভ অক্সিজেন ভ্যান',
-                  'জ্যান্ত মাছের জন্য ড্রাম ও সিলিন্ডার',
+                  isBn ? 'লাইভ অক্সিজেন ভ্যান' : 'Live Oxygen Van',
+                  isBn ? 'জ্যান্ত মাছের জন্য ড্রাম ও সিলিন্ডার' : 'Oxygen drum & cylinder kit',
                   Icons.water,
                 ),
                 const SizedBox(width: 10),
                 _buildVehicleSelectCard(
                   FishVehicleType.insulatedIceVan,
-                  'ইনসুলেটেড আইস ভ্যান',
-                  'বরফ দিয়ে সংরক্ষিত তাজা মাছ',
+                  isBn ? 'ইনসুলেটেড আইস ভ্যান' : 'Insulated Ice Van',
+                  isBn ? 'বরফ দিয়ে সংরক্ষিত তাজা মাছ' : 'Ice preserved fresh cargo',
                   Icons.ac_unit,
                 ),
               ],
@@ -195,27 +212,27 @@ class _FishTransportScreenState extends State<FishTransportScreen> {
 
             const SizedBox(height: 20),
             Text(
-              'যাত্রার বিবরণ ও ভাড়ার হিসাব',
+              isBn ? 'যাত্রার বিবরণ ও ভাড়ার হিসাব' : 'Trip Details & Fare Estimate',
               style: GoogleFonts.hindSiliguri(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
 
-            _buildInputField('পিকআপ পয়েন্ট (খামারের ঠিকানা)', _pickupLocationController, Icons.location_on),
+            _buildInputField(isBn ? 'পিকআপ পয়েন্ট (খামারের ঠিকানা)' : 'Pickup Point (Farm Address)', _pickupLocationController, Icons.location_on),
             const SizedBox(height: 10),
-            _buildInputField('গন্তব্য আড়ত বা বাজার', _dropoffLocationController, Icons.flag),
+            _buildInputField(isBn ? 'গন্তব্য আড়ত বা বাজার' : 'Dropoff Point (Market/Depot)', _dropoffLocationController, Icons.flag),
             const SizedBox(height: 10),
 
             Row(
               children: [
-                Expanded(child: _buildInputField('মাছের বিবরণ', _fishTypeController, Icons.set_meal)),
+                Expanded(child: _buildInputField(isBn ? 'মাছের বিবরণ' : 'Fish Description', _fishTypeController, Icons.set_meal)),
                 const SizedBox(width: 10),
-                Expanded(child: _buildInputField('ওজন (কেজি)', _weightController, Icons.scale, isNum: true)),
+                Expanded(child: _buildInputField(isBn ? 'ওজন (কেজি)' : 'Weight (kg)', _weightController, Icons.scale, isNum: true)),
               ],
             ),
             const SizedBox(height: 10),
             Row(
               children: [
-                Expanded(child: _buildInputField('আনুমানিক দূরত্ব (কিমি)', _distanceController, Icons.route, isNum: true)),
+                Expanded(child: _buildInputField(isBn ? 'আনুমানিক দূরত্ব (কিমি)' : 'Est. Distance (km)', _distanceController, Icons.route, isNum: true)),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Container(
@@ -228,7 +245,7 @@ class _FishTransportScreenState extends State<FishTransportScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('আনুমানিক ভাড়া', style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.green.shade900)),
+                        Text(isBn ? 'আনুমানিক ভাড়া' : 'Estimated Fare', style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.green.shade900)),
                         Text('৳${estFare.toStringAsFixed(0)}', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green.shade800)),
                       ],
                     ),
@@ -242,10 +259,10 @@ class _FishTransportScreenState extends State<FishTransportScreen> {
               width: double.infinity,
               height: 50,
               child: ElevatedButton.icon(
-                onPressed: _isLoading ? null : _bookTransport,
+                onPressed: _isLoading ? null : () => _bookTransport(isBn),
                 icon: const Icon(Icons.local_shipping, color: Colors.white),
                 label: Text(
-                  'এখনই ভ্যান বুক করুন',
+                  isBn ? 'এখনই ভ্যান বুক করুন' : 'Book Fish Van Now',
                   style: GoogleFonts.hindSiliguri(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
                 style: ElevatedButton.styleFrom(
@@ -257,7 +274,7 @@ class _FishTransportScreenState extends State<FishTransportScreen> {
 
             const SizedBox(height: 30),
             Text(
-              'সক্রিয় ও পূর্বের বুকিং সমূহ',
+              isBn ? 'সক্রিয় ও পূর্বের বুকিং সমূহ' : 'Active & Previous Bookings',
               style: GoogleFonts.hindSiliguri(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
@@ -266,7 +283,7 @@ class _FishTransportScreenState extends State<FishTransportScreen> {
               final bookings = auctionService.transportBookings;
               if (bookings.isEmpty) {
                 return Center(
-                  child: Text('কোনো বুকিং হিস্ট্রি নেই', style: GoogleFonts.hindSiliguri(color: Colors.grey)),
+                  child: Text(isBn ? 'কোনো বুকিং হিস্ট্রি নেই' : 'No booking history found', style: GoogleFonts.hindSiliguri(color: Colors.grey)),
                 );
               }
 
@@ -295,19 +312,22 @@ class _FishTransportScreenState extends State<FishTransportScreen> {
                                   color: Colors.blue.shade50,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: Text('ড্রাইভার নিযুক্ত', style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.blue.shade800, fontWeight: FontWeight.bold)),
+                                child: Text(
+                                  isBn ? 'ড্রাইভার নিযুক্ত' : 'Driver Assigned',
+                                  style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.blue.shade800, fontWeight: FontWeight.bold),
+                                ),
                               ),
                             ],
                           ),
                           const SizedBox(height: 6),
-                          Text('${b.fishType} (${b.fishWeightKg.toInt()} কেজি)', style: GoogleFonts.hindSiliguri(fontSize: 13, fontWeight: FontWeight.w600)),
-                          Text('রুট: ${b.pickupLocation} ➔ ${b.dropoffLocation}', style: GoogleFonts.hindSiliguri(fontSize: 12, color: Colors.grey.shade600)),
+                          Text('${b.fishType} (${b.fishWeightKg.toInt()} ${isBn ? "কেজি" : "kg"})', style: GoogleFonts.hindSiliguri(fontSize: 13, fontWeight: FontWeight.w600)),
+                          Text('${isBn ? "রুট" : "Route"}: ${b.pickupLocation} ➔ ${b.dropoffLocation}', style: GoogleFonts.hindSiliguri(fontSize: 12, color: Colors.grey.shade600)),
                           const Divider(height: 16),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text('ড্রাইভার: ${b.driverName ?? "অ্যাসাইন হচ্ছে"}', style: GoogleFonts.hindSiliguri(fontSize: 12, fontWeight: FontWeight.bold)),
-                              Text('ভাড়া: ৳${b.estimatedCost.toStringAsFixed(0)}', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.green.shade700)),
+                              Text('${isBn ? "ড্রাইভার" : "Driver"}: ${b.driverName ?? (isBn ? "অ্যাসাইন হচ্ছে" : "Assigning...")}', style: GoogleFonts.hindSiliguri(fontSize: 12, fontWeight: FontWeight.bold)),
+                              Text('${isBn ? "ভাড়া" : "Fare"}: ৳${b.estimatedCost.toStringAsFixed(0)}', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.green.shade700)),
                             ],
                           ),
                         ],
@@ -332,7 +352,7 @@ class _FishTransportScreenState extends State<FishTransportScreen> {
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF006064).withOpacity(0.12) : Theme.of(context).cardColor,
+            color: isSelected ? const Color(0xFF006064).withValues(alpha: 0.12) : Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: isSelected ? const Color(0xFF006064) : Colors.grey.shade300,

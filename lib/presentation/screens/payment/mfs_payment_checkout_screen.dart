@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:agrolinkbd/core/providers/user_provider.dart';
 import 'package:agrolinkbd/core/models/payment_model.dart';
 import 'package:agrolinkbd/core/services/payment_service.dart';
+import 'package:agrolinkbd/core/services/sslcommerz_service.dart';
 
 enum MfsProvider { bkash, nagad, rocket, upay, card }
 
@@ -37,6 +38,45 @@ class _MfsPaymentCheckoutScreenState extends State<MfsPaymentCheckoutScreen> {
 
   int _currentStep = 0; // 0: Select Provider & Number, 1: OTP, 2: PIN / Confirm
   bool _isLoading = false;
+  bool _isProcessingSsl = false;
+
+  Future<void> _handleSslPayment() async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final user = userProvider.currentUser;
+
+    setState(() => _isProcessingSsl = true);
+
+    try {
+      final success = await SSLCommerzService.initiatePayment(
+        context: context,
+        amount: widget.amount,
+        productName: widget.title,
+        customerName: user?.name ?? "Customer",
+        customerEmail: user?.email ?? "customer@agrolinkbd.com",
+        customerPhone: _phoneController.text.isNotEmpty ? _phoneController.text : (user?.phone ?? "01700000000"),
+        customerAddress: "Bangladesh",
+      );
+
+      if (success) {
+        final txnId = 'SSL-${DateTime.now().millisecondsSinceEpoch}';
+
+        if (widget.purpose == 'vip_subscription') {
+          final expiryDate = DateTime.now().add(widget.subscriptionDuration);
+          await userProvider.upgradeToPremium(expiryDate);
+        }
+
+        if (mounted) {
+          _showSuccessDialog(txnId);
+        }
+      }
+    } catch (e) {
+      debugPrint('SSL Payment error: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isProcessingSsl = false);
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -304,8 +344,91 @@ class _MfsPaymentCheckoutScreenState extends State<MfsPaymentCheckoutScreen> {
               ),
             ),
 
+            // SSLCommerz Instant Checkout Banner
+            const SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF0D47A1), Color(0xFF1976D2), Color(0xFF00838F)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF1976D2).withOpacity(0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.shield_outlined, color: Colors.white, size: 20),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'SSLCommerz অফিসিয়াল গেটওয়ে',
+                        style: GoogleFonts.hindSiliguri(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'বিকাশ, নগদ, রকেট, ভিসা, মাস্টারকার্ড বা ব্যাংক একাউন্ট দিয়ে ১-ক্লিকে তাৎক্ষণিক পেমেন্ট করুন।',
+                    style: GoogleFonts.hindSiliguri(fontSize: 12, color: Colors.white.withOpacity(0.9)),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 44,
+                    child: ElevatedButton.icon(
+                      onPressed: _isProcessingSsl ? null : _handleSslPayment,
+                      icon: _isProcessingSsl
+                          ? const SizedBox(
+                              height: 18,
+                              width: 18,
+                              child: CircularProgressIndicator(color: Color(0xFF0D47A1), strokeWidth: 2),
+                            )
+                          : const Icon(Icons.bolt, color: Color(0xFF0D47A1)),
+                      label: Text(
+                        _isProcessingSsl
+                            ? 'গেটওয়ে লোড হচ্ছে...'
+                            : 'SSLCommerz দিয়ে পেমেন্ট করুন (৳${widget.amount.toStringAsFixed(0)})',
+                        style: GoogleFonts.hindSiliguri(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: const Color(0xFF0D47A1),
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        elevation: 0,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
             const SizedBox(height: 20),
-            Text('পেমেন্ট মেথড নির্বাচন করুন', style: GoogleFonts.hindSiliguri(fontSize: 15, fontWeight: FontWeight.bold)),
+            Text('অথবা ম্যানুয়াল এমএফএস (MFS) নির্বাচন করুন', style: GoogleFonts.hindSiliguri(fontSize: 14, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
 
             // Provider selection chips

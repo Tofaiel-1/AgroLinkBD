@@ -34,16 +34,23 @@ class _AddProductScreenState extends State<AddProductScreen> {
   late String _userId;
 
   final List<Map<String, String>> _categories = [
-    {'label': 'Vegetables', 'value': 'vegetables'},
-    {'label': 'Fruits', 'value': 'fruits'},
-    {'label': 'Spices', 'value': 'spices'},
-    {'label': 'Grains', 'value': 'grains'},
-    {'label': 'Seeds', 'value': 'seeds'},
-    {'label': 'Tools', 'value': 'tools'},
-    {'label': 'Other', 'value': 'other'},
+    {'labelEn': 'Vegetables', 'labelBn': 'শাকসবজি', 'value': 'vegetables'},
+    {'labelEn': 'Fruits', 'labelBn': 'ফলমূল', 'value': 'fruits'},
+    {'labelEn': 'Spices', 'labelBn': 'মসলা', 'value': 'spices'},
+    {'labelEn': 'Grains', 'labelBn': 'শস্য ও ধান', 'value': 'grains'},
+    {'labelEn': 'Seeds', 'labelBn': 'বীজ', 'value': 'seeds'},
+    {'labelEn': 'Tools', 'labelBn': 'কৃষি যন্ত্রপাতি', 'value': 'tools'},
+    {'labelEn': 'Other', 'labelBn': 'অন্যান্য', 'value': 'other'},
   ];
 
-  final List<String> _units = ['kg', 'gram', 'piece', 'bunch', 'dozen', 'bag'];
+  final List<Map<String, String>> _units = [
+    {'value': 'kg', 'labelEn': 'kg', 'labelBn': 'কেজি'},
+    {'value': 'gram', 'labelEn': 'gram', 'labelBn': 'গ্রাম'},
+    {'value': 'piece', 'labelEn': 'piece', 'labelBn': 'পিস'},
+    {'value': 'bunch', 'labelEn': 'bunch', 'labelBn': 'মুঠা/আঁটি'},
+    {'value': 'dozen', 'labelEn': 'dozen', 'labelBn': 'ডজন'},
+    {'value': 'bag', 'labelEn': 'bag', 'labelBn': 'বস্তা'},
+  ];
 
   @override
   void initState() {
@@ -59,6 +66,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
   }
 
   Future<void> _pickImage() async {
+    final bool isBn = LanguageProvider.isBn(context);
     try {
       final XFile? pickedFile = await _imagePicker.pickImage(
         source: ImageSource.gallery,
@@ -76,18 +84,19 @@ class _AddProductScreenState extends State<AddProductScreen> {
       debugPrint('Error picking image: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error picking image: $e')),
+          SnackBar(content: Text(isBn ? 'ছবি নির্বাচনে সমস্যা: $e' : 'Error picking image: $e')),
         );
       }
     }
   }
 
   Future<void> _submitForm() async {
+    final bool isBn = LanguageProvider.isBn(context);
     if (!_formKey.currentState!.validate()) return;
 
     if (_selectedImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a product image')),
+        SnackBar(content: Text(isBn ? 'অনুগ্রহ করে পণ্যের ছবি নির্বাচন করুন' : 'Please select a product image')),
       );
       return;
     }
@@ -118,7 +127,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
         'category': _selectedCategory,
         'location': _locationController.text.trim(),
         'imageUrl': imageUrl,
-        'images': [imageUrl], // Support for multiple images in future
+        'images': [imageUrl],
         'createdAt': FieldValue.serverTimestamp(),
         'status': 'available',
         'views': 0,
@@ -133,21 +142,22 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Product added successfully!')),
+          SnackBar(content: Text(isBn ? 'পণ্যটি সফলভাবে যোগ করা হয়েছে!' : 'Product added successfully!')),
         );
 
-        // Navigate back
-        Navigator.pop(context, true); // Return true to indicate success
+        Navigator.pop(context, true);
       }
     } catch (e) {
       debugPrint('❌ Error creating product: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(content: Text(isBn ? 'ত্রুটি: $e' : 'Error: $e')),
         );
       }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -164,9 +174,11 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isBn = LanguageProvider.isBn(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(LanguageProvider.isBn(context) ? 'পণ্য যোগ করুন' : 'Add Product'),
+        title: Text(isBn ? 'পণ্য যোগ করুন' : 'Add Product'),
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -184,10 +196,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
                     width: double.infinity,
                     height: 220,
                     decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColor.withOpacity(0.1),
+                      color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: Theme.of(context).primaryColor.withOpacity(0.3),
+                        color: Theme.of(context).primaryColor.withValues(alpha: 0.3),
                         width: 2,
                       ),
                     ),
@@ -209,7 +221,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                               ),
                               const SizedBox(height: 12),
                               Text(
-                                LanguageProvider.isBn(context) ? 'পণ্যের ছবি নির্বাচন করতে ট্যাপ করুন' : 'Tap to select product image',
+                                isBn ? 'পণ্যের ছবি নির্বাচন করতে ট্যাপ করুন' : 'Tap to select product image',
                                 style: Theme.of(context)
                                     .textTheme
                                     .bodyLarge
@@ -220,7 +232,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'JPG, PNG up to 5MB',
+                                isBn ? 'JPG, PNG সর্বোচ্চ ৫ মেগাবাইট' : 'JPG, PNG up to 5MB',
                                 style: Theme.of(context).textTheme.bodySmall,
                               ),
                             ],
@@ -232,7 +244,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
               // Product Title
               Text(
-                LanguageProvider.isBn(context) ? 'পণ্যের নাম' : 'Product Title',
+                isBn ? 'পণ্যের নাম' : 'Product Title',
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -241,7 +253,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
               TextFormField(
                 controller: _titleController,
                 decoration: InputDecoration(
-                  hintText: 'e.g., Fresh Tomatoes',
+                  hintText: isBn ? 'যেমন: দেশি গোল আলু' : 'e.g., Fresh Potatoes',
                   prefixIcon: const Icon(Icons.shopping_bag_outlined),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -249,7 +261,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 ),
                 validator: (value) {
                   if (value?.isEmpty ?? true) {
-                    return 'Product title is required';
+                    return isBn ? 'পণ্যের নাম আবশ্যক' : 'Product title is required';
                   }
                   return null;
                 },
@@ -258,7 +270,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
               // Description
               Text(
-                LanguageProvider.isBn(context) ? 'বিবরণ' : 'Description',
+                isBn ? 'বিবরণ' : 'Description',
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -268,7 +280,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 controller: _descriptionController,
                 maxLines: 3,
                 decoration: InputDecoration(
-                  hintText: 'Describe your product...',
+                  hintText: isBn ? 'আপনার পণ্যের গুণগত মান ও বিবরণ লিখুন...' : 'Describe your product quality & details...',
                   prefixIcon: const Icon(Icons.description_outlined),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -276,7 +288,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 ),
                 validator: (value) {
                   if (value?.isEmpty ?? true) {
-                    return 'Description is required';
+                    return isBn ? 'বিবরণ আবশ্যক' : 'Description is required';
                   }
                   return null;
                 },
@@ -285,7 +297,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
               // Category
               Text(
-                LanguageProvider.isBn(context) ? 'বিভাগ' : 'Category',
+                isBn ? 'ক্যাটাগরি' : 'Category',
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -296,7 +308,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 items: _categories
                     .map((cat) => DropdownMenuItem<String>(
                           value: cat['value']!,
-                          child: Text(LanguageProvider.isBn(context) ? (cat['labelBN'] ?? cat['label']!) : cat['label']!),
+                          child: Text(isBn ? (cat['labelBn'] ?? cat['labelEn']!) : cat['labelEn']!),
                         ))
                     .toList(),
                 onChanged: (value) {
@@ -321,7 +333,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          LanguageProvider.isBn(context) ? 'মূল্য (প্রতি একক)' : 'Price (per unit)',
+                          isBn ? 'মূল্য (প্রতি একক)' : 'Price (per unit)',
                           style:
                               Theme.of(context).textTheme.labelMedium?.copyWith(
                                     fontWeight: FontWeight.w600,
@@ -342,10 +354,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
                           ),
                           validator: (value) {
                             if (value?.isEmpty ?? true) {
-                              return 'Price is required';
+                              return isBn ? 'মূল্য আবশ্যক' : 'Price is required';
                             }
                             if (double.tryParse(value!) == null) {
-                              return 'Invalid price';
+                              return isBn ? 'সঠিক মূল্য দিন' : 'Invalid price';
                             }
                             return null;
                           },
@@ -359,7 +371,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          LanguageProvider.isBn(context) ? 'পরিমাণ' : 'Quantity',
+                          isBn ? 'পরিমাণ' : 'Quantity',
                           style:
                               Theme.of(context).textTheme.labelMedium?.copyWith(
                                     fontWeight: FontWeight.w600,
@@ -378,10 +390,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
                           ),
                           validator: (value) {
                             if (value?.isEmpty ?? true) {
-                              return 'Quantity is required';
+                              return isBn ? 'পরিমাণ আবশ্যক' : 'Quantity is required';
                             }
                             if (double.tryParse(value!) == null) {
-                              return 'Invalid quantity';
+                              return isBn ? 'সঠিক পরিমাণ দিন' : 'Invalid quantity';
                             }
                             return null;
                           },
@@ -395,7 +407,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
               // Unit
               Text(
-                LanguageProvider.isBn(context) ? 'একক' : 'Unit',
+                isBn ? 'একক' : 'Unit',
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -405,8 +417,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 initialValue: _unitController.text,
                 items: _units
                     .map((unit) => DropdownMenuItem<String>(
-                          value: unit,
-                          child: Text(unit),
+                          value: unit['value']!,
+                          child: Text(isBn ? unit['labelBn']! : unit['labelEn']!),
                         ))
                     .toList(),
                 onChanged: (value) {
@@ -425,7 +437,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
               // Location
               Text(
-                LanguageProvider.isBn(context) ? 'অবস্থান' : 'Location',
+                isBn ? 'অবস্থান' : 'Location',
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -434,7 +446,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
               TextFormField(
                 controller: _locationController,
                 decoration: InputDecoration(
-                  hintText: 'e.g., Dhaka, Bangladesh',
+                  hintText: isBn ? 'যেমন: বগুড়া সদর, বগুড়া' : 'e.g., Bogura Sadar, Bogura',
                   prefixIcon: const Icon(Icons.location_on_outlined),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -442,7 +454,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 ),
                 validator: (value) {
                   if (value?.isEmpty ?? true) {
-                    return 'Location is required';
+                    return isBn ? 'অবস্থান আবশ্যক' : 'Location is required';
                   }
                   return null;
                 },
@@ -469,7 +481,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                           ),
                         )
                       : Text(
-                          LanguageProvider.isBn(context) ? 'পণ্য যোগ করুন' : 'Add Product',
+                          isBn ? 'পণ্য যোগ করুন' : 'Add Product',
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,

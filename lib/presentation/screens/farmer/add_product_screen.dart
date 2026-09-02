@@ -8,7 +8,9 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:agrolinkbd/core/providers/user_provider.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 import 'package:agrolinkbd/core/utils/masked_identity_helper.dart';
+import 'package:agrolinkbd/core/services/sslcommerz_service.dart';
 
 /// Add Product Screen - Farmers can list new crops for sale with Super Class Monetization & Boosting options
 class AddProductScreen extends StatefulWidget {
@@ -27,30 +29,37 @@ class _AddProductScreenState extends State<AddProductScreen> {
   final _harvestDateController = TextEditingController();
 
   String? _selectedCategory;
-  String? _selectedUnit = 'কেজি';
+  String? _selectedUnit = 'kg';
   String _selectedTier = 'free'; // 'free', 'urgent', 'featured', 'vip'
-  String _qualityGrade = 'Grade A (প্রিমিয়াম)';
+  String _qualityGrade = 'grade_a';
   final List<XFile> _pickedImages = [];
   bool _isSubmitting = false;
   DateTime? _harvestDate;
 
   // Category options
   final List<Map<String, String>> _categories = [
-    {'label': 'সবজি 🥦', 'value': 'vegetables'},
-    {'label': 'ফল 🍎', 'value': 'fruits'},
-    {'label': 'শস্য/ধান 🌾', 'value': 'grains'},
-    {'label': 'ডাল 🫘', 'value': 'pulses'},
-    {'label': 'মসলা 🌶️', 'value': 'spices'},
-    {'label': 'মাছ 🐟', 'value': 'fish'},
-    {'label': 'ফুল 🌸', 'value': 'flowers'},
-    {'label': 'অন্যান্য', 'value': 'other'},
+    {'labelBn': 'সবজি 🥦', 'labelEn': 'Vegetables 🥦', 'value': 'vegetables'},
+    {'labelBn': 'ফল 🍎', 'labelEn': 'Fruits 🍎', 'value': 'fruits'},
+    {'labelBn': 'শস্য/ধান 🌾', 'labelEn': 'Grains/Rice 🌾', 'value': 'grains'},
+    {'labelBn': 'ডাল 🫘', 'labelEn': 'Pulses 🫘', 'value': 'pulses'},
+    {'labelBn': 'মসলা 🌶️', 'labelEn': 'Spices 🌶️', 'value': 'spices'},
+    {'labelBn': 'মাছ 🐟', 'labelEn': 'Fish 🐟', 'value': 'fish'},
+    {'labelBn': 'ফুল 🌸', 'labelEn': 'Flowers 🌸', 'value': 'flowers'},
+    {'labelBn': 'অন্যান্য', 'labelEn': 'Other', 'value': 'other'},
   ];
 
-  final List<String> _units = ['কেজি', 'মণ', 'লিটার', 'পিস', 'টন'];
-  final List<String> _grades = [
-    'Grade A (প্রিমিয়াম - রপ্তানিযোগ্য)',
-    'Grade B (স্ট্যান্ডার্ড বাজার মান)',
-    'Grade C (সাধারণ পাইকারি মান)',
+  final List<Map<String, String>> _units = [
+    {'value': 'kg', 'labelBn': 'কেজি', 'labelEn': 'kg'},
+    {'value': 'maund', 'labelBn': 'মণ', 'labelEn': 'maund'},
+    {'value': 'liter', 'labelBn': 'লিটার', 'labelEn': 'liter'},
+    {'value': 'piece', 'labelBn': 'পিস', 'labelEn': 'piece'},
+    {'value': 'ton', 'labelBn': 'টন', 'labelEn': 'ton'},
+  ];
+
+  final List<Map<String, String>> _grades = [
+    {'value': 'grade_a', 'labelBn': 'Grade A (প্রিমিয়াম - রপ্তানিযোগ্য)', 'labelEn': 'Grade A (Premium - Export Quality)'},
+    {'value': 'grade_b', 'labelBn': 'Grade B (স্ট্যান্ডার্ড বাজার মান)', 'labelEn': 'Grade B (Standard Market Quality)'},
+    {'value': 'grade_c', 'labelBn': 'Grade C (সাধারণ পাইকারি মান)', 'labelEn': 'Grade C (Standard Wholesale)'},
   ];
 
   @override
@@ -64,8 +73,12 @@ class _AddProductScreenState extends State<AddProductScreen> {
   }
 
   Future<void> _pickImage() async {
+    final bool isBn = LanguageProvider.isBn(context);
     if (_pickedImages.length >= 5) {
-      Get.snackbar('সর্বোচ্চ ৫টি', 'আপনি সর্বোচ্চ ৫টি ছবি যোগ করতে পারবেন');
+      Get.snackbar(
+        isBn ? 'সর্বোচ্চ ৫টি' : 'Max 5 Photos',
+        isBn ? 'আপনি সর্বোচ্চ ৫টি ছবি যোগ করতে পারবেন' : 'You can upload up to 5 photos maximum',
+      );
       return;
     }
 
@@ -80,18 +93,18 @@ class _AddProductScreenState extends State<AddProductScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'ছবি নির্বাচন করুন',
+              isBn ? 'ছবি নির্বাচন করুন' : 'Select Photo',
               style: GoogleFonts.hindSiliguri(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             ListTile(
               leading: const Icon(Icons.camera_alt, color: Color(0xFF2E7D32)),
-              title: Text('ক্যামেরা থেকে তুলুন', style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.w600)),
+              title: Text(isBn ? 'ক্যামেরা থেকে তুলুন' : 'Take Photo with Camera', style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.w600)),
               onTap: () => Navigator.pop(ctx, ImageSource.camera),
             ),
             ListTile(
               leading: const Icon(Icons.photo_library, color: Color(0xFF2E7D32)),
-              title: Text('গ্যালারি থেকে নিন', style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.w600)),
+              title: Text(isBn ? 'গ্যালারি থেকে নিন' : 'Choose from Gallery', style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.w600)),
               onTap: () => Navigator.pop(ctx, ImageSource.gallery),
             ),
           ],
@@ -119,7 +132,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
       final ref = FirebaseStorage.instance
           .ref()
           .child('product_images')
-          .child('$productId\_$i.jpg');
+          .child('${productId}_$i.jpg');
       await ref.putFile(File(_pickedImages[i].path));
       final url = await ref.getDownloadURL();
       urls.add(url);
@@ -128,12 +141,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
   }
 
   Future<void> _submitProduct() async {
+    final bool isBn = LanguageProvider.isBn(context);
     if (!_formKey.currentState!.validate()) return;
 
     if (_selectedCategory == null) {
       Get.snackbar(
-        'ক্যাটাগরি প্রয়োজন',
-        'দয়া করে ফসলের ধরন/ক্যাটাগরি নির্বাচন করুন',
+        isBn ? 'ক্যাটাগরি প্রয়োজন' : 'Category Required',
+        isBn ? 'দয়া করে ফসলের ধরন/ক্যাটাগরি নির্বাচন করুন' : 'Please select crop category/type',
         backgroundColor: Colors.orange,
         colorText: Colors.white,
       );
@@ -147,6 +161,45 @@ class _AddProductScreenState extends State<AddProductScreen> {
       final userId = user?.uid ?? 'demo_farmer';
       final userProvider = Provider.of<UserProvider>(context, listen: false);
       final userModel = userProvider.currentUser;
+
+      // Check if Paid Boost Tier is selected
+      if (_selectedTier != 'free') {
+        double boostPrice = 0.0;
+        String tierName = 'Boost';
+        if (_selectedTier == 'urgent') {
+          boostPrice = 20.0;
+          tierName = 'Urgent Sale Boost (৩ দিন)';
+        } else if (_selectedTier == 'featured') {
+          boostPrice = 50.0;
+          tierName = 'Premium Featured Lot (৭ দিন)';
+        } else if (_selectedTier == 'vip') {
+          boostPrice = 100.0;
+          tierName = 'VIP Wholesaler Partner (১৫ দিন)';
+        }
+
+        final paymentSuccess = await SSLCommerzService.initiatePayment(
+          context: context,
+          amount: boostPrice,
+          productName: 'পণ্য বুস্টিং: $tierName (${_cropController.text.trim()})',
+          customerName: userModel?.name ?? 'Farmer User',
+          customerEmail: user?.email ?? 'farmer@agrolinkbd.com',
+          customerPhone: userModel?.phone ?? (user?.phoneNumber ?? '01700000000'),
+          customerAddress: '${userModel?.upazila ?? 'সদর'}, ${userModel?.district ?? 'বাংলাদেশ'}',
+        );
+
+        if (!paymentSuccess) {
+          if (mounted) {
+            setState(() => _isSubmitting = false);
+            Get.snackbar(
+              isBn ? 'পেমেন্ট সম্পন্ন হয়নি' : 'Payment Cancelled',
+              isBn ? 'বুস্টিং পেমেন্ট সম্পন্ন না হওয়ায় পণ্য প্রকাশ স্থগিত রাখা হয়েছে।' : 'Product listing paused as boost payment was not completed.',
+              backgroundColor: Colors.orange.shade800,
+              colorText: Colors.white,
+            );
+          }
+          return;
+        }
+      }
 
       final docRef = FirebaseFirestore.instance.collection('products').doc();
 
@@ -204,8 +257,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
       if (mounted) {
         Get.back();
         Get.snackbar(
-          '✅ পণ্য মার্কেটে প্রকাশিত!',
-          '"${_cropController.text}" ${_selectedTier != 'free' ? 'বুস্টসহ' : ''} সফলভাবে তালিকাভুক্ত হয়েছে।',
+          isBn ? '✅ পণ্য মার্কেটে প্রকাশিত!' : '✅ Crop Listed on Market!',
+          isBn
+              ? '"${_cropController.text}" ${_selectedTier != 'free' ? 'বুস্টসহ' : ''} সফলভাবে তালিকাভুক্ত হয়েছে।'
+              : '"${_cropController.text}" ${_selectedTier != 'free' ? 'with Boost' : ''} listed successfully.',
           backgroundColor: const Color(0xFF2E7D32),
           colorText: Colors.white,
           duration: const Duration(seconds: 4),
@@ -215,8 +270,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
     } catch (e) {
       if (mounted) {
         Get.snackbar(
-          'ত্রুটি হয়েছে',
-          'পণ্য যোগ করতে সমস্যা: $e',
+          isBn ? 'ত্রুটি হয়েছে' : 'Error',
+          isBn ? 'পণ্য যোগ করতে সমস্যা: $e' : 'Failed to add crop: $e',
           backgroundColor: Colors.red,
           colorText: Colors.white,
         );
@@ -229,6 +284,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
   @override
   Widget build(BuildContext context) {
     const Color primaryGreen = Color(0xFF2E7D32);
+    final bool isBn = LanguageProvider.isBn(context);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
@@ -236,7 +292,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
         backgroundColor: primaryGreen,
         iconTheme: const IconThemeData(color: Colors.white),
         title: Text(
-          'পণ্য বিক্রয়ে দিন 🌾',
+          isBn ? 'পণ্য বিক্রয়ে দিন 🌾' : 'Sell Your Crop 🌾',
           style: GoogleFonts.hindSiliguri(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -266,7 +322,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        '🔒 এগ্রোলিংক সুরক্ষিত এস্ক্রো: আপনার পণ্য প্রকাশের পর বায়ার ১০০% টাকা অগ্রিম জমা রাখবে। ওটিপি যাচাইয়ের সাথে সাথে আপনার ওয়ালেটে ৯৭% নেট মূল্য পৌঁছে যাবে।',
+                        isBn
+                            ? '🔒 এগ্রোলিংক সুরক্ষিত এস্ক্রো: আপনার পণ্য প্রকাশের পর বায়ার ১০০% টাকা অগ্রিম জমা রাখবে। ওটিপি যাচাইয়ের সাথে সাথে আপনার ওয়ালেটে ৯৭% নেট মূল্য পৌঁছে যাবে।'
+                            : '🔒 AgroLink Secure Escrow: Buyers deposit 100% upfront in escrow. Once delivery OTP is verified, 97% net amount is instantly credited to your wallet.',
                         style: GoogleFonts.hindSiliguri(
                           fontSize: 12,
                           color: const Color(0xFF1B5E20),
@@ -281,27 +339,31 @@ class _AddProductScreenState extends State<AddProductScreen> {
               const SizedBox(height: 20),
 
               // Crop Name
-              _sectionLabel('ফসলের নাম *'),
+              _sectionLabel(isBn ? 'ফসলের নাম *' : 'Crop Name *'),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _cropController,
-                decoration: _inputDeco(hint: 'যেমন: গোল আলু, দেশি টমেটো', icon: Icons.agriculture),
+                decoration: _inputDeco(
+                  hint: isBn ? 'যেমন: গোল আলু, দেশি টমেটো' : 'e.g., Round Potato, Local Tomato',
+                  icon: Icons.agriculture,
+                ),
                 style: GoogleFonts.hindSiliguri(fontSize: 16),
-                validator: (v) => (v == null || v.isEmpty) ? 'ফসলের নাম দিন' : null,
+                validator: (v) => (v == null || v.isEmpty) ? (isBn ? 'ফসলের নাম দিন' : 'Enter crop name') : null,
               ),
               const SizedBox(height: 16),
 
               // Category Selector
-              _sectionLabel('ক্যাটাগরি *'),
+              _sectionLabel(isBn ? 'ক্যাটাগরি *' : 'Category *'),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
                 children: _categories.map((cat) {
                   final isSelected = _selectedCategory == cat['value'];
+                  final label = isBn ? cat['labelBn']! : cat['labelEn']!;
                   return ChoiceChip(
                     label: Text(
-                      cat['label']!,
+                      label,
                       style: GoogleFonts.hindSiliguri(
                         color: isSelected ? Colors.white : Colors.black87,
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -323,24 +385,30 @@ class _AddProductScreenState extends State<AddProductScreen> {
               const SizedBox(height: 16),
 
               // Quality Grade
-              _sectionLabel('পণ্যের কোয়ালিটি গ্রেড *'),
+              _sectionLabel(isBn ? 'পণ্যের কোয়ালিটি গ্রেড *' : 'Quality Grade *'),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
-                decoration: _inputDeco(hint: 'গ্রেড নির্বাচন করুন', icon: Icons.verified_outlined),
-                value: _qualityGrade,
+                decoration: _inputDeco(
+                  hint: isBn ? 'গ্রেড নির্বাচন করুন' : 'Select Grade',
+                  icon: Icons.verified_outlined,
+                ),
+                initialValue: _qualityGrade,
                 items: _grades
                     .map((g) => DropdownMenuItem(
-                          value: g,
-                          child: Text(g, style: GoogleFonts.hindSiliguri(fontSize: 14)),
+                          value: g['value'],
+                          child: Text(
+                            isBn ? g['labelBn']! : g['labelEn']!,
+                            style: GoogleFonts.hindSiliguri(fontSize: 14),
+                          ),
                         ))
                     .toList(),
-                onChanged: (v) => setState(() => _qualityGrade = v ?? _grades.first),
+                onChanged: (v) => setState(() => _qualityGrade = v ?? _grades.first['value']!),
                 style: GoogleFonts.hindSiliguri(fontSize: 15, color: Colors.black87),
               ),
               const SizedBox(height: 16),
 
               // Quantity + Unit
-              _sectionLabel('পরিমাণ ও একক *'),
+              _sectionLabel(isBn ? 'পরিমাণ ও একক *' : 'Quantity & Unit *'),
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -349,20 +417,29 @@ class _AddProductScreenState extends State<AddProductScreen> {
                     child: TextFormField(
                       controller: _quantityController,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: _inputDeco(hint: 'যেমন: ৫০০', icon: Icons.scale),
+                      decoration: _inputDeco(
+                        hint: isBn ? 'যেমন: ৫০০' : 'e.g., 500',
+                        icon: Icons.scale,
+                      ),
                       style: GoogleFonts.hindSiliguri(fontSize: 16),
-                      validator: (v) => (v == null || v.isEmpty) ? 'পরিমাণ দিন' : null,
+                      validator: (v) => (v == null || v.isEmpty) ? (isBn ? 'পরিমাণ দিন' : 'Enter quantity') : null,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      decoration: _inputDeco(hint: 'একক', icon: Icons.straighten),
-                      value: _selectedUnit,
+                      decoration: _inputDeco(
+                        hint: isBn ? 'একক' : 'Unit',
+                        icon: Icons.straighten,
+                      ),
+                      initialValue: _selectedUnit,
                       items: _units
                           .map((u) => DropdownMenuItem(
-                                value: u,
-                                child: Text(u, style: GoogleFonts.hindSiliguri()),
+                                value: u['value'],
+                                child: Text(
+                                  isBn ? u['labelBn']! : u['labelEn']!,
+                                  style: GoogleFonts.hindSiliguri(),
+                                ),
                               ))
                           .toList(),
                       onChanged: (v) => setState(() => _selectedUnit = v),
@@ -374,28 +451,28 @@ class _AddProductScreenState extends State<AddProductScreen> {
               const SizedBox(height: 16),
 
               // Price
-              _sectionLabel('প্রতি একক মূল্য (৳) *'),
+              _sectionLabel(isBn ? 'প্রতি একক মূল্য (৳) *' : 'Price per Unit (৳) *'),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _priceController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: _inputDeco(
-                  hint: 'প্রতি ${_selectedUnit ?? 'কেজি'} দর',
+                  hint: isBn ? 'প্রতি দর (টাকা)' : 'Price (BDT)',
                   icon: Icons.currency_exchange_rounded,
                 ),
                 style: GoogleFonts.hindSiliguri(fontSize: 16),
-                validator: (v) => (v == null || v.isEmpty) ? 'মূল্য দিন' : null,
+                validator: (v) => (v == null || v.isEmpty) ? (isBn ? 'মূল্য দিন' : 'Enter price') : null,
               ),
               const SizedBox(height: 16),
 
               // Harvest Date
-              _sectionLabel('ফসল কাটার তারিখ'),
+              _sectionLabel(isBn ? 'ফসল কাটার তারিখ' : 'Harvest Date'),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _harvestDateController,
                 readOnly: true,
                 decoration: _inputDeco(
-                  hint: 'তারিখ নির্বাচন করুন',
+                  hint: isBn ? 'তারিখ নির্বাচন করুন' : 'Select Date',
                   icon: Icons.calendar_today,
                 ).copyWith(
                   suffixIcon: const Icon(Icons.calendar_month, color: primaryGreen),
@@ -425,13 +502,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
               const SizedBox(height: 16),
 
               // Description
-              _sectionLabel('বিবরণ (ঐচ্ছিক)'),
+              _sectionLabel(isBn ? 'বিবরণ (ঐচ্ছিক)' : 'Description (Optional)'),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _descriptionController,
                 maxLines: 3,
                 decoration: _inputDeco(
-                  hint: 'ফসলের জাত, রঙ, বিশেষ বৈশিষ্ট্য ইত্যাদি লিখুন...',
+                  hint: isBn ? 'ফসলের জাত, রঙ, বিশেষ বৈশিষ্ট্য ইত্যাদি লিখুন...' : 'Write crop variety, color, special qualities...',
                   icon: Icons.description,
                 ),
                 style: GoogleFonts.hindSiliguri(fontSize: 15),
@@ -439,7 +516,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
               const SizedBox(height: 20),
 
               // Photo Upload
-              _sectionLabel('ছবি যোগ করুন (সর্বোচ্চ ৫টি)'),
+              _sectionLabel(isBn ? 'ছবি যোগ করুন (সর্বোচ্চ ৫টি)' : 'Add Photos (Max 5)'),
               const SizedBox(height: 8),
               GridView.builder(
                 shrinkWrap: true,
@@ -457,17 +534,17 @@ class _AddProductScreenState extends State<AddProductScreen> {
                       onTap: _pickImage,
                       child: Container(
                         decoration: BoxDecoration(
-                          border: Border.all(color: primaryGreen.withOpacity(0.4), width: 2),
+                          border: Border.all(color: primaryGreen.withValues(alpha: 0.4), width: 2),
                           borderRadius: BorderRadius.circular(12),
-                          color: primaryGreen.withOpacity(0.05),
+                          color: primaryGreen.withValues(alpha: 0.05),
                         ),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.add_a_photo, color: primaryGreen.withOpacity(0.8), size: 28),
+                            Icon(Icons.add_a_photo, color: primaryGreen.withValues(alpha: 0.8), size: 28),
                             const SizedBox(height: 4),
                             Text(
-                              'ছবি যোগ',
+                              isBn ? 'ছবি যোগ' : 'Add Photo',
                               style: GoogleFonts.hindSiliguri(
                                 fontSize: 12,
                                 color: primaryGreen,
@@ -512,55 +589,57 @@ class _AddProductScreenState extends State<AddProductScreen> {
               // ==============================================
               // SUPER CLASS MONETIZED BOOSTING PLANS
               // ==============================================
-              _sectionLabel('পণ্য প্রমোশন ও বুস্টিং প্ল্যান 🚀'),
+              _sectionLabel(isBn ? 'পণ্য প্রমোশন ও বুস্টিং প্ল্যান 🚀' : 'Product Promotion & Boost Plans 🚀'),
               const SizedBox(height: 4),
               Text(
-                'দ্রুত বিক্রি করতে ও বড় পাইকারদের দৃষ্টি আকর্ষণ করতে বুস্ট নির্বাচন করুন:',
+                isBn
+                    ? 'দ্রুত বিক্রি করতে ও বড় পাইকারদের দৃষ্টি আকর্ষণ করতে বুস্ট নির্বাচন করুন:'
+                    : 'Choose a boost tier to sell faster and reach major wholesalers:',
                 style: GoogleFonts.hindSiliguri(fontSize: 12, color: Colors.grey.shade700),
               ),
               const SizedBox(height: 12),
 
               _buildBoostCard(
                 tier: 'free',
-                title: 'সাধারণ লিস্টিং',
-                subtitle: 'রেগুলার মার্কেটপ্লেস ফিডে প্রদর্শিত হবে',
-                price: 'বিনামূল্যে (৳০)',
+                title: isBn ? 'সাধারণ লিস্টিং' : 'Standard Listing',
+                subtitle: isBn ? 'রেগুলার মার্কেটপ্লেস ফিডে প্রদর্শিত হবে' : 'Displayed in regular marketplace feed',
+                price: isBn ? 'বিনামূল্যে (৳০)' : 'Free (৳0)',
                 icon: Icons.check_circle_outline,
                 color: Colors.grey.shade700,
-                badgeText: 'ফ্রি',
+                badgeText: isBn ? 'ফ্রি' : 'Free',
               ),
               const SizedBox(height: 10),
 
               _buildBoostCard(
                 tier: 'urgent',
-                title: 'জরুরি বিক্রি বুস্ট ⚡',
-                subtitle: '৩ দিন "Urgent Sale" লাল ব্যাজ ও সবার উপরে থাকবে',
-                price: '৳ ২০ / ৩ দিন',
+                title: isBn ? 'জরুরি বিক্রি বুস্ট ⚡' : 'Urgent Sale Boost ⚡',
+                subtitle: isBn ? '৩ দিন "Urgent Sale" লাল ব্যাজ ও সবার উপরে থাকবে' : '3 days with "Urgent Sale" red badge on top',
+                price: isBn ? '৳ ২০ / ৩ দিন' : '৳ 20 / 3 Days',
                 icon: Icons.bolt,
                 color: Colors.red.shade600,
-                badgeText: 'জনপ্রিয়',
+                badgeText: isBn ? 'জনপ্রিয়' : 'Popular',
               ),
               const SizedBox(height: 10),
 
               _buildBoostCard(
                 tier: 'featured',
-                title: 'প্রিমিয়াম ফিচার্ড লট 👑',
-                subtitle: '৭ দিন হোমপেজ গোল্ডেন ব্যানারে এবং টপ লিস্টিংয়ে থাকবে',
-                price: '৳ ৫০ / ৭ দিন',
+                title: isBn ? 'প্রিমিয়াম ফিচার্ড লট 👑' : 'Premium Featured Lot 👑',
+                subtitle: isBn ? '৭ দিন হোমপেজ গোল্ডেন ব্যানারে এবং টপ লিস্টিংয়ে থাকবে' : '7 days on homepage golden banner & top lots',
+                price: isBn ? '৳ ৫০ / ৭ দিন' : '৳ 50 / 7 Days',
                 icon: Icons.workspace_premium_rounded,
                 color: Colors.amber.shade800,
-                badgeText: 'বেস্ট ভ্যালু',
+                badgeText: isBn ? 'বেস্ট ভ্যালু' : 'Best Value',
               ),
               const SizedBox(height: 10),
 
               _buildBoostCard(
                 tier: 'vip',
-                title: 'ভিআইপি হোলসেলার পার্টনার 💎',
-                subtitle: '১৫ দিন ঢাকার শীর্ষ আড়তদার ও বড় ক্রেতাদের এসএমএস অ্যালার্ট',
-                price: '৳ ১০০ / ১৫ দিন',
+                title: isBn ? 'ভিআইপি হোলসেলার পার্টনার 💎' : 'VIP Wholesaler Partner 💎',
+                subtitle: isBn ? '১৫ দিন ঢাকার শীর্ষ আড়তদার ও বড় ক্রেতাদের এসএমএস অ্যালার্ট' : '15 days SMS alert to top commission agents & bulk buyers',
+                price: isBn ? '৳ ১০০ / ১৫ দিন' : '৳ 100 / 15 Days',
                 icon: Icons.diamond_rounded,
                 color: const Color(0xFF1976D2),
-                badgeText: 'ভিআইপি',
+                badgeText: isBn ? 'ভিআইপি' : 'VIP',
               ),
               const SizedBox(height: 28),
 
@@ -579,8 +658,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
                       : const Icon(Icons.storefront_rounded, color: Colors.white),
                   label: Text(
                     _isSubmitting
-                        ? 'মার্কেটে যুক্ত হচ্ছে...'
-                        : (_selectedTier != 'free' ? 'পেমেন্ট ও বুস্টসহ প্রকাশ করুন' : 'পণ্য মার্কেটে প্রকাশ করুন'),
+                        ? (isBn ? 'মার্কেটে যুক্ত হচ্ছে...' : 'Publishing to Market...')
+                        : (_selectedTier != 'free' 
+                            ? (isBn ? 'পেমেন্ট ও বুস্টসহ প্রকাশ করুন' : 'Publish with Boost & Pay') 
+                            : (isBn ? 'পণ্য মার্কেটে প্রকাশ করুন' : 'Publish Crop to Market')),
                     style: GoogleFonts.hindSiliguri(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -619,22 +700,22 @@ class _AddProductScreenState extends State<AddProductScreen> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.06) : Colors.white,
+          color: isSelected ? color.withValues(alpha: 0.06) : Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isSelected ? color : Colors.grey.shade300,
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
-              ? [BoxShadow(color: color.withOpacity(0.15), blurRadius: 10, offset: const Offset(0, 4))]
-              : [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: const Offset(0, 2))],
+              ? [BoxShadow(color: color.withValues(alpha: 0.15), blurRadius: 10, offset: const Offset(0, 4))]
+              : [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 4, offset: const Offset(0, 2))],
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: color, size: 24),

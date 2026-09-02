@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:agrolinkbd/core/models/agri_info_model.dart';
 import 'package:agrolinkbd/core/services/agri_info_service.dart';
 import 'package:agrolinkbd/core/controllers/user_controller.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 import 'agri_info_hub_screen.dart';
 
 /// Saved Agricultural Data Screen
@@ -47,6 +48,8 @@ class _SavedAgriDataScreenState extends State<SavedAgriDataScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isBn = LanguageProvider.isBn(context);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
@@ -56,13 +59,15 @@ class _SavedAgriDataScreenState extends State<SavedAgriDataScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Get.back(),
         ),
-        title: Text('সংরক্ষিত তথ্য',
-            style: GoogleFonts.hindSiliguri(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+        title: Text(
+          isBn ? 'সংরক্ষিত তথ্য' : 'Saved Agri Data',
+          style: GoogleFonts.hindSiliguri(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+        ),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: Color(0xFF2E7D32)))
           : _savedItems.isEmpty
-              ? _buildEmpty()
+              ? _buildEmpty(isBn)
               : RefreshIndicator(
                   onRefresh: _loadData,
                   child: ListView.builder(
@@ -74,24 +79,31 @@ class _SavedAgriDataScreenState extends State<SavedAgriDataScreen> {
     );
   }
 
-  Widget _buildEmpty() {
+  Widget _buildEmpty(bool isBn) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.bookmark_border, size: 64, color: Colors.grey.shade400),
           const SizedBox(height: 16),
-          Text('কোনো সংরক্ষিত তথ্য নেই',
-              style: GoogleFonts.hindSiliguri(fontSize: 18, color: Colors.grey.shade600)),
+          Text(
+            isBn ? 'কোনো সংরক্ষিত তথ্য নেই' : 'No Saved Data Found',
+            style: GoogleFonts.hindSiliguri(fontSize: 18, color: Colors.grey.shade600),
+          ),
           const SizedBox(height: 8),
-          Text('কৃষি তথ্য কেন্দ্র থেকে এলাকার তথ্য সংরক্ষণ করুন',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.hindSiliguri(fontSize: 14, color: Colors.grey.shade500)),
+          Text(
+            isBn ? 'কৃষি তথ্য কেন্দ্র থেকে এলাকার তথ্য সংরক্ষণ করুন' : 'Bookmark regions from Agri Info Hub for quick access',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.hindSiliguri(fontSize: 14, color: Colors.grey.shade500),
+          ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: () => Get.off(() => const AgriInfoHubScreen()),
-            icon: const Icon(Icons.add),
-            label: Text('তথ্য যোগ করুন', style: GoogleFonts.hindSiliguri(color: Colors.black87)),
+            icon: const Icon(Icons.add, color: Colors.white),
+            label: Text(
+              isBn ? 'তথ্য খুঁজুন' : 'Explore Regions',
+              style: GoogleFonts.hindSiliguri(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
             style: ElevatedButton.styleFrom(backgroundColor: primaryGreen, foregroundColor: Colors.white),
           ),
         ],
@@ -108,7 +120,7 @@ class _SavedAgriDataScreenState extends State<SavedAgriDataScreen> {
         contentPadding: const EdgeInsets.all(14),
         leading: Container(
           padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(color: primaryGreen.withOpacity(0.1), shape: BoxShape.circle),
+          decoration: BoxDecoration(color: primaryGreen.withValues(alpha: 0.1), shape: BoxShape.circle),
           child: const Icon(Icons.location_on, color: primaryGreen, size: 24),
         ),
         title: Text(item.upazila,
@@ -143,15 +155,25 @@ class _SavedAgriDataScreenState extends State<SavedAgriDataScreen> {
   }
 
   void _confirmDelete(String id) {
+    final bool isBn = LanguageProvider.isBn(context);
     Get.dialog(AlertDialog(
-      title: Text('মুছে ফেলবেন?', style: GoogleFonts.hindSiliguri(color: Colors.black87)),
-      content: Text('এই সংরক্ষিত তথ্যটি মুছে যাবে।', style: GoogleFonts.hindSiliguri(color: Colors.black87)),
+      title: Text(
+        isBn ? 'মুছে ফেলবেন?' : 'Delete Saved Record?',
+        style: GoogleFonts.hindSiliguri(color: Colors.black87, fontWeight: FontWeight.bold),
+      ),
+      content: Text(
+        isBn ? 'এই সংরক্ষিত তথ্যটি তালিকা থেকে মুছে যাবে।' : 'This saved record will be removed from your list.',
+        style: GoogleFonts.hindSiliguri(color: Colors.black87),
+      ),
       actions: [
-        TextButton(onPressed: () => Get.back(), child: Text('বাতিল', style: GoogleFonts.hindSiliguri(color: Colors.black87))),
+        TextButton(
+          onPressed: () => Get.back(),
+          child: Text(isBn ? 'বাতিল' : 'Cancel', style: GoogleFonts.hindSiliguri(color: Colors.black87)),
+        ),
         ElevatedButton(
           onPressed: () { Get.back(); _delete(id); },
           style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-          child: Text('মুছুন', style: GoogleFonts.hindSiliguri(color: Colors.white)),
+          child: Text(isBn ? 'মুছুন' : 'Delete', style: GoogleFonts.hindSiliguri(color: Colors.white)),
         ),
       ],
     ));

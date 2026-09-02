@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:agrolinkbd/core/providers/cart_provider.dart';
+import 'package:agrolinkbd/core/services/sslcommerz_service.dart';
+import 'package:agrolinkbd/core/services/order_service.dart';
+import 'package:agrolinkbd/core/models/order_model.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -17,8 +21,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _areaController = TextEditingController();
   final _notesController = TextEditingController();
 
-  String _paymentMethod = 'cash';
+  String _paymentMethod = 'sslcommerz';
   bool _isProcessing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      _nameController.text = user.displayName ?? '';
+      _phoneController.text = user.phoneNumber ?? '';
+    }
+  }
 
   @override
   void dispose() {
@@ -33,14 +47,62 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Future<void> _processOrder() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final cartProvider = Provider.of<CartProvider>(context, listen: false);
+    final subtotal = cartProvider.totalPrice;
+    const delivery = 75.0;
+    final total = subtotal + delivery;
+
     setState(() => _isProcessing = true);
 
     try {
-      // Simulate order processing
-      await Future.delayed(const Duration(seconds: 2));
+      final user = FirebaseAuth.instance.currentUser;
+      final buyerId = user?.uid ?? 'guest_buyer';
+      final customerName = _nameController.text.trim().isNotEmpty ? _nameController.text.trim() : 'Customer';
+      final customerPhone = _phoneController.text.trim().isNotEmpty ? _phoneController.text.trim() : '01700000000';
+      final customerEmail = user?.email ?? 'buyer@agrolinkbd.com';
+      final fullAddress = '${_addressController.text.trim()}, ${_areaController.text.trim()}';
 
-      if (mounted) {
-        final cartProvider = Provider.of<CartProvider>(context, listen: false);
+      bool paymentSuccess = false;
+
+      if (_paymentMethod == 'cash') {
+        paymentSuccess = true;
+      } else {
+        paymentSuccess = await SSLCommerzService.initiatePayment(
+          context: context,
+          amount: total,
+          productName: cartProvider.items.isNotEmpty
+              ? cartProvider.items.map((e) => e.title).join(', ')
+              : 'কৃষি পণ্যসমূহ',
+          customerName: customerName,
+          customerEmail: customerEmail,
+          customerPhone: customerPhone,
+          customerAddress: fullAddress,
+        );
+      }
+
+      if (paymentSuccess && mounted) {
+        // Create orders in Firestore
+        for (final item in cartProvider.items) {
+          final newOrder = OrderModel(
+            id: '',
+            buyerId: buyerId,
+            farmerId: item.sellerId,
+            farmerName: item.sellerName,
+            productName: item.title,
+            productImageUrl: item.imageUrl,
+            quantity: item.quantity,
+            totalAmount: item.totalPrice,
+            status: 'pending',
+            statusStep: 1,
+            transportStatus: _paymentMethod == 'cash' ? 'অর্ডার গৃহীত হয়েছে (ক্যাশ অন ডেলিভারি)' : 'পেমেন্ট সম্পন্ন • এস্ক্রো হোল্ডে সুরক্ষিত',
+            paymentStatus: _paymentMethod == 'cash' ? 'unpaid' : 'paid',
+            deliveryAddress: fullAddress,
+            specialInstructions: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+            createdAt: DateTime.now(),
+            estimatedDeliveryDate: DateTime.now().add(const Duration(days: 3)),
+          );
+          await OrderService().createOrder(newOrder);
+        }
 
         // Clear cart after successful order
         cartProvider.clearCart();
@@ -102,7 +164,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 onPressed: () {
                   Navigator.pop(context);
                   Navigator.pop(context);
-                  Navigator.pop(context);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2E7D32),
@@ -121,7 +182,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         );
       }
     } finally {
-      setState(() => _isProcessing = false);
+      if (mounted) {
+        setState(() => _isProcessing = false);
+      }
     }
   }
 
@@ -321,29 +384,25 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       child: Column(
                         children: [
                           RadioListTile<String>(
-                            title: const Text('Cash on Delivery'),
-                            subtitle: const Text('Pay when product arrives'),
-                            value: 'cash',
+                            title: const Text('SSLCommerz Secure Gateway ⭐'),
+                            subtitle: const Text('Cards, bKash, Nagad, Rocket, Net Banking'),
+                            value: 'sslcommerz',
                             groupValue: _paymentMethod,
+                            activeColor: const Color(0xFF2E7D32),
                             onChanged: (value) {
-                              setState(() => _paymentMethod = value ?? 'cash');
+                              setState(() => _paymentMethod = value ?? 'sslcommerz');
                             },
                           ),
                           Divider(height: 0, color: Colors.grey.shade300),
                           RadioListTile<String>(
-                            title: const Text('debit/Credit Card'),
-                            subtitle: const Text('Coming soon'),
-                            value: 'card',
+                            title: const Text('Cash on Delivery'),
+                            subtitle: const Text('Pay when product arrives'),
+                            value: 'cash',
                             groupValue: _paymentMethod,
-                            onChanged: null,
-                          ),
-                          Divider(height: 0, color: Colors.grey.shade300),
-                          RadioListTile<String>(
-                            title: const Text('Mobile Money'),
-                            subtitle: const Text('Coming soon'),
-                            value: 'mobile',
-                            groupValue: _paymentMethod,
-                            onChanged: null,
+                            activeColor: const Color(0xFF2E7D32),
+                            onChanged: (value) {
+                              setState(() => _paymentMethod = value ?? 'cash');
+                            },
                           ),
                         ],
                       ),

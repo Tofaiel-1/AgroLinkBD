@@ -14,6 +14,8 @@ import 'package:agrolinkbd/presentation/screens/fisheries/farmer/contracts/farme
 import 'package:agrolinkbd/presentation/screens/analytics/market_price_analysis_screen.dart';
 import 'package:agrolinkbd/presentation/screens/fisheries/premium/vip_wholesaler_directory_screen.dart';
 import 'package:agrolinkbd/presentation/screens/marketplace/buyer_rfq_board_screen.dart';
+import 'package:agrolinkbd/core/services/vip_subscription_service.dart';
+import 'widgets/vip_wholesale_gatekeeper_card.dart';
 import 'add_product_screen.dart';
 import 'product_detail.dart';
 
@@ -44,12 +46,54 @@ class _BazaarHomeState extends State<BazaarHome> with SingleTickerProviderStateM
   ];
 
   final List<Map<String, dynamic>> _marketTicker = [
-    {'crop': 'বগুড়ার আলু', 'price': '৳৪৫/কেজি', 'change': '+৳২.০ (৪.৬%)', 'isUp': true},
-    {'crop': 'কাটারিভোগ চাল', 'price': '৳৮৫/কেজি', 'change': '+৳১.৫ (১.৮%)', 'isUp': true},
-    {'crop': 'রাজশাহীর আম', 'price': '৳১১০/কেজি', 'change': '-৳৫.০ (৪.৩%)', 'isUp': false},
-    {'crop': 'ফরিদপুরের পেঁয়াজ', 'price': '৳৭০/কেজি', 'change': '+৳৩.০ (৪.৪%)', 'isUp': true},
-    {'crop': 'চাঁদপুরের মরিচ', 'price': '৳১৩০/কেজি', 'change': '-৳১০.০ (৭.১%)', 'isUp': false},
-    {'crop': 'যশোরের বেগুন', 'price': '৳৫৫/কেজি', 'change': '+৳২.০ (৩.৭%)', 'isUp': true},
+    {
+      'cropBn': 'বগুড়ার আলু',
+      'cropEn': 'Bogura Potato',
+      'priceBn': '৳৪৫/কেজি',
+      'priceEn': '৳45/kg',
+      'change': '+৳2.0 (4.6%)',
+      'isUp': true
+    },
+    {
+      'cropBn': 'কাটারিভোগ চাল',
+      'cropEn': 'Kataribhog Rice',
+      'priceBn': '৳৮৫/কেজি',
+      'priceEn': '৳85/kg',
+      'change': '+৳1.5 (1.8%)',
+      'isUp': true
+    },
+    {
+      'cropBn': 'রাজশাহীর আম',
+      'cropEn': 'Rajshahi Mango',
+      'priceBn': '৳১১০/কেজি',
+      'priceEn': '৳110/kg',
+      'change': '-৳5.0 (4.3%)',
+      'isUp': false
+    },
+    {
+      'cropBn': 'ফরিদপুরের পেঁয়াজ',
+      'cropEn': 'Faridpur Onion',
+      'priceBn': '৳৭০/কেজি',
+      'priceEn': '৳70/kg',
+      'change': '+৳3.0 (4.4%)',
+      'isUp': true
+    },
+    {
+      'cropBn': 'চাঁদপুরের মরিচ',
+      'cropEn': 'Chandpur Chili',
+      'priceBn': '৳১৩০/কেজি',
+      'priceEn': '৳130/kg',
+      'change': '-৳10.0 (7.1%)',
+      'isUp': false
+    },
+    {
+      'cropBn': 'যশোরের বেগুন',
+      'cropEn': 'Jashore Eggplant',
+      'priceBn': '৳৫৫/কেজি',
+      'priceEn': '৳55/kg',
+      'change': '+৳2.0 (3.7%)',
+      'isUp': true
+    },
   ];
 
   @override
@@ -369,7 +413,7 @@ class _BazaarHomeState extends State<BazaarHome> with SingleTickerProviderStateM
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                item['crop'] as String,
+                                isBn ? (item['cropBn'] as String) : (item['cropEn'] as String),
                                 style: GoogleFonts.hindSiliguri(
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
@@ -379,7 +423,7 @@ class _BazaarHomeState extends State<BazaarHome> with SingleTickerProviderStateM
                               Row(
                                 children: [
                                   Text(
-                                    item['price'] as String,
+                                    isBn ? (item['priceBn'] as String) : (item['priceEn'] as String),
                                     style: GoogleFonts.poppins(
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,

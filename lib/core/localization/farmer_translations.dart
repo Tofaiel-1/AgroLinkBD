@@ -12,7 +12,7 @@ class FarmerTranslations {
     'good_morning': {'bn': 'শুভ সকাল', 'en': 'Good Morning'},
     'good_afternoon': {'bn': 'শুভ দুপুর', 'en': 'Good Afternoon'},
     'good_evening': {'bn': 'শুভ বিকাল', 'en': 'Good Evening'},
-    'good_night': {'bn': 'শুভ সন্ধ্যা', 'en': 'Good Evening'},
+    'good_night': {'bn': 'শুভ রাত্রি', 'en': 'Good Night'},
 
     // Dashboard Header Cards
     'main_rating': {'bn': 'মূল রেটিং', 'en': 'Main Rating'},
@@ -35,6 +35,29 @@ class FarmerTranslations {
 
     // Dashboard Sections & Actions
     'quick_actions': {'bn': 'দ্রুত সেবা সমূহ', 'en': 'Quick Actions'},
+    'daily_tasks': {'bn': 'আজকের কাজ', 'en': 'Daily Tasks'},
+    'live_market_price': {'bn': 'লাইভ বাজার দর', 'en': 'Live Market Prices'},
+    'activity_report': {'bn': 'অ্যাক্টিভিটি রিপোর্ট', 'en': 'Activity Report'},
+    'total_income': {'bn': 'মোট আয়', 'en': 'Total Income'},
+    'total_expense': {'bn': 'মোট খরচ', 'en': 'Total Expense'},
+    'tap_to_view': {'bn': 'দেখতে ট্যাপ করুন', 'en': 'Tap to view'},
+    'sell_crop': {'bn': 'ফসল বিক্রি', 'en': 'Sell Crop'},
+    'emergency': {'bn': 'জরুরি সেবা', 'en': 'Emergency'},
+    'disease_check': {'bn': 'রোগ নির্ণয়', 'en': 'Disease Check'},
+    'crop_suitability': {'bn': 'ফসল উপযোগিতা', 'en': 'Suitability'},
+    'fertilizer_rec': {'bn': 'সার সুপারিশ', 'en': 'Fertilizer'},
+    'crop_zone': {'bn': 'ফসল জোন', 'en': 'Crop Zone'},
+    'crop_pattern': {'bn': 'ফসল বিন্যাস', 'en': 'Crop Pattern'},
+    'saved_data': {'bn': 'সংরক্ষিত', 'en': 'Saved Data'},
+    'soil_health': {'bn': 'মাটির গুণাগুণ', 'en': 'Soil Health'},
+    'agri_expert': {'bn': 'কৃষি বিশেষজ্ঞ', 'en': 'Agri Expert'},
+    'transport': {'bn': 'পরিবহন', 'en': 'Transport'},
+    'payment': {'bn': 'পেমেন্ট', 'en': 'Payment'},
+    'agri_loan': {'bn': 'কৃষি ঋণ', 'en': 'Agri Loan'},
+    'premium_services_title': {
+      'bn': 'প্রিমিয়াম কৃষি ও মৎস্য সেবা 💎',
+      'en': 'Premium Agro & Fisheries Services 💎',
+    },
     'sell_product': {'bn': 'পণ্য বিক্রি করুন', 'en': 'Sell Products'},
     'emergency_service': {'bn': 'জরুরি সেবা', 'en': 'Emergency Service'},
     'disease_detection': {'bn': 'রোগ নির্ণয়', 'en': 'Disease Detection'},

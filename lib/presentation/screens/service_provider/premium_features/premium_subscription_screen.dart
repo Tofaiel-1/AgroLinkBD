@@ -1,9 +1,58 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
+import 'package:provider/provider.dart';
+import 'package:agrolinkbd/core/providers/user_provider.dart';
+import 'package:agrolinkbd/core/services/sslcommerz_service.dart';
 
-class PremiumSubscriptionScreen extends StatelessWidget {
+class PremiumSubscriptionScreen extends StatefulWidget {
   const PremiumSubscriptionScreen({super.key});
+
+  @override
+  State<PremiumSubscriptionScreen> createState() => _PremiumSubscriptionScreenState();
+}
+
+class _PremiumSubscriptionScreenState extends State<PremiumSubscriptionScreen> {
+  bool _isLoading = false;
+
+  Future<void> _handleUpgrade(BuildContext context) async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final user = userProvider.currentUser;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final success = await SSLCommerzService.initiatePayment(
+        context: context,
+        amount: 499.0,
+        productName: 'AgroLinkBD Pro Monthly Subscription',
+        customerName: user?.name ?? 'Service Provider',
+        customerEmail: user?.email ?? 'provider@agrolinkbd.com',
+        customerPhone: user?.phone ?? '01700000000',
+        customerAddress: 'Bangladesh',
+      );
+
+      if (success) {
+        final expiryDate = DateTime.now().add(const Duration(days: 30));
+        await userProvider.upgradeToPremium(expiryDate);
+
+        Get.snackbar(
+          'অভিনন্দন! 🎉',
+          'AgroLinkBD Pro মেম্বারশিপ সক্রিয় করা হয়েছে! (মেয়াদ ৩০ দিন)',
+          backgroundColor: const Color(0xFF2E7D32),
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4),
+        );
+        Get.back();
+      }
+    } catch (e) {
+      debugPrint('Pro Upgrade Error: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -130,23 +179,25 @@ class PremiumSubscriptionScreen extends StatelessWidget {
                       width: double.infinity,
                       height: 55,
                       child: ElevatedButton(
-                        onPressed: () {
-                          Get.snackbar(
-                            'অভিনন্দন!',
-                            'AgroLinkBD Pro পেমেন্ট গেটওয়ে শীঘ্রই চালু হচ্ছে।',
-                            backgroundColor: const Color(0xFF2C5364),
-                            colorText: Colors.white,
-                          );
-                        },
+                        onPressed: _isLoading ? null : () => _handleUpgrade(context),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF2C5364),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           elevation: 5,
                         ),
-                        child: Text(
-                          'আপগ্রেড করুন',
-                          style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-                        ),
+                        child: _isLoading
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.flash_on, color: Colors.amberAccent),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'SSLCommerz দিয়ে আপগ্রেড করুন (৳৪৯৯)',
+                                    style: GoogleFonts.hindSiliguri(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+                                  ),
+                                ],
+                              ),
                       ),
                     ),
                   ],

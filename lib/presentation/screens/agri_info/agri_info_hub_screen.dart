@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:agrolinkbd/core/data/bangladesh_agri_data.dart';
 import 'package:agrolinkbd/core/models/agri_info_model.dart';
 import 'package:agrolinkbd/core/services/agri_info_service.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 import 'crop_suitability_screen.dart';
 import 'fertilizer_recommendation_screen.dart';
 import 'crop_zone_screen.dart';
@@ -40,6 +41,7 @@ class _AgriInfoHubScreenState extends State<AgriInfoHubScreen> {
   }
 
   Future<void> _detectGPSLocation() async {
+    final bool isBn = LanguageProvider.isBn(context);
     setState(() => _isDetecting = true);
     try {
       final data = await _service.getDataByGPS();
@@ -51,11 +53,17 @@ class _AgriInfoHubScreenState extends State<AgriInfoHubScreen> {
           _upazila = data.upazila;
         });
       } else {
-        Get.snackbar('অবস্থান পাওয়া যায়নি', 'GPS অনুমতি দিন অথবা ম্যানুয়ালি এলাকা বেছে নিন',
-            backgroundColor: Colors.orange.shade100);
+        Get.snackbar(
+          isBn ? 'অবস্থান পাওয়া যায়নি' : 'Location Not Found',
+          isBn ? 'GPS অনুমতি দিন অথবা ম্যানুয়ালি এলাকা বেছে নিন' : 'Please enable GPS or select region manually',
+          backgroundColor: Colors.orange.shade100,
+        );
       }
     } catch (e) {
-      Get.snackbar('ত্রুটি', 'অবস্থান নির্ধারণ করা যায়নি');
+      Get.snackbar(
+        isBn ? 'ত্রুটি' : 'Error',
+        isBn ? 'অবস্থান নির্ধারণ করা যায়নি' : 'Could not determine location',
+      );
     }
     setState(() => _isDetecting = false);
   }
@@ -90,10 +98,11 @@ class _AgriInfoHubScreenState extends State<AgriInfoHubScreen> {
   }
 
   void _navigate(Widget screen) {
+    final bool isBn = LanguageProvider.isBn(context);
     if (_selectedData == null) {
       Get.snackbar(
-        'এলাকা বেছে নিন',
-        'প্রথমে আপনার উপজেলা নির্বাচন করুন',
+        isBn ? 'এলাকা বেছে নিন' : 'Select Region',
+        isBn ? 'প্রথমে আপনার উপজেলা নির্বাচন করুন' : 'Please select your upazila first',
         backgroundColor: Colors.orange.shade100,
         icon: const Icon(Icons.location_on, color: Colors.orange),
         duration: const Duration(seconds: 2),
@@ -106,6 +115,8 @@ class _AgriInfoHubScreenState extends State<AgriInfoHubScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isBn = LanguageProvider.isBn(context);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF0F4F0),
       appBar: AppBar(
@@ -116,7 +127,7 @@ class _AgriInfoHubScreenState extends State<AgriInfoHubScreen> {
           onPressed: () => Get.back(),
         ),
         title: Text(
-          'কৃষি তথ্য কেন্দ্র',
+          isBn ? 'কৃষি তথ্য কেন্দ্র' : 'Agri Info Hub',
           style: GoogleFonts.hindSiliguri(
             color: Colors.white,
             fontSize: 20,
@@ -126,7 +137,7 @@ class _AgriInfoHubScreenState extends State<AgriInfoHubScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.bookmark_outlined, color: Colors.white),
-            tooltip: 'সংরক্ষিত তথ্য',
+            tooltip: isBn ? 'সংরক্ষিত তথ্য' : 'Saved Info',
             onPressed: () => Get.to(() => const SavedAgriDataScreen()),
           ),
         ],
@@ -135,12 +146,12 @@ class _AgriInfoHubScreenState extends State<AgriInfoHubScreen> {
         child: Column(
           children: [
             // Header gradient with location selector
-            _buildLocationHeader(),
+            _buildLocationHeader(isBn),
             const SizedBox(height: 20),
 
             // Selected area info card
-            if (_selectedData != null) _buildSelectedAreaCard(),
-            if (_selectedData == null) _buildNoLocationCard(),
+            if (_selectedData != null) _buildSelectedAreaCard(isBn),
+            if (_selectedData == null) _buildNoLocationCard(isBn),
 
             const SizedBox(height: 20),
 
@@ -151,7 +162,7 @@ class _AgriInfoHubScreenState extends State<AgriInfoHubScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'কৃষি সেবাসমূহ',
+                    isBn ? 'কৃষি সেবাসমূহ' : 'Agri Services',
                     style: GoogleFonts.hindSiliguri(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -159,7 +170,7 @@ class _AgriInfoHubScreenState extends State<AgriInfoHubScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  _buildFeatureGrid(),
+                  _buildFeatureGrid(isBn),
                 ],
               ),
             ),
@@ -170,7 +181,7 @@ class _AgriInfoHubScreenState extends State<AgriInfoHubScreen> {
     );
   }
 
-  Widget _buildLocationHeader() {
+  Widget _buildLocationHeader(bool isBn) {
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(
@@ -192,7 +203,9 @@ class _AgriInfoHubScreenState extends State<AgriInfoHubScreen> {
                   Expanded(
                     child: _buildLocationButton(
                       icon: _isDetecting ? null : Icons.my_location,
-                      label: _isDetecting ? 'অবস্থান খোঁজা হচ্ছে...' : 'GPS দিয়ে খুঁজুন',
+                      label: _isDetecting 
+                          ? (isBn ? 'অবস্থান খোঁজা হচ্ছে...' : 'Detecting GPS...') 
+                          : (isBn ? 'GPS দিয়ে খুঁজুন' : 'Find via GPS'),
                       onTap: _isDetecting ? null : _detectGPSLocation,
                       isLoading: _isDetecting,
                     ),
@@ -201,7 +214,7 @@ class _AgriInfoHubScreenState extends State<AgriInfoHubScreen> {
                   Expanded(
                     child: _buildLocationButton(
                       icon: Icons.search,
-                      label: 'এলাকা বেছে নিন',
+                      label: isBn ? 'এলাকা বেছে নিন' : 'Select Upazila',
                       onTap: _showLocationSelector,
                     ),
                   ),
@@ -225,9 +238,9 @@ class _AgriInfoHubScreenState extends State<AgriInfoHubScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.2),
+          color: Colors.white.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white.withOpacity(0.5)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -256,7 +269,7 @@ class _AgriInfoHubScreenState extends State<AgriInfoHubScreen> {
     );
   }
 
-  Widget _buildSelectedAreaCard() {
+  Widget _buildSelectedAreaCard(bool isBn) {
     final d = _selectedData!;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -266,9 +279,9 @@ class _AgriInfoHubScreenState extends State<AgriInfoHubScreen> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
-            BoxShadow(color: primaryGreen.withOpacity(0.1), blurRadius: 12, offset: const Offset(0, 4)),
+            BoxShadow(color: primaryGreen.withValues(alpha: 0.1), blurRadius: 12, offset: const Offset(0, 4)),
           ],
-          border: Border.all(color: primaryGreen.withOpacity(0.2)),
+          border: Border.all(color: primaryGreen.withValues(alpha: 0.2)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -278,7 +291,7 @@ class _AgriInfoHubScreenState extends State<AgriInfoHubScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: primaryGreen.withOpacity(0.1),
+                    color: primaryGreen.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.location_on, color: primaryGreen, size: 22),
@@ -297,7 +310,7 @@ class _AgriInfoHubScreenState extends State<AgriInfoHubScreen> {
                         ),
                       ),
                       Text(
-                        '${d.cropZoneBn} (${d.cropZone})',
+                        isBn ? '${d.cropZoneBn} (${d.cropZone})' : '${d.cropZone} (${d.cropZoneBn})',
                         style: GoogleFonts.hindSiliguri(
                           fontSize: 12,
                           color: Colors.grey.shade600,
@@ -308,7 +321,7 @@ class _AgriInfoHubScreenState extends State<AgriInfoHubScreen> {
                 ),
                 TextButton(
                   onPressed: _showLocationSelector,
-                  child: Text('পরিবর্তন', style: GoogleFonts.hindSiliguri(color: primaryGreen, fontSize: 13)),
+                  child: Text(isBn ? 'পরিবর্তন' : 'Change', style: GoogleFonts.hindSiliguri(color: primaryGreen, fontSize: 13)),
                 ),
               ],
             ),
@@ -316,9 +329,9 @@ class _AgriInfoHubScreenState extends State<AgriInfoHubScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildInfoChip(Icons.grass, d.soilProfile.typeBn, Colors.brown.shade400),
+                _buildInfoChip(Icons.grass, isBn ? d.soilProfile.typeBn : d.soilProfile.type, Colors.brown.shade400),
                 _buildInfoChip(Icons.water_drop, 'pH ${d.soilProfile.phMin}–${d.soilProfile.phMax}', Colors.blue.shade400),
-                _buildInfoChip(Icons.eco, '${d.suitableCrops.length} ফসল', primaryGreen),
+                _buildInfoChip(Icons.eco, '${d.suitableCrops.length} ${isBn ? 'ফসল' : 'Crops'}', primaryGreen),
               ],
             ),
           ],
@@ -337,7 +350,7 @@ class _AgriInfoHubScreenState extends State<AgriInfoHubScreen> {
     );
   }
 
-  Widget _buildNoLocationCard() {
+  Widget _buildNoLocationCard(bool isBn) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
@@ -353,7 +366,9 @@ class _AgriInfoHubScreenState extends State<AgriInfoHubScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'আপনার উপজেলা বেছে নিন অথবা GPS দিয়ে স্বয়ংক্রিয়ভাবে খুঁজুন',
+                isBn
+                    ? 'আপনার উপজেলা বেছে নিন অথবা GPS দিয়ে স্বয়ংক্রিয়ভাবে খুঁজুন'
+                    : 'Select your upazila or find automatically using GPS',
                 style: GoogleFonts.hindSiliguri(fontSize: 14, color: Colors.orange.shade800),
               ),
             ),
@@ -363,29 +378,57 @@ class _AgriInfoHubScreenState extends State<AgriInfoHubScreen> {
     );
   }
 
-  Widget _buildFeatureGrid() {
+  Widget _buildFeatureGrid(bool isBn) {
     final features = [
-      _FeatureItem('জরুরি সেবা ও আবহাওয়া', Icons.warning_amber_rounded, const Color(0xFFD32F2F),
-          'লাইভ আবহাওয়া ও জরুরি কৃষি হটলাইন',
-          () => Get.to(() => const EmergencyWeatherServicesScreen())),
-      _FeatureItem('ফসল উপযোগিতা', Icons.agriculture, const Color(0xFF2E7D32),
-          'উপজেলার জন্য সবচেয়ে উপযোগী ফসল',
-          () => _navigate(CropSuitabilityScreen(data: _selectedData))),
-      _FeatureItem('সার সুপারিশ', Icons.science, const Color(0xFF558B2F),
-          'ফসল অনুযায়ী সারের পরিমাণ ও সময়সূচি',
-          () => _navigate(FertilizerRecommendationScreen(data: _selectedData))),
-      _FeatureItem('ফসল জোন', Icons.map, const Color(0xFF1565C0),
-          'এলাকার কৃষি অঞ্চল ও জলবায়ু তথ্য',
-          () => _navigate(CropZoneScreen(data: _selectedData))),
-      _FeatureItem('ফসল বিন্যাস', Icons.view_module, const Color(0xFFE65100),
-          'বর্তমান ও লাভজনক ফসল বিন্যাস',
-          () => _navigate(CropPatternScreen(data: _selectedData))),
-      _FeatureItem('মাটির গুণাগুণ', Icons.landscape, const Color(0xFF6D4C41),
-          'মাটির ধরন, pH ও পুষ্টি বিশ্লেষণ',
-          () => _navigate(SoilQualityScreen(data: _selectedData))),
-      _FeatureItem('সংরক্ষিত তথ্য', Icons.bookmark, const Color(0xFF6A1B9A),
-          'আগে দেখা এলাকার তথ্য',
-          () => Get.to(() => const SavedAgriDataScreen())),
+      _FeatureItem(
+        isBn ? 'জরুরি সেবা ও আবহাওয়া' : 'Emergency & Weather',
+        Icons.warning_amber_rounded,
+        const Color(0xFFD32F2F),
+        isBn ? 'লাইভ আবহাওয়া ও জরুরি কৃষি হটলাইন' : 'Live weather alerts & emergency hotline',
+        () => Get.to(() => const EmergencyWeatherServicesScreen()),
+      ),
+      _FeatureItem(
+        isBn ? 'ফসল উপযোগিতা' : 'Crop Suitability',
+        Icons.agriculture,
+        const Color(0xFF2E7D32),
+        isBn ? 'উপজেলার জন্য সবচেয়ে উপযোগী ফসল' : 'Top recommended crops for this upazila',
+        () => _navigate(CropSuitabilityScreen(data: _selectedData)),
+      ),
+      _FeatureItem(
+        isBn ? 'সার সুপারিশ' : 'Fertilizer Advice',
+        Icons.science,
+        const Color(0xFF558B2F),
+        isBn ? 'ফসল অনুযায়ী সারের পরিমাণ ও সময়সূচি' : 'Dosage & schedule by crop type',
+        () => _navigate(FertilizerRecommendationScreen(data: _selectedData)),
+      ),
+      _FeatureItem(
+        isBn ? 'ফসল জোন' : 'Crop Zone',
+        Icons.map,
+        const Color(0xFF1565C0),
+        isBn ? 'এলাকার কৃষি অঞ্চল ও জলবায়ু তথ্য' : 'Agro-ecological zone & climate profile',
+        () => _navigate(CropZoneScreen(data: _selectedData)),
+      ),
+      _FeatureItem(
+        isBn ? 'ফসল বিন্যাস' : 'Crop Pattern',
+        Icons.view_module,
+        const Color(0xFFE65100),
+        isBn ? 'বর্তমান ও লাভজনক ফসল বিন্যাস' : 'Current & high-yield crop rotation',
+        () => _navigate(CropPatternScreen(data: _selectedData)),
+      ),
+      _FeatureItem(
+        isBn ? 'মাটির গুণাগুণ' : 'Soil Health',
+        Icons.landscape,
+        const Color(0xFF6D4C41),
+        isBn ? 'মাটির ধরন, pH ও পুষ্টি বিশ্লেষণ' : 'Soil composition, pH & nutrient health',
+        () => _navigate(SoilQualityScreen(data: _selectedData)),
+      ),
+      _FeatureItem(
+        isBn ? 'সংরক্ষিত তথ্য' : 'Saved Agri Data',
+        Icons.bookmark,
+        const Color(0xFF6A1B9A),
+        isBn ? 'আগে দেখা এলাকার তথ্য' : 'Previously saved upazila records',
+        () => Get.to(() => const SavedAgriDataScreen()),
+      ),
     ];
 
     return GridView.builder(
@@ -395,7 +438,7 @@ class _AgriInfoHubScreenState extends State<AgriInfoHubScreen> {
         crossAxisCount: 2,
         mainAxisSpacing: 14,
         crossAxisSpacing: 14,
-        childAspectRatio: 1.1,
+        childAspectRatio: 1.05,
       ),
       itemCount: features.length,
       itemBuilder: (ctx, i) => _buildFeatureCard(features[i]),
@@ -410,37 +453,39 @@ class _AgriInfoHubScreenState extends State<AgriInfoHubScreen> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
-            BoxShadow(color: f.color.withOpacity(0.12), blurRadius: 12, offset: const Offset(0, 5)),
+            BoxShadow(color: f.color.withValues(alpha: 0.12), blurRadius: 12, offset: const Offset(0, 5)),
           ],
         ),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: f.color.withOpacity(0.1),
+                  color: f.color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(f.icon, color: f.color, size: 28),
+                child: Icon(f.icon, color: f.color, size: 26),
               ),
               const Spacer(),
               Text(
                 f.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.hindSiliguri(
-                  fontSize: 15,
+                  fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: Colors.black87,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 3),
               Text(
                 f.subtitle,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.black54, height: 1.3),
+                style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.black54, height: 1.25),
               ),
             ],
           ),
@@ -509,8 +554,12 @@ class _LocationSelectorSheetState extends State<LocationSelectorSheet>
   }
 
   void _applyManual() {
+    final bool isBn = LanguageProvider.isBn(context);
     if (_division == null || _zilla == null || _upazila == null) {
-      Get.snackbar('অসম্পূর্ণ নির্বাচন', 'বিভাগ, জেলা ও উপজেলা বেছে নিন');
+      Get.snackbar(
+        isBn ? 'অসম্পূর্ণ নির্বাচন' : 'Incomplete Selection',
+        isBn ? 'বিভাগ, জেলা ও উপজেলা বেছে নিন' : 'Please select division, district, and upazila',
+      );
       return;
     }
     widget.onManualSelected(_division!, _zilla!, _upazila!);
@@ -519,6 +568,8 @@ class _LocationSelectorSheetState extends State<LocationSelectorSheet>
 
   @override
   Widget build(BuildContext context) {
+    final bool isBn = LanguageProvider.isBn(context);
+
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -545,7 +596,7 @@ class _LocationSelectorSheetState extends State<LocationSelectorSheet>
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               child: Text(
-                'এলাকা নির্বাচন করুন',
+                isBn ? 'এলাকা নির্বাচন করুন' : 'Select Region',
                 style: GoogleFonts.hindSiliguri(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
               ),
             ),
@@ -565,9 +616,9 @@ class _LocationSelectorSheetState extends State<LocationSelectorSheet>
                 labelColor: Colors.white,
                 unselectedLabelColor: Colors.grey.shade600,
                 labelStyle: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 14),
-                tabs: const [
-                  Tab(text: '📍 বর্তমান অবস্থান'),
-                  Tab(text: '🔍 এলাকা খুঁজুন'),
+                tabs: [
+                  Tab(text: isBn ? '📍 বর্তমান অবস্থান' : '📍 Current Location'),
+                  Tab(text: isBn ? '🔍 এলাকা খুঁজুন' : '🔍 Search Upazila'),
                 ],
               ),
             ),
@@ -577,9 +628,9 @@ class _LocationSelectorSheetState extends State<LocationSelectorSheet>
                 controller: _tabController,
                 children: [
                   // GPS Tab
-                  _buildGPSTab(),
+                  _buildGPSTab(isBn),
                   // Manual Tab
-                  _buildManualTab(controller),
+                  _buildManualTab(controller, isBn),
                 ],
               ),
             ),
@@ -589,7 +640,7 @@ class _LocationSelectorSheetState extends State<LocationSelectorSheet>
     );
   }
 
-  Widget _buildGPSTab() {
+  Widget _buildGPSTab(bool isBn) {
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -598,19 +649,21 @@ class _LocationSelectorSheetState extends State<LocationSelectorSheet>
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: primaryGreen.withOpacity(0.1),
+              color: primaryGreen.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.my_location, size: 60, color: primaryGreen),
           ),
           const SizedBox(height: 24),
           Text(
-            'GPS দিয়ে স্বয়ংক্রিয় অবস্থান',
+            isBn ? 'GPS দিয়ে স্বয়ংক্রিয় অবস্থান' : 'Automatic GPS Location',
             style: GoogleFonts.hindSiliguri(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
           ),
           const SizedBox(height: 12),
           Text(
-            'আপনার বর্তমান GPS অবস্থান ব্যবহার করে নিকটতম উপজেলার কৃষি তথ্য দেখান',
+            isBn
+                ? 'আপনার বর্তমান GPS অবস্থান ব্যবহার করে নিকটতম উপজেলার কৃষি তথ্য দেখান'
+                : 'Display agricultural information for your nearest upazila using GPS',
             textAlign: TextAlign.center,
             style: GoogleFonts.hindSiliguri(fontSize: 14, color: Colors.grey.shade600, height: 1.5),
           ),
@@ -623,8 +676,10 @@ class _LocationSelectorSheetState extends State<LocationSelectorSheet>
                   ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                   : const Icon(Icons.gps_fixed),
               label: Text(
-                _isDetecting ? 'খোঁজা হচ্ছে...' : 'আমার অবস্থান ব্যবহার করুন',
-                style: GoogleFonts.hindSiliguri(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+                _isDetecting 
+                    ? (isBn ? 'খোঁজা হচ্ছে...' : 'Locating...') 
+                    : (isBn ? 'আমার অবস্থান ব্যবহার করুন' : 'Use My GPS Location'),
+                style: GoogleFonts.hindSiliguri(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryGreen,
@@ -639,7 +694,7 @@ class _LocationSelectorSheetState extends State<LocationSelectorSheet>
     );
   }
 
-  Widget _buildManualTab(ScrollController controller) {
+  Widget _buildManualTab(ScrollController controller, bool isBn) {
     final divisions = BangladeshAgriData.divisions;
     final zillaList = _division != null
         ? BangladeshAgriData.zillasPerDivision[_division] ?? []
@@ -657,27 +712,30 @@ class _LocationSelectorSheetState extends State<LocationSelectorSheet>
               controller: controller,
               children: [
                 _buildDropdown(
-                  label: 'বিভাগ (Division)',
+                  label: isBn ? 'বিভাগ (Division)' : 'Division',
                   icon: Icons.account_tree,
                   value: _division,
                   items: divisions,
+                  hint: isBn ? 'নির্বাচন করুন' : 'Select Division',
                   onChanged: (v) => setState(() { _division = v; _zilla = null; _upazila = null; }),
                 ),
                 const SizedBox(height: 16),
                 _buildDropdown(
-                  label: 'জেলা (District)',
+                  label: isBn ? 'জেলা (District)' : 'District',
                   icon: Icons.location_city,
                   value: _zilla,
                   items: zillaList,
+                  hint: isBn ? 'নির্বাচন করুন' : 'Select District',
                   onChanged: _division == null ? null : (v) => setState(() { _zilla = v; _upazila = null; }),
                   enabled: _division != null,
                 ),
                 const SizedBox(height: 16),
                 _buildDropdown(
-                  label: 'উপজেলা (Upazila)',
+                  label: isBn ? 'উপজেলা (Upazila)' : 'Upazila',
                   icon: Icons.place,
                   value: _upazila,
                   items: upazilaList,
+                  hint: isBn ? 'নির্বাচন করুন' : 'Select Upazila',
                   onChanged: _zilla == null ? null : (v) => setState(() => _upazila = v),
                   enabled: _zilla != null,
                 ),
@@ -694,8 +752,8 @@ class _LocationSelectorSheetState extends State<LocationSelectorSheet>
                   : null,
               icon: const Icon(Icons.check_circle),
               label: Text(
-                'এই উপজেলার তথ্য দেখুন',
-                style: GoogleFonts.hindSiliguri(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+                isBn ? 'এই উপজেলার তথ্য দেখুন' : 'View Upazila Info',
+                style: GoogleFonts.hindSiliguri(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryGreen,
@@ -716,6 +774,7 @@ class _LocationSelectorSheetState extends State<LocationSelectorSheet>
     required IconData icon,
     required String? value,
     required List<String> items,
+    required String hint,
     required void Function(String?)? onChanged,
     bool enabled = true,
   }) {
@@ -733,14 +792,14 @@ class _LocationSelectorSheetState extends State<LocationSelectorSheet>
           ),
           child: DropdownButton<String>(
             value: value,
-            hint: Text('নির্বাচন করুন', style: GoogleFonts.hindSiliguri(color: Colors.grey.shade600)),
+            hint: Text(hint, style: GoogleFonts.hindSiliguri(color: Colors.grey.shade600)),
             isExpanded: true,
             underline: const SizedBox(),
             icon: Icon(Icons.keyboard_arrow_down, color: enabled ? primaryGreen : Colors.grey),
-            dropdownColor: Colors.white, // Ensure popup background is white
+            dropdownColor: Colors.white,
             items: items.map((s) => DropdownMenuItem(
               value: s,
-              child: Text(s, style: GoogleFonts.hindSiliguri(fontSize: 15, color: Colors.black87)), // Ensure text is black
+              child: Text(s, style: GoogleFonts.hindSiliguri(fontSize: 15, color: Colors.black87)),
             )).toList(),
             onChanged: enabled ? onChanged : null,
           ),

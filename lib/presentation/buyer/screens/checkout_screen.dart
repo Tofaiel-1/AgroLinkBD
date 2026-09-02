@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:agrolinkbd/presentation/buyer/providers/address_provider.dart';
 import 'package:agrolinkbd/presentation/buyer/providers/cart_provider.dart';
+import 'package:agrolinkbd/core/services/sslcommerz_service.dart';
 
 class CheckoutScreen extends ConsumerStatefulWidget {
   const CheckoutScreen({Key? key}) : super(key: key);
@@ -12,10 +13,11 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   int _currentStep = 0;
-  final List<String> _paymentMethods = ['COD', 'Wallet', 'Card', 'bKash'];
-  String _selectedPaymentMethod = 'COD';
+  final List<String> _paymentMethods = ['SSLCommerz (কার্ড / বিকাশ / নগদ)', 'COD (ক্যাশ অন ডেলিভারি)', 'Wallet (ওয়ালেট)'];
+  String _selectedPaymentMethod = 'SSLCommerz (কার্ড / বিকাশ / নগদ)';
   String? _selectedAddressId;
   DateTime? _selectedDeliveryDate;
+  bool _isProcessing = false;
 
   @override
   Widget build(BuildContext context) {
@@ -199,27 +201,52 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
-                            onPressed: () async {
-                              // Create and place order
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text(
-                                        'অর্ডার সফলভাবে প্লেস করা হয়েছে')),
-                              );
-                              Navigator.pop(context);
-                            },
+                            onPressed: _isProcessing
+                                ? null
+                                : () async {
+                                    bool isPaid = true;
+                                    if (_selectedPaymentMethod.contains('SSLCommerz')) {
+                                      setState(() => _isProcessing = true);
+                                      isPaid = await SSLCommerzService.initiatePayment(
+                                        context: context,
+                                        amount: cartSummary.total,
+                                        productName: 'বাজার পণ্যসমূহ',
+                                        customerName: 'Buyer User',
+                                        customerEmail: 'buyer@agrolinkbd.com',
+                                        customerPhone: '01700000000',
+                                        customerAddress: 'Dhaka, Bangladesh',
+                                      );
+                                      if (mounted) setState(() => _isProcessing = false);
+                                    }
+
+                                    if (isPaid && mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                            content: Text(
+                                                'অর্ডার সফলভাবে প্লেস করা হয়েছে! 🎉'),
+                                            backgroundColor: Colors.green),
+                                      );
+                                      Navigator.pop(context);
+                                    }
+                                  },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF1976D2),
                               padding: const EdgeInsets.symmetric(vertical: 14),
                             ),
-                            child: const Text(
-                              'অর্ডার নিশ্চিত করুন',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
+                            child: _isProcessing
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                  )
+                                : const Text(
+                                    'অর্ডার নিশ্চিত করুন',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
                           ),
                         ),
                       ],
