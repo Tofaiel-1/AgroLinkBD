@@ -162,8 +162,8 @@ class FarmerAnalysisPdfService {
               columnWidths: [2.0, 1.2, 1.2, 1.2, 1.0],
               data: cropRoiList.map((item) {
                 return [
-                  item.cropName,
-                  '${item.yieldAmount.toStringAsFixed(0)} ${item.unit}',
+                  item.cropNameEn,
+                  '${item.yieldAmount.toStringAsFixed(0)} ${item.unitEn}',
                   'BDT ${item.cost.toStringAsFixed(0)}',
                   'BDT ${item.revenue.toStringAsFixed(0)}',
                   '${item.roiPct.toStringAsFixed(1)}%',
@@ -183,11 +183,11 @@ class FarmerAnalysisPdfService {
               columnWidths: [1.8, 1.8, 1.2, 1.2, 2.0],
               data: marketOpportunities.map((m) {
                 return [
-                  m.crop,
-                  m.market,
+                  m.cropEn,
+                  m.marketEn,
                   'BDT ${m.currentPrice.toStringAsFixed(0)}',
                   'BDT ${m.projectedPrice7Days.toStringAsFixed(0)}',
-                  m.recommendation,
+                  m.recommendationEn,
                 ];
               }).toList(),
             ),

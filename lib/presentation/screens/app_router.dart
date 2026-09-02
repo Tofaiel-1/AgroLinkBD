@@ -4,12 +4,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:agrolinkbd/core/providers/admin_provider.dart';
 import 'package:agrolinkbd/core/providers/user_provider.dart';
 import 'package:agrolinkbd/core/providers/cart_provider.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 import 'package:agrolinkbd/core/models/user_model.dart';
 import 'package:agrolinkbd/presentation/screens/navigation/role_based_navigation_container.dart';
-import 'package:agrolinkbd/presentation/screens/admin/admin_dashboard.dart';
 import 'package:agrolinkbd/presentation/screens/auth/login_screen.dart';
-import 'package:agrolinkbd/presentation/screens/auth/register_screen.dart';
-import 'package:agrolinkbd/presentation/screens/admin/admin_security_pin_screen.dart';
 import 'package:agrolinkbd/presentation/screens/admin/advanced_admin_dashboard.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -48,6 +46,8 @@ class _AppRouterState extends State<AppRouter> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isBn = LanguageProvider.isBn(context);
+
     if (!_initialized) {
       return Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -62,7 +62,7 @@ class _AppRouterState extends State<AppRouter> {
               ),
               const SizedBox(height: 16),
               Text(
-                'অ্যাপ শুরু হচ্ছে...',
+                isBn ? 'অ্যাপ শুরু হচ্ছে...' : 'Starting app...',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
             ],
@@ -89,7 +89,7 @@ class _AppRouterState extends State<AppRouter> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'আপনার পরিচয় যাচাই করা হচ্ছে...',
+                        isBn ? 'আপনার পরিচয় যাচাই করা হচ্ছে...' : 'Verifying your identity...',
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                     ],
@@ -113,14 +113,16 @@ class _AppRouterState extends State<AppRouter> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'প্রমাণীকরণ ত্রুটি',
+                        isBn ? 'প্রমাণীকরণ ত্রুটি' : 'Authentication Error',
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                       const SizedBox(height: 8),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 32),
                         child: Text(
-                          'দুঃখিত, প্রমাণীকরণ প্রক্রিয়ায় সমস্যা হয়েছে। অনুগ্রহ করে পুনরায় চেষ্টা করুন বা অ্যাপটি পুনরায় চালু করুন।',
+                          isBn
+                              ? 'দুঃখিত, প্রমাণীকরণ প্রক্রিয়ায় সমস্যা হয়েছে। অনুগ্রহ করে পুনরায় চেষ্টা করুন বা অ্যাপটি পুনরায় চালু করুন।'
+                              : 'Sorry, an authentication error occurred. Please try again or restart the app.',
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
@@ -128,7 +130,7 @@ class _AppRouterState extends State<AppRouter> {
                       const SizedBox(height: 24),
                       ElevatedButton(
                         onPressed: () => FirebaseAuth.instance.signOut(),
-                        child: const Text('লগইন স্ক্রিনে যান'),
+                        child: Text(isBn ? 'লগইন স্ক্রিনে যান' : 'Go to Login'),
                       ),
                     ],
                   ),
@@ -145,7 +147,6 @@ class _AppRouterState extends State<AppRouter> {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted) {
                   final adminProvider = Provider.of<AdminProvider>(context, listen: false);
-                  final userProvider = Provider.of<UserProvider>(context, listen: false);
                   
                   if (adminProvider.isAdminLoggedIn) {
                     adminProvider.adminSignOut();
@@ -164,6 +165,17 @@ class _AppRouterState extends State<AppRouter> {
              final userId = authSnapshot.data!.uid;
             final email = authSnapshot.data!.email ?? 'user@example.com';
 
+             // Show Admin dashboard if admin
+            if (adminProvider.isAdminLoggedIn) {
+              return const AdvancedAdminDashboard();
+            }
+
+            // Show RoleBasedNavigationContainer if user data is available
+            if (userProvider.currentUser != null) {
+              final user = userProvider.currentUser!;
+              return RoleBasedNavigationContainer(user: user);
+            }
+
             // User is authenticated - Load user data if not already loaded
             if (!_loadedUserIds.contains(userId) &&
                 !_loadingUserIds.contains(userId)) {
@@ -171,71 +183,83 @@ class _AppRouterState extends State<AppRouter> {
 
               Future.microtask(() async {
                 try {
-                  // Check if the user is an admin first
-                  final adminDoc = await FirebaseFirestore.instance.collection('admins').doc(userId).get();
-                  if (adminDoc.exists) {
-                    debugPrint('✅ Admin profile found: $userId');
-                    Provider.of<AdminProvider>(context, listen: false).setAdminFromDoc(adminDoc);
-                    _lastError = null;
-                  } else {
-                    // Prevent race condition: if it's a known admin email, wait for setup script to create the doc
-                    if (email == 'superadmin@agrolinkbd.com' || email == 'admin@agrolinkbd.com' || email == 'mdtofaielhussaintota@gmail.com') {
-                      debugPrint('⏳ AppRouter: Superadmin detected but admin doc missing. Waiting for setup...');
-                      await Future.delayed(const Duration(seconds: 4));
-                      final retryAdmin = await FirebaseFirestore.instance.collection('admins').doc(userId).get();
-                      if (retryAdmin.exists) {
-                        debugPrint('✅ Admin profile found after wait: $userId');
-                        Provider.of<AdminProvider>(context, listen: false).setAdminFromDoc(retryAdmin);
-                        _lastError = null;
-                      }
-                    }
-
-                    // Only proceed with user loading if AdminProvider is still NOT logged in
-                    if (!Provider.of<AdminProvider>(context, listen: false).isAdminLoggedIn) {
-                      // Try to load user from Firestore
-                      await userProvider.loadUser(userId);
-
-                      // Fallback: If profile document is missing in Firestore, create default user
-                      // Only do this if there was NO error loading it (i.e. document actually does not exist)
-                      if (userProvider.currentUser == null && userProvider.error == null) {
-                        if (email == 'superadmin@agrolinkbd.com' || email == 'admin@agrolinkbd.com' || email == 'mdtofaielhussaintota@gmail.com') {
-                          debugPrint('⏳ Skipping fallback farmer profile creation for superadmin');
-                        } else {
-                          debugPrint('⏳ Creating fallback profile for user: $userId');
-                          final firebaseUser = authSnapshot.data!;
-                          final fallbackUser = UserModel(
-                            id: userId,
-                            name: firebaseUser.displayName?.isNotEmpty == true
-                                ? firebaseUser.displayName!
-                                : (email.split('@').first),
-                            phone: firebaseUser.phoneNumber ?? '',
-                            email: email,
-                            userType: UserType.farmer, // Default role
-                            status: UserStatus.active,
-                            createdAt: DateTime.now(),
-                          );
-                          await userProvider.updateUser(fallbackUser);
-                        }
-                      }
-
-                      if (userProvider.currentUser != null) {
-                        debugPrint('✅ User profile loaded: $userId');
-                      }
-
-                      try {
-                        final cartProvider =
-                            Provider.of<CartProvider>(context, listen: false);
-                        cartProvider.loadUserCart(userId);
-                      } catch (e) {
-                        debugPrint('⚠️ Cart load warning in AppRouter: $e');
-                      }
-
+                  // 1. Quick Admin Check
+                  try {
+                    final adminDoc = await FirebaseFirestore.instance
+                        .collection('admins')
+                        .doc(userId)
+                        .get()
+                        .timeout(const Duration(milliseconds: 1500));
+                    if (adminDoc.exists && mounted) {
+                      debugPrint('✅ Admin profile found: $userId');
+                      Provider.of<AdminProvider>(context, listen: false).setAdminFromDoc(adminDoc);
                       _lastError = null;
+                      return;
                     }
+                  } catch (adminErr) {
+                    debugPrint('ℹ️ Admin check bypassed/skipped: $adminErr');
+                  }
+
+                  // 2. Load Regular User Profile from Firestore
+                  if (mounted && !Provider.of<AdminProvider>(context, listen: false).isAdminLoggedIn) {
+                    try {
+                      await userProvider.loadUser(userId).timeout(const Duration(seconds: 4));
+                    } catch (loadErr) {
+                      debugPrint('⚠️ loadUser warning: $loadErr');
+                    }
+
+                    // 3. Fail-Safe Instant Fallback Profile if profile was missing
+                    if (userProvider.currentUser == null) {
+                      debugPrint('⏳ Creating/restoring active session profile for user: $userId');
+                      final firebaseUser = authSnapshot.data!;
+                      final fallbackUser = UserModel(
+                        id: userId,
+                        name: firebaseUser.displayName?.isNotEmpty == true
+                            ? firebaseUser.displayName!
+                            : (email.split('@').first),
+                        phone: firebaseUser.phoneNumber ?? '',
+                        email: email,
+                        userType: UserType.farmer,
+                        status: UserStatus.active,
+                        createdAt: DateTime.now(),
+                      );
+                      await userProvider.updateUser(fallbackUser);
+                    }
+
+                    if (userProvider.currentUser != null) {
+                      debugPrint('✅ User profile ready: $userId');
+                    }
+
+                    try {
+                      if (mounted) {
+                        final cartProvider = Provider.of<CartProvider>(context, listen: false);
+                        cartProvider.loadUserCart(userId);
+                      }
+                    } catch (e) {
+                      debugPrint('⚠️ Cart load warning: $e');
+                    }
+
+                    _lastError = null;
                   }
                 } catch (e) {
-                  debugPrint('❌ Error loading user profile: $e');
-                  _lastError = 'প্রোফাইল লোড করতে সমস্যা হয়েছে';
+                  debugPrint('⚠️ AppRouter profile recovery fallback: $e');
+                  // Even on error, establish active fallback user so Shift+R hot restart never gets stuck
+                  if (userProvider.currentUser == null) {
+                    final firebaseUser = authSnapshot.data!;
+                    final recoveryUser = UserModel(
+                      id: userId,
+                      name: firebaseUser.displayName?.isNotEmpty == true
+                          ? firebaseUser.displayName!
+                          : (email.split('@').first),
+                      phone: firebaseUser.phoneNumber ?? '',
+                      email: email,
+                      userType: UserType.farmer,
+                      status: UserStatus.active,
+                      createdAt: DateTime.now(),
+                    );
+                    userProvider.updateUser(recoveryUser);
+                  }
+                  _lastError = null;
                 } finally {
                   _loadedUserIds.add(userId);
                   _loadingUserIds.remove(userId);
@@ -246,19 +270,7 @@ class _AppRouterState extends State<AppRouter> {
               });
             }
 
-            // Show Admin dashboard if admin
-            if (adminProvider.isAdminLoggedIn) {
-              return const AdvancedAdminDashboard();
-            }
-
-            // Show RoleBasedNavigationContainer if user data is available
-            if (userProvider.currentUser != null) {
-              final user = userProvider.currentUser!;
-              debugPrint(
-                '✅ User authenticated: ${user.name} (${user.userType.toString().split('.').last})',
-              );
-              return RoleBasedNavigationContainer(user: user);
-            }
+            final bool isBn = LanguageProvider.isBn(context);
 
             // Fallback while initializing or if error occurred
             return Scaffold(
@@ -276,13 +288,15 @@ class _AppRouterState extends State<AppRouter> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'আপনার প্রোফাইল প্রস্তুত করা হচ্ছে...',
+                        isBn
+                            ? 'আপনার প্রোফাইল প্রস্তুত করা হচ্ছে...'
+                            : 'Preparing your profile...',
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       if (_lastError != null) ...[
                         const SizedBox(height: 12),
                         Text(
-                          'সমস্যা: $_lastError',
+                          isBn ? 'সমস্যা: $_lastError' : 'Error: $_lastError',
                           textAlign: TextAlign.center,
                           style:
                               Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -303,7 +317,7 @@ class _AppRouterState extends State<AppRouter> {
                               });
                             },
                             icon: const Icon(Icons.refresh),
-                            label: const Text('পুনরায় চেষ্টা করুন'),
+                            label: Text(isBn ? 'পুনরায় চেষ্টা করুন' : 'Retry'),
                           ),
                           const SizedBox(width: 12),
                           ElevatedButton.icon(
@@ -311,7 +325,7 @@ class _AppRouterState extends State<AppRouter> {
                               FirebaseAuth.instance.signOut();
                             },
                             icon: const Icon(Icons.logout),
-                            label: const Text('লগইন এ যান'),
+                            label: Text(isBn ? 'লগইন এ যান' : 'Go to Login'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.red.shade600,
                               foregroundColor: Colors.white,

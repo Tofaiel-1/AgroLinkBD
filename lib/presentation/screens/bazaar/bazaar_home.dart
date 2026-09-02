@@ -14,8 +14,6 @@ import 'package:agrolinkbd/presentation/screens/fisheries/farmer/contracts/farme
 import 'package:agrolinkbd/presentation/screens/analytics/market_price_analysis_screen.dart';
 import 'package:agrolinkbd/presentation/screens/fisheries/premium/vip_wholesaler_directory_screen.dart';
 import 'package:agrolinkbd/presentation/screens/marketplace/buyer_rfq_board_screen.dart';
-import 'package:agrolinkbd/core/services/vip_subscription_service.dart';
-import 'widgets/vip_wholesale_gatekeeper_card.dart';
 import 'add_product_screen.dart';
 import 'product_detail.dart';
 
@@ -1048,17 +1046,38 @@ class _BazaarHomeState extends State<BazaarHome> with SingleTickerProviderStateM
     );
   }
 
+  String _formatUnit(String? rawUnit, bool isBn) {
+    if (rawUnit == null || rawUnit.isEmpty) return isBn ? 'কেজি' : 'kg';
+    if (!isBn) {
+      if (rawUnit == 'কেজি' || rawUnit.toLowerCase() == 'kg') return 'kg';
+      if (rawUnit == 'মণ' || rawUnit.toLowerCase() == 'maund') return 'maund';
+      if (rawUnit == 'টন' || rawUnit.toLowerCase() == 'ton') return 'ton';
+      if (rawUnit == 'পিস' || rawUnit == 'টি' || rawUnit.toLowerCase() == 'piece') return 'pcs';
+      if (rawUnit == 'লিটার' || rawUnit.toLowerCase() == 'liter') return 'liter';
+      if (rawUnit == 'ব্যাগ' || rawUnit.toLowerCase() == 'bag') return 'bag';
+    } else {
+      if (rawUnit.toLowerCase() == 'kg') return 'কেজি';
+      if (rawUnit.toLowerCase() == 'maund') return 'মণ';
+      if (rawUnit.toLowerCase() == 'ton') return 'টন';
+      if (rawUnit.toLowerCase() == 'pcs' || rawUnit.toLowerCase() == 'piece') return 'টি';
+      if (rawUnit.toLowerCase() == 'liter') return 'লিটার';
+      if (rawUnit.toLowerCase() == 'bag') return 'ব্যাগ';
+    }
+    return rawUnit;
+  }
+
   Widget _buildCropProductCard(
     Map<String, dynamic> item,
     bool isDark,
     bool isBn,
     Color primaryGreen,
   ) {
-    final title = item['title'] ?? item['name'] ?? 'কৃষি ফসল';
+    final title = item['title'] ?? item['name'] ?? (isBn ? 'কৃষি ফসল' : 'Farm Crop');
     final price = (item['price'] is num) ? (item['price'] as num).toDouble() : 0.0;
     final quantity = (item['quantity'] is num) ? (item['quantity'] as num).toDouble() : 0.0;
-    final unit = item['unit'] ?? 'কেজি';
-    final location = item['location'] ?? 'বাংলাদেশ';
+    final rawUnit = item['unit']?.toString() ?? 'কেজি';
+    final unit = _formatUnit(rawUnit, isBn);
+    final location = item['location'] ?? (isBn ? 'বাংলাদেশ' : 'Bangladesh');
     final imageUrl = item['imageUrl'] as String?;
     final isAvailable = item['status'] == 'available' || item['status'] == null;
 
@@ -1257,11 +1276,12 @@ class _BazaarHomeState extends State<BazaarHome> with SingleTickerProviderStateM
     bool isBn,
     Color primaryGreen,
   ) {
-    final title = item['title'] ?? item['name'] ?? 'ফসল';
+    final title = item['title'] ?? item['name'] ?? (isBn ? 'ফসল' : 'Crop');
     final price = (item['price'] is num) ? (item['price'] as num).toDouble() : 0.0;
     final quantity = (item['quantity'] is num) ? (item['quantity'] as num).toDouble() : 0.0;
-    final unit = item['unit'] ?? 'কেজি';
-    final location = item['location'] ?? 'খামার';
+    final rawUnit = item['unit']?.toString() ?? 'কেজি';
+    final unit = _formatUnit(rawUnit, isBn);
+    final location = item['location'] ?? (isBn ? 'খামার' : 'Farm');
     final isAvailable = item['status'] == 'available' || item['status'] == null;
     final imageUrl = item['imageUrl'] as String?;
     final docId = item['id'] as String;

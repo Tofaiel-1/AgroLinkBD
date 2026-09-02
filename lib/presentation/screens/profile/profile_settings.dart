@@ -644,7 +644,9 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'এগ্রোলিংক ভিআইপি মেম্বারশিপ 👑',
+                        LanguageProvider.isBn(context)
+                            ? 'এগ্রোলিংক ভিআইপি মেম্বারশিপ 👑'
+                            : 'AgroLink VIP Membership 👑',
                         style: GoogleFonts.hindSiliguri(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
@@ -652,7 +654,9 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                         ),
                       ),
                       Text(
-                        'আনলিমিটেড ট্রেডিং ও বিশেষজ্ঞ সুবিধা',
+                        LanguageProvider.isBn(context)
+                            ? 'আনলিমিটেড ট্রেডিং ও বিশেষজ্ঞ সুবিধা'
+                            : 'Unlimited trading & expert privileges',
                         style: GoogleFonts.hindSiliguri(
                           fontSize: 11,
                           color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
@@ -685,11 +689,11 @@ class _ProfileSettingsState extends State<ProfileSettings> {
           const SizedBox(height: 12),
           Row(
             children: [
-              _buildVipFeaturePill('⚡ ০% বায়ার ফি', isDark),
+              _buildVipFeaturePill(LanguageProvider.isBn(context) ? '⚡ ০% বায়ার ফি' : '⚡ 0% Buyer Fee', isDark),
               const SizedBox(width: 6),
-              _buildVipFeaturePill('📞 ডিরেক্ট কল', isDark),
+              _buildVipFeaturePill(LanguageProvider.isBn(context) ? '📞 ডিরেক্ট কল' : '📞 Direct Call', isDark),
               const SizedBox(width: 6),
-              _buildVipFeaturePill('🔔 লাইভ অ্যালার্ট', isDark),
+              _buildVipFeaturePill(LanguageProvider.isBn(context) ? '🔔 লাইভ অ্যালার্ট' : '🔔 Live Alerts', isDark),
             ],
           ),
           const SizedBox(height: 14),
@@ -699,7 +703,9 @@ class _ProfileSettingsState extends State<ProfileSettings> {
               onPressed: () => Get.to(() => const VipSubscriptionPaywallScreen()),
               icon: const Icon(Icons.bolt, color: Colors.white, size: 18),
               label: Text(
-                'ভিআইপি পাস আপগ্রেড করুন (৳২৯৯ থেকে শুরু) 🚀',
+                LanguageProvider.isBn(context)
+                    ? 'ভিআইপি পাস আপগ্রেড করুন (৳২৯৯ থেকে শুরু) 🚀'
+                    : 'Upgrade VIP Pass (From ৳299) 🚀',
                 style: GoogleFonts.hindSiliguri(
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
@@ -882,7 +888,9 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'মূল রেটিং (Root Trust Rating)',
+                              LanguageProvider.isBn(context)
+                                  ? 'মূল রেটিং (Root Trust Rating)'
+                                  : 'Root Trust Rating',
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
@@ -895,8 +903,12 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                               alignment: Alignment.centerLeft,
                               child: Text(
                                 totalRatings == 0
-                                    ? '৫.০ / ৫.০ ⭐️ (১০০% বিশ্বস্ততা)'
-                                    : '${rating.toStringAsFixed(1)} / 5.0 ⭐️ (${trustScore.toStringAsFixed(0)}% বিশ্বস্ততা)',
+                                    ? (LanguageProvider.isBn(context)
+                                        ? '৫.০ / ৫.০ ⭐️ (১০০% বিশ্বস্ততা)'
+                                        : '5.0 / 5.0 ⭐️ (100% Trust)')
+                                    : (LanguageProvider.isBn(context)
+                                        ? '${rating.toStringAsFixed(1)} / 5.0 ⭐️ (${trustScore.toStringAsFixed(0)}% বিশ্বস্ততা)'
+                                        : '${rating.toStringAsFixed(1)} / 5.0 ⭐️ (${trustScore.toStringAsFixed(0)}% Trust)'),
                                 style: TextStyle(
                                   fontSize: 17,
                                   fontWeight: FontWeight.bold,
@@ -915,15 +927,15 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                           color: Colors.green.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.verified,
+                            const Icon(Icons.verified,
                                 color: Colors.green, size: 15),
-                            SizedBox(width: 4),
+                            const SizedBox(width: 4),
                             Text(
-                              'ভেরিফাইড',
-                              style: TextStyle(
+                              LanguageProvider.isBn(context) ? 'ভেরিফাইড' : 'Verified',
+                              style: const TextStyle(
                                   color: Colors.green,
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold),
@@ -942,10 +954,10 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                     Expanded(
                       child: _buildCleanTrustBadge(
                         Icons.work_outline,
-                        'ভেরিফাইড কাজ',
+                        LanguageProvider.isBn(context) ? 'ভেরিফাইড কাজ' : 'Verified Tasks',
                         totalOrders == 0
-                            ? '০ টি সম্পন্ন'
-                            : '$totalOrders টি সফল কাজ',
+                            ? (LanguageProvider.isBn(context) ? '০ টি সম্পন্ন' : '0 Completed')
+                            : (LanguageProvider.isBn(context) ? '$totalOrders টি সফল কাজ' : '$totalOrders Done'),
                         Colors.blue,
                         isDark,
                       ),
@@ -954,10 +966,10 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                     Expanded(
                       child: _buildCleanTrustBadge(
                         Icons.payments_outlined,
-                        'নিরাপদ লেনদেন',
+                        LanguageProvider.isBn(context) ? 'নিরাপদ লেনদেন' : 'Safe Payments',
                         totalSpent == 0
-                            ? '৳ ০ লেনদেন'
-                            : '৳ ${totalSpent.toStringAsFixed(0)} সফল',
+                            ? (LanguageProvider.isBn(context) ? '৳ ০ লেনদেন' : '৳ 0 Volume')
+                            : (LanguageProvider.isBn(context) ? '৳ ${totalSpent.toStringAsFixed(0)} সফল' : '৳ ${totalSpent.toStringAsFixed(0)} Done'),
                         Colors.green,
                         isDark,
                       ),
@@ -968,10 +980,10 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                         totalPenalties == 0
                             ? Icons.verified_user_outlined
                             : Icons.warning_amber_rounded,
-                        'রেকর্ড স্ট্যাটাস',
+                        LanguageProvider.isBn(context) ? 'রেকর্ড স্ট্যাটাস' : 'Record Status',
                         totalPenalties == 0
-                            ? '১০০% ক্লিন রেকর্ড'
-                            : '$totalPenalties টি রিপোর্ট',
+                            ? (LanguageProvider.isBn(context) ? '১০০% ক্লিন রেকর্ড' : '100% Clean Record')
+                            : (LanguageProvider.isBn(context) ? '$totalPenalties টি রিপোর্ট' : '$totalPenalties Disputes'),
                         totalPenalties == 0 ? Colors.teal : Colors.red,
                         isDark,
                       ),

@@ -26,6 +26,9 @@ import 'package:agrolinkbd/presentation/screens/agri_info/emergency_weather_serv
 import 'package:agrolinkbd/presentation/screens/notifications/farmer_notifications.dart';
 import 'package:agrolinkbd/presentation/screens/home/widgets/premium_agro_services_section.dart';
 import 'package:agrolinkbd/presentation/screens/analytics/farmer_analytics.dart';
+import 'package:agrolinkbd/presentation/screens/farmer/tools/farm_smart_calculator_sheet.dart';
+import 'package:agrolinkbd/presentation/screens/hub/upazila_hub_network_screen.dart';
+import 'package:agrolinkbd/presentation/screens/hub/union_hub_network_screen.dart';
 
 class FarmerDashboard extends StatefulWidget {
   const FarmerDashboard({super.key});
@@ -444,25 +447,25 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
                                 children: [
                                   Column(
                                     children: [
-                                      Text('স্বাস্থ্য সূচক', style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.white.withValues(alpha: 0.8))),
+                                      Text(isBn ? 'স্বাস্থ্য সূচক' : 'Health Score', style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.white.withValues(alpha: 0.8))),
                                       const SizedBox(height: 2),
-                                      Text('৮৮% (চমৎকার)', style: GoogleFonts.hindSiliguri(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.amberAccent)),
+                                      Text(isBn ? '৮৮% (চমৎকার)' : '88% (Optimal)', style: GoogleFonts.hindSiliguri(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.amberAccent)),
                                     ],
                                   ),
                                   Container(height: 24, width: 1, color: Colors.white.withValues(alpha: 0.25)),
                                   Column(
                                     children: [
-                                      Text('চলতি লাভ মার্জিন', style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.white.withValues(alpha: 0.8))),
+                                      Text(isBn ? 'চলতি লাভ মার্জিন' : 'Profit Margin', style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.white.withValues(alpha: 0.8))),
                                       const SizedBox(height: 2),
-                                      Text('+৩৯.৫% 🚀', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white)),
+                                      Text('+39.5% 🚀', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white)),
                                     ],
                                   ),
                                   Container(height: 24, width: 1, color: Colors.white.withValues(alpha: 0.25)),
                                   Column(
                                     children: [
-                                      Text('পিডিএফ রিপোর্ট', style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.white.withValues(alpha: 0.8))),
+                                      Text(isBn ? 'পিডিএফ রিপোর্ট' : 'PDF Statement', style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.white.withValues(alpha: 0.8))),
                                       const SizedBox(height: 2),
-                                      Text('সার্টিফাইড ✓', style: GoogleFonts.hindSiliguri(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.lightGreenAccent)),
+                                      Text(isBn ? 'সার্টিফাইড ✓' : 'Certified ✓', style: GoogleFonts.hindSiliguri(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.lightGreenAccent)),
                                     ],
                                   ),
                                 ],
@@ -645,6 +648,30 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
           onTap: () {
             Get.to(() => const MicrofinanceKycScreen(userRole: 'farmer', loanType: 'Farmer Crop Loan'));
           },
+        ),
+        _ActionCard(
+          title: LanguageProvider.isBn(context) ? 'স্মার্ট ক্যালকুলেটর' : 'Smart Tools',
+          icon: Icons.calculate_rounded,
+          color: const Color(0xFF006A4E),
+          onTap: () => FarmSmartCalculatorSheet.show(context),
+        ),
+        _ActionCard(
+          title: LanguageProvider.isBn(context) ? 'উপজেলা হাব ও QC' : 'Upazila Hub & QC',
+          icon: Icons.hub,
+          color: const Color(0xFF15803D),
+          onTap: () => Get.to(() => const UpazilaHubNetworkScreen()),
+        ),
+        _ActionCard(
+          title: LanguageProvider.isBn(context) ? '🏡 ইউনিয়ন হাব' : '🏡 Union Hub',
+          icon: Icons.account_balance,
+          color: const Color(0xFF166534),
+          onTap: () => Get.to(() => const UnionHubNetworkScreen()),
+        ),
+        _ActionCard(
+          title: LanguageProvider.isBn(context) ? 'Gemini এআই সহকারী' : 'Gemini AI Bot',
+          icon: Icons.auto_awesome,
+          color: Colors.amber.shade800,
+          onTap: () => Get.to(() => const FarmerAnalyticsScreen()),
         ),
       ],
     );

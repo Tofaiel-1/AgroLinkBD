@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:agrolinkbd/core/models/user_model.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 
 class UserRatingReview {
   final String id;
@@ -407,11 +408,15 @@ class UserRatingService {
     String? targetUserRole,
     required VoidCallback onRatingSubmitted,
   }) {
+    final bool isBn = LanguageProvider.isBn(context);
+
     // Check rating permission rules first
     if (reviewerId == targetUserId && reviewerId.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('⚠️ আপনি নিজেকে রেটিং দিতে পারবেন না!'),
+        SnackBar(
+          content: Text(isBn
+              ? '⚠️ আপনি নিজেকে রেটিং দিতে পারবেন না!'
+              : '⚠️ You cannot rate yourself!'),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -423,8 +428,10 @@ class UserRatingService {
         targetUserRole.isNotEmpty &&
         _normalizeRole(reviewerRole) == _normalizeRole(targetUserRole)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('⚠️ একই পেশার বা রোলের ব্যবহারকারী একে অপরকে রেটিং দিতে পারবেন না!'),
+        SnackBar(
+          content: Text(isBn
+              ? '⚠️ একই পেশার বা রোলের ব্যবহারকারী একে অপরকে রেটিং দিতে পারবেন না!'
+              : '⚠️ Users of the same role cannot rate each other!'),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -437,8 +444,10 @@ class UserRatingService {
       targetUserRole: targetUserRole,
     )) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('⚠️ আপনার রোল থেকে এই ব্যবহারকারীকে রেটিং দেওয়ার অনুমতি নেই!'),
+        SnackBar(
+          content: Text(isBn
+              ? '⚠️ আপনার রোল থেকে এই ব্যবহারকারীকে রেটিং দেওয়ার অনুমতি নেই!'
+              : '⚠️ Your role is not permitted to rate this user!'),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -450,12 +459,19 @@ class UserRatingService {
     double transportScore = 5.0;
     final TextEditingController commentController = TextEditingController();
 
-    final List<Map<String, String>> workTypes = [
-      {'id': 'order', 'label': '📦 মাছ/পণ্য ক্রয়-বিক্রয় লেনদেন (Order / Trade)'},
-      {'id': 'transport', 'label': '🚚 মাছ/পণ্য পরিবহন ও ডেলিভারি (Trip)'},
-      {'id': 'service', 'label': '⚙️ কৃষি/মৎস্য সেবা বা যন্ত্রাংশ ভাড়া (Service)'},
-      {'id': 'contract', 'label': '🤝 চুক্তিবদ্ধ সাপ্লাই ও বাল্ক ক্রয় (Contract)'},
-    ];
+    final List<Map<String, String>> workTypes = isBn
+        ? [
+            {'id': 'order', 'label': '📦 মাছ/পণ্য ক্রয়-বিক্রয় লেনদেন (Order / Trade)'},
+            {'id': 'transport', 'label': '🚚 মাছ/পণ্য পরিবহন ও ডেলিভারি (Trip)'},
+            {'id': 'service', 'label': '⚙️ কৃষি/মৎস্য সেবা বা যন্ত্রাংশ ভাড়া (Service)'},
+            {'id': 'contract', 'label': '🤝 চুক্তিবদ্ধ সাপ্লাই ও বাল্ক ক্রয় (Contract)'},
+          ]
+        : [
+            {'id': 'order', 'label': '📦 Fish / Agri Product Order & Trade'},
+            {'id': 'transport', 'label': '🚚 Transport & Logistics Trip'},
+            {'id': 'service', 'label': '⚙️ Equipment Rental / Consultation'},
+            {'id': 'contract', 'label': '🤝 Bulk Contract / Forward Supply'},
+          ];
     String selectedWorkType = 'order';
 
     showDialog(
@@ -467,7 +483,7 @@ class UserRatingService {
               borderRadius: BorderRadius.circular(16),
             ),
             title: Text(
-              '$targetUserName-কে মূল্যায়ন করুন',
+              isBn ? '$targetUserName-কে মূল্যায়ন করুন' : 'Rate $targetUserName',
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
             ),
             content: ConstrainedBox(
@@ -484,14 +500,16 @@ class UserRatingService {
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: Colors.green, width: 1),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
-                        Icon(Icons.verified, color: Colors.green, size: 18),
-                        SizedBox(width: 8),
+                        const Icon(Icons.verified, color: Colors.green, size: 18),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            '১০০% ভেরিফাইড কাজের মূল্যায়ন (কোনো ভিত্তিহীন রেটিং গ্রহণযোগ্য নয়)',
-                            style: TextStyle(
+                            isBn
+                                ? '১০০% ভেরিফাইড কাজের মূল্যায়ন (কোনো ভিত্তিহীন রেটিং গ্রহণযোগ্য নয়)'
+                                : '100% Verified Work Rating (No unverified reviews allowed)',
+                            style: const TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.green),
@@ -501,9 +519,11 @@ class UserRatingService {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    'সম্পন্ন কাজের ধরন নির্বাচন করুন (বাধ্যতামূলক):',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  Text(
+                    isBn
+                        ? 'সম্পন্ন কাজের ধরন নির্বাচন করুন (বাধ্যতামূলক):'
+                        : 'Select Completed Work Type (Required):',
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                   ),
                   const SizedBox(height: 6),
                   DropdownButtonFormField<String>(
@@ -534,9 +554,11 @@ class UserRatingService {
                     },
                   ),
                   const SizedBox(height: 14),
-                  const Text(
-                    'পণ্যের মান ও সেবার দক্ষতা (Quality / Expertise):',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  Text(
+                    isBn
+                        ? 'পণ্যের মান ও সেবার দক্ষতা (Quality / Expertise):'
+                        : 'Product Quality & Expertise (Quality):',
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                   ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -558,9 +580,11 @@ class UserRatingService {
                     }),
                   ),
                   const SizedBox(height: 10),
-                  const Text(
-                    'পেমেন্ট ও লেনদেনের নির্ভরযোগ্যতা (Payment Score):',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  Text(
+                    isBn
+                        ? 'পেমেন্ট ও লেনদেনের নির্ভরযোগ্যতা (Payment Score):'
+                        : 'Payment Reliability & Trust (Payment Score):',
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                   ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -582,9 +606,11 @@ class UserRatingService {
                     }),
                   ),
                   const SizedBox(height: 10),
-                  const Text(
-                    'সময়নিষ্ঠতা ও পেশাদার আচরণ (Punctuality & Behavior):',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  Text(
+                    isBn
+                        ? 'সময়নিষ্ঠতা ও পেশাদার আচরণ (Punctuality & Behavior):'
+                        : 'Punctuality & Professional Behavior:',
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                   ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -609,7 +635,7 @@ class UserRatingService {
                   TextField(
                     controller: commentController,
                     decoration: InputDecoration(
-                      labelText: 'মতামত বা রিভিউ (ঐচ্ছিক)',
+                      labelText: isBn ? 'মতামত বা রিভিউ (ঐচ্ছিক)' : 'Review / Feedback (Optional)',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -623,7 +649,7 @@ class UserRatingService {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogContext),
-                child: const Text('বাতিল'),
+                child: Text(isBn ? 'বাতিল' : 'Cancel'),
               ),
               ElevatedButton(
                 onPressed: () async {
@@ -642,14 +668,16 @@ class UserRatingService {
                   onRatingSubmitted();
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('মূল্যায়ন সফলভাবে সেভ করা হয়েছে!'),
+                      SnackBar(
+                        content: Text(isBn
+                            ? 'মূল্যায়ন সফলভাবে সেভ করা হয়েছে!'
+                            : 'Rating submitted successfully!'),
                         backgroundColor: Colors.green,
                       ),
                     );
                   }
                 },
-                child: const Text('সাবমিট করুন'),
+                child: Text(isBn ? 'সাবমিট করুন' : 'Submit Rating'),
               ),
             ],
           );

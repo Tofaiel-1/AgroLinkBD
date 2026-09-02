@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:agrolinkbd/core/models/user_model.dart';
 import 'package:agrolinkbd/core/services/user_rating_service.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 
 /// Universal Trust Header Widget
 /// Shows the authoritative Root Trust Rating on top of any role Dashboard
@@ -18,6 +19,7 @@ class UniversalTrustHeaderWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bool isBn = LanguageProvider.isBn(context);
     final Color primaryColor = const Color(0xFF2E7D32);
 
     final double trustScore = user != null
@@ -67,7 +69,7 @@ class UniversalTrustHeaderWidget extends StatelessWidget {
                       const SizedBox(width: 6),
                       Flexible(
                         child: Text(
-                          'মূল রেটিং (Root Trust Score)',
+                          isBn ? 'মূল রেটিং (Root Trust Score)' : 'Root Trust Score',
                           style: GoogleFonts.hindSiliguri(
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
@@ -90,8 +92,8 @@ class UniversalTrustHeaderWidget extends StatelessWidget {
                   ),
                   child: Text(
                     totalRatings == 0
-                        ? '১০০% বিশ্বস্ততা'
-                        : '${trustScore.toStringAsFixed(0)}% বিশ্বস্ততা',
+                        ? (isBn ? '১০০% বিশ্বস্ততা' : '100% Trust')
+                        : (isBn ? '${trustScore.toStringAsFixed(0)}% বিশ্বস্ততা' : '${trustScore.toStringAsFixed(0)}% Trust'),
                     style: GoogleFonts.poppins(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
@@ -111,8 +113,12 @@ class UniversalTrustHeaderWidget extends StatelessWidget {
                     alignment: Alignment.centerLeft,
                     child: Text(
                       totalRatings == 0
-                          ? '৫.০ / ৫.০ ⭐️ (নতুন ভেরিফাইড ইউজার)'
-                          : '${rating.toStringAsFixed(1)} / 5.0 ⭐️ ($totalRatings জন মূল্যায়ন করেছেন)',
+                          ? (isBn
+                              ? '৫.০ / ৫.০ ⭐️ (নতুন ভেরিফাইড ইউজার)'
+                              : '5.0 / 5.0 ⭐️ (New Verified User)')
+                          : (isBn
+                              ? '${rating.toStringAsFixed(1)} / 5.0 ⭐️ ($totalRatings জন মূল্যায়ন করেছেন)'
+                              : '${rating.toStringAsFixed(1)} / 5.0 ⭐️ ($totalRatings Reviews)'),
                       style: GoogleFonts.hindSiliguri(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -134,7 +140,9 @@ class UniversalTrustHeaderWidget extends StatelessWidget {
               children: [
                 _buildCompactBadge(
                   Icons.work_outline,
-                  '$totalOrders টি কাজ',
+                  isBn
+                      ? '$totalOrders টি কাজ'
+                      : '$totalOrders Tasks Done',
                   Colors.blue,
                 ),
                 const SizedBox(width: 8),
@@ -148,7 +156,9 @@ class UniversalTrustHeaderWidget extends StatelessWidget {
                   totalPenalties == 0
                       ? Icons.shield_outlined
                       : Icons.warning_amber_rounded,
-                  totalPenalties == 0 ? 'ক্লিন রেকর্ড' : '$totalPenalties রিপোর্ট',
+                  totalPenalties == 0
+                      ? (isBn ? 'ক্লিন রেকর্ড' : 'Clean Record')
+                      : (isBn ? '$totalPenalties রিপোর্ট' : '$totalPenalties Disputes'),
                   totalPenalties == 0 ? Colors.teal : Colors.red,
                 ),
               ],
@@ -217,6 +227,7 @@ class UniversalTrustBadgeWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const Color primaryGreen = Color(0xFF2E7D32);
+    final bool isBn = LanguageProvider.isBn(context);
 
     final bool isSelf = currentUserId.isNotEmpty && targetUserId.isNotEmpty && currentUserId == targetUserId;
 
@@ -232,8 +243,8 @@ class UniversalTrustBadgeWidget extends StatelessWidget {
             const SizedBox(width: 4),
             Text(
               totalRatings == 0
-                  ? '৫.০ • ১০০% বিশ্বস্ত'
-                  : '${rating.toStringAsFixed(1)} • $totalRatings জন মূল্যায়ন',
+                  ? (isBn ? '৫.০ • ১০০% বিশ্বস্ত' : '5.0 • 100% Trust')
+                  : (isBn ? '${rating.toStringAsFixed(1)} • $totalRatings জন মূল্যায়ন' : '${rating.toStringAsFixed(1)} • $totalRatings Reviews'),
               style: GoogleFonts.hindSiliguri(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -264,7 +275,7 @@ class UniversalTrustBadgeWidget extends StatelessWidget {
             ),
             icon: const Icon(Icons.rate_review_outlined, size: 15),
             label: Text(
-              'মূল্যায়ন করুন',
+              isBn ? 'মূল্যায়ন করুন' : 'Rate User',
               style: GoogleFonts.hindSiliguri(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,

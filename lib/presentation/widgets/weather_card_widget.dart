@@ -91,8 +91,14 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
       }
     } catch (e) {
       if (mounted) {
+        String fallbackBn = upa != null
+            ? '${WeatherService.getBanglaUpazilaName(upa)}, ${dist != null ? WeatherService.getBanglaUpazilaName(dist) : "পটুয়াখালী"}'
+            : 'দুমকি, পটুয়াখালী (বরিশাল)';
+        String fallbackEn = upa != null
+            ? '${WeatherService.getEnglishUpazilaName(upa)}, ${dist ?? "Patuakhali"}'
+            : 'Dumki, Patuakhali (Barishal)';
         setState(() {
-          _weather = WeatherModel.defaultFallback(upa ?? dist ?? 'গুরুদাসপুর, নাটোর (রাজশাহী)');
+          _weather = WeatherModel.defaultFallback(fallbackBn, locationEn: fallbackEn);
           _isLoading = false;
         });
       }
@@ -153,7 +159,12 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                   DropdownButtonFormField<String>(
                     initialValue: tempDiv,
                     hint: Text(isBn ? 'বিভাগ নির্বাচন করুন' : 'Select Division'),
-                    items: divisions.map((div) => DropdownMenuItem<String>(value: div, child: Text(div))).toList(),
+                    items: divisions
+                        .map((div) => DropdownMenuItem<String>(
+                              value: div,
+                              child: Text(isBn ? WeatherService.getBanglaUpazilaName(div) : div),
+                            ))
+                        .toList(),
                     onChanged: (val) {
                       setModalState(() {
                         tempDiv = val;
@@ -172,7 +183,12 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                   DropdownButtonFormField<String>(
                     initialValue: tempDist,
                     hint: Text(isBn ? 'জেলা নির্বাচন করুন' : 'Select District'),
-                    items: districts.map((dist) => DropdownMenuItem<String>(value: dist, child: Text(dist))).toList(),
+                    items: districts
+                        .map((dist) => DropdownMenuItem<String>(
+                              value: dist,
+                              child: Text(isBn ? WeatherService.getBanglaUpazilaName(dist) : dist),
+                            ))
+                        .toList(),
                     onChanged: (val) {
                       setModalState(() {
                         tempDist = val;
@@ -191,7 +207,12 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                     DropdownButtonFormField<String>(
                       initialValue: tempUpa,
                       hint: Text(isBn ? 'উপজেলা নির্বাচন করুন' : 'Select Upazila'),
-                      items: upazilas.map((upa) => DropdownMenuItem<String>(value: upa, child: Text(upa))).toList(),
+                      items: upazilas
+                          .map((upa) => DropdownMenuItem<String>(
+                                value: upa,
+                                child: Text(isBn ? WeatherService.getBanglaUpazilaName(upa) : upa),
+                              ))
+                          .toList(),
                       onChanged: (val) => setModalState(() => tempUpa = val),
                       decoration: InputDecoration(
                         labelText: isBn ? 'উপজেলা' : 'Upazila',
@@ -263,7 +284,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                         ),
                       ),
                       Text(
-                        weather.locationName,
+                        weather.getLocationDisplayName(LanguageProvider.isBn(context)),
                         style: GoogleFonts.hindSiliguri(
                           fontSize: 14,
                           color: Colors.green.shade600,
@@ -303,6 +324,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                           itemCount: weather.hourlyForecast.length,
                           itemBuilder: (context, index) {
                             final h = weather.hourlyForecast[index];
+                            final bool isBn = LanguageProvider.isBn(context);
                             return Container(
                               width: 80,
                               margin: const EdgeInsets.only(right: 12),
@@ -318,7 +340,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
-                                    h.time,
+                                    h.getTime(isBn),
                                     style: GoogleFonts.poppins(
                                       fontSize: 12,
                                       color: isDark ? Colors.grey.shade300 : Colors.grey.shade700,
@@ -364,6 +386,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                       const SizedBox(height: 12),
                       Column(
                         children: weather.dailyForecast.map((d) {
+                          final bool isBn = LanguageProvider.isBn(context);
                           return Container(
                             margin: const EdgeInsets.only(bottom: 8),
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -377,7 +400,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                                 SizedBox(
                                   width: 60,
                                   child: Text(
-                                    d.dayName,
+                                    d.getDayName(isBn),
                                     style: GoogleFonts.hindSiliguri(
                                       fontSize: 15,
                                       fontWeight: FontWeight.bold,
@@ -391,7 +414,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                                     const SizedBox(width: 8),
                                     if (d.rainProbability > 0)
                                       Text(
-                                        '${d.rainProbability}% ${LanguageProvider.isBn(context) ? "বৃষ্টি" : "Rain"}',
+                                        '${d.rainProbability}% ${isBn ? "বৃষ্টি" : "Rain"}',
                                         style: GoogleFonts.hindSiliguri(
                                           fontSize: 12,
                                           color: Colors.blue.shade600,
@@ -497,7 +520,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              weather.agriAdvice,
+                              weather.getAgriAdviceText(LanguageProvider.isBn(context)),
                               style: GoogleFonts.hindSiliguri(
                                 fontSize: 13,
                                 height: 1.5,
@@ -599,6 +622,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
     }
 
     final weather = _weather ?? WeatherModel.defaultFallback('গুরুদাসপুর, নাটোর');
+    final bool isBn = LanguageProvider.isBn(context);
 
     return GestureDetector(
       onTap: () => _showDetailedWeatherBottomSheet(weather),
@@ -634,7 +658,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                       const Icon(Icons.location_on, color: Colors.white, size: 16),
                       const SizedBox(width: 4),
                       Text(
-                        weather.locationName,
+                        weather.getLocationDisplayName(isBn),
                         style: GoogleFonts.hindSiliguri(
                           fontSize: widget.isCompact ? 14 : 16,
                           fontWeight: FontWeight.bold,
@@ -662,7 +686,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                           });
                         }
                       },
-                      tooltip: LanguageProvider.isBn(context) ? 'জিপিএস অবস্থান ব্যবহার করুন' : 'Use GPS Location',
+                      tooltip: isBn ? 'জিপিএস অবস্থান ব্যবহার করুন' : 'Use GPS Location',
                     ),
                     const SizedBox(width: 8),
                     IconButton(
@@ -670,7 +694,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                       padding: const EdgeInsets.all(4),
                       icon: const Icon(Icons.refresh, color: Colors.white, size: 18),
                       onPressed: _loadWeather,
-                      tooltip: LanguageProvider.isBn(context) ? 'আবহাওয়া রিফ্রেশ করুন' : 'Refresh Weather',
+                      tooltip: isBn ? 'আবহাওয়া রিফ্রেশ করুন' : 'Refresh Weather',
                     ),
                   ],
                 ),
@@ -709,7 +733,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${weather.condition} • ${LanguageProvider.isBn(context) ? "অনুভব" : "Feels"}: ${weather.feelsLike.toStringAsFixed(1)}°C',
+                      '${weather.getConditionText(isBn)} • ${isBn ? "অনুভব" : "Feels"}: ${weather.feelsLike.toStringAsFixed(1)}°C',
                       style: GoogleFonts.hindSiliguri(
                         fontSize: widget.isCompact ? 12 : 14,
                         color: Colors.white.withValues(alpha: 0.9),
@@ -738,21 +762,21 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                 children: [
                   _buildMetricItem(
                     icon: Icons.umbrella,
-                    label: LanguageProvider.isBn(context) ? 'বৃষ্টির সম্ভাবনা' : 'Rain Chance',
+                    label: isBn ? 'বৃষ্টির সম্ভাবনা' : 'Rain Chance',
                     value: '${weather.rainProbability}%',
                   ),
                   Container(height: 20, width: 1, color: Colors.white24),
                   _buildMetricItem(
                     icon: Icons.air,
-                    label: LanguageProvider.isBn(context) 
-                        ? 'বাতাস (${weather.windDirectionText})'
-                        : 'Wind (${weather.windDirectionText})',
+                    label: isBn 
+                        ? 'বাতাস (${weather.getWindDirection(true)})'
+                        : 'Wind (${weather.getWindDirection(false)})',
                     value: '${weather.windSpeedKmH.toStringAsFixed(1)} km/h',
                   ),
                   Container(height: 20, width: 1, color: Colors.white24),
                   _buildMetricItem(
                     icon: Icons.water_drop,
-                    label: LanguageProvider.isBn(context) ? 'আর্দ্রতা' : 'Humidity',
+                    label: isBn ? 'আর্দ্রতা' : 'Humidity',
                     value: '${weather.humidity}%',
                   ),
                 ],
@@ -771,7 +795,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                 children: [
                   Expanded(
                     child: Text(
-                      weather.agriAdvice,
+                      weather.getAgriAdviceText(isBn),
                       style: GoogleFonts.hindSiliguri(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -801,7 +825,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        LanguageProvider.isBn(context) ? 'পরবর্তী ৩ ঘণ্টার বৃষ্টির সম্ভাবনা' : 'Next 3-Hour Rain Probability',
+                        isBn ? 'পরবর্তী ৩ ঘণ্টার বৃষ্টির সম্ভাবনা' : 'Next 3-Hour Rain Probability',
                         style: GoogleFonts.hindSiliguri(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -809,7 +833,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                         ),
                       ),
                       Text(
-                        LanguageProvider.isBn(context) ? 'বিস্তারিত দেখুন →' : 'View Details →',
+                        isBn ? 'বিস্তারিত দেখুন →' : 'View Details →',
                         style: GoogleFonts.hindSiliguri(
                           fontSize: 11,
                           color: Colors.amber.shade300,
@@ -840,7 +864,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              h.time,
+                              h.getTime(isBn),
                               style: GoogleFonts.poppins(
                                 fontSize: 11,
                                 color: Colors.white,

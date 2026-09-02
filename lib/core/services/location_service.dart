@@ -14,6 +14,7 @@ class LocationAddressResult {
   final String division;
   final String divisionBangla;
   final String formattedAddress;
+  final String formattedAddressEn;
   final double latitude;
   final double longitude;
   final bool isGpsPrecise;
@@ -26,10 +27,13 @@ class LocationAddressResult {
     required this.division,
     required this.divisionBangla,
     required this.formattedAddress,
+    String? formattedAddressEn,
     required this.latitude,
     required this.longitude,
     this.isGpsPrecise = true,
-  });
+  }) : formattedAddressEn = formattedAddressEn ?? '$upazila, $district ($division)';
+
+  String getFormattedAddress(bool isBn) => isBn ? formattedAddress : formattedAddressEn;
 }
 
 class LocationService {
@@ -232,16 +236,19 @@ class LocationService {
 
           final distInfo = bdDistrictMap[districtKey] ?? bdDistrictMap['Dhaka']!;
           String upaName = rawUpazila.isNotEmpty ? rawUpazila : '${distInfo['nameBn']} সদর';
+          String upaNameEn = rawUpazila.isNotEmpty ? _transliterateToEnglish(rawUpazila) : '$districtKey Sadar';
           String formatted = '$upaName, ${distInfo['nameBn']} (${distInfo['divBn']})';
+          String formattedEn = '$upaNameEn, $districtKey (${distInfo['div']})';
 
           return LocationAddressResult(
             district: districtKey,
             districtBangla: distInfo['nameBn'],
-            upazila: rawUpazila.isNotEmpty ? rawUpazila : '$districtKey Sadar',
+            upazila: upaNameEn,
             upazilaBangla: upaName,
             division: distInfo['div'],
             divisionBangla: distInfo['divBn'],
             formattedAddress: formatted,
+            formattedAddressEn: formattedEn,
             latitude: lat,
             longitude: lng,
             isGpsPrecise: true,
@@ -264,6 +271,7 @@ class LocationService {
       division: distInfo['div'],
       divisionBangla: distInfo['divBn'],
       formattedAddress: '${distInfo['nameBn']} সদর, ${distInfo['nameBn']} (${distInfo['divBn']})',
+      formattedAddressEn: '$districtKey Sadar, $districtKey (${distInfo['div']})',
       latitude: lat,
       longitude: lng,
       isGpsPrecise: false,
@@ -285,11 +293,50 @@ class LocationService {
       upazilaBangla: 'ঢাকা সদর',
       division: 'Dhaka',
       divisionBangla: 'ঢাকা',
-      formattedAddress: 'ঢাকা সদর, ঢাকা',
+      formattedAddress: 'ঢাকা সদর, ঢাকা (ঢাকা)',
+      formattedAddressEn: 'Dhaka Sadar, Dhaka (Dhaka)',
       latitude: 23.8103,
       longitude: 90.4125,
       isGpsPrecise: false,
     );
+  }
+
+  static String _transliterateToEnglish(String text) {
+    if (text.isEmpty) return 'Sadar';
+    if (!RegExp(r'[\u0980-\u09FF]').hasMatch(text)) return text;
+    // Map of known places
+    final map = {
+      'দুমকি': 'Dumki',
+      'বাউফল': 'Bauphal',
+      'গলাচিপা': 'Galachipa',
+      'কলাপাড়া': 'Kalapara',
+      'মির্জাগঞ্জ': 'Mirzaganj',
+      'দশমিনা': 'Dashmina',
+      'রাঙ্গাবালী': 'Rangabali',
+      'পটুয়াখালী সদর': 'Patuakhali Sadar',
+      'পটুয়াখালী': 'Patuakhali',
+      'বরিশাল': 'Barishal',
+      'গুরুদাসপুর': 'Gurudaspur',
+      'সিংড়া': 'Singra',
+      'বড়াইগ্রাম': 'Baraigram',
+      'বাগাতিপাড়া': 'Bagatipara',
+      'লালপুর': 'Lalpur',
+      'নাটোর': 'Natore',
+      'নাটোর সদর': 'Natore Sadar',
+      'রাজশাহী': 'Rajshahi',
+      'ঢাকা': 'Dhaka',
+      'গাজীপুর': 'Gazipur',
+      'সাভার': 'Savar',
+      'কালিয়াকৈর': 'Kaliakair',
+      'কাপাসিয়া': 'Kapasia',
+      'শ্রীপুর': 'Sreepur',
+      'সদর': 'Sadar',
+    };
+    String result = text;
+    map.forEach((bn, en) {
+      result = result.replaceAll(bn, en);
+    });
+    return result;
   }
 
   /// Find nearest district key using Haversine algorithm

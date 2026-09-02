@@ -8,6 +8,8 @@ import 'package:agrolinkbd/core/models/cart_model.dart';
 import 'package:agrolinkbd/core/providers/cart_provider.dart';
 import 'package:agrolinkbd/core/services/escrow_service.dart';
 import 'package:agrolinkbd/core/services/sslcommerz_service.dart';
+import 'package:agrolinkbd/core/services/upazila_hub_service.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 import 'package:agrolinkbd/core/utils/masked_identity_helper.dart';
 import 'package:agrolinkbd/presentation/screens/buyer/fish_buyer_orders_screen.dart';
 
@@ -26,6 +28,7 @@ class _QuickBuyBottomSheetState extends State<QuickBuyBottomSheet> {
   bool _allowFraction = true;
   bool _isProcessing = false;
   final EscrowService _escrowService = EscrowService();
+  final UpazilaHubService _hubService = UpazilaHubService();
 
   @override
   void initState() {
@@ -38,10 +41,8 @@ class _QuickBuyBottomSheetState extends State<QuickBuyBottomSheet> {
     _quantityController = TextEditingController(text: _allowFraction ? '1.0' : '1');
     _quantityController.addListener(() {
       final val = double.tryParse(_quantityController.text);
-      if (val != null && val > 0) {
-        setState(() {
-          _quantity = val;
-        });
+      if (val != null && val > 0 && val != _quantity) {
+        setState(() => _quantity = val);
       }
     });
   }
@@ -54,6 +55,8 @@ class _QuickBuyBottomSheetState extends State<QuickBuyBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isBn = LanguageProvider.isBn(context);
+
     // Parse price dynamically
     double price = 0.0;
     if (widget.product['price'] != null) {
@@ -65,7 +68,23 @@ class _QuickBuyBottomSheetState extends State<QuickBuyBottomSheet> {
     }
 
     final productSubtotal = price * _quantity;
-    const estimatedTransport = 50.0; // Flat estimated hub delivery charge
+    
+    // Resolve Origin Upazila Hub & Destination Upazila Hub
+    final originHub = _hubService.resolveHubByUpazila(
+      widget.product['upazila'],
+      districtName: widget.product['district'],
+    );
+    final destinationHub = _hubService.resolveHubByUpazila('Savar', districtName: 'Dhaka');
+
+    final quote = _hubService.calculateInterHubLogistics(
+      originHub,
+      destinationHub,
+      _quantity * 1.2, // weight factor
+      isPerishable: widget.product['category']?.toString().toLowerCase().contains('fish') == true ||
+          widget.product['category']?.toString().toLowerCase().contains('veg') == true,
+    );
+
+    final estimatedTransport = quote.totalLogisticsCost;
     final breakdown = _escrowService.calculateBreakdown(
       productSubtotal: productSubtotal,
       transportFare: estimatedTransport,
@@ -94,12 +113,12 @@ class _QuickBuyBottomSheetState extends State<QuickBuyBottomSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header with Escrow Badge
+            // Header with Escrow Badge & Hub Tag
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'এস্ক্রো অর্ডার কনফার্মেশন',
+                  isBn ? 'এস্ক্রো ও হাব অর্ডার' : 'Escrow & Hub Order',
                   style: GoogleFonts.hindSiliguri(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 Container(
@@ -115,7 +134,7 @@ class _QuickBuyBottomSheetState extends State<QuickBuyBottomSheet> {
                       const Icon(Icons.shield_rounded, color: Color(0xFF2E7D32), size: 14),
                       const SizedBox(width: 4),
                       Text(
-                        '১০০% সুরক্ষিত এস্ক্রো',
+                        isBn ? '১০০% হাব QC নিশ্চয়তা' : '100% Hub QC Verified',
                         style: GoogleFonts.hindSiliguri(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
@@ -126,6 +145,44 @@ class _QuickBuyBottomSheetState extends State<QuickBuyBottomSheet> {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 10),
+
+            // Upazila Hub QC & Logistics Routing Banner
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0FDF4),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.green.shade200),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.hub, color: Color(0xFF16A34A), size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${originHub.getName(isBn)} ➔ ${destinationHub.getName(isBn)}',
+                          style: GoogleFonts.hindSiliguri(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green.shade900,
+                          ),
+                        ),
+                        Text(
+                          isBn
+                              ? 'পণ্যটি উপজেলা হাবে ওজন পরীক্ষা ও গ্রেডিং সিল দিয়ে প্রেরণ করা হবে'
+                              : 'Produce will be QC inspected & sealed at Upazila Hub before dispatch',
+                          style: GoogleFonts.hindSiliguri(fontSize: 10, color: Colors.green.shade700),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 14),
 
@@ -241,7 +298,7 @@ class _QuickBuyBottomSheetState extends State<QuickBuyBottomSheet> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50.withOpacity(0.5),
+                color: Colors.blue.shade50.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.blue.shade200),
               ),
@@ -338,10 +395,10 @@ class _QuickBuyBottomSheetState extends State<QuickBuyBottomSheet> {
                                 context: context,
                                 amount: totalCharged,
                                 productName: widget.product['name'] ?? 'Product',
-                                customerName: "AgroLink Buyer",
-                                customerEmail: user?.email ?? "buyer@agrolinkbd.com",
-                                customerPhone: user?.phoneNumber ?? "01700000000",
-                                customerAddress: "Dhaka Hub, Bangladesh",
+                                customerName: 'AgroLink Buyer',
+                                customerEmail: user?.email ?? 'buyer@agrolinkbd.com',
+                                customerPhone: user?.phoneNumber ?? '01700000000',
+                                customerAddress: 'Dhaka Hub, Bangladesh',
                               );
 
                               if (success) {
@@ -362,15 +419,34 @@ class _QuickBuyBottomSheetState extends State<QuickBuyBottomSheet> {
                                   batchCode: batchCode,
                                   status: 'processing',
                                   statusStep: 1,
-                                  transportStatus: 'অর্ডার গৃহীত হয়েছে • এস্ক্রো হোল্ডে সুরক্ষিত',
+                                  transportStatus: 'অর্ডার গৃহীত হয়েছে • উপজেলা হাবে কোয়ালিটি পরীক্ষা ও প্যাকেজিং পেন্ডিং',
                                   paymentStatus: 'paid',
                                   escrowStatus: 'held',
-                                  qualityGrade: widget.product['qualityGrade'] ?? 'Grade A',
+                                  qualityGrade: widget.product['qualityGrade'] ?? 'Grade A+ (সুপার প্রিমিয়াম)',
+                                  originHubId: originHub.id,
+                                  originHubName: originHub.name,
+                                  destinationHubId: destinationHub.id,
+                                  destinationHubName: destinationHub.name,
+                                  qcStatus: 'pending_dropoff',
+                                  tamperProofSeal: 'SEAL-AGRO-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
+                                  qcFreshnessScore: 98.5,
+                                  logisticsDistanceKm: quote.distanceKm,
+                                  isColdChain: quote.coldChainFee > 0,
                                   createdAt: DateTime.now(),
                                   estimatedDeliveryDate: DateTime.now().add(const Duration(days: 2)),
                                 );
 
                                 final orderId = await _escrowService.lockEscrowOrder(newOrder);
+
+                                if (orderId != null) {
+                                  final qcReport = _hubService.generateMockQcInspection(
+                                    orderId,
+                                    widget.product['name'] ?? 'Agro Product',
+                                    _quantity,
+                                    originHub,
+                                  );
+                                  await _hubService.saveQcInspection(qcReport);
+                                }
 
                                 setState(() => _isProcessing = false);
 
