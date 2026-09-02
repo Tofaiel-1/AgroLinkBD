@@ -4,7 +4,6 @@ import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'package:agrolinkbd/core/providers/user_provider.dart';
 import 'package:agrolinkbd/core/services/vip_subscription_service.dart';
-import 'package:agrolinkbd/presentation/screens/payment/mfs_payment_checkout_screen.dart';
 
 class VipSubscriptionPaywallScreen extends StatefulWidget {
   final String? highlightFeature;
@@ -367,39 +366,6 @@ class _VipSubscriptionPaywallScreenState extends State<VipSubscriptionPaywallScr
                 ),
               ),
             ),
-            const SizedBox(height: 10),
-
-            // Secondary MFS Checkout Button
-            SizedBox(
-              width: double.infinity,
-              height: 46,
-              child: OutlinedButton.icon(
-                onPressed: () async {
-                  final selected = _plans[_selectedPlanIndex];
-                  final result = await Get.to(() => MfsPaymentCheckoutScreen(
-                        title: 'এগ্রোলিংক ভিআইপি পাস (${selected['name']})',
-                        description: selected['subtitle'],
-                        amount: selected['price'],
-                        purpose: 'vip_subscription',
-                        subscriptionDuration: selected['duration'],
-                      ));
-
-                  if (result == true) {
-                    setState(() {});
-                  }
-                },
-                icon: const Icon(Icons.account_balance_wallet_outlined, size: 18, color: Color(0xFFE65100)),
-                label: Text(
-                  'বিকাশ / নগদ / কার্ড এমএফএস চেকআউট',
-                  style: GoogleFonts.hindSiliguri(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFFE65100)),
-                ),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Color(0xFFE65100)),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                ),
-              ),
-            ),
-
             const SizedBox(height: 28),
             Text('ভিআইপি প্রিমিয়াম সুবিধাসমূহ', style: GoogleFonts.hindSiliguri(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),

@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
-import 'package:agrolinkbd/core/providers/language_provider.dart';
-import 'package:agrolinkbd/presentation/screens/bazaar/add_product_screen.dart';
+import 'package:agrolinkbd/presentation/screens/farmer/add_product_screen.dart';
 
 /// My Products Screen - Farmers manage their listed products
 class MyProductsScreen extends StatefulWidget {

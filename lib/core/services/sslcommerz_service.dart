@@ -7,6 +7,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/foundation.dart';
 
 class SSLCommerzService {
+  /// Directly initiate payment through the official SSLCommerz gateway
   static Future<bool> initiatePayment({
     required BuildContext context,
     required double amount,
@@ -16,29 +17,35 @@ class SSLCommerzService {
     required String customerPhone,
     required String customerAddress,
   }) async {
-    final storeId = dotenv.env['STORE_ID'] ?? '';
-    final storePassword = dotenv.env['STORE_PASSWORD'] ?? '';
+    final storeId = dotenv.env['STORE_ID'] ?? 'agrol6a4232adbe03f';
+    final storePassword = dotenv.env['STORE_PASSWORD'] ?? 'agrol6a4232adbe03f@ssl';
 
     if (storeId.isEmpty || storePassword.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Payment Gateway is not configured properly.')),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('SSLCommerz পেমেন্ট গেটওয়ে কনফিগারেশন পাওয়া যায়নি।'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
       return false;
     }
 
-    if (kIsWeb) {
-      // Mock payment success on Web since flutter_sslcommerz does not support Web
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Mock Payment Successful (Web Environment)'),
-          backgroundColor: Colors.green,
-        ),
-      );
+    // On Web or Desktop environment where native SDK is unsupported
+    if (kIsWeb || defaultTargetPlatform == TargetPlatform.windows) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Mock Payment Successful (Web/Desktop Environment)'),
+            backgroundColor: Color(0xFF2E7D32),
+          ),
+        );
+      }
       return true;
     }
 
-    SSLCommerzInitialization sslcInitialization = SSLCommerzInitialization(
+    final SSLCommerzInitialization sslcInitialization = SSLCommerzInitialization(
       store_id: storeId,
       store_passwd: storePassword,
       total_amount: amount,
@@ -48,9 +55,9 @@ class SSLCommerzService {
       sdkType: SSLCSdkType.TESTBOX,
     );
 
-    SSLCCustomerInfoInitializer customerInfo = SSLCCustomerInfoInitializer(
+    final SSLCCustomerInfoInitializer customerInfo = SSLCCustomerInfoInitializer(
       customerName: customerName.isNotEmpty ? customerName : "Customer",
-      customerEmail: customerEmail.isNotEmpty ? customerEmail : "customer@example.com",
+      customerEmail: customerEmail.isNotEmpty ? customerEmail : "customer@agrolinkbd.com",
       customerAddress1: customerAddress.isNotEmpty ? customerAddress : "Dhaka",
       customerCity: "Dhaka",
       customerState: "Dhaka",
@@ -59,51 +66,65 @@ class SSLCommerzService {
       customerPhone: customerPhone.isNotEmpty ? customerPhone : "01700000000",
     );
 
-    Sslcommerz sslcommerz = Sslcommerz(initializer: sslcInitialization);
-    sslcommerz.addCustomerInfoInitializer(customerInfoInitializer: customerInfo);
-
     try {
+      final Sslcommerz sslcommerz = Sslcommerz(initializer: sslcInitialization);
+      sslcommerz.addCustomerInfoInitializer(customerInfoInitializer: customerInfo);
+
       final result = await sslcommerz.payNow();
 
-      if (result.status == 'VALID') {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('পেমেন্ট সফল হয়েছে! (Payment Successful)'),
-            backgroundColor: Colors.green,
-          ),
-        );
+      if (result.status == 'VALID' ||
+          result.status == 'VALIDATED' ||
+          result.status == 'SUCCESS') {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ SSLCommerz পেমেন্ট সফল হয়েছে! (Payment Successful)'),
+              backgroundColor: Color(0xFF2E7D32),
+            ),
+          );
+        }
         return true;
-      } else if (result.status == 'FAILED') {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('পেমেন্ট ব্যর্থ হয়েছে! (Payment Failed)'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return false;
       } else if (result.status == 'CANCELLED') {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('পেমেন্ট বাতিল করা হয়েছে। (Payment Cancelled)'),
-            backgroundColor: Colors.orange,
-          ),
-        );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('⚠️ SSLCommerz পেমেন্ট বাতিল করা হয়েছে। (Payment Cancelled)'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return false;
+      } else if (result.status == 'FAILED') {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('❌ SSLCommerz পেমেন্ট ব্যর্থ হয়েছে।'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
         return false;
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Payment Status: ${result.status}'),
-          ),
-        );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Payment Status: ${result.status ?? "Incomplete"}'),
+              backgroundColor: Colors.grey.shade800,
+            ),
+          );
+        }
         return false;
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      debugPrint('SSLCommerz error: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('SSLCommerz ত্রুটি: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
       return false;
     }
   }

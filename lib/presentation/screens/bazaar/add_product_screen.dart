@@ -1,12 +1,14 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:agrolinkbd/core/providers/user_provider.dart';
-import 'dart:io';
 import 'package:agrolinkbd/core/providers/language_provider.dart';
+import 'package:agrolinkbd/core/services/sslcommerz_service.dart';
 
 class AddProductScreen extends StatefulWidget {
   const AddProductScreen({super.key});
@@ -29,6 +31,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
   final _locationController = TextEditingController();
 
   String _selectedCategory = 'vegetables';
+  String _selectedTier = 'free'; // 'free', 'urgent', 'featured', 'vip'
   File? _selectedImage;
   bool _isLoading = false;
   late String _userId;
@@ -101,9 +104,58 @@ class _AddProductScreenState extends State<AddProductScreen> {
       return;
     }
 
-    setState(() => _isLoading = true);
-
     try {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final userModel = userProvider.currentUser;
+      final authUser = FirebaseAuth.instance.currentUser;
+
+      double boostPrice = 0.0;
+      int boostDays = 0;
+      String tierName = 'Boost';
+      String boostTxnId = 'BOOST_${DateTime.now().millisecondsSinceEpoch}';
+
+      if (_selectedTier != 'free') {
+        if (_selectedTier == 'urgent') {
+          boostPrice = 20.0;
+          boostDays = 3;
+          tierName = 'Urgent Sale Boost (৩ দিন)';
+        } else if (_selectedTier == 'featured') {
+          boostPrice = 50.0;
+          boostDays = 7;
+          tierName = 'Premium Featured Lot (৭ দিন)';
+        } else if (_selectedTier == 'vip') {
+          boostPrice = 100.0;
+          boostDays = 15;
+          tierName = 'VIP Wholesaler Partner (১৫ দিন)';
+        }
+
+        final paymentSuccess = await SSLCommerzService.initiatePayment(
+          context: context,
+          amount: boostPrice,
+          productName: 'পণ্য বুস্টিং: $tierName (${_titleController.text.trim()})',
+          customerName: userModel?.name ?? 'Seller User',
+          customerEmail: authUser?.email ?? 'seller@agrolinkbd.com',
+          customerPhone: userModel?.phone ?? (authUser?.phoneNumber ?? '01700000000'),
+          customerAddress: _locationController.text.trim().isNotEmpty
+              ? _locationController.text.trim()
+              : 'ঢাকা, বাংলাদেশ',
+        );
+
+        if (!paymentSuccess) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(isBn ? 'পেমেন্ট সম্পন্ন হয়নি। পণ্য প্রকাশ বাতিল করা হলো।' : 'Payment incomplete. Product publishing cancelled.'),
+                backgroundColor: Colors.orange.shade800,
+              ),
+            );
+          }
+          return;
+        }
+      }
+
+      setState(() => _isLoading = true);
+
       // Upload image to Firebase Storage
       final fileName =
           'products/${_userId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
@@ -113,6 +165,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
       final imageUrl = await storageRef.getDownloadURL();
 
       debugPrint('✅ Image uploaded successfully: $imageUrl');
+
+      final DateTime now = DateTime.now();
+      final DateTime? boostExpiresDate = _selectedTier != 'free' ? now.add(Duration(days: boostDays)) : null;
 
       // Save product to Firestore
       final productData = {
@@ -128,6 +183,15 @@ class _AddProductScreenState extends State<AddProductScreen> {
         'location': _locationController.text.trim(),
         'imageUrl': imageUrl,
         'images': [imageUrl],
+        'boostTier': _selectedTier,
+        'isFeatured': _selectedTier != 'free',
+        'boostPaid': _selectedTier != 'free',
+        'boostAmount': boostPrice,
+        'boostDurationDays': boostDays,
+        'boostStatus': _selectedTier != 'free' ? 'active' : 'none',
+        'boostPaymentMethod': _selectedTier != 'free' ? 'SSLCommerz' : null,
+        'boostTransactionId': _selectedTier != 'free' ? boostTxnId : null,
+        'boostExpiresAt': boostExpiresDate != null ? Timestamp.fromDate(boostExpiresDate) : null,
         'createdAt': FieldValue.serverTimestamp(),
         'status': 'available',
         'views': 0,
@@ -138,11 +202,35 @@ class _AddProductScreenState extends State<AddProductScreen> {
       final docRef =
           await _firestore.collection('bazaar_products').add(productData);
 
+      // Save boost transaction logs if paid
+      if (_selectedTier != 'free') {
+        final boostTxnData = {
+          'id': boostTxnId,
+          'userId': _userId,
+          'type': 'debit',
+          'amount': boostPrice,
+          'title': isBn ? 'পণ্য বুস্টিং ($tierName)' : 'Product Boost ($tierName)',
+          'description': 'Product: ${_titleController.text.trim()} (ID: ${docRef.id})',
+          'paymentId': boostTxnId,
+          'relatedId': docRef.id,
+          'relatedType': 'product_boost',
+          'status': 'completed',
+          'paymentMethod': 'SSLCommerz',
+          'createdAt': now.toIso8601String(),
+          'timestamp': FieldValue.serverTimestamp(),
+        };
+
+        await _firestore.collection('transactions').doc(boostTxnId).set(boostTxnData);
+      }
+
       debugPrint('✅ Product created: ${docRef.id}');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(isBn ? 'পণ্যটি সফলভাবে যোগ করা হয়েছে!' : 'Product added successfully!')),
+          SnackBar(
+            content: Text(isBn ? 'পণ্যটি সফলভাবে মার্কেটে যোগ করা হয়েছে!' : 'Product added successfully to market!'),
+            backgroundColor: const Color(0xFF2E7D32),
+          ),
         );
 
         Navigator.pop(context, true);
@@ -459,40 +547,390 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
 
-              // Submit Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _submitForm,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    backgroundColor: Theme.of(context).primaryColor,
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : Text(
-                          isBn ? 'পণ্য যোগ করুন' : 'Add Product',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
+              // Super Class Monetized Boosting Plans
+              Text(
+                isBn ? 'পণ্য প্রমোশন ও বুস্টিং প্ল্যান 🚀' : 'Product Promotion & Boost Plans 🚀',
+                style: GoogleFonts.hindSiliguri(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF1E293B),
                 ),
               ),
+              const SizedBox(height: 4),
+              Text(
+                isBn
+                    ? 'দ্রুত বিক্রির জন্য ও বড় পাইকারদের দৃষ্টি আকর্ষণ করতে বুস্ট নির্বাচন করুন:'
+                    : 'Choose a boost tier to sell faster and reach major wholesalers:',
+                style: GoogleFonts.hindSiliguri(fontSize: 12, color: Colors.grey.shade700),
+              ),
+              const SizedBox(height: 12),
+
+              _buildBoostCard(
+                tier: 'free',
+                title: isBn ? 'সাধারণ লিস্টিং' : 'Standard Listing',
+                subtitle: isBn ? 'রেগুলার মার্কেটপ্লেস ফিডে বিনামূল্যে প্রদর্শিত হবে' : 'Free display in regular marketplace feed',
+                price: isBn ? 'বিনামূল্যে (৳০)' : 'Free (৳0)',
+                icon: Icons.check_circle_outline,
+                color: Colors.grey.shade700,
+                badgeText: isBn ? 'ফ্রি' : 'Free',
+              ),
+              const SizedBox(height: 10),
+
+              _buildBoostCard(
+                tier: 'urgent',
+                title: isBn ? 'জরুরি বিক্রি বুস্ট ⚡' : 'Urgent Sale Boost ⚡',
+                subtitle: isBn ? '৩ দিন "Urgent Sale" লাল ব্যাজ ও সবার উপরে থাকবে' : '3 days with "Urgent Sale" red badge on top',
+                price: isBn ? '৳ ২০ / ৩ দিন' : '৳ 20 / 3 Days',
+                icon: Icons.bolt,
+                color: Colors.red.shade600,
+                badgeText: isBn ? 'জনপ্রিয়' : 'Popular',
+              ),
+              const SizedBox(height: 10),
+
+              _buildBoostCard(
+                tier: 'featured',
+                title: isBn ? 'প্রিমিয়াম ফিচার্ড লট 👑' : 'Premium Featured Lot 👑',
+                subtitle: isBn ? '৭ দিন হোমপেজ গোল্ডেন ব্যানারে এবং টপ লিস্টিংয়ে থাকবে' : '7 days on homepage golden banner & top lots',
+                price: isBn ? '৳ ৫০ / ৭ দিন' : '৳ 50 / 7 Days',
+                icon: Icons.workspace_premium_rounded,
+                color: Colors.amber.shade800,
+                badgeText: isBn ? 'বেস্ট ভ্যালু' : 'Best Value',
+              ),
+              const SizedBox(height: 10),
+
+              _buildBoostCard(
+                tier: 'vip',
+                title: isBn ? 'ভিআইপি হোলসেলার পার্টনার 💎' : 'VIP Wholesaler Partner 💎',
+                subtitle: isBn ? '১৫ দিন ঢাকার শীর্ষ আড়তদার ও বড় ক্রেতাদের এসএমএস অ্যালার্ট' : '15 days SMS alert to top commission agents & bulk buyers',
+                price: isBn ? '৳ ১০০ / ১৫ দিন' : '৳ 100 / 15 Days',
+                icon: Icons.diamond_rounded,
+                color: const Color(0xFF1976D2),
+                badgeText: isBn ? 'ভিআইপি' : 'VIP',
+              ),
               const SizedBox(height: 16),
+
+              // SSL Payment Summary Card when Paid Tier is Selected
+              if (_selectedTier != 'free') ...[
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFF1E3A8A).withValues(alpha: 0.08),
+                        const Color(0xFF3B82F6).withValues(alpha: 0.05),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFF3B82F6).withValues(alpha: 0.3)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1E3A8A),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(Icons.payment_rounded, color: Colors.white, size: 18),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              isBn ? '💳 SSLCommerz পেমেন্ট বিবরণী' : '💳 SSLCommerz Payment Details',
+                              style: GoogleFonts.hindSiliguri(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF1E3A8A),
+                              ),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF2E7D32).withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.lock, size: 12, color: Color(0xFF2E7D32)),
+                                const SizedBox(width: 4),
+                                Text(
+                                  isBn ? '১০০% নিরাপদ' : '100% Secure',
+                                  style: GoogleFonts.hindSiliguri(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF2E7D32),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Divider(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            isBn ? 'নির্বাচিত বুস্ট প্ল্যান:' : 'Selected Boost Plan:',
+                            style: GoogleFonts.hindSiliguri(fontSize: 13, color: Colors.grey.shade700),
+                          ),
+                          Text(
+                            _selectedTier == 'urgent'
+                                ? (isBn ? 'জরুরি বিক্রি বুস্ট (৩ দিন)' : 'Urgent Sale (3 Days)')
+                                : _selectedTier == 'featured'
+                                    ? (isBn ? 'প্রিমিয়াম লট (৭ দিন)' : 'Premium Lot (7 Days)')
+                                    : (isBn ? 'ভিআইপি পার্টনার (১৫ দিন)' : 'VIP Partner (15 Days)'),
+                            style: GoogleFonts.hindSiliguri(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF0F172A),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            isBn ? 'পেমেন্ট মেথড:' : 'Payment Method:',
+                            style: GoogleFonts.hindSiliguri(fontSize: 13, color: Colors.grey.shade700),
+                          ),
+                          Text(
+                            isBn ? 'SSLCommerz (বিকাশ, নগদ, রকেট, কার্ড)' : 'SSLCommerz (bKash, Nagad, Cards)',
+                            style: GoogleFonts.hindSiliguri(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF2563EB),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            isBn ? 'মোট প্রদেয় ফি:' : 'Total Payable Fee:',
+                            style: GoogleFonts.hindSiliguri(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF0F172A),
+                            ),
+                          ),
+                          Text(
+                            _selectedTier == 'urgent'
+                                ? '৳ ২০.০০'
+                                : _selectedTier == 'featured'
+                                    ? '৳ ৫০.০০'
+                                    : '৳ ১০০.০০',
+                            style: GoogleFonts.hindSiliguri(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF2E7D32),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+
+              const SizedBox(height: 12),
+
+              // Submit & SSL Payment Button
+              SizedBox(
+                width: double.infinity,
+                height: 54,
+                child: ElevatedButton.icon(
+                  onPressed: _isLoading ? null : _submitForm,
+                  icon: _isLoading
+                      ? const SizedBox(
+                          height: 22,
+                          width: 22,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                        )
+                      : Icon(
+                          _selectedTier != 'free' ? Icons.payment_rounded : Icons.storefront_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                  label: Text(
+                    _isLoading
+                        ? (isBn ? 'প্রক্রিয়াধীন...' : 'Processing...')
+                        : (_selectedTier != 'free'
+                            ? (isBn
+                                ? 'SSL পেমেন্ট করুন ও বুস্টসহ প্রকাশ করুন (${_selectedTier == 'urgent' ? '৳২০' : _selectedTier == 'featured' ? '৳৫০' : '৳১০০'})'
+                                : 'Pay ${_selectedTier == 'urgent' ? '৳20' : _selectedTier == 'featured' ? '৳50' : '৳100'} via SSL & Publish')
+                            : (isBn ? 'পণ্য মার্কেটে প্রকাশ করুন' : 'Publish Crop to Market')),
+                    style: GoogleFonts.hindSiliguri(
+                      fontSize: 15.5,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _selectedTier != 'free'
+                        ? (_selectedTier == 'urgent'
+                            ? const Color(0xFFD32F2F)
+                            : _selectedTier == 'featured'
+                                ? const Color(0xFFD97706)
+                                : const Color(0xFF1D4ED8))
+                        : Theme.of(context).primaryColor,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    elevation: _selectedTier != 'free' ? 5 : 3,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Supported Payment Gateways Footer
+              Center(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.verified_user_outlined, size: 14, color: Colors.grey.shade600),
+                    const SizedBox(width: 4),
+                    Text(
+                      isBn
+                          ? 'SSLCommerz সুরক্ষিত গেটওয়ে: বিকাশ • নগদ • রকেট • কার্ড • ভিসা'
+                          : 'Secured by SSLCommerz: bKash • Nagad • Rocket • Cards • Visa',
+                      style: GoogleFonts.hindSiliguri(
+                        fontSize: 11,
+                        color: Colors.grey.shade600,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBoostCard({
+    required String tier,
+    required String title,
+    required String subtitle,
+    required String price,
+    required IconData icon,
+    required Color color,
+    required String badgeText,
+  }) {
+    final isSelected = _selectedTier == tier;
+
+    return GestureDetector(
+      onTap: () => setState(() => _selectedTier = tier),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? color.withValues(alpha: 0.06) : Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected ? color : Colors.grey.shade300,
+            width: isSelected ? 2 : 1,
+          ),
+          boxShadow: isSelected
+              ? [BoxShadow(color: color.withValues(alpha: 0.15), blurRadius: 10, offset: const Offset(0, 4))]
+              : [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 4, offset: const Offset(0, 2))],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 22),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          title,
+                          style: GoogleFonts.hindSiliguri(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                        decoration: BoxDecoration(
+                          color: color,
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        child: Text(
+                          badgeText,
+                          style: GoogleFonts.hindSiliguri(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            height: 1.1,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.grey.shade700, height: 1.2),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  price,
+                  style: GoogleFonts.hindSiliguri(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Icon(
+                  isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
+                  color: isSelected ? color : Colors.grey.shade400,
+                  size: 18,
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
