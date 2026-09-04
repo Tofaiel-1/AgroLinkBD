@@ -4,13 +4,15 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:agrolinkbd/core/providers/cart_provider.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
+import 'package:agrolinkbd/core/utils/number_converter.dart';
 import 'package:agrolinkbd/core/models/cart_model.dart';
 import 'package:agrolinkbd/core/models/order_model.dart';
 import 'package:agrolinkbd/core/services/order_service.dart';
 import 'package:agrolinkbd/core/services/sslcommerz_service.dart';
 import 'package:agrolinkbd/presentation/screens/buyer/fish_buyer_orders_screen.dart';
 
-/// Shopping Cart Screen — Modern cart UI for buyer linked to CartProvider
+/// Shopping Cart Screen — Modern cart UI for buyer linked to CartProvider with full English & Bangla support
 class ShoppingCartScreen extends StatefulWidget {
   const ShoppingCartScreen({super.key});
 
@@ -26,9 +28,11 @@ class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
     _specialInstructionsController.dispose();
     super.dispose();
   }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isBn = LanguageProvider.isBn(context);
     final cartProvider = Provider.of<CartProvider>(context);
     final cartItems = cartProvider.items;
 
@@ -40,7 +44,7 @@ class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
       backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF5F7FA),
       body: SafeArea(
         child: cartItems.isEmpty
-            ? _buildEmptyCart(isDark)
+            ? _buildEmptyCart(isDark, isBn)
             : Column(
                 children: [
                   // Header
@@ -50,7 +54,7 @@ class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
                       color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
+                          color: Colors.black.withValues(alpha: 0.04),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -59,37 +63,66 @@ class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          'কার্ট 🛒',
-                          style: GoogleFonts.hindSiliguri(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: isDark ? Colors.white : Colors.black87,
-                          ),
+                        Row(
+                          children: [
+                            if (Navigator.canPop(context))
+                              Padding(
+                                padding: const EdgeInsets.only(right: 12.0),
+                                child: InkWell(
+                                  onTap: () => Navigator.pop(context),
+                                  child: Icon(
+                                    Icons.arrow_back,
+                                    size: 22,
+                                    color: isDark ? Colors.white : Colors.black87,
+                                  ),
+                                ),
+                              ),
+                            Text(
+                              isBn ? 'কার্ট 🛒' : 'Shopping Cart 🛒',
+                              style: isBn
+                                  ? GoogleFonts.hindSiliguri(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                      color: isDark ? Colors.white : Colors.black87,
+                                    )
+                                  : GoogleFonts.poppins(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: isDark ? Colors.white : Colors.black87,
+                                    ),
+                            ),
+                          ],
                         ),
                         Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 5),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF1976D2).withOpacity(0.1),
+                                color: const Color(0xFF1976D2).withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
-                                '${cartItems.length}টি আইটেম',
-                                style: GoogleFonts.hindSiliguri(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: const Color(0xFF1976D2),
-                                ),
+                                isBn
+                                    ? '${BanglaEnglishNumberHelper.format(cartItems.length, true)}টি আইটেম'
+                                    : '${cartItems.length} items',
+                                style: isBn
+                                    ? GoogleFonts.hindSiliguri(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: const Color(0xFF1976D2),
+                                      )
+                                    : GoogleFonts.poppins(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: const Color(0xFF1976D2),
+                                      ),
                               ),
                             ),
                             const SizedBox(width: 8),
                             IconButton(
                               icon: Icon(Icons.delete_sweep_outlined, color: Colors.red.shade400),
-                              tooltip: 'কার্ট খালি করুন',
-                              onPressed: () => _showClearCartConfirmDialog(context, cartProvider),
+                              tooltip: isBn ? 'কার্ট খালি করুন' : 'Clear Cart',
+                              onPressed: () => _showClearCartConfirmDialog(context, cartProvider, isBn),
                             ),
                           ],
                         ),
@@ -104,7 +137,7 @@ class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
                       padding: const EdgeInsets.all(16),
                       itemCount: cartItems.length,
                       itemBuilder: (context, index) {
-                        return _buildCartItem(cartItems[index], cartProvider, isDark);
+                        return _buildCartItem(cartItems[index], cartProvider, isDark, isBn);
                       },
                     ),
                   ),
@@ -120,7 +153,7 @@ class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.08),
+                          color: Colors.black.withValues(alpha: 0.08),
                           blurRadius: 16,
                           offset: const Offset(0, -4),
                         ),
@@ -130,7 +163,7 @@ class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
                       children: [
                         // Special Instructions
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                           margin: const EdgeInsets.only(bottom: 16),
                           decoration: BoxDecoration(
                             color: isDark ? Colors.white12 : Colors.grey.shade50,
@@ -139,23 +172,45 @@ class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
                           ),
                           child: TextField(
                             controller: _specialInstructionsController,
-                            style: GoogleFonts.hindSiliguri(
-                              fontSize: 14,
-                              color: isDark ? Colors.white : Colors.black87,
-                            ),
+                            style: isBn
+                                ? GoogleFonts.hindSiliguri(
+                                    fontSize: 14,
+                                    color: isDark ? Colors.white : Colors.black87,
+                                  )
+                                : GoogleFonts.poppins(
+                                    fontSize: 13,
+                                    color: isDark ? Colors.white : Colors.black87,
+                                  ),
                             decoration: InputDecoration(
-                              hintText: 'বিশেষ নির্দেশনা (যেমন: বরফ দিয়ে প্যাক করবেন)',
-                              hintStyle: GoogleFonts.hindSiliguri(
-                                color: isDark ? Colors.white54 : Colors.grey.shade400,
-                              ),
+                              hintText: isBn
+                                  ? 'বিশেষ নির্দেশনা (যেমন: বরফ দিয়ে প্যাক করবেন)'
+                                  : 'Special instructions (e.g., pack with ice)',
+                              hintStyle: isBn
+                                  ? GoogleFonts.hindSiliguri(
+                                      color: isDark ? Colors.white54 : Colors.grey.shade400,
+                                    )
+                                  : GoogleFonts.poppins(
+                                      color: isDark ? Colors.white54 : Colors.grey.shade400,
+                                      fontSize: 12,
+                                    ),
                               border: InputBorder.none,
-                              icon: Icon(Icons.info_outline, color: const Color(0xFF1976D2), size: 20),
+                              icon: const Icon(Icons.info_outline, color: Color(0xFF1976D2), size: 20),
                             ),
                           ),
                         ),
-                        _buildSummaryRow('মূল্য', '৳${subtotal.toStringAsFixed(0)}', isDark),
+                        _buildSummaryRow(
+                          isBn ? 'মূল্য' : 'Subtotal',
+                          '৳${BanglaEnglishNumberHelper.format(subtotal.toStringAsFixed(0), isBn)}',
+                          isDark,
+                          isBn,
+                        ),
                         const SizedBox(height: 8),
-                        _buildSummaryRow('ডেলিভারি চার্জ', '৳${shipping.toStringAsFixed(0)}', isDark),
+                        _buildSummaryRow(
+                          isBn ? 'ডেলিভারি চার্জ' : 'Delivery Fee',
+                          '৳${BanglaEnglishNumberHelper.format(shipping.toStringAsFixed(0), isBn)}',
+                          isDark,
+                          isBn,
+                        ),
                         const SizedBox(height: 12),
                         Divider(
                           color: isDark ? Colors.white12 : Colors.grey.shade200,
@@ -165,16 +220,22 @@ class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'মোট',
-                              style: GoogleFonts.hindSiliguri(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: isDark ? Colors.white : Colors.black87,
-                              ),
+                              isBn ? 'মোট' : 'Total',
+                              style: isBn
+                                  ? GoogleFonts.hindSiliguri(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: isDark ? Colors.white : Colors.black87,
+                                    )
+                                  : GoogleFonts.poppins(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: isDark ? Colors.white : Colors.black87,
+                                    ),
                             ),
                             Text(
-                              '৳${total.toStringAsFixed(0)}',
-                              style: GoogleFonts.hindSiliguri(
+                              '৳${BanglaEnglishNumberHelper.format(total.toStringAsFixed(0), isBn)}',
+                              style: GoogleFonts.poppins(
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
                                 color: const Color(0xFF1976D2),
@@ -187,7 +248,7 @@ class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
                           width: double.infinity,
                           height: 52,
                           child: ElevatedButton(
-                            onPressed: () => _handleCheckout(context, cartProvider, total),
+                            onPressed: () => _handleCheckout(context, cartProvider, total, isBn),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF1976D2),
                               shape: RoundedRectangleBorder(
@@ -198,16 +259,21 @@ class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(Icons.shopping_bag_outlined,
-                                    color: Colors.white),
+                                const Icon(Icons.shopping_bag_outlined, color: Colors.white),
                                 const SizedBox(width: 8),
                                 Text(
-                                  'চেকআউট করুন',
-                                  style: GoogleFonts.hindSiliguri(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
+                                  isBn ? 'চেকআউট করুন' : 'Proceed to Checkout',
+                                  style: isBn
+                                      ? GoogleFonts.hindSiliguri(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        )
+                                      : GoogleFonts.poppins(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
                                 ),
                               ],
                             ),
@@ -222,7 +288,7 @@ class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
     );
   }
 
-  Widget _buildEmptyCart(bool isDark) {
+  Widget _buildEmptyCart(bool isDark, bool isBn) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -234,35 +300,46 @@ class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            'কার্ট খালি',
-            style: GoogleFonts.hindSiliguri(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white54 : Colors.grey.shade500,
-            ),
+            isBn ? 'কার্ট খালি' : 'Your cart is empty',
+            style: isBn
+                ? GoogleFonts.hindSiliguri(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white54 : Colors.grey.shade500,
+                  )
+                : GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white54 : Colors.grey.shade500,
+                  ),
           ),
           const SizedBox(height: 8),
           Text(
-            'বাজার থেকে পণ্য যোগ করুন',
-            style: GoogleFonts.hindSiliguri(
-              fontSize: 14,
-              color: isDark ? Colors.white38 : Colors.grey.shade400,
-            ),
+            isBn ? 'বাজার থেকে পণ্য যোগ করুন' : 'Explore marketplace and add fresh fish',
+            style: isBn
+                ? GoogleFonts.hindSiliguri(
+                    fontSize: 14,
+                    color: isDark ? Colors.white38 : Colors.grey.shade400,
+                  )
+                : GoogleFonts.poppins(
+                    fontSize: 13,
+                    color: isDark ? Colors.white38 : Colors.grey.shade400,
+                  ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildCartItem(CartItem item, CartProvider cartProvider, bool isDark) {
+  Widget _buildCartItem(CartItem item, CartProvider cartProvider, bool isDark, bool isBn) {
     final bool allowFraction = !(item.unit == 'পিছ' || item.unit == 'ডজন' || item.itemType == CartItemType.transport);
 
     final List<dynamic> history = (item.metadata['history'] is List)
         ? (item.metadata['history'] as List)
         : [item.metadata['addedAt'] ?? DateTime.now().toIso8601String()];
     final String latestTimeStr = history.isNotEmpty ? history.last.toString() : '';
-    final String formattedTime = _formatBanglaDateTime(latestTimeStr);
-    
+    final String formattedTime = _formatBanglaDateTime(latestTimeStr, isBn);
+
     return Dismissible(
       key: ValueKey('${item.id}_${item.title}'),
       direction: DismissDirection.endToStart,
@@ -278,8 +355,10 @@ class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             Text(
-              'মুছে ফেলুন',
-              style: GoogleFonts.hindSiliguri(color: Colors.white, fontWeight: FontWeight.bold),
+              isBn ? 'মুছে ফেলুন' : 'Remove',
+              style: isBn
+                  ? GoogleFonts.hindSiliguri(color: Colors.white, fontWeight: FontWeight.bold)
+                  : GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold),
             ),
             const SizedBox(width: 8),
             const Icon(Icons.delete_outline, color: Colors.white),
@@ -289,8 +368,8 @@ class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
       onDismissed: (_) {
         cartProvider.removeFromCart(item.id);
         Get.snackbar(
-          'সরানো হয়েছে',
-          '${item.title} কার্ট থেকে সরানো হয়েছে',
+          isBn ? 'সরানো হয়েছে' : 'Removed',
+          isBn ? '${item.title} কার্ট থেকে সরানো হয়েছে' : '${item.title} removed from cart',
           backgroundColor: Colors.red.shade100,
           colorText: Colors.red.shade900,
           duration: const Duration(seconds: 2),
@@ -309,7 +388,7 @@ class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
               ? []
               : [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
+                    color: Colors.black.withValues(alpha: 0.03),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -343,30 +422,41 @@ class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
                 children: [
                   Text(
                     item.title,
-                    style: GoogleFonts.hindSiliguri(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: isDark ? Colors.white : Colors.black87,
-                    ),
+                    style: isBn
+                        ? GoogleFonts.hindSiliguri(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: isDark ? Colors.white : Colors.black87,
+                          )
+                        : GoogleFonts.poppins(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            color: isDark ? Colors.white : Colors.black87,
+                          ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     item.sellerName,
-                    style: GoogleFonts.hindSiliguri(
-                      fontSize: 11,
-                      color: isDark ? Colors.white38 : Colors.grey.shade500,
-                    ),
+                    style: isBn
+                        ? GoogleFonts.hindSiliguri(
+                            fontSize: 11,
+                            color: isDark ? Colors.white38 : Colors.grey.shade500,
+                          )
+                        : GoogleFonts.poppins(
+                            fontSize: 11,
+                            color: isDark ? Colors.white38 : Colors.grey.shade500,
+                          ),
                   ),
                   const SizedBox(height: 4),
                   InkWell(
-                    onTap: () => _showAddHistoryDialog(context, item, isDark),
+                    onTap: () => _showAddHistoryDialog(context, item, isDark, isBn),
                     borderRadius: BorderRadius.circular(8),
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF1976D2).withOpacity(0.2) : const Color(0xFFE3F2FD),
+                        color: isDark ? const Color(0xFF1976D2).withValues(alpha: 0.2) : const Color(0xFFE3F2FD),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFF1976D2).withOpacity(0.3)),
+                        border: Border.all(color: const Color(0xFF1976D2).withValues(alpha: 0.3)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -375,12 +465,20 @@ class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
                           const SizedBox(width: 4),
                           Flexible(
                             child: Text(
-                              'যোগ: $formattedTime${history.length > 1 ? ' (${history.length} বার)' : ''}',
-                              style: GoogleFonts.hindSiliguri(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                color: const Color(0xFF1976D2),
-                              ),
+                              isBn
+                                  ? 'যোগ: $formattedTime${history.length > 1 ? ' (${BanglaEnglishNumberHelper.format(history.length, true)} বার)' : ''}'
+                                  : 'Added: $formattedTime${history.length > 1 ? ' (${history.length} times)' : ''}',
+                              style: isBn
+                                  ? GoogleFonts.hindSiliguri(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xFF1976D2),
+                                    )
+                                  : GoogleFonts.poppins(
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xFF1976D2),
+                                    ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
@@ -391,82 +489,93 @@ class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                // Quantity controls
-                Row(
-                  children: [
-                    _buildQtyButton(Icons.remove, isDark, () {
-                      double step = allowFraction ? 0.5 : 1.0;
-                      if (item.quantity > step) {
-                        cartProvider.updateQuantity(item.id, item.quantity - step);
-                      } else {
-                        cartProvider.removeFromCart(item.id);
-                      }
-                    }),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Text(
-                        '${item.quantity.toStringAsFixed(allowFraction ? 1 : 0)} ${item.unit}',
-                        style: GoogleFonts.hindSiliguri(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                          color: isDark ? Colors.white : Colors.black87,
+                  // Quantity controls
+                  Row(
+                    children: [
+                      _buildQtyButton(Icons.remove, isDark, () {
+                        double step = allowFraction ? 0.5 : 1.0;
+                        if (item.quantity > step) {
+                          cartProvider.updateQuantity(item.id, item.quantity - step);
+                        } else {
+                          cartProvider.removeFromCart(item.id);
+                        }
+                      }),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Text(
+                          '${BanglaEnglishNumberHelper.format(item.quantity.toStringAsFixed(allowFraction ? 1 : 0), isBn)} ${item.unit}',
+                          style: isBn
+                              ? GoogleFonts.hindSiliguri(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                  color: isDark ? Colors.white : Colors.black87,
+                                )
+                              : GoogleFonts.poppins(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                  color: isDark ? Colors.white : Colors.black87,
+                                ),
                         ),
                       ),
-                    ),
-                    _buildQtyButton(Icons.add, isDark, () {
-                      double step = allowFraction ? 0.5 : 1.0;
-                      cartProvider.updateQuantity(item.id, item.quantity + step);
-                    }),
-                  ],
+                      _buildQtyButton(Icons.add, isDark, () {
+                        double step = allowFraction ? 0.5 : 1.0;
+                        cartProvider.updateQuantity(item.id, item.quantity + step);
+                      }),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            // Price + Delete
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '৳${BanglaEnglishNumberHelper.format(item.totalPrice.toStringAsFixed(0), isBn)}',
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    color: const Color(0xFF1976D2),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '৳${BanglaEnglishNumberHelper.format(item.price.toStringAsFixed(0), isBn)}/${item.unit}',
+                  style: isBn
+                      ? GoogleFonts.hindSiliguri(
+                          fontSize: 10,
+                          color: isDark ? Colors.white38 : Colors.grey.shade400,
+                        )
+                      : GoogleFonts.poppins(
+                          fontSize: 10,
+                          color: isDark ? Colors.white38 : Colors.grey.shade400,
+                        ),
+                ),
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: () {
+                    cartProvider.removeFromCart(item.id);
+                    Get.snackbar(
+                      isBn ? 'সরানো হয়েছে' : 'Removed',
+                      isBn ? '${item.title} কার্ট থেকে সরানো হয়েছে' : '${item.title} removed from cart',
+                      backgroundColor: Colors.red.shade100,
+                      colorText: Colors.red.shade900,
+                      duration: const Duration(seconds: 2),
+                    );
+                  },
+                  child: Icon(
+                    Icons.delete_outline,
+                    color: Colors.red.shade400,
+                    size: 20,
+                  ),
                 ),
               ],
             ),
-          ),
-          // Price + Delete
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '৳${item.totalPrice.toStringAsFixed(0)}',
-                style: GoogleFonts.hindSiliguri(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
-                  color: const Color(0xFF1976D2),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '৳${item.price.toStringAsFixed(0)}/${item.unit}',
-                style: GoogleFonts.hindSiliguri(
-                  fontSize: 10,
-                  color: isDark ? Colors.white38 : Colors.grey.shade400,
-                ),
-              ),
-              const SizedBox(height: 8),
-              GestureDetector(
-                onTap: () {
-                  cartProvider.removeFromCart(item.id);
-                  Get.snackbar(
-                    'সরানো হয়েছে',
-                    '${item.title} কার্ট থেকে সরানো হয়েছে',
-                    backgroundColor: Colors.red.shade100,
-                    colorText: Colors.red.shade900,
-                    duration: const Duration(seconds: 2),
-                  );
-                },
-                child: Icon(
-                  Icons.delete_outline,
-                  color: Colors.red.shade400,
-                  size: 20,
-                ),
-              ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildQtyButton(IconData icon, bool isDark, VoidCallback onTap) {
     return GestureDetector(
@@ -477,28 +586,32 @@ class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
           color: isDark ? Colors.white12 : Colors.grey.shade100,
           borderRadius: BorderRadius.circular(6),
         ),
-        child: Icon(icon, size: 16,
-            color: isDark ? Colors.white70 : Colors.grey.shade700),
+        child: Icon(icon, size: 16, color: isDark ? Colors.white70 : Colors.grey.shade700),
       ),
     );
   }
 
-  Widget _buildSummaryRow(String label, String value, bool isDark) {
+  Widget _buildSummaryRow(String label, String value, bool isDark, bool isBn) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
-          style: GoogleFonts.hindSiliguri(
-            fontSize: 14,
-            color: isDark ? Colors.white54 : Colors.grey.shade600,
-          ),
+          style: isBn
+              ? GoogleFonts.hindSiliguri(
+                  fontSize: 14,
+                  color: isDark ? Colors.white54 : Colors.grey.shade600,
+                )
+              : GoogleFonts.poppins(
+                  fontSize: 13,
+                  color: isDark ? Colors.white54 : Colors.grey.shade600,
+                ),
         ),
         Text(
           value,
-          style: GoogleFonts.hindSiliguri(
+          style: GoogleFonts.poppins(
             fontSize: 14,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w600,
             color: isDark ? Colors.white70 : Colors.black87,
           ),
         ),
@@ -506,12 +619,17 @@ class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
     );
   }
 
-  Future<void> _handleCheckout(BuildContext context, CartProvider cartProvider, double total) async {
+  Future<void> _handleCheckout(
+    BuildContext context,
+    CartProvider cartProvider,
+    double total,
+    bool isBn,
+  ) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       Get.snackbar(
-        'অনুরোধ বাতিল',
-        'দয়া করে আগে লগইন করুন',
+        isBn ? 'অনুরোধ বাতিল' : 'Authentication Required',
+        isBn ? 'দয়া করে আগে লগইন করুন' : 'Please log in first to continue checkout',
         backgroundColor: Colors.red.shade100,
         colorText: Colors.red.shade900,
       );
@@ -522,10 +640,10 @@ class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
       context: context,
       amount: total,
       productName: cartProvider.items.map((e) => e.title).join(', '),
-      customerName: user.displayName ?? "Buyer User",
-      customerEmail: user.email ?? "buyer@example.com",
-      customerPhone: "01700000000",
-      customerAddress: "Dhaka, Bangladesh",
+      customerName: user.displayName ?? 'Buyer User',
+      customerEmail: user.email ?? 'buyer@example.com',
+      customerPhone: '01700000000',
+      customerAddress: 'Dhaka, Bangladesh',
     );
 
     if (success) {
@@ -542,12 +660,12 @@ class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
           totalAmount: item.totalPrice,
           status: 'pending',
           statusStep: 1,
-          transportStatus: 'অর্ডার গৃহিত হয়েছে',
+          transportStatus: isBn ? 'অর্ডার গৃহিত হয়েছে' : 'Order Placed',
           paymentStatus: 'paid',
           createdAt: DateTime.now(),
           estimatedDeliveryDate: DateTime.now().add(const Duration(days: 3)),
-          specialInstructions: _specialInstructionsController.text.trim().isEmpty 
-              ? null 
+          specialInstructions: _specialInstructionsController.text.trim().isEmpty
+              ? null
               : _specialInstructionsController.text.trim(),
         );
         await OrderService().createOrder(newOrder);
@@ -555,8 +673,8 @@ class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
 
       cartProvider.clearCart();
       Get.snackbar(
-        'সফল ✓',
-        'আপনার পেমেন্ট ও অর্ডার সফলভাবে সম্পন্ন হয়েছে!',
+        isBn ? 'সফল ✓' : 'Success ✓',
+        isBn ? 'আপনার পেমেন্ট ও অর্ডার সফলভাবে সম্পন্ন হয়েছে!' : 'Payment and orders placed successfully!',
         backgroundColor: Colors.green.shade100,
         colorText: Colors.green.shade900,
       );
@@ -565,51 +683,56 @@ class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
       Get.to(() => const FishBuyerOrdersScreen());
     } else {
       Get.snackbar(
-        'পেমেন্ট ব্যর্থ',
-        'পেমেন্ট সম্পন্ন করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।',
+        isBn ? 'পেমেন্ট ব্যর্থ' : 'Payment Failed',
+        isBn ? 'পেমেন্ট সম্পন্ন করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।' : 'Payment could not be completed. Please try again.',
         backgroundColor: Colors.red.shade100,
         colorText: Colors.red.shade900,
       );
     }
   }
 
-  String _formatBanglaDateTime(String? isoStr) {
-    if (isoStr == null || isoStr.isEmpty) return 'সময় পাওয়া যায়নি';
+  String _formatBanglaDateTime(String? isoStr, bool isBn) {
+    if (isoStr == null || isoStr.isEmpty) {
+      return isBn ? 'সময় পাওয়া যায়নি' : 'Time unavailable';
+    }
     try {
       final dt = DateTime.parse(isoStr).toLocal();
+      if (!isBn) {
+        final monthsEn = [
+          '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+        ];
+        int hour = dt.hour;
+        final period = hour < 12 ? 'AM' : 'PM';
+        if (hour == 0) hour = 12;
+        if (hour > 12) hour -= 12;
+        final minStr = dt.minute.toString().padLeft(2, '0');
+        return '${dt.day} ${monthsEn[dt.month]} ${dt.year}, $hour:$minStr $period';
+      }
+
       final List<String> months = [
         '', 'জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন',
         'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'
       ];
       final String month = months[dt.month];
-      
+
       int hour = dt.hour;
       final String period = hour < 12 ? 'সকাল' : (hour < 16 ? 'দুপুর' : (hour < 18 ? 'বিকাল' : 'রাত'));
       if (hour == 0) hour = 12;
       if (hour > 12) hour -= 12;
 
-      String toBanglaDigits(String str) {
-        const en = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
-        const bn = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
-        String res = str;
-        for (int i = 0; i < en.length; i++) {
-          res = res.replaceAll(en[i], bn[i]);
-        }
-        return res;
-      }
-
-      final dayBn = toBanglaDigits('${dt.day}');
-      final yearBn = toBanglaDigits('${dt.year}');
-      final hourBn = toBanglaDigits('$hour');
-      final minuteBn = toBanglaDigits(dt.minute.toString().padLeft(2, '0'));
+      final dayBn = BanglaEnglishNumberHelper.toBanglaDigits('${dt.day}');
+      final yearBn = BanglaEnglishNumberHelper.toBanglaDigits('${dt.year}');
+      final hourBn = BanglaEnglishNumberHelper.toBanglaDigits('$hour');
+      final minuteBn = BanglaEnglishNumberHelper.toBanglaDigits(dt.minute.toString().padLeft(2, '0'));
 
       return '$dayBn $month $yearBn, $period $hourBn:$minuteBn';
     } catch (e) {
-      return 'সাম্প্রতিক';
+      return isBn ? 'সাম্প্রতিক' : 'Recent';
     }
   }
 
-  void _showAddHistoryDialog(BuildContext context, CartItem item, bool isDark) {
+  void _showAddHistoryDialog(BuildContext context, CartItem item, bool isDark, bool isBn) {
     final List<dynamic> history = (item.metadata['history'] is List)
         ? (item.metadata['history'] as List)
         : [item.metadata['addedAt'] ?? DateTime.now().toIso8601String()];
@@ -632,22 +755,33 @@ class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
                   const Icon(Icons.history, color: Color(0xFF1976D2), size: 24),
                   const SizedBox(width: 8),
                   Text(
-                    'কার্টে যোগ করার ইতিহাস 🕒',
-                    style: GoogleFonts.hindSiliguri(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : Colors.black87,
-                    ),
+                    isBn ? 'কার্টে যোগ করার ইতিহাস 🕒' : 'Cart Addition History 🕒',
+                    style: isBn
+                        ? GoogleFonts.hindSiliguri(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : Colors.black87,
+                          )
+                        : GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : Colors.black87,
+                          ),
                   ),
                 ],
               ),
               const SizedBox(height: 4),
               Text(
-                'আইটেম: ${item.title} (${item.sellerName})',
-                style: GoogleFonts.hindSiliguri(
-                  fontSize: 13,
-                  color: isDark ? Colors.white60 : Colors.grey.shade600,
-                ),
+                '${isBn ? 'আইটেম' : 'Item'}: ${item.title} (${item.sellerName})',
+                style: isBn
+                    ? GoogleFonts.hindSiliguri(
+                        fontSize: 13,
+                        color: isDark ? Colors.white60 : Colors.grey.shade600,
+                      )
+                    : GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: isDark ? Colors.white60 : Colors.grey.shade600,
+                      ),
               ),
               const SizedBox(height: 12),
               const Divider(),
@@ -664,9 +798,9 @@ class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
                       contentPadding: EdgeInsets.zero,
                       leading: CircleAvatar(
                         radius: 14,
-                        backgroundColor: const Color(0xFF1976D2).withOpacity(0.15),
+                        backgroundColor: const Color(0xFF1976D2).withValues(alpha: 0.15),
                         child: Text(
-                          '${idx + 1}',
+                          BanglaEnglishNumberHelper.format(idx + 1, isBn),
                           style: GoogleFonts.poppins(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
@@ -675,19 +809,32 @@ class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
                         ),
                       ),
                       title: Text(
-                        _formatBanglaDateTime(timeStr),
-                        style: GoogleFonts.hindSiliguri(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? Colors.white : Colors.black87,
-                        ),
+                        _formatBanglaDateTime(timeStr, isBn),
+                        style: isBn
+                            ? GoogleFonts.hindSiliguri(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? Colors.white : Colors.black87,
+                              )
+                            : GoogleFonts.poppins(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? Colors.white : Colors.black87,
+                              ),
                       ),
                       subtitle: Text(
-                        idx == 0 ? 'প্রথমবার কার্টে যোগ করা হয়েছে' : 'পরিমাণ বৃদ্ধি করা হয়েছে',
-                        style: GoogleFonts.hindSiliguri(
-                          fontSize: 12,
-                          color: isDark ? Colors.white38 : Colors.grey.shade500,
-                        ),
+                        idx == 0
+                            ? (isBn ? 'প্রথমবার কার্টে যোগ করা হয়েছে' : 'First added to cart')
+                            : (isBn ? 'পরিমাণ পরিবর্তন করা হয়েছে' : 'Quantity updated'),
+                        style: isBn
+                            ? GoogleFonts.hindSiliguri(
+                                fontSize: 12,
+                                color: isDark ? Colors.white38 : Colors.grey.shade500,
+                              )
+                            : GoogleFonts.poppins(
+                                fontSize: 11,
+                                color: isDark ? Colors.white38 : Colors.grey.shade500,
+                              ),
                       ),
                     );
                   },
@@ -703,8 +850,10 @@ class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   child: Text(
-                    'ঠিক আছে',
-                    style: GoogleFonts.hindSiliguri(color: Colors.white, fontWeight: FontWeight.bold),
+                    isBn ? 'ঠিক আছে' : 'OK',
+                    style: isBn
+                        ? GoogleFonts.hindSiliguri(color: Colors.white, fontWeight: FontWeight.bold)
+                        : GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -715,28 +864,32 @@ class _ShoppingCartScreenState extends State<ShoppingCartScreen> {
     );
   }
 
-  void _showClearCartConfirmDialog(BuildContext context, CartProvider cartProvider) {
+  void _showClearCartConfirmDialog(BuildContext context, CartProvider cartProvider, bool isBn) {
     Get.defaultDialog(
-      title: 'কার্ট খালি করুন',
-      titleStyle: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 18),
+      title: isBn ? 'কার্ট খালি করুন' : 'Clear Shopping Cart',
+      titleStyle: isBn
+          ? GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 18)
+          : GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16),
       content: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Text(
-          'আপনি কি নিশ্চিত যে কার্টের সব আইটেম মুছে ফেলতে চান?',
-          style: GoogleFonts.hindSiliguri(fontSize: 15),
+          isBn
+              ? 'আপনি কি নিশ্চিত যে কার্টের সব আইটেম মুছে ফেলতে চান?'
+              : 'Are you sure you want to remove all items from your cart?',
+          style: isBn ? GoogleFonts.hindSiliguri(fontSize: 14) : GoogleFonts.poppins(fontSize: 13),
           textAlign: TextAlign.center,
         ),
       ),
-      textConfirm: 'হ্যাঁ, খালি করুন',
-      textCancel: 'না',
+      textConfirm: isBn ? 'হ্যাঁ, খালি করুন' : 'Yes, Clear',
+      textCancel: isBn ? 'না' : 'Cancel',
       confirmTextColor: Colors.white,
       buttonColor: Colors.red.shade600,
       onConfirm: () {
         cartProvider.clearCart();
         Get.back();
         Get.snackbar(
-          'কার্ট খালি হয়েছে',
-          'আপনার কার্টের সব আইটেম সরানো হয়েছে',
+          isBn ? 'কার্ট খালি হয়েছে' : 'Cart Cleared',
+          isBn ? 'আপনার কার্টের সব আইটেম সরানো হয়েছে' : 'All items have been removed from your cart',
           backgroundColor: Colors.red.shade100,
           colorText: Colors.red.shade900,
         );

@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import 'package:agrolinkbd/core/models/order_model.dart';
 import 'package:agrolinkbd/core/services/order_service.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
+import 'package:agrolinkbd/core/utils/number_converter.dart';
 
 class OrderDetailsScreen extends StatefulWidget {
   final OrderModel order;
@@ -26,6 +28,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isBn = LanguageProvider.isBn(context);
 
     return StreamBuilder<OrderModel?>(
       stream: OrderService().getOrderByIdStream(_order.id),
@@ -35,13 +38,22 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         }
 
         final statusStep = _order.statusStep;
-        final steps = ['অর্ডার গৃহীত', 'প্রস্তুতি চলছে', 'পাঠানো হয়েছে', 'ডেলিভার্ড'];
-        final stepDetails = [
-          'আপনার অর্ডারটি সফলভাবে আমাদের সিস্টেমে গৃহীত হয়েছে।',
-          'বিক্রেতা আপনার অর্ডারটি প্রস্তুত করছেন এবং পরিবহনের জন্য প্যাকেজিং করছেন।',
-          'পণ্যটি আপনার ঠিকানায় পাঠানোর জন্য ট্রাকে লোড করা হয়েছে।',
-          'পণ্যটি সফলভাবে আপনার ঠিকানায় হস্তান্তর করা হয়েছে।'
-        ];
+        final steps = isBn
+            ? ['অর্ডার গৃহীত', 'প্রস্তুতি চলছে', 'পাঠানো হয়েছে', 'ডেলিভার্ড']
+            : ['Order Accepted', 'Processing', 'Dispatched', 'Delivered'];
+        final stepDetails = isBn
+            ? [
+                'আপনার অর্ডারটি সফলভাবে আমাদের সিস্টেমে গৃহীত হয়েছে।',
+                'বিক্রেতা আপনার অর্ডারটি প্রস্তুত করছেন এবং পরিবহনের জন্য প্যাকেজিং করছেন।',
+                'পণ্যটি আপনার ঠিকানায় পাঠানোর জন্য ট্রাকে লোড করা হয়েছে।',
+                'পণ্যটি সফলভাবে আপনার ঠিকানায় হস্তান্তর করা হয়েছে।'
+              ]
+            : [
+                'Your order was accepted in our system.',
+                'The seller is packing and prepping your batch for transit.',
+                'Dispatched and loaded into oxygenated transport.',
+                'Successfully delivered to your designated address.'
+              ];
 
         return Scaffold(
           backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF5F7FA),
@@ -50,8 +62,10 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             foregroundColor: isDark ? Colors.white : Colors.black87,
             elevation: 0,
             title: Text(
-              'অর্ডার ডিটেইলস',
-              style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 18),
+              isBn ? 'অর্ডার ডিটেইলস' : 'Order Details',
+              style: isBn
+                  ? GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 18)
+                  : GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 17),
             ),
           ),
           body: SingleChildScrollView(
@@ -62,19 +76,19 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Order Header Card
-                  _buildHeaderCard(isDark),
+                  _buildHeaderCard(isDark, isBn),
                   const SizedBox(height: 16),
 
                   // Product Details Card
-                  _buildProductCard(isDark),
+                  _buildProductCard(isDark, isBn),
                   const SizedBox(height: 16),
 
                   // Order Timeline (Status)
-                  _buildTimelineCard(isDark, statusStep, steps, stepDetails),
+                  _buildTimelineCard(isDark, statusStep, steps, stepDetails, isBn),
                   const SizedBox(height: 24),
 
                   // Action Buttons
-                  _buildActions(context, isDark),
+                  _buildActions(context, isDark, isBn),
                   const SizedBox(height: 24),
                 ],
               ),
@@ -85,7 +99,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     );
   }
 
-  Widget _buildHeaderCard(bool isDark) {
+  Widget _buildHeaderCard(bool isDark, bool isBn) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -103,12 +117,14 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'অর্ডার আইডি:',
-                style: GoogleFonts.hindSiliguri(color: Colors.grey.shade500, fontSize: 13),
+                isBn ? 'অর্ডার আইডি:' : 'Order ID:',
+                style: isBn
+                    ? GoogleFonts.hindSiliguri(color: Colors.grey.shade500, fontSize: 13)
+                    : GoogleFonts.poppins(color: Colors.grey.shade500, fontSize: 12),
               ),
               Text(
                 '#ORD-${_order.id.substring(0, _order.id.length > 8 ? 8 : _order.id.length).toUpperCase()}',
-                style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 14),
+                style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14),
               ),
             ],
           ),
@@ -117,12 +133,14 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'অর্ডার তারিখ:',
-                style: GoogleFonts.hindSiliguri(color: Colors.grey.shade500, fontSize: 13),
+                isBn ? 'অর্ডার তারিখ:' : 'Order Date:',
+                style: isBn
+                    ? GoogleFonts.hindSiliguri(color: Colors.grey.shade500, fontSize: 13)
+                    : GoogleFonts.poppins(color: Colors.grey.shade500, fontSize: 12),
               ),
               Text(
-                '${_order.createdAt.day}/${_order.createdAt.month}/${_order.createdAt.year} ${_order.createdAt.hour}:${_order.createdAt.minute.toString().padLeft(2, '0')}',
-                style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.w600, fontSize: 13),
+                '${BanglaEnglishNumberHelper.format(_order.createdAt.day, isBn)}/${BanglaEnglishNumberHelper.format(_order.createdAt.month, isBn)}/${BanglaEnglishNumberHelper.format(_order.createdAt.year, isBn)} ${BanglaEnglishNumberHelper.format(_order.createdAt.hour, isBn)}:${BanglaEnglishNumberHelper.format(_order.createdAt.minute.toString().padLeft(2, '0'), isBn)}',
+                style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13),
               ),
             ],
           ),
@@ -131,22 +149,33 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'পেমেন্ট স্ট্যাটাস:',
-                style: GoogleFonts.hindSiliguri(color: Colors.grey.shade500, fontSize: 13),
+                isBn ? 'পেমেন্ট স্ট্যাটাস:' : 'Payment Status:',
+                style: isBn
+                    ? GoogleFonts.hindSiliguri(color: Colors.grey.shade500, fontSize: 13)
+                    : GoogleFonts.poppins(color: Colors.grey.shade500, fontSize: 12),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _order.paymentStatus == 'paid' ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+                  color: (_order.paymentStatus == 'paid' ? Colors.green : Colors.orange)
+                      .withValues(alpha: isDark ? 0.25 : 0.1),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  _order.paymentStatus == 'paid' ? 'পরিশোধিত' : 'বকেয়া',
-                  style: GoogleFonts.hindSiliguri(
-                    color: _order.paymentStatus == 'paid' ? Colors.green : Colors.orange,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 11,
-                  ),
+                  _order.paymentStatus == 'paid'
+                      ? (isBn ? 'পরিশোধিত' : 'Paid')
+                      : (isBn ? 'বকেয়া' : 'Pending'),
+                  style: isBn
+                      ? GoogleFonts.hindSiliguri(
+                          color: _order.paymentStatus == 'paid' ? Colors.green : Colors.orange,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                        )
+                      : GoogleFonts.poppins(
+                          color: _order.paymentStatus == 'paid' ? Colors.green : Colors.orange,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                        ),
                 ),
               ),
             ],
@@ -156,7 +185,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     );
   }
 
-  Widget _buildProductCard(bool isDark) {
+  Widget _buildProductCard(bool isDark, bool isBn) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -171,8 +200,10 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'পণ্যের বিবরণ',
-            style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 15),
+            isBn ? 'পণ্যের বিবরণ' : 'Product Details',
+            style: isBn
+                ? GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 15)
+                : GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14),
           ),
           const SizedBox(height: 12),
           Row(
@@ -201,11 +232,15 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                   children: [
                     Text(
                       _order.productName,
-                      style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.w600, fontSize: 14),
+                      style: isBn
+                          ? GoogleFonts.hindSiliguri(fontWeight: FontWeight.w600, fontSize: 14)
+                          : GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13),
                     ),
                     Text(
-                      'কৃষক: ${_order.farmerName}',
-                      style: GoogleFonts.hindSiliguri(color: Colors.grey.shade500, fontSize: 11),
+                      '${isBn ? 'বিক্রেতা' : 'Seller'}: ${_order.farmerName}',
+                      style: isBn
+                          ? GoogleFonts.hindSiliguri(color: Colors.grey.shade500, fontSize: 11)
+                          : GoogleFonts.poppins(color: Colors.grey.shade500, fontSize: 11),
                     ),
                   ],
                 ),
@@ -214,12 +249,18 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    '৳${_order.totalAmount.toStringAsFixed(0)}',
-                    style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, color: const Color(0xFF1976D2), fontSize: 15),
+                    '৳${BanglaEnglishNumberHelper.format(_order.totalAmount.toStringAsFixed(0), isBn)}',
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF1976D2),
+                      fontSize: 15,
+                    ),
                   ),
                   Text(
-                    '${_order.quantity} ${_order.quantity == _order.quantity.toInt() ? 'টি/কেজি' : 'কেজি'}',
-                    style: GoogleFonts.hindSiliguri(color: Colors.grey.shade500, fontSize: 11),
+                    '${BanglaEnglishNumberHelper.format(_order.quantity, isBn)} ${_order.quantity == _order.quantity.toInt() ? (isBn ? 'টি/কেজি' : 'units') : (isBn ? 'কেজি' : 'kg')}',
+                    style: isBn
+                        ? GoogleFonts.hindSiliguri(color: Colors.grey.shade500, fontSize: 11)
+                        : GoogleFonts.poppins(color: Colors.grey.shade500, fontSize: 11),
                   ),
                 ],
               ),
@@ -230,7 +271,13 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     );
   }
 
-  Widget _buildTimelineCard(bool isDark, int statusStep, List<String> steps, List<String> stepDetails) {
+  Widget _buildTimelineCard(
+    bool isDark,
+    int statusStep,
+    List<String> steps,
+    List<String> stepDetails,
+    bool isBn,
+  ) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -245,8 +292,10 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'অর্ডার ট্র্যাকিং',
-            style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 15),
+            isBn ? 'অর্ডার ট্র্যাকিং' : 'Order Tracking',
+            style: isBn
+                ? GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 15)
+                : GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14),
           ),
           const SizedBox(height: 20),
           ListView.builder(
@@ -269,7 +318,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: isActive ? const Color(0xFF1976D2) : Colors.grey.shade300,
-                          border: isCurrent ? Border.all(color: const Color(0xFF1976D2).withOpacity(0.3), width: 3) : null,
+                          border: isCurrent
+                              ? Border.all(color: const Color(0xFF1976D2).withValues(alpha: 0.3), width: 3)
+                              : null,
                         ),
                         child: isActive
                             ? const Icon(Icons.check, size: 12, color: Colors.white)
@@ -291,23 +342,38 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                       children: [
                         Text(
                           steps[index],
-                          style: GoogleFonts.hindSiliguri(
-                            fontWeight: isCurrent ? FontWeight.bold : FontWeight.w600,
-                            fontSize: 13,
-                            color: isActive
-                                ? (isCurrent ? const Color(0xFF1976D2) : (isDark ? Colors.white70 : Colors.black87))
-                                : Colors.grey,
-                          ),
+                          style: isBn
+                              ? GoogleFonts.hindSiliguri(
+                                  fontWeight: isCurrent ? FontWeight.bold : FontWeight.w600,
+                                  fontSize: 13,
+                                  color: isActive
+                                      ? (isCurrent ? const Color(0xFF1976D2) : (isDark ? Colors.white70 : Colors.black87))
+                                      : Colors.grey,
+                                )
+                              : GoogleFonts.poppins(
+                                  fontWeight: isCurrent ? FontWeight.bold : FontWeight.w600,
+                                  fontSize: 12,
+                                  color: isActive
+                                      ? (isCurrent ? const Color(0xFF1976D2) : (isDark ? Colors.white70 : Colors.black87))
+                                      : Colors.grey,
+                                ),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           stepDetails[index],
-                          style: GoogleFonts.hindSiliguri(
-                            fontSize: 11,
-                            color: isActive
-                                ? (isDark ? Colors.white38 : Colors.grey.shade600)
-                                : Colors.grey.shade400,
-                          ),
+                          style: isBn
+                              ? GoogleFonts.hindSiliguri(
+                                  fontSize: 11,
+                                  color: isActive
+                                      ? (isDark ? Colors.white38 : Colors.grey.shade600)
+                                      : Colors.grey.shade400,
+                                )
+                              : GoogleFonts.poppins(
+                                  fontSize: 10.5,
+                                  color: isActive
+                                      ? (isDark ? Colors.white38 : Colors.grey.shade600)
+                                      : Colors.grey.shade400,
+                                ),
                         ),
                         const SizedBox(height: 16),
                       ],
@@ -322,7 +388,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     );
   }
 
-  Widget _buildActions(BuildContext context, bool isDark) {
+  Widget _buildActions(BuildContext context, bool isDark, bool isBn) {
     final canCancel = _order.status == 'pending' || _order.statusStep == 1;
 
     return Column(
@@ -337,8 +403,10 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             ),
             onPressed: () {
               Get.snackbar(
-                'যোগাযোগ করুন',
-                'কৃষক ${_order.farmerName} এর সাথে যোগাযোগের জন্য ফোন করুন: ০১৭০০০০০০০০',
+                isBn ? 'যোগাযোগ করুন' : 'Contact Farmer',
+                isBn
+                    ? 'কৃষক ${_order.farmerName} এর সাথে যোগাযোগের জন্য ফোন করুন: ০১৭০০০০০০০০'
+                    : 'Call seller ${_order.farmerName} at 01700000000',
                 backgroundColor: Colors.blue.shade100,
                 colorText: Colors.blue.shade900,
                 duration: const Duration(seconds: 4),
@@ -346,8 +414,10 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             },
             icon: const Icon(Icons.phone, color: Colors.white),
             label: Text(
-              'কৃষকের সাথে যোগাযোগ করুন',
-              style: GoogleFonts.hindSiliguri(color: Colors.white, fontWeight: FontWeight.bold),
+              isBn ? 'কৃষকের সাথে যোগাযোগ করুন' : 'Contact Seller',
+              style: isBn
+                  ? GoogleFonts.hindSiliguri(color: Colors.white, fontWeight: FontWeight.bold)
+                  : GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold),
             ),
           ),
         ),
@@ -363,11 +433,13 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                       side: BorderSide(color: Colors.red.shade400),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
-                    onPressed: () => _showCancelDialog(context),
+                    onPressed: () => _showCancelDialog(context, isBn),
                     icon: Icon(Icons.cancel_outlined, color: Colors.red.shade400),
                     label: Text(
-                      'অর্ডার বাতিল করুন',
-                      style: GoogleFonts.hindSiliguri(color: Colors.red.shade400, fontWeight: FontWeight.bold),
+                      isBn ? 'অর্ডার বাতিল করুন' : 'Cancel Order',
+                      style: isBn
+                          ? GoogleFonts.hindSiliguri(color: Colors.red.shade400, fontWeight: FontWeight.bold)
+                          : GoogleFonts.poppins(color: Colors.red.shade400, fontWeight: FontWeight.bold),
                     ),
                   ),
           ),
@@ -376,22 +448,26 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     );
   }
 
-  void _showCancelDialog(BuildContext context) {
+  void _showCancelDialog(BuildContext context, bool isBn) {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(
-          'অর্ডার বাতিল করুন?',
-          style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold),
+          isBn ? 'অর্ডার বাতিল করুন?' : 'Cancel Order?',
+          style: isBn
+              ? GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold)
+              : GoogleFonts.poppins(fontWeight: FontWeight.bold),
         ),
         content: Text(
-          'আপনি কি নিশ্চিতভাবে এই অর্ডারটি বাতিল করতে চান?',
-          style: GoogleFonts.hindSiliguri(),
+          isBn
+              ? 'আপনি কি নিশ্চিতভাবে এই অর্ডারটি বাতিল করতে চান?'
+              : 'Are you sure you want to cancel this order?',
+          style: isBn ? GoogleFonts.hindSiliguri() : GoogleFonts.poppins(),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: Text('না', style: GoogleFonts.hindSiliguri()),
+            child: Text(isBn ? 'না' : 'No', style: isBn ? GoogleFonts.hindSiliguri() : GoogleFonts.poppins()),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
@@ -403,16 +479,16 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
               try {
                 await OrderService().updateOrderStatus(_order.id, 'cancelled', 0);
                 Get.snackbar(
-                  'অর্ডার বাতিল',
-                  'আপনার অর্ডারটি সফলভাবে বাতিল করা হয়েছে।',
+                  isBn ? 'অর্ডার বাতিল' : 'Order Cancelled',
+                  isBn ? 'আপনার অর্ডারটি সফলভাবে বাতিল করা হয়েছে।' : 'Your order has been cancelled successfully.',
                   backgroundColor: Colors.green.shade100,
                   colorText: Colors.green.shade900,
                 );
                 Navigator.pop(context);
               } catch (e) {
                 Get.snackbar(
-                  'বাতিল করা যায়নি',
-                  'কোনো সমস্যা হয়েছে। আবার চেষ্টা করুন।',
+                  isBn ? 'বাতিল করা যায়নি' : 'Cancellation Failed',
+                  isBn ? 'কোনো সমস্যা হয়েছে। আবার চেষ্টা করুন।' : 'Failed to cancel order. Please try again.',
                   backgroundColor: Colors.red.shade100,
                   colorText: Colors.red.shade900,
                 );
@@ -424,7 +500,12 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                 }
               }
             },
-            child: Text('হ্যাঁ, বাতিল করুন', style: GoogleFonts.hindSiliguri(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: Text(
+              isBn ? 'হ্যাঁ, বাতিল করুন' : 'Yes, Cancel',
+              style: isBn
+                  ? GoogleFonts.hindSiliguri(color: Colors.white, fontWeight: FontWeight.bold)
+                  : GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),

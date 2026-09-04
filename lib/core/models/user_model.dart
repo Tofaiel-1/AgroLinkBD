@@ -125,8 +125,10 @@ class UserModel {
       'name': name,
       'phone': phone,
       'email': email,
-      'userType': userType.toString(),
-      'status': status.toString(),
+      'userType': userType.name,
+      'role': userType.name,
+      'userRole': userType.name,
+      'status': status.name,
       'profileImage': profileImage,
       'nidNumber': nidNumber,
       'address': address,
@@ -207,10 +209,151 @@ class UserModel {
       name: json['name'] ?? '',
       phone: json['phone'] ?? '',
       email: json['email'],
-      userType: UserType.values.firstWhere(
-        (e) => e.toString() == json['userType'] || e.name.toLowerCase() == json['userType']?.toString().toLowerCase(),
-        orElse: () => UserType.farmer,
-      ),
+      userType: () {
+        final raw = (json['userType'] ?? json['role'] ?? json['userRole'])?.toString();
+        final rawDomain = (json['domain'] ?? json['userDomain'])?.toString().toLowerCase() ?? '';
+        final rawName = (json['name'] ?? '').toString().toLowerCase();
+        final rawEmail = (json['email'] ?? '').toString().toLowerCase();
+
+        final isFisheriesContext = rawDomain == 'fisheries' ||
+            rawName.contains('fish') ||
+            rawEmail.contains('fish') ||
+            rawName.contains('মৎস্য') ||
+            rawName.contains('মাছ');
+
+        // Strong Name / Email Priority Checks to prevent stale or defaulted Firestore roles:
+        final isDriverByName = rawName.contains('driver') ||
+            rawEmail.contains('driver') ||
+            rawName.contains('চালক') ||
+            rawName.contains('পরিবহন');
+
+        final isBuyerByName = rawName.contains('buyer') ||
+            rawEmail.contains('buyer') ||
+            rawName.contains('ক্রেতা') ||
+            rawName.contains('পাইকারি');
+
+        final isHatcheryByName = rawName.contains('hatchery') ||
+            rawEmail.contains('hatchery') ||
+            rawName.contains('হ্যাচারি');
+
+        final isExpertByName = rawName.contains('expert') ||
+            rawEmail.contains('expert') ||
+            rawName.contains('বিশেষজ্ঞ');
+
+        final isServiceProviderByName = rawName.contains('service') ||
+            rawEmail.contains('service') ||
+            rawName.contains('সেবা');
+
+        final isCompanyByName = rawName.contains('company') ||
+            rawEmail.contains('company') ||
+            rawName.contains('কোম্পানি');
+
+        if (isDriverByName) {
+          return isFisheriesContext ? UserType.fishDriver : UserType.driver;
+        }
+        if (isBuyerByName) {
+          return isFisheriesContext ? UserType.fishBuyer : UserType.buyer;
+        }
+        if (isHatcheryByName) {
+          return UserType.hatchery;
+        }
+        if (isExpertByName) {
+          return isFisheriesContext ? UserType.fishExpert : UserType.expert;
+        }
+        if (isServiceProviderByName) {
+          return isFisheriesContext ? UserType.fishServiceProvider : UserType.serviceProvider;
+        }
+        if (isCompanyByName) {
+          return isFisheriesContext ? UserType.fishCompany : UserType.company;
+        }
+
+        if (raw == null || raw.isEmpty) {
+          return isFisheriesContext ? UserType.fishFarmer : UserType.farmer;
+        }
+
+        final clean = raw
+            .replaceAll('UserType.', '')
+            .replaceAll('UserRole.', '')
+            .replaceAll('_', '')
+            .replaceAll(' ', '')
+            .replaceAll('-', '')
+            .toLowerCase();
+
+        // 1. Explicit Driver Checks
+        if (clean == 'fishdriver' ||
+            clean.contains('fishdriver') ||
+            clean.contains('মৎস্যপরিবহন') ||
+            clean.contains('মাছপরিবহন') ||
+            (clean.contains('driver') && isFisheriesContext) ||
+            (clean.contains('চালক') && isFisheriesContext) ||
+            (clean.contains('পরিবহন') && isFisheriesContext)) {
+          return UserType.fishDriver;
+        }
+        if (clean == 'driver' || clean.contains('driver') || clean.contains('চালক') || clean.contains('পরিবহন')) {
+          return isFisheriesContext ? UserType.fishDriver : UserType.driver;
+        }
+
+        // 2. Explicit Buyer Checks
+        if (clean == 'fishbuyer' ||
+            clean.contains('fishbuyer') ||
+            clean.contains('মাছক্রেতা') ||
+            clean.contains('মৎস্যক্রেতা') ||
+            clean.contains('পাইকারিক্রেতা') ||
+            (clean.contains('buyer') && isFisheriesContext) ||
+            (clean.contains('ক্রেতা') && isFisheriesContext)) {
+          return UserType.fishBuyer;
+        }
+        if (clean == 'buyer' || clean.contains('buyer') || clean.contains('ক্রেতা') || clean.contains('পাইকারি')) {
+          return isFisheriesContext ? UserType.fishBuyer : UserType.buyer;
+        }
+
+        // 3. Exact UserType enum matches
+        for (var t in UserType.values) {
+          if (t.name.toLowerCase() == clean) {
+            if (t == UserType.driver && isFisheriesContext) return UserType.fishDriver;
+            if (t == UserType.buyer && isFisheriesContext) return UserType.fishBuyer;
+            if (t == UserType.farmer && isFisheriesContext) return UserType.fishFarmer;
+            if (t == UserType.serviceProvider && isFisheriesContext) return UserType.fishServiceProvider;
+            if (t == UserType.company && isFisheriesContext) return UserType.fishCompany;
+            if (t == UserType.expert && isFisheriesContext) return UserType.fishExpert;
+            return t;
+          }
+        }
+
+        // 4. Other Fisheries Roles
+        if (clean == 'hatchery' || clean == 'hatcheryowner' || clean.contains('হ্যাচারি')) {
+          return UserType.hatchery;
+        }
+        if (clean == 'fishexpert' || (clean == 'expert' && isFisheriesContext) || (clean.contains('বিশেষজ্ঞ') && isFisheriesContext)) {
+          return UserType.fishExpert;
+        }
+        if (clean == 'fishserviceprovider' || (clean == 'serviceprovider' && isFisheriesContext) || (clean.contains('সেবা') && isFisheriesContext)) {
+          return UserType.fishServiceProvider;
+        }
+        if (clean == 'fishcompany' || (clean == 'company' && isFisheriesContext) || (clean.contains('কোম্পানি') && isFisheriesContext)) {
+          return UserType.fishCompany;
+        }
+        if (clean == 'fishfarmer' ||
+            clean == 'fishfarming' ||
+            clean == 'fisherman' ||
+            clean == 'aquaculture' ||
+            clean.contains('মৎস্যচাষী') ||
+            clean.contains('মাছচাষী') ||
+            (clean.contains('চাষী') && isFisheriesContext) ||
+            (clean == 'farmer' && isFisheriesContext) ||
+            (clean == 'fish' && isFisheriesContext) ||
+            (clean == 'fisheries')) {
+          return UserType.fishFarmer;
+        }
+
+        // 5. Agriculture Fallbacks
+        if (clean == 'serviceprovider' || clean.contains('সেবা')) return UserType.serviceProvider;
+        if (clean == 'company' || clean.contains('কোম্পানি')) return UserType.company;
+        if (clean == 'seller' || clean.contains('বিক্রেতা')) return UserType.seller;
+        if (clean == 'expert' || clean.contains('বিশেষজ্ঞ')) return UserType.expert;
+
+        return isFisheriesContext ? UserType.fishFarmer : UserType.farmer;
+      }(),
       status: UserStatus.values.firstWhere(
         (e) => e.toString() == json['status'] || e.name.toLowerCase() == json['status']?.toString().toLowerCase(),
         orElse: () => UserStatus.active,
@@ -222,41 +365,58 @@ class UserModel {
       upazila: json['upazila'],
       unionName: json['unionName'],
       village: json['village'],
-      latitude: json['latitude']?.toDouble(),
-      longitude: json['longitude']?.toDouble(),
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
       isPremium: json['isPremium'] ?? false,
       premiumExpiryDate: json['premiumExpiryDate'] != null
           ? DateTime.tryParse(json['premiumExpiryDate'].toString())
           : null,
-      rating: (json['rating'] ?? 0.0).toDouble(),
-      totalRatings: json['totalRatings'] ?? 0,
-      farmerRating: (json['farmerRating'] ?? 0.0).toDouble(),
-      paymentScore: (json['paymentScore'] ?? 0.0).toDouble(),
-      transportScore: (json['transportScore'] ?? 0.0).toDouble(),
-      trustScore: (json['trustScore'] ?? 100.0).toDouble(),
-      fraudReports: json['fraudReports'] ?? 0,
-      cancelledOrders: json['cancelledOrders'] ?? 0,
-      paymentDefaults: json['paymentDefaults'] ?? 0,
-      lateDeliveries: json['lateDeliveries'] ?? 0,
-      totalOrders: json['totalOrders'] ?? 0,
-      totalSpent: (json['totalSpent'] ?? 0.0).toDouble(),
+      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
+      totalRatings: (json['totalRatings'] as num?)?.toInt() ?? 0,
+      farmerRating: (json['farmerRating'] as num?)?.toDouble() ?? 0.0,
+      paymentScore: (json['paymentScore'] as num?)?.toDouble() ?? 0.0,
+      transportScore: (json['transportScore'] as num?)?.toDouble() ?? 0.0,
+      trustScore: (json['trustScore'] as num?)?.toDouble() ?? 100.0,
+      fraudReports: (json['fraudReports'] as num?)?.toInt() ?? 0,
+      cancelledOrders: (json['cancelledOrders'] as num?)?.toInt() ?? 0,
+      paymentDefaults: (json['paymentDefaults'] as num?)?.toInt() ?? 0,
+      lateDeliveries: (json['lateDeliveries'] as num?)?.toInt() ?? 0,
+      totalOrders: (json['totalOrders'] as num?)?.toInt() ?? 0,
+      totalSpent: (json['totalSpent'] as num?)?.toDouble() ?? 0.0,
       createdAt: parsedCreatedAt,
       lastLoginAt: parsedLastLogin,
-      mainBalance: (json['mainBalance'] ?? 0.0).toDouble(),
+      mainBalance: (json['mainBalance'] as num?)?.toDouble() ?? 0.0,
       mainBalancePin: json['mainBalancePin'],
-      domain: json['domain'] ?? 'agriculture',
-      totalLand: json['totalLand']?.toDouble(),
+      domain: () {
+        final explicitDomain = (json['domain'] ?? json['userDomain'])?.toString().toLowerCase();
+        if (explicitDomain != null && (explicitDomain == 'fisheries' || explicitDomain == 'agriculture')) {
+          return explicitDomain;
+        }
+        final rawRole = (json['userType'] ?? json['role'] ?? json['userRole'])?.toString().toLowerCase() ?? '';
+        final rawName = (json['name'] ?? '').toString().toLowerCase();
+        final rawEmail = (json['email'] ?? '').toString().toLowerCase();
+        if (rawRole.contains('fish') ||
+            rawRole.contains('hatchery') ||
+            rawRole.contains('মৎস্য') ||
+            rawRole.contains('মাছ') ||
+            rawName.contains('fish') ||
+            rawEmail.contains('fish')) {
+          return 'fisheries';
+        }
+        return 'agriculture';
+      }(),
+      totalLand: (json['totalLand'] as num?)?.toDouble(),
       cropTypes: json['cropTypes'] != null
           ? List<String>.from(json['cropTypes'])
           : null,
       machineryTypes: json['machineryTypes'] != null
           ? List<String>.from(json['machineryTypes'])
           : null,
-      hourlyRate: json['hourlyRate']?.toDouble(),
+      hourlyRate: (json['hourlyRate'] as num?)?.toDouble(),
       yearsOfExperience: json['yearsOfExperience'] is int ? json['yearsOfExperience'] : (json['yearsOfExperience'] != null ? int.tryParse(json['yearsOfExperience'].toString()) : null),
       vehicleType: json['vehicleType'],
       vehicleNumber: json['vehicleNumber'],
-      loadCapacity: json['loadCapacity']?.toDouble(),
+      loadCapacity: (json['loadCapacity'] as num?)?.toDouble(),
       companyName: json['companyName'],
       tradeLicense: json['tradeLicense'],
     );

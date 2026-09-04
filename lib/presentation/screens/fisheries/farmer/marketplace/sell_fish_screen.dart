@@ -2,12 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 import 'package:agrolinkbd/core/providers/user_provider.dart';
 import 'package:agrolinkbd/core/models/marketplace_item_model.dart';
 import 'package:agrolinkbd/core/controllers/marketplace_controller.dart';
 
 class SellFishScreen extends StatefulWidget {
-  const SellFishScreen({super.key});
+  final MarketplaceItemModel? itemToEdit;
+  final String? initialFishType;
+  final double? initialPricePerKg;
+  final String? initialLocation;
+
+  const SellFishScreen({
+    super.key,
+    this.itemToEdit,
+    this.initialFishType,
+    this.initialPricePerKg,
+    this.initialLocation,
+  });
 
   @override
   State<SellFishScreen> createState() => _SellFishScreenState();
@@ -19,73 +32,415 @@ class _SellFishScreenState extends State<SellFishScreen> {
   final _quantityController = TextEditingController();
   final _avgWeightController = TextEditingController();
   final _priceController = TextEditingController();
+  final _locationController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _phoneController = TextEditingController();
+
   bool _isLoading = false;
+  bool get _isEditing => widget.itemToEdit != null;
+
+  final List<String> _popularSpeciesBn = [
+    'রুই মাছ',
+    'কাতলা মাছ',
+    'মৃগেল মাছ',
+    'পাঙ্গাস মাছ',
+    'তেলাপিয়া মাছ',
+    'বাগদা চিংড়ি',
+    'গলদা চিংড়ি',
+    'শিং মাছ',
+    'মাগুর মাছ',
+    'পাবদা মাছ',
+    'সিলভার কার্প',
+    'রূপচাঁদা',
+  ];
+
+  final List<String> _popularSpeciesEn = [
+    'Rui Fish',
+    'Katla Fish',
+    'Mrigel Fish',
+    'Pangas Fish',
+    'Tilapia',
+    'Black Tiger Shrimp',
+    'Giant River Prawn',
+    'Singhi Fish',
+    'Magur Fish',
+    'Pabda Fish',
+    'Silver Carp',
+    'Pomfret',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    if (_isEditing) {
+      final item = widget.itemToEdit!;
+      _fishTypeController.text = item.fishType;
+      _quantityController.text = item.quantityKg > 0 ? item.quantityKg.toStringAsFixed(0) : '';
+      _avgWeightController.text = item.avgWeightGram > 0 ? item.avgWeightGram.toStringAsFixed(0) : '';
+      _priceController.text = item.pricePerKg > 0 ? item.pricePerKg.toStringAsFixed(0) : '';
+      _locationController.text = item.location;
+      _descriptionController.text = item.description ?? '';
+      _phoneController.text = item.farmerPhone;
+    } else {
+      if (widget.initialFishType != null) {
+        _fishTypeController.text = widget.initialFishType!;
+      }
+      if (widget.initialPricePerKg != null && widget.initialPricePerKg! > 0) {
+        _priceController.text = widget.initialPricePerKg!.toStringAsFixed(0);
+      }
+      if (widget.initialLocation != null) {
+        _locationController.text = widget.initialLocation!;
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _fishTypeController.dispose();
+    _quantityController.dispose();
+    _avgWeightController.dispose();
+    _priceController.dispose();
+    _locationController.dispose();
+    _descriptionController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    const Color greenColor = Color(0xFF43A047);
+    final isBn = LanguageProvider.isBn(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    const Color deepAqua = Color(0xFF004D40);
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: isDark ? const Color(0xFF0C141A) : const Color(0xFFF4F7F9),
       appBar: AppBar(
         title: Text(
-          'মাছ বিক্রি করুন',
+          _isEditing
+              ? (isBn ? 'মাছের লট সংশোধন করুন' : 'Edit Fish Lot')
+              : (isBn ? 'নতুন মাছ বিক্রির বিজ্ঞাপন' : 'Post New Fish Listing'),
           style: GoogleFonts.hindSiliguri(
             color: Colors.white,
             fontWeight: FontWeight.bold,
+            fontSize: 18,
           ),
         ),
-        backgroundColor: greenColor,
+        backgroundColor: deepAqua,
         elevation: 0,
         centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'বিক্রির জন্য মাছের তথ্য দিন',
-                style: GoogleFonts.hindSiliguri(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).textTheme.bodyLarge?.color,
+              // Header Card
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: isDark
+                        ? [const Color(0xFF132B2B), const Color(0xFF0D1D24)]
+                        : [const Color(0xFFE0F2F1), const Color(0xFFE8F5E9)],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.teal.shade300.withValues(alpha: 0.4)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: deepAqua.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        _isEditing ? Icons.edit_note_rounded : Icons.storefront_rounded,
+                        color: deepAqua,
+                        size: 26,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _isEditing
+                                ? (isBn ? 'লটের তথ্য আপডেট করুন' : 'Update Lot Information')
+                                : (isBn ? 'আড়তদার ও পাইকারদের কাছে মাছ বিক্রি' : 'Direct Wholesale & Buyer Listing'),
+                            style: GoogleFonts.hindSiliguri(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: isDark ? Colors.tealAccent : deepAqua,
+                            ),
+                          ),
+                          Text(
+                            isBn
+                                ? 'সঠিক তথ্য দিলে সারাদেশে দ্রুত ক্রেতা পাওয়া যায়।'
+                                : 'Accurate lot details attract top buyers and fair prices.',
+                            style: GoogleFonts.hindSiliguri(
+                              fontSize: 11.5,
+                              color: isDark ? Colors.white70 : Colors.grey.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
+
               const SizedBox(height: 20),
-              _buildInputField('মাছের ধরন (যেমন: রুই, কাতলা)', Icons.set_meal, _fishTypeController),
-              const SizedBox(height: 16),
-              _buildInputField('মাছের পরিমাণ (কেজি)', Icons.scale, _quantityController, isNumber: true),
-              const SizedBox(height: 16),
-              _buildInputField('গড় ওজন (প্রতিটি মাছের গ্রাম)', Icons.fitness_center, _avgWeightController, isNumber: true),
-              const SizedBox(height: 16),
-              _buildInputField('প্রত্যাশিত দাম (প্রতি কেজি)', Icons.attach_money, _priceController, isNumber: true),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _submitFishListing,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: greenColor,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: _isLoading 
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : Text(
-                        'সাবমিট করুন',
+
+              // Fish Species Quick Selection
+              Text(
+                isBn ? 'জনপ্রিয় মাছ নির্বাচন করুন:' : 'Quick Select Fish Species:',
+                style: GoogleFonts.hindSiliguri(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.tealAccent : const Color(0xFF004D40),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: (isBn ? _popularSpeciesBn : _popularSpeciesEn).map((species) {
+                  final isSelected = _fishTypeController.text.trim() == species.trim();
+                  return InkWell(
+                    onTap: () {
+                      setState(() {
+                        _fishTypeController.text = species;
+                      });
+                    },
+                    borderRadius: BorderRadius.circular(20),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? deepAqua
+                            : (isDark ? const Color(0xFF1E2D38) : Colors.white),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isSelected ? deepAqua : Colors.teal.shade200.withValues(alpha: 0.6),
+                          width: 1.2,
+                        ),
+                        boxShadow: isSelected
+                            ? [
+                                BoxShadow(
+                                  color: deepAqua.withValues(alpha: 0.3),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                )
+                              ]
+                            : null,
+                      ),
+                      child: Text(
+                        species,
                         style: GoogleFonts.hindSiliguri(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                          color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
                         ),
                       ),
+                    ),
+                  );
+                }).toList(),
+              ),
+
+              const SizedBox(height: 18),
+
+              // Fish Species Input Field
+              _buildInputField(
+                label: isBn ? 'মাছের নাম / প্রজাতি' : 'Fish Species Name',
+                hint: isBn ? 'যেমন: রুই মাছ, গলদা চিংড়ি' : 'e.g. Rui Fish, River Prawn',
+                icon: Icons.set_meal_rounded,
+                controller: _fishTypeController,
+                isDark: isDark,
+                isBn: isBn,
+              ),
+
+              const SizedBox(height: 14),
+
+              // Quantity & Avg Weight Row
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildInputField(
+                      label: isBn ? 'মোট পরিমাণ (কেজি)' : 'Total Quantity (kg)',
+                      hint: '100',
+                      icon: Icons.scale_rounded,
+                      controller: _quantityController,
+                      isNumber: true,
+                      isDark: isDark,
+                      isBn: isBn,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildInputField(
+                      label: isBn ? 'গড় ওজন (গ্রাম)' : 'Avg Weight (g)',
+                      hint: '1200',
+                      icon: Icons.fitness_center_rounded,
+                      controller: _avgWeightController,
+                      isNumber: true,
+                      isDark: isDark,
+                      isBn: isBn,
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 14),
+
+              // Price per kg & Location Row
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildInputField(
+                      label: isBn ? 'প্রত্যাশিত দর (টাকা/কেজি)' : 'Price (৳/kg)',
+                      hint: '320',
+                      icon: Icons.monetization_on_rounded,
+                      controller: _priceController,
+                      isNumber: true,
+                      isDark: isDark,
+                      isBn: isBn,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildInputField(
+                      label: isBn ? 'খামারের জেলা / এলাকা' : 'District / Area',
+                      hint: isBn ? 'ময়মনসিংহ' : 'Mymensingh',
+                      icon: Icons.location_on_rounded,
+                      controller: _locationController,
+                      isDark: isDark,
+                      isBn: isBn,
+                      isRequired: false,
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 14),
+
+              // Contact Phone
+              _buildInputField(
+                label: isBn ? 'যোগাযোগের মোবাইল নম্বর' : 'Contact Phone Number',
+                hint: '017XXXXXXXX',
+                icon: Icons.phone_rounded,
+                controller: _phoneController,
+                isNumber: true,
+                isDark: isDark,
+                isBn: isBn,
+                isRequired: false,
+              ),
+
+              const SizedBox(height: 14),
+
+              // Description / Notes
+              _buildInputField(
+                label: isBn ? 'মাছের বিশেষ বিবরণ ও শর্তাবলী (ঐচ্ছিক)' : 'Harvest Notes & Details (Optional)',
+                hint: isBn ? 'যেমন: শতভাগ জীবন্ত অক্সিজেন ডেলিভারি সম্ভব, ফিড খাওয়ানো তাজা মাছ।' : 'e.g. 100% live oxygen harvest, organic feed fed.',
+                icon: Icons.notes_rounded,
+                controller: _descriptionController,
+                isDark: isDark,
+                isBn: isBn,
+                maxLines: 3,
+                isRequired: false,
+              ),
+
+              const SizedBox(height: 24),
+
+              // Total Estimate Banner Preview
+              AnimatedBuilder(
+                animation: Listenable.merge([_quantityController, _priceController]),
+                builder: (context, _) {
+                  final qty = double.tryParse(_quantityController.text) ?? 0.0;
+                  final price = double.tryParse(_priceController.text) ?? 0.0;
+                  final total = qty * price;
+
+                  if (total <= 0) return const SizedBox.shrink();
+
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 20),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF132B2B) : const Color(0xFFE0F2F1),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: Colors.teal.shade300),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          isBn ? 'লটের আনুমানিক মোট বিক্রয়মূল্য:' : 'Estimated Total Lot Value:',
+                          style: GoogleFonts.hindSiliguri(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: isDark ? Colors.tealAccent : const Color(0xFF004D40),
+                          ),
+                        ),
+                        Text(
+                          '৳${total.toStringAsFixed(0)}',
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            color: const Color(0xFF00796B),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+
+              // Submit Button
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton.icon(
+                  onPressed: _isLoading ? null : () => _submitFishListing(isBn),
+                  icon: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        )
+                      : Icon(_isEditing ? Icons.check_circle_rounded : Icons.cloud_upload_rounded, color: Colors.white),
+                  label: Text(
+                    _isLoading
+                        ? (isBn ? 'সংরক্ষণ হচ্ছে...' : 'Saving to Database...')
+                        : (_isEditing
+                            ? (isBn ? 'লটের তথ্য আপডেট করুন' : 'Update Lot Listing')
+                            : (isBn ? 'মার্কেটপ্লেসে মাছ বিজ্ঞাপন দিন' : 'Publish Fish Listing')),
+                    style: GoogleFonts.hindSiliguri(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: deepAqua,
+                    elevation: 3,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
                 ),
               ),
+
+              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -93,70 +448,167 @@ class _SellFishScreenState extends State<SellFishScreen> {
     );
   }
 
-  Widget _buildInputField(String label, IconData icon, TextEditingController controller, {bool isNumber = false}) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: isNumber ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: GoogleFonts.hindSiliguri(color: Colors.grey.shade600),
-        prefixIcon: Icon(icon, color: Colors.green.shade600),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+  Widget _buildInputField({
+    required String label,
+    required String hint,
+    required IconData icon,
+    required TextEditingController controller,
+    required bool isDark,
+    required bool isBn,
+    bool isNumber = false,
+    bool isRequired = true,
+    int maxLines = 1,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.hindSiliguri(
+            fontSize: 12.5,
+            fontWeight: FontWeight.w600,
+            color: isDark ? Colors.white70 : Colors.grey.shade800,
+          ),
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+        const SizedBox(height: 6),
+        TextFormField(
+          controller: controller,
+          maxLines: maxLines,
+          keyboardType: isNumber
+              ? const TextInputType.numberWithOptions(decimal: true)
+              : (maxLines > 1 ? TextInputType.multiline : TextInputType.text),
+          style: GoogleFonts.hindSiliguri(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: isDark ? Colors.white : Colors.black87,
+          ),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: GoogleFonts.hindSiliguri(color: Colors.grey.shade400, fontSize: 13),
+            prefixIcon: Icon(icon, color: const Color(0xFF00796B), size: 20),
+            filled: true,
+            fillColor: isDark ? const Color(0xFF16252F) : Colors.white,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.teal.shade100),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: isDark ? Colors.white12 : Colors.grey.shade300),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFF00796B), width: 2),
+            ),
+          ),
+          validator: isRequired
+              ? (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return isBn ? 'এই তথ্যটি দেওয়া আবশ্যক' : 'This field is required';
+                  }
+                  if (isNumber) {
+                    final numVal = double.tryParse(value.trim());
+                    if (numVal == null || numVal <= 0) {
+                      return isBn ? 'সঠিক সংখ্যা প্রদান করুন' : 'Please enter a valid positive number';
+                    }
+                  }
+                  return null;
+                }
+              : null,
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.green.shade400, width: 2),
-        ),
-        filled: true,
-        fillColor: Theme.of(context).cardColor,
-      ),
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'এই তথ্যটি প্রয়োজন';
-        }
-        return null;
-      },
+      ],
     );
   }
 
-  Future<void> _submitFishListing() async {
+  Future<void> _submitFishListing(bool isBn) async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     setState(() => _isLoading = true);
-    
+
     try {
       final userProvider = Provider.of<UserProvider>(context, listen: false);
       final user = userProvider.currentUser;
-      
-      final newItem = MarketplaceItemModel(
-        id: 'PROD_${DateTime.now().millisecondsSinceEpoch}',
-        farmerId: user?.id ?? 'mock_farmer_id',
-        farmerName: user?.name ?? 'আমাদের কৃষক',
-        fishType: _fishTypeController.text,
-        quantityKg: double.parse(_quantityController.text),
-        avgWeightGram: double.parse(_avgWeightController.text),
-        pricePerKg: double.parse(_priceController.text),
-        createdAt: DateTime.now(),
-      );
+      final currentUid = FirebaseAuth.instance.currentUser?.uid ?? user?.id ?? 'FARMER_123';
+      final farmerName = user?.name ?? FirebaseAuth.instance.currentUser?.displayName ?? (isBn ? 'খামারী' : 'Fish Farmer');
+      final farmerPhone = _phoneController.text.trim().isNotEmpty
+          ? _phoneController.text.trim()
+          : (user?.phone ?? FirebaseAuth.instance.currentUser?.phoneNumber ?? '');
 
-      final MarketplaceController marketplaceController = Get.find<MarketplaceController>();
-      marketplaceController.addItem(newItem);
-          
-      Get.back();
-      Get.snackbar(
-        'সফল', 
-        'মাছ বিক্রির জন্য মার্কেটপ্লেসে দেওয়া হয়েছে!',
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-      );
+      final marketplaceController = Get.find<MarketplaceController>();
+
+      if (_isEditing) {
+        // Update existing lot
+        final updatedLot = widget.itemToEdit!.copyWith(
+          fishType: _fishTypeController.text.trim(),
+          quantityKg: double.parse(_quantityController.text.trim()),
+          avgWeightGram: double.parse(_avgWeightController.text.trim()),
+          pricePerKg: double.parse(_priceController.text.trim()),
+          location: _locationController.text.trim(),
+          farmerPhone: farmerPhone,
+          description: _descriptionController.text.trim(),
+          updatedAt: DateTime.now(),
+        );
+
+        final success = await marketplaceController.updateLot(updatedLot);
+        if (success) {
+          if (mounted) {
+            Navigator.of(context).pop();
+            Get.snackbar(
+              isBn ? 'সফলভাবে সংরক্ষিত' : 'Successfully Updated',
+              isBn ? 'মাছের লটের তথ্য ডেটাবেসে আপডেট হয়েছে।' : 'Fish lot has been updated in database.',
+              backgroundColor: const Color(0xFF004D40),
+              colorText: Colors.white,
+              snackPosition: SnackPosition.BOTTOM,
+              margin: const EdgeInsets.all(16),
+            );
+          }
+        } else {
+          throw Exception('Failed to update lot in database.');
+        }
+      } else {
+        // Create new real lot in Firebase
+        final newItem = MarketplaceItemModel(
+          id: 'LOT_${DateTime.now().millisecondsSinceEpoch}',
+          farmerId: currentUid,
+          farmerName: farmerName,
+          farmerPhone: farmerPhone,
+          fishType: _fishTypeController.text.trim(),
+          quantityKg: double.parse(_quantityController.text.trim()),
+          avgWeightGram: double.parse(_avgWeightController.text.trim()),
+          pricePerKg: double.parse(_priceController.text.trim()),
+          location: _locationController.text.trim().isNotEmpty ? _locationController.text.trim() : (isBn ? 'বাংলাদেশ' : 'Bangladesh'),
+          status: 'active',
+          description: _descriptionController.text.trim(),
+          createdAt: DateTime.now(),
+        );
+
+        final newDocId = await marketplaceController.addLot(newItem);
+        if (newDocId != null) {
+          if (mounted) {
+            Navigator.of(context).pop();
+            Get.snackbar(
+              isBn ? 'সফলভাবে লিস্ট হয়েছে' : 'Successfully Listed',
+              isBn ? 'আপনার মাছের লট সরাসরি ফায়ারবেস ডেটাবেসে বিজ্ঞাপিত হয়েছে!' : 'Fish lot published to live marketplace database!',
+              backgroundColor: const Color(0xFF004D40),
+              colorText: Colors.white,
+              snackPosition: SnackPosition.BOTTOM,
+              margin: const EdgeInsets.all(16),
+            );
+          }
+        } else {
+          throw Exception('Failed to create lot in database.');
+        }
+      }
     } catch (e) {
-      Get.snackbar('ত্রুটি', 'মাছ বিক্রি লিস্ট করতে সমস্যা হয়েছে: $e', backgroundColor: Colors.red, colorText: Colors.white);
+      Get.snackbar(
+        isBn ? 'ত্রুটি' : 'Error',
+        isBn ? 'তথ্য সংরক্ষণে সমস্যা হয়েছে: $e' : 'Failed to save lot: $e',
+        backgroundColor: Colors.red.shade700,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

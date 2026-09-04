@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:agrolinkbd/core/providers/user_provider.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 import 'package:agrolinkbd/core/services/transaction_service.dart';
 import 'package:agrolinkbd/core/controllers/user_controller.dart';
 import 'package:agrolinkbd/presentation/widgets/secure_balance_widget.dart';
@@ -43,11 +44,28 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
   late Animation<double> _fadeAnimation;
   late ScrollController _tickerScrollController;
 
-  // Mock Tasks State
+  // Interactive Tasks State
   final List<Map<String, dynamic>> _tasks = [
-    {'title': 'পুকুর-১ এ মাছের খাবার দেওয়া', 'completed': false},
-    {'title': 'পুকুর-২ এর পানি পরীক্ষা করা', 'completed': false},
-    {'title': 'নতুন পোনা ছাড়ার প্রস্তুতি', 'completed': true},
+    {
+      'titleBn': 'পুকুর-১ এ সকালের মাছের খাবার দেওয়া',
+      'titleEn': 'Morning feeding at Pond-1',
+      'completed': false,
+    },
+    {
+      'titleBn': 'পুকুর-২ এর পানি ও পিএইচ পরীক্ষা করা',
+      'titleEn': 'Test water & pH level in Pond-2',
+      'completed': false,
+    },
+    {
+      'titleBn': 'নতুন পোনা ছাড়ার জন্য ট্যাংক প্রস্তুতি',
+      'titleEn': 'Prepare tank for fingerling stocking',
+      'completed': true,
+    },
+    {
+      'titleBn': 'অ্যারেটর ও অক্সিজেন মাত্রা চেক করা',
+      'titleEn': 'Check aerators & dissolved oxygen',
+      'completed': false,
+    },
   ];
 
   final TransactionService _transactionService = TransactionService();
@@ -120,6 +138,7 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
 
   @override
   Widget build(BuildContext context) {
+    final isBn = LanguageProvider.isBn(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     const Color oceanBlue = Color(0xFF0288D1); // Primary Fisheries Color
     const Color deepAqua = Color(0xFF006064);
@@ -134,11 +153,11 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 18.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 18),
                       
                       // User Header with Balance & Notifications
                       Row(
@@ -151,11 +170,11 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                               children: [
                                 Consumer<UserProvider>(
                                   builder: (context, userProvider, _) {
-                                    final userName = userProvider.currentUser?.name ?? 'মৎস্য চাষী';
+                                    final userName = userProvider.currentUser?.name ?? (isBn ? 'মৎস্য চাষী' : 'Fish Farmer');
                                     return Text(
-                                      'স্বাগতম, $userName',
+                                      isBn ? 'স্বাগতম, $userName' : 'Welcome, $userName',
                                       style: GoogleFonts.hindSiliguri(
-                                        fontSize: 24,
+                                        fontSize: 22,
                                         fontWeight: FontWeight.bold,
                                         color: isDark ? Colors.white : deepAqua,
                                       ),
@@ -163,7 +182,7 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                                     );
                                   }
                                 ),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: 6),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                   decoration: BoxDecoration(
@@ -195,8 +214,8 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                                             pin: walletPin,
                                             pinFieldType: 'walletBalance',
                                             textColor: oceanBlue,
-                                            fontSize: 14.0,
-                                            label: 'Tap to view',
+                                            fontSize: 13.5,
+                                            label: isBn ? 'ব্যালেন্স দেখতে ট্যাপ করুন' : 'Tap to view',
                                           );
                                         }
                                       ),
@@ -210,10 +229,13 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                           Stack(
                             clipBehavior: Clip.none,
                             children: [
-                              Icon(Icons.notifications_outlined, color: isDark ? Colors.white : Colors.black87, size: 28),
+                              IconButton(
+                                icon: Icon(Icons.notifications_outlined, color: isDark ? Colors.white : Colors.black87, size: 26),
+                                onPressed: () {},
+                              ),
                               Positioned(
-                                right: -2,
-                                top: -2,
+                                right: 6,
+                                top: 6,
                                 child: Container(
                                   padding: const EdgeInsets.all(4),
                                   decoration: const BoxDecoration(
@@ -254,36 +276,33 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                       // 1. জরুরী মৎস্য সেবা (QUICK ACTIONS GRID)
                       // ============================================
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: deepAqua.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Icon(Icons.flash_on_rounded, color: deepAqua, size: 20),
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: deepAqua.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(Icons.flash_on_rounded, color: deepAqua, size: 20),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              isBn ? 'জরুরী মৎস্য সেবা' : 'Emergency Fishery Services',
+                              style: GoogleFonts.hindSiliguri(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.white : Colors.black87,
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'জরুরী মৎস্য সেবা',
-                                style: GoogleFonts.hindSiliguri(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDark ? Colors.white : Colors.black87,
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 12),
                       
                       FadeTransition(
                         opacity: _fadeAnimation,
-                        child: _buildQuickActionsGrid(oceanBlue, deepAqua),
+                        child: _buildQuickActionsGrid(oceanBlue, deepAqua, isBn, isDark),
                       ),
 
                       const SizedBox(height: 22),
@@ -292,7 +311,7 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                       // 2. ULTRA PRO COMMERCIAL & INCOME GENERATION HUB
                       // ============================================
                       Container(
-                        padding: const EdgeInsets.all(18),
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
                             colors: [Color(0xFF004D40), Color(0xFF00695C), Color(0xFF00897B)],
@@ -302,7 +321,7 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF004D40).withOpacity(0.35),
+                              color: const Color(0xFF004D40).withValues(alpha: 0.35),
                               blurRadius: 15,
                               offset: const Offset(0, 6),
                             ),
@@ -314,24 +333,29 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Row(
-                                  children: [
-                                    const Icon(Icons.stars, color: Colors.amberAccent, size: 22),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'মাছ বাণিজ্য ও মুনাফা হাব',
-                                      style: GoogleFonts.hindSiliguri(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
+                                Expanded(
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.stars, color: Colors.amberAccent, size: 22),
+                                      const SizedBox(width: 8),
+                                      Flexible(
+                                        child: Text(
+                                          isBn ? 'মাছ বাণিজ্য ও মুনাফা হাব' : 'Fish Commerce & Profit Hub',
+                                          style: GoogleFonts.hindSiliguri(
+                                            fontSize: 17,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                   decoration: BoxDecoration(
-                                    color: Colors.amberAccent.withOpacity(0.2),
+                                    color: Colors.amberAccent.withValues(alpha: 0.2),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(color: Colors.amberAccent),
                                   ),
@@ -348,7 +372,9 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              'সরাসরি পাইকারদের লাইভ ডাক ও আগাম বুকিং চুক্তির মাধ্যমে সর্বোচ্চ আয় নিশ্চিত করুন।',
+                              isBn 
+                                  ? 'সরাসরি পাইকারদের লাইভ ডাক ও আগাম বুকিং চুক্তির মাধ্যমে সর্বোচ্চ আয় নিশ্চিত করুন।'
+                                  : 'Maximize revenue with live wholesaler bidding & forward booking contracts.',
                               style: GoogleFonts.hindSiliguri(
                                 fontSize: 12,
                                 color: Colors.white70,
@@ -364,38 +390,41 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                                     onTap: () => Get.to(() => const CreateFishAuctionScreen()),
                                     borderRadius: BorderRadius.circular(14),
                                     child: Container(
-                                      padding: const EdgeInsets.all(12),
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.12),
+                                        color: Colors.white.withValues(alpha: 0.12),
                                         borderRadius: BorderRadius.circular(14),
                                         border: Border.all(color: Colors.white24),
                                       ),
                                       child: Column(
                                         children: [
-                                          const Icon(Icons.gavel, color: Colors.amberAccent, size: 26),
+                                          const Icon(Icons.gavel, color: Colors.amberAccent, size: 24),
                                           const SizedBox(height: 6),
                                           Text(
-                                            'লাইভ ডাক তুলুন',
+                                            isBn ? 'লাইভ ডাক তুলুন' : 'Live Auction',
                                             style: GoogleFonts.hindSiliguri(
                                               color: Colors.white,
                                               fontWeight: FontWeight.bold,
-                                              fontSize: 13,
+                                              fontSize: 12,
                                             ),
                                             textAlign: TextAlign.center,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
                                           Text(
-                                            'নিলামে বিক্রি',
+                                            isBn ? 'নিলামে বিক্রি' : 'Bidding Sale',
                                             style: GoogleFonts.hindSiliguri(
                                               color: Colors.white70,
                                               fontSize: 10,
                                             ),
+                                            textAlign: TextAlign.center,
                                           ),
                                         ],
                                       ),
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 10),
+                                const SizedBox(width: 8),
 
                                 // Action 2: Advance Futures
                                 Expanded(
@@ -403,38 +432,41 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                                     onTap: () => Get.to(() => const FarmerContractsScreen()),
                                     borderRadius: BorderRadius.circular(14),
                                     child: Container(
-                                      padding: const EdgeInsets.all(12),
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.12),
+                                        color: Colors.white.withValues(alpha: 0.12),
                                         borderRadius: BorderRadius.circular(14),
                                         border: Border.all(color: Colors.white24),
                                       ),
                                       child: Column(
                                         children: [
-                                          const Icon(Icons.assignment_turned_in, color: Colors.cyanAccent, size: 26),
+                                          const Icon(Icons.assignment_turned_in, color: Colors.cyanAccent, size: 24),
                                           const SizedBox(height: 6),
                                           Text(
-                                            'আগাম বিক্রয় চুক্তি',
+                                            isBn ? 'আগাম বিক্রয় চুক্তি' : 'Futures Contract',
                                             style: GoogleFonts.hindSiliguri(
                                               color: Colors.white,
                                               fontWeight: FontWeight.bold,
-                                              fontSize: 13,
+                                              fontSize: 12,
                                             ),
                                             textAlign: TextAlign.center,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
                                           Text(
-                                            '২৫% অগ্রিম ক্যাশ',
+                                            isBn ? '২৫% অগ্রিম ক্যাশ' : '25% Advance Cash',
                                             style: GoogleFonts.hindSiliguri(
                                               color: Colors.white70,
                                               fontSize: 10,
                                             ),
+                                            textAlign: TextAlign.center,
                                           ),
                                         ],
                                       ),
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 10),
+                                const SizedBox(width: 8),
 
                                 // Action 3: FCR & Profit Simulator
                                 Expanded(
@@ -442,31 +474,34 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                                     onTap: () => Get.to(() => const FishGrowthFcrSimulatorScreen()),
                                     borderRadius: BorderRadius.circular(14),
                                     child: Container(
-                                      padding: const EdgeInsets.all(12),
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.12),
+                                        color: Colors.white.withValues(alpha: 0.12),
                                         borderRadius: BorderRadius.circular(14),
                                         border: Border.all(color: Colors.white24),
                                       ),
                                       child: Column(
                                         children: [
-                                          const Icon(Icons.insights, color: Colors.orangeAccent, size: 26),
+                                          const Icon(Icons.insights, color: Colors.orangeAccent, size: 24),
                                           const SizedBox(height: 6),
                                           Text(
-                                            'FCR ও লাভ সিমুলেটর',
+                                            isBn ? 'FCR ও লাভ সিমুলেটর' : 'FCR & Profit Sim',
                                             style: GoogleFonts.hindSiliguri(
                                               color: Colors.white,
                                               fontWeight: FontWeight.bold,
-                                              fontSize: 13,
+                                              fontSize: 12,
                                             ),
                                             textAlign: TextAlign.center,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
                                           Text(
-                                            'ফিড খরচ নিয়ন্ত্রণ',
+                                            isBn ? 'ফিড খরচ নিয়ন্ত্রণ' : 'Feed Optimizer',
                                             style: GoogleFonts.hindSiliguri(
                                               color: Colors.white70,
                                               fontSize: 10,
                                             ),
+                                            textAlign: TextAlign.center,
                                           ),
                                         ],
                                       ),
@@ -485,7 +520,7 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                       // 3. VIP PRO INTELLIGENCE & SATELLITE HUB (VIP PASS)
                       // ============================================
                       Container(
-                        padding: const EdgeInsets.all(18),
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
                             colors: [Color(0xFFE65100), Color(0xFFF57C00), Color(0xFFFF9800)],
@@ -495,7 +530,7 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFFE65100).withOpacity(0.35),
+                              color: const Color(0xFFE65100).withValues(alpha: 0.35),
                               blurRadius: 15,
                               offset: const Offset(0, 6),
                             ),
@@ -507,19 +542,24 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Row(
-                                  children: [
-                                    const Icon(Icons.workspace_premium, color: Colors.white, size: 24),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'ভিআইপি ইন্টেলিজেন্স ও রাডার',
-                                      style: GoogleFonts.hindSiliguri(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
+                                Expanded(
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.workspace_premium, color: Colors.white, size: 22),
+                                      const SizedBox(width: 8),
+                                      Flexible(
+                                        child: Text(
+                                          isBn ? 'ভিআইপি ইন্টেলিজেন্স ও রাডার' : 'VIP Intelligence & Radar',
+                                          style: GoogleFonts.hindSiliguri(
+                                            fontSize: 17,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                                 InkWell(
                                   onTap: () => Get.to(() => const VipSubscriptionPaywallScreen()),
@@ -543,8 +583,10 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              'এআই প্রাইজ প্রেডিকশন, স্যাটেলাইট ওভারফ্লো রাডার ও ব্যাংক লোন ডসিয়ার সুবিধা।',
-                              style: GoogleFonts.hindSiliguri(fontSize: 12, color: Colors.white.withOpacity(0.95)),
+                              isBn 
+                                  ? 'এআই প্রাইজ প্রেডিকশন, স্যাটেলাইট ওভারফ্লো রাডার ও ব্যাংক লোন ডসিয়ার সুবিধা।'
+                                  : 'AI price forecast, satellite pond radar, and bank loan project dossiers.',
+                              style: GoogleFonts.hindSiliguri(fontSize: 12, color: Colors.white.withValues(alpha: 0.95)),
                             ),
                             const SizedBox(height: 14),
 
@@ -556,24 +598,34 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                                     onTap: () => Get.to(() => const FishPricePredictionScreen()),
                                     borderRadius: BorderRadius.circular(12),
                                     child: Container(
-                                      padding: const EdgeInsets.all(10),
+                                      padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.18),
+                                        color: Colors.white.withValues(alpha: 0.18),
                                         borderRadius: BorderRadius.circular(12),
                                         border: Border.all(color: Colors.white30),
                                       ),
                                       child: Column(
                                         children: [
-                                          const Icon(Icons.trending_up, color: Colors.white, size: 24),
+                                          const Icon(Icons.trending_up, color: Colors.white, size: 22),
                                           const SizedBox(height: 4),
-                                          Text('১৪-দিনের দর', style: GoogleFonts.hindSiliguri(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
-                                          Text('এআই পূর্বাভাস', style: GoogleFonts.hindSiliguri(fontSize: 10, color: Colors.white70)),
+                                          Text(
+                                            isBn ? '১৪-দিনের দর' : '14-Day Price', 
+                                            style: GoogleFonts.hindSiliguri(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
+                                            textAlign: TextAlign.center,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          Text(
+                                            isBn ? 'এআই পূর্বাভাস' : 'AI Forecast', 
+                                            style: GoogleFonts.hindSiliguri(fontSize: 9.5, color: Colors.white70),
+                                            textAlign: TextAlign.center,
+                                          ),
                                         ],
                                       ),
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 6),
 
                                 // 2. Satellite Radar
                                 Expanded(
@@ -581,24 +633,34 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                                     onTap: () => Get.to(() => const SatellitePondRadarScreen()),
                                     borderRadius: BorderRadius.circular(12),
                                     child: Container(
-                                      padding: const EdgeInsets.all(10),
+                                      padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.18),
+                                        color: Colors.white.withValues(alpha: 0.18),
                                         borderRadius: BorderRadius.circular(12),
                                         border: Border.all(color: Colors.white30),
                                       ),
                                       child: Column(
                                         children: [
-                                          const Icon(Icons.satellite_alt, color: Colors.white, size: 24),
+                                          const Icon(Icons.satellite_alt, color: Colors.white, size: 22),
                                           const SizedBox(height: 4),
-                                          Text('স্যাটেলাইট রাডার', style: GoogleFonts.hindSiliguri(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
-                                          Text('শেওলা ও অতিবৃষ্টি', style: GoogleFonts.hindSiliguri(fontSize: 10, color: Colors.white70)),
+                                          Text(
+                                            isBn ? 'স্যাটেলাইট রাডার' : 'Satellite Radar', 
+                                            style: GoogleFonts.hindSiliguri(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
+                                            textAlign: TextAlign.center,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          Text(
+                                            isBn ? 'শেওলা ও অতিবৃষ্টি' : 'Algae & Flood', 
+                                            style: GoogleFonts.hindSiliguri(fontSize: 9.5, color: Colors.white70),
+                                            textAlign: TextAlign.center,
+                                          ),
                                         ],
                                       ),
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 6),
 
                                 // 3. Bank Loan Dossier
                                 Expanded(
@@ -606,24 +668,34 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                                     onTap: () => Get.to(() => const BankProjectReportScreen()),
                                     borderRadius: BorderRadius.circular(12),
                                     child: Container(
-                                      padding: const EdgeInsets.all(10),
+                                      padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.18),
+                                        color: Colors.white.withValues(alpha: 0.18),
                                         borderRadius: BorderRadius.circular(12),
                                         border: Border.all(color: Colors.white30),
                                       ),
                                       child: Column(
                                         children: [
-                                          const Icon(Icons.account_balance, color: Colors.white, size: 24),
+                                          const Icon(Icons.account_balance, color: Colors.white, size: 22),
                                           const SizedBox(height: 4),
-                                          Text('ব্যাংক লোন ফাইল', style: GoogleFonts.hindSiliguri(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
-                                          Text('প্রজেক্ট ডসিয়ার', style: GoogleFonts.hindSiliguri(fontSize: 10, color: Colors.white70)),
+                                          Text(
+                                            isBn ? 'ব্যাংক লোন ফাইল' : 'Bank Loan File', 
+                                            style: GoogleFonts.hindSiliguri(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
+                                            textAlign: TextAlign.center,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          Text(
+                                            isBn ? 'প্রজেক্ট ডসিয়ার' : 'Project Dossier', 
+                                            style: GoogleFonts.hindSiliguri(fontSize: 9.5, color: Colors.white70),
+                                            textAlign: TextAlign.center,
+                                          ),
                                         ],
                                       ),
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 6),
 
                                 // 4. Mokam Wholesaler Hotline
                                 Expanded(
@@ -631,18 +703,28 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                                     onTap: () => Get.to(() => const VipWholesalerDirectoryScreen()),
                                     borderRadius: BorderRadius.circular(12),
                                     child: Container(
-                                      padding: const EdgeInsets.all(10),
+                                      padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.18),
+                                        color: Colors.white.withValues(alpha: 0.18),
                                         borderRadius: BorderRadius.circular(12),
                                         border: Border.all(color: Colors.white30),
                                       ),
                                       child: Column(
                                         children: [
-                                          const Icon(Icons.phone_in_talk, color: Colors.white, size: 24),
+                                          const Icon(Icons.phone_in_talk, color: Colors.white, size: 22),
                                           const SizedBox(height: 4),
-                                          Text('আড়তদার ডিরেক্টরি', style: GoogleFonts.hindSiliguri(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
-                                          Text('ভিআইপি হটলাইন', style: GoogleFonts.hindSiliguri(fontSize: 10, color: Colors.white70)),
+                                          Text(
+                                            isBn ? 'আড়তদার ডিরেক্টরি' : 'Wholesalers', 
+                                            style: GoogleFonts.hindSiliguri(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
+                                            textAlign: TextAlign.center,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          Text(
+                                            isBn ? 'ভিআইপি হটলাইন' : 'VIP Hotline', 
+                                            style: GoogleFonts.hindSiliguri(fontSize: 9.5, color: Colors.white70),
+                                            textAlign: TextAlign.center,
+                                          ),
                                         ],
                                       ),
                                     ),
@@ -650,7 +732,7 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 10),
+                            const SizedBox(height: 8),
 
                             Row(
                               children: [
@@ -660,24 +742,40 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                                     onTap: () => Get.to(() => const FishWaterTelemetryScreen()),
                                     borderRadius: BorderRadius.circular(12),
                                     child: Container(
-                                      padding: const EdgeInsets.all(10),
+                                      padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.18),
+                                        color: Colors.white.withValues(alpha: 0.18),
                                         borderRadius: BorderRadius.circular(12),
                                         border: Border.all(color: Colors.white30),
                                       ),
-                                      child: Column(
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
-                                          const Icon(Icons.water_drop, color: Colors.cyanAccent, size: 24),
-                                          const SizedBox(height: 4),
-                                          Text('ওয়াটার কোয়ালিটি', style: GoogleFonts.hindSiliguri(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
-                                          Text('অক্সিজেন ও পিএইচ', style: GoogleFonts.hindSiliguri(fontSize: 10, color: Colors.white70)),
+                                          const Icon(Icons.water_drop, color: Colors.cyanAccent, size: 20),
+                                          const SizedBox(width: 6),
+                                          Flexible(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  isBn ? 'ওয়াটার কোয়ালিটি' : 'Water Telemetry', 
+                                                  style: GoogleFonts.hindSiliguri(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                                Text(
+                                                  isBn ? 'অক্সিজেন ও পিএইচ লাইভ' : 'DO & pH Live Sensors', 
+                                                  style: GoogleFonts.hindSiliguri(fontSize: 9.5, color: Colors.white70),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
                                         ],
                                       ),
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 6),
 
                                 // 6. Fry & Fingerling Stocking Calculator
                                 Expanded(
@@ -685,18 +783,34 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                                     onTap: () => Get.to(() => const FishFingerlingCalculatorScreen()),
                                     borderRadius: BorderRadius.circular(12),
                                     child: Container(
-                                      padding: const EdgeInsets.all(10),
+                                      padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.18),
+                                        color: Colors.white.withValues(alpha: 0.18),
                                         borderRadius: BorderRadius.circular(12),
                                         border: Border.all(color: Colors.white30),
                                       ),
-                                      child: Column(
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
-                                          const Icon(Icons.calculate, color: Colors.amberAccent, size: 24),
-                                          const SizedBox(height: 4),
-                                          Text('পোনা ক্যালকুলেটর', style: GoogleFonts.hindSiliguri(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
-                                          Text('শতকে মজুদ সংখ্যা', style: GoogleFonts.hindSiliguri(fontSize: 10, color: Colors.white70)),
+                                          const Icon(Icons.calculate, color: Colors.amberAccent, size: 20),
+                                          const SizedBox(width: 6),
+                                          Flexible(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  isBn ? 'পোনা ক্যালকুলেটর' : 'Fingerling Calculator', 
+                                                  style: GoogleFonts.hindSiliguri(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                                Text(
+                                                  isBn ? 'শতকে মজুদ সংখ্যা' : 'Stocking Density', 
+                                                  style: GoogleFonts.hindSiliguri(fontSize: 9.5, color: Colors.white70),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
                                         ],
                                       ),
                                     ),
@@ -715,7 +829,7 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'আজকের কাজ',
+                            isBn ? 'আজকের কাজ' : "Today's Work",
                             style: GoogleFonts.hindSiliguri(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -725,7 +839,7 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                           TextButton(
                             onPressed: () {},
                             child: Text(
-                              'সব দেখুন',
+                              isBn ? 'সব দেখুন' : 'View All',
                               style: GoogleFonts.hindSiliguri(
                                 color: oceanBlue,
                                 fontWeight: FontWeight.bold,
@@ -734,18 +848,30 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      ..._tasks.map((task) => _buildTaskItem(
-                        task['title'], 
-                        task['completed'], 
-                        oceanBlue
-                      )).toList(),
+                      const SizedBox(height: 6),
+                      ..._tasks.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final task = entry.value;
+                        final title = isBn ? task['titleBn']! : task['titleEn']!;
+                        final completed = task['completed'] as bool;
+
+                        return _buildTaskItem(
+                          title, 
+                          completed, 
+                          oceanBlue,
+                          onToggle: () {
+                            setState(() {
+                              _tasks[index]['completed'] = !completed;
+                            });
+                          },
+                        );
+                      }).toList(),
 
                       const SizedBox(height: 24),
 
                       // Activity Report Generation
                       Text(
-                        'অ্যাক্টিভিটি রিপোর্ট',
+                        isBn ? 'অ্যাক্টিভিটি রিপোর্ট' : 'Activity Report',
                         style: GoogleFonts.hindSiliguri(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -756,11 +882,11 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
                       Consumer<UserProvider>(
                         builder: (context, userProvider, _) {
                           return ReportGenerationCard(
-                            userName: userProvider.currentUser?.name ?? 'মৎস্য চাষী',
+                            userName: userProvider.currentUser?.name ?? (isBn ? 'মৎস্য চাষী' : 'Fish Farmer'),
                             userId: _userId,
                             userRole: 'fishFarmer',
-                            amount1Label: 'মোট আয়',
-                            amount2Label: 'মোট ব্যয়',
+                            amount1Label: isBn ? 'মোট আয়' : 'Total Revenue',
+                            amount2Label: isBn ? 'মোট ব্যয়' : 'Total Expense',
                             color: oceanBlue,
                           );
                         }
@@ -778,36 +904,36 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
     );
   }
 
-  Widget _buildQuickActionsGrid(Color oceanBlue, Color deepAqua) {
+  Widget _buildQuickActionsGrid(Color oceanBlue, Color deepAqua, bool isBn, bool isDark) {
     return GridView.count(
       physics: const NeverScrollableScrollPhysics(),
       shrinkWrap: true,
       crossAxisCount: ResponsiveHelper.isPhone(context) ? 4 : (ResponsiveHelper.isTablet(context) ? 6 : 8),
-      mainAxisSpacing: 12,
-      crossAxisSpacing: 12,
-      childAspectRatio: ResponsiveHelper.isPhone(context) ? 0.85 : 1.1,
+      mainAxisSpacing: 10,
+      crossAxisSpacing: 10,
+      childAspectRatio: ResponsiveHelper.isPhone(context) ? 0.82 : 1.05,
       children: [
         // Row 1
         _ActionCard(
-          title: 'পুকুর ব্যবস্থাপনা',
+          title: isBn ? 'পুকুর ব্যবস্থাপনা' : 'Pond Manager',
           icon: Icons.pool,
           color: oceanBlue,
           onTap: () => Get.to(() => const PondManagementScreen()),
         ),
         _ActionCard(
-          title: 'এআই মাছের ডাক্তার',
+          title: isBn ? 'এআই মাছের ডাক্তার' : 'AI Fish Doctor',
           icon: Icons.health_and_safety,
           color: Colors.teal.shade600,
           onTap: () => Get.to(() => const AIFishDoctorScreen()),
         ),
         _ActionCard(
-          title: 'খাদ্য ব্যবস্থাপনা',
+          title: isBn ? 'খাদ্য ব্যবস্থাপনা' : 'Feed Manager',
           icon: Icons.inventory_2,
-          color: Colors.orange.shade600,
+          color: Colors.orange.shade700,
           onTap: () => Get.to(() => const FeedManagementScreen()),
         ),
         _ActionCard(
-          title: 'বিগ ফিশ মার্কেট',
+          title: isBn ? 'মাছের বাজার' : 'Fish Market',
           icon: Icons.storefront,
           color: deepAqua,
           onTap: () => Get.to(() => const FishMarketplaceScreen()),
@@ -815,25 +941,25 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
         
         // Row 2
         _ActionCard(
-          title: 'পানি পরীক্ষা',
+          title: isBn ? 'পানি পরীক্ষা' : 'Water Testing',
           icon: Icons.science,
-          color: Colors.cyan.shade600,
+          color: Colors.cyan.shade700,
           onTap: () => Get.to(() => const WaterTestingScreen()),
         ),
         _ActionCard(
-          title: 'বিশেষজ্ঞ পরামর্শ',
+          title: isBn ? 'বিশেষজ্ঞ পরামর্শ' : 'Expert Advice',
           icon: Icons.support_agent,
           color: Colors.indigo.shade600,
           onTap: () => Get.to(() => const ExpertAdviceScreen()),
         ),
         _ActionCard(
-          title: 'পরিবহন',
+          title: isBn ? 'মাছ পরিবহন' : 'Fish Transport',
           icon: Icons.local_shipping,
           color: deepAqua,
           onTap: () => Get.to(() => const FishTransportScreen()),
         ),
         _ActionCard(
-          title: 'বাজার দর',
+          title: isBn ? 'বাজার দর' : 'Market Price',
           icon: Icons.show_chart,
           color: Colors.purple.shade500,
           onTap: () => Get.to(() => const FishMarketPriceScreen()),
@@ -842,7 +968,7 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
     );
   }
 
-  Widget _buildTaskItem(String title, bool completed, Color activeColor) {
+  Widget _buildTaskItem(String title, bool completed, Color activeColor, {required VoidCallback onToggle}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -852,36 +978,40 @@ class _FishFarmerDashboardState extends State<FishFarmerDashboard> with SingleTi
           borderRadius: BorderRadius.circular(12),
           side: BorderSide(color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
         ),
-        child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        leading: Container(
-          padding: const EdgeInsets.all(2),
-          decoration: BoxDecoration(
-            color: completed ? activeColor : Colors.transparent,
-            border: Border.all(
-              color: completed ? activeColor : Colors.grey.shade400,
-              width: 2,
+        child: InkWell(
+          onTap: onToggle,
+          borderRadius: BorderRadius.circular(12),
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+            leading: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: completed ? activeColor : Colors.transparent,
+                border: Border.all(
+                  color: completed ? activeColor : Colors.grey.shade400,
+                  width: 2,
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.check,
+                size: 16,
+                color: completed ? Colors.white : Colors.transparent,
+              ),
             ),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            Icons.check,
-            size: 16,
-            color: completed ? Colors.white : Colors.transparent,
-          ),
-        ),
-        title: Text(
-          title,
-          style: GoogleFonts.hindSiliguri(
-            fontSize: 15,
-            decoration: completed ? TextDecoration.lineThrough : null,
-            color: completed ? Colors.grey : (isDark ? Colors.white : Colors.black87),
+            title: Text(
+              title,
+              style: GoogleFonts.hindSiliguri(
+                fontSize: 14.5,
+                decoration: completed ? TextDecoration.lineThrough : null,
+                color: completed ? Colors.grey : (isDark ? Colors.white : Colors.black87),
+              ),
+            ),
+            trailing: Icon(Icons.touch_app, color: Colors.grey.shade400, size: 18),
           ),
         ),
-        trailing: Icon(Icons.more_vert, color: Colors.grey.shade400),
       ),
-    ),
-  );
+    );
   }
 }
 
@@ -905,30 +1035,36 @@ class _ActionCard extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: isDark ? 0.2 : 0.1),
-              shape: BoxShape.circle,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: isDark ? 0.22 : 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 24),
             ),
-            child: Icon(icon, color: color, size: 28),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            style: GoogleFonts.hindSiliguri(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: isDark ? Colors.white70 : Colors.black87,
-              height: 1.2,
+            const SizedBox(height: 6),
+            Flexible(
+              child: Text(
+                title,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.hindSiliguri(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white70 : Colors.black87,
+                  height: 1.15,
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

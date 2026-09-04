@@ -4,8 +4,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:agrolinkbd/core/models/pond_model.dart';
 import 'package:agrolinkbd/core/controllers/pond_controller.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
+import 'package:agrolinkbd/core/utils/number_converter.dart';
 
 class EditPondScreen extends StatefulWidget {
   final PondModel pond;
@@ -45,40 +48,7 @@ class _EditPondScreenState extends State<EditPondScreen> {
 
   // Image Selection State
   File? _pickedImageFile;
-  late String _selectedPresetImageUrl;
-
-  final List<Map<String, String>> _realPresetImages = [
-    {
-      'title': 'বাণিজ্যিক কার্প পুকুর (চাঁদপুর)',
-      'url': 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=900&auto=format&fit=crop&q=80',
-      'category': 'বাণিজ্যিক কার্প পুকুর',
-    },
-    {
-      'title': 'সার্কুলার বায়োফ্লক ট্যাংক (ত্রিশাল)',
-      'url': 'https://images.unsplash.com/photo-1524704654690-b56c05c78a00?w=900&auto=format&fit=crop&q=80',
-      'category': 'বায়োফ্লক ট্যাংক',
-    },
-    {
-      'title': 'রপ্তানি গ্রেড চিংড়ি ঘের (সাতক্ষীরা)',
-      'url': 'https://images.unsplash.com/photo-1559742811-822873691df8?w=900&auto=format&fit=crop&q=80',
-      'category': 'চিংড়ি ঘের',
-    },
-    {
-      'title': 'আরএএস ইনডোর হ্যাচারি (চট্টগ্রাম)',
-      'url': 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=900&auto=format&fit=crop&q=80',
-      'category': 'আরএএস সিস্টেম',
-    },
-    {
-      'title': 'মনোসেক্স তেলাপিয়া ফার্ম (চলনবিল)',
-      'url': 'https://images.unsplash.com/photo-1534483509719-3feaee7c30da?w=900&auto=format&fit=crop&q=80',
-      'category': 'বাণিজ্যিক কার্প পুকুর',
-    },
-    {
-      'title': 'হাই-টেক ওয়াটার এয়ারেশন জোন',
-      'url': 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=900&auto=format&fit=crop&q=80',
-      'category': 'বাণিজ্যিক কার্প পুকুর',
-    },
-  ];
+  late String _currentImageUrl;
 
   @override
   void initState() {
@@ -104,7 +74,7 @@ class _EditPondScreenState extends State<EditPondScreen> {
     _selectedBioSecurity = p.bioSecurityGrade;
     _selectedStatus = p.status;
     _aeratorCount = p.aeratorCount;
-    _selectedPresetImageUrl = p.imageUrl;
+    _currentImageUrl = p.imageUrl;
   }
 
   @override
@@ -126,7 +96,7 @@ class _EditPondScreenState extends State<EditPondScreen> {
     super.dispose();
   }
 
-  Future<void> _pickImage(ImageSource source) async {
+  Future<void> _pickImage(ImageSource source, bool isBn) async {
     try {
       final picker = ImagePicker();
       final picked = await picker.pickImage(
@@ -142,15 +112,15 @@ class _EditPondScreenState extends State<EditPondScreen> {
       }
     } catch (e) {
       Get.snackbar(
-        'ক্যামেরা / গ্যালারি এরর',
-        'ছবি নির্বাচন করা সম্ভব হয়নি।',
+        isBn ? 'ক্যামেরা / গ্যালারি এরর' : 'Camera / Gallery Error',
+        isBn ? 'ছবি নির্বাচন করা সম্ভব হয়নি।' : 'Failed to pick image.',
         backgroundColor: Colors.red.shade100,
         colorText: Colors.red.shade900,
       );
     }
   }
 
-  Future<void> _submitUpdate() async {
+  Future<void> _submitUpdate(bool isBn) async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
@@ -158,11 +128,24 @@ class _EditPondScreenState extends State<EditPondScreen> {
     });
 
     try {
-      final pondController = Get.find<PondController>();
+      final pondController = Get.isRegistered<PondController>()
+          ? Get.find<PondController>()
+          : Get.put(PondController());
 
-      final String finalImageUrl = _customUrlController.text.trim().isNotEmpty
-          ? _customUrlController.text.trim()
-          : _selectedPresetImageUrl;
+      String finalImageUrl = _currentImageUrl;
+
+      if (_pickedImageFile != null) {
+        try {
+          final fileName = 'pond_images/pond_${widget.pond.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+          final storageRef = FirebaseStorage.instance.ref().child(fileName);
+          await storageRef.putFile(_pickedImageFile!);
+          finalImageUrl = await storageRef.getDownloadURL();
+        } catch (e) {
+          debugPrint('Pond update image upload error: $e');
+        }
+      } else if (_customUrlController.text.trim().isNotEmpty) {
+        finalImageUrl = _customUrlController.text.trim();
+      }
 
       final updatedPond = PondModel(
         id: widget.pond.id,
@@ -171,7 +154,7 @@ class _EditPondScreenState extends State<EditPondScreen> {
         area: _areaController.text.trim(),
         fishSpecies: _speciesController.text.trim(),
         stockedDate: widget.pond.stockedDate,
-        totalFishCount: int.tryParse(_fishCountController.text.trim()) ?? widget.pond.totalFishCount,
+        totalFishCount: BanglaEnglishNumberHelper.toInt(_fishCountController.text.trim(), widget.pond.totalFishCount),
         status: _selectedStatus,
         ph: widget.pond.ph,
         ammonia: widget.pond.ammonia,
@@ -181,14 +164,14 @@ class _EditPondScreenState extends State<EditPondScreen> {
         waterClarity: widget.pond.waterClarity,
         nitrite: widget.pond.nitrite,
         alkalinity: widget.pond.alkalinity,
-        avgWeightGrams: double.tryParse(_initialWeightController.text.trim()) ?? widget.pond.avgWeightGrams,
-        targetHarvestWeightGrams: double.tryParse(_targetWeightController.text.trim()) ?? widget.pond.targetHarvestWeightGrams,
+        avgWeightGrams: BanglaEnglishNumberHelper.toDouble(_initialWeightController.text.trim(), widget.pond.avgWeightGrams),
+        targetHarvestWeightGrams: BanglaEnglishNumberHelper.toDouble(_targetWeightController.text.trim(), widget.pond.targetHarvestWeightGrams),
         growthStage: widget.pond.growthStage,
-        totalCycleDays: int.tryParse(_cycleDaysController.text.trim()) ?? widget.pond.totalCycleDays,
-        expectedMarketPricePerKg: double.tryParse(_priceController.text.trim()) ?? widget.pond.expectedMarketPricePerKg,
+        totalCycleDays: BanglaEnglishNumberHelper.toInt(_cycleDaysController.text.trim(), widget.pond.totalCycleDays),
+        expectedMarketPricePerKg: BanglaEnglishNumberHelper.toDouble(_priceController.text.trim(), widget.pond.expectedMarketPricePerKg),
         fcr: widget.pond.fcr,
         survivalRatePercent: widget.pond.survivalRatePercent,
-        dailyFeedingKg: double.tryParse(_dailyFeedController.text.trim()) ?? widget.pond.dailyFeedingKg,
+        dailyFeedingKg: BanglaEnglishNumberHelper.toDouble(_dailyFeedController.text.trim(), widget.pond.dailyFeedingKg),
         feedBrand: _feedBrandController.text.trim(),
         aeratorOn: widget.pond.aeratorOn,
         aeratorCount: _aeratorCount,
@@ -206,10 +189,10 @@ class _EditPondScreenState extends State<EditPondScreen> {
 
       await pondController.updatePond(updatedPond);
 
-      Get.back(result: updatedPond);
+      Get.back(result: true);
       Get.snackbar(
-        'সফলভাবে আপডেট হয়েছে! 🌊',
-        '${updatedPond.name} এর নতুন তথ্য ফায়ারবেসে সংরক্ষিত হয়েছে।',
+        isBn ? 'সফলভাবে হালনাগাদ করা হয়েছে! 🌊' : 'Updated Successfully! 🌊',
+        isBn ? '${updatedPond.name} এর তথ্য আপডেট করা হয়েছে।' : '${updatedPond.name} has been updated.',
         backgroundColor: const Color(0xFF006064),
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
@@ -220,8 +203,8 @@ class _EditPondScreenState extends State<EditPondScreen> {
       );
     } catch (e) {
       Get.snackbar(
-        'আপডেট ব্যর্থ হয়েছে',
-        'ত্রুটি: $e',
+        isBn ? 'হালনাগাদ ব্যর্থ হয়েছে' : 'Update Failed',
+        isBn ? 'ত্রুটি: $e' : 'Error: $e',
         backgroundColor: Colors.red.shade100,
         colorText: Colors.red.shade900,
       );
@@ -236,6 +219,7 @@ class _EditPondScreenState extends State<EditPondScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isBn = LanguageProvider.isBn(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     const Color deepAqua = Color(0xFF006064);
 
@@ -243,7 +227,7 @@ class _EditPondScreenState extends State<EditPondScreen> {
       backgroundColor: isDark ? const Color(0xFF0A1218) : const Color(0xFFF1F5F8),
       appBar: AppBar(
         title: Text(
-          'পুকুর / ট্যাংক তথ্য সম্পাদনা',
+          isBn ? 'পুকুরের তথ্য সম্পাদন' : 'Edit Pond Information',
           style: GoogleFonts.hindSiliguri(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -252,6 +236,7 @@ class _EditPondScreenState extends State<EditPondScreen> {
         ),
         backgroundColor: deepAqua,
         elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
@@ -261,42 +246,92 @@ class _EditPondScreenState extends State<EditPondScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // SECTION 1: FARM CATEGORY SELECTOR
+              // SECTION 1: STATUS & CATEGORY
               _buildSectionCard(
                 isDark,
-                title: '১. খামারের ধরন ও ক্যাটাগরি',
+                title: isBn ? '১. পুকুরের অবস্থা ও ক্যাটাগরি' : '1. Pond Status & Category',
                 icon: Icons.category,
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Text(
+                      isBn ? 'বর্তমান স্বাস্থ্য অবস্থা:' : 'Current Health Status:',
+                      style: GoogleFonts.hindSiliguri(fontSize: 13, fontWeight: FontWeight.bold, color: isDark ? Colors.white70 : Colors.black87),
+                    ),
+                    const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        'বাণিজ্যিক কার্প পুকুর',
-                        'বায়োফ্লক ট্যাংক',
-                        'চিংড়ি ঘের',
-                        'আরএএস সিস্টেম',
-                        'হ্যাচারি ও নার্সারি',
-                      ].map((cat) {
-                        final isSelected = _selectedCategory == cat;
+                        {'bn': 'স্বাভাবিক', 'en': 'Optimal', 'color': Colors.teal},
+                        {'bn': 'সতর্কতা', 'en': 'Warning', 'color': Colors.orange},
+                        {'bn': 'ঝুঁকিপূর্ণ', 'en': 'Critical', 'color': Colors.red},
+                        {'bn': 'হারভেস্ট প্রস্তুত', 'en': 'Ready to Harvest', 'color': Colors.green},
+                      ].map((statusMap) {
+                        final statusBn = statusMap['bn'] as String;
+                        final statusEn = statusMap['en'] as String;
+                        final statusColor = statusMap['color'] as Color;
+                        final isSelected = _selectedStatus == statusBn;
                         return ChoiceChip(
                           label: Text(
-                            cat,
+                            isBn ? statusBn : statusEn,
                             style: GoogleFonts.hindSiliguri(
                               fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                              color: isSelected ? Colors.white : Colors.black87,
+                              color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
+                            ),
+                          ),
+                          selected: isSelected,
+                          selectedColor: statusColor,
+                          backgroundColor: isDark ? const Color(0xFF16252F) : Theme.of(context).cardColor,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            side: BorderSide(color: isSelected ? statusColor : (isDark ? Colors.white24 : Colors.grey.shade300)),
+                          ),
+                          onSelected: (val) {
+                            setState(() {
+                              _selectedStatus = statusBn;
+                            });
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      isBn ? 'খামারের ধরন:' : 'Farm Type:',
+                      style: GoogleFonts.hindSiliguri(fontSize: 13, fontWeight: FontWeight.bold, color: isDark ? Colors.white70 : Colors.black87),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        {'bn': 'বাণিজ্যিক কার্প পুকুর', 'en': 'Commercial Carp Pond'},
+                        {'bn': 'বায়োফ্লক ট্যাংক', 'en': 'Biofloc Tank'},
+                        {'bn': 'চিংড়ি ঘের', 'en': 'Shrimp Ghér'},
+                        {'bn': 'আরএএস সিস্টেম', 'en': 'RAS System'},
+                        {'bn': 'হ্যাচারি ও নার্সারি', 'en': 'Hatchery & Nursery'},
+                      ].map((catMap) {
+                        final catBn = catMap['bn']!;
+                        final catEn = catMap['en']!;
+                        final isSelected = _selectedCategory == catBn;
+                        return ChoiceChip(
+                          label: Text(
+                            isBn ? catBn : catEn,
+                            style: GoogleFonts.hindSiliguri(
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                              color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
                             ),
                           ),
                           selected: isSelected,
                           selectedColor: deepAqua,
-                          backgroundColor: Theme.of(context).cardColor,
+                          backgroundColor: isDark ? const Color(0xFF16252F) : Theme.of(context).cardColor,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
-                            side: BorderSide(color: isSelected ? deepAqua : Colors.grey.shade300),
+                            side: BorderSide(color: isSelected ? deepAqua : (isDark ? Colors.white24 : Colors.grey.shade300)),
                           ),
                           onSelected: (val) {
                             setState(() {
-                              _selectedCategory = cat;
+                              _selectedCategory = catBn;
                             });
                           },
                         );
@@ -310,7 +345,7 @@ class _EditPondScreenState extends State<EditPondScreen> {
               // SECTION 2: REAL IMAGE SELECTION & UPLOAD
               _buildSectionCard(
                 isDark,
-                title: '২. খামারের আসল ছবি (Real Image)',
+                title: isBn ? '২. খামারের ছবি' : '2. Farm Image',
                 icon: Icons.camera_alt,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -331,7 +366,7 @@ class _EditPondScreenState extends State<EditPondScreen> {
                             CachedNetworkImage(
                               imageUrl: _customUrlController.text.trim().isNotEmpty
                                   ? _customUrlController.text.trim()
-                                  : _selectedPresetImageUrl,
+                                  : _currentImageUrl,
                               height: 180,
                               width: double.infinity,
                               fit: BoxFit.cover,
@@ -341,11 +376,35 @@ class _EditPondScreenState extends State<EditPondScreen> {
                                 child: const Icon(Icons.pool, size: 50, color: Colors.white),
                               ),
                             ),
+                          if (_pickedImageFile != null)
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _pickedImageFile = null;
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.65),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.close,
+                                    size: 18,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
                           Container(
                             margin: const EdgeInsets.all(10),
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                             decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.7),
+                              color: Colors.black.withValues(alpha: 0.75),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Row(
@@ -354,7 +413,9 @@ class _EditPondScreenState extends State<EditPondScreen> {
                                 const Icon(Icons.check_circle, color: Colors.greenAccent, size: 14),
                                 const SizedBox(width: 4),
                                 Text(
-                                  _pickedImageFile != null ? 'ক্যামেরা ছবি সক্রিয়' : 'ছবি নির্বাচন নিশ্চিত',
+                                  _pickedImageFile != null 
+                                      ? (isBn ? 'নতুন ছবি নির্বাচিত' : 'New Photo Selected')
+                                      : (isBn ? 'বর্তমান ছবি' : 'Current Photo'),
                                   style: GoogleFonts.hindSiliguri(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
                                 ),
                               ],
@@ -364,14 +425,16 @@ class _EditPondScreenState extends State<EditPondScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-
                     Row(
                       children: [
                         Expanded(
                           child: OutlinedButton.icon(
-                            onPressed: () => _pickImage(ImageSource.camera),
+                            onPressed: () => _pickImage(ImageSource.camera, isBn),
                             icon: const Icon(Icons.camera_alt, size: 18, color: deepAqua),
-                            label: Text('ক্যামেরা ছবি', style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, color: deepAqua)),
+                            label: Text(
+                              isBn ? 'ক্যামেরা' : 'Camera',
+                              style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, color: deepAqua),
+                            ),
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 10),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -382,9 +445,12 @@ class _EditPondScreenState extends State<EditPondScreen> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: OutlinedButton.icon(
-                            onPressed: () => _pickImage(ImageSource.gallery),
+                            onPressed: () => _pickImage(ImageSource.gallery, isBn),
                             icon: const Icon(Icons.photo_library, size: 18, color: Color(0xFF0288D1)),
-                            label: Text('গ্যালারি', style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, color: const Color(0xFF0288D1))),
+                            label: Text(
+                              isBn ? 'গ্যালারি' : 'Gallery',
+                              style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, color: const Color(0xFF0288D1)),
+                            ),
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 10),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -394,73 +460,6 @@ class _EditPondScreenState extends State<EditPondScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-
-                    Text('অথবা প্রিসেট থেকে পরিবর্তন করুন:', style: GoogleFonts.hindSiliguri(fontSize: 12.5, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-
-                    SizedBox(
-                      height: 80,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        itemCount: _realPresetImages.length,
-                        itemBuilder: (context, index) {
-                          final preset = _realPresetImages[index];
-                          final isSelected = _pickedImageFile == null && _selectedPresetImageUrl == preset['url'];
-
-                          return GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _pickedImageFile = null;
-                                _customUrlController.clear();
-                                _selectedPresetImageUrl = preset['url']!;
-                              });
-                            },
-                            child: Container(
-                              width: 105,
-                              margin: const EdgeInsets.only(right: 10),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: isSelected ? Colors.teal : Colors.grey.shade300,
-                                  width: isSelected ? 2.5 : 1,
-                                ),
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: Stack(
-                                  fit: StackFit.expand,
-                                  children: [
-                                    CachedNetworkImage(imageUrl: preset['url']!, fit: BoxFit.cover),
-                                    Container(
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          colors: [Colors.transparent, Colors.black.withValues(alpha: 0.8)],
-                                          begin: Alignment.topCenter,
-                                          end: Alignment.bottomCenter,
-                                        ),
-                                      ),
-                                    ),
-                                    Positioned(
-                                      bottom: 4,
-                                      left: 4,
-                                      right: 4,
-                                      child: Text(
-                                        preset['title']!,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: GoogleFonts.hindSiliguri(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.bold),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -469,134 +468,108 @@ class _EditPondScreenState extends State<EditPondScreen> {
               // SECTION 3: BASIC & TECHNICAL DETAILS
               _buildSectionCard(
                 isDark,
-                title: '৩. পুকুর / ট্যাংকের কারিগরি তথ্য',
+                title: isBn ? '৩. পুকুর / ট্যাংকের প্রাথমিক তথ্য' : '3. Basic & Technical Specs',
                 icon: Icons.water_drop,
                 child: Column(
                   children: [
                     _buildTextField(
                       controller: _nameController,
-                      label: 'পুকুর / ট্যাংকের নাম *',
+                      label: isBn ? 'পুকুর / ট্যাংকের নাম *' : 'Pond / Tank Name *',
                       icon: Icons.pool,
-                      validator: (v) => v!.isEmpty ? 'নাম আবশ্যক' : null,
+                      validator: (v) => (v == null || v.trim().isEmpty) ? (isBn ? 'নাম আবশ্যক' : 'Name is required') : null,
                       isDark: isDark,
                     ),
                     const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          flex: 2,
-                          child: _buildTextField(
-                            controller: _areaController,
-                            label: 'আয়তন *',
-                            icon: Icons.straighten,
-                            validator: (v) => v!.isEmpty ? 'আয়তন আবশ্যক' : null,
-                            isDark: isDark,
+                    _buildTextField(
+                      controller: _areaController,
+                      label: isBn ? 'আয়তন *' : 'Area *',
+                      icon: Icons.straighten,
+                      validator: (v) => (v == null || v.trim().isEmpty) ? (isBn ? 'আয়তন আবশ্যক' : 'Area is required') : null,
+                      isDark: isDark,
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<int>(
+                      value: _aeratorCount,
+                      dropdownColor: isDark ? const Color(0xFF16252F) : Colors.white,
+                      style: GoogleFonts.hindSiliguri(
+                        color: isDark ? Colors.white : Colors.black87,
+                        fontSize: 12,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: isBn ? 'অ্যারেটর সংখ্যা' : 'Aerators',
+                        labelStyle: GoogleFonts.hindSiliguri(color: isDark ? Colors.grey.shade400 : Colors.grey.shade700, fontSize: 12),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                        filled: true,
+                        fillColor: isDark ? const Color(0xFF0F1A22) : const Color(0xFFF9FBFC),
+                      ),
+                      items: [0, 2, 4, 6, 8, 12].map((c) {
+                        return DropdownMenuItem(
+                          value: c, 
+                          child: Text(
+                            isBn ? '$c টি ইউনিট' : '$c Units', 
+                            style: GoogleFonts.hindSiliguri(fontSize: 12),
                           ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          flex: 1,
-                          child: DropdownButtonFormField<int>(
-                            value: _aeratorCount,
-                            decoration: InputDecoration(
-                              labelText: 'অ্যারেটর',
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                            ),
-                            items: [0, 2, 4, 6, 8, 12].map((c) {
-                              return DropdownMenuItem(value: c, child: Text('$c টি', style: GoogleFonts.hindSiliguri(fontSize: 12)));
-                            }).toList(),
-                            onChanged: (val) {
-                              if (val != null) setState(() => _aeratorCount = val);
-                            },
-                          ),
-                        ),
-                      ],
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        if (val != null) setState(() => _aeratorCount = val);
+                      },
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
                       value: _selectedWaterSource,
+                      dropdownColor: isDark ? const Color(0xFF16252F) : Colors.white,
+                      style: GoogleFonts.hindSiliguri(
+                        color: isDark ? Colors.white : Colors.black87,
+                        fontSize: 12.5,
+                      ),
                       decoration: InputDecoration(
-                        labelText: 'পানির উৎস',
+                        labelText: isBn ? 'পানির উৎস' : 'Water Source',
+                        labelStyle: GoogleFonts.hindSiliguri(color: isDark ? Colors.grey.shade400 : Colors.grey.shade700, fontSize: 12),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         prefixIcon: const Icon(Icons.waves, color: deepAqua),
+                        filled: true,
+                        fillColor: isDark ? const Color(0xFF0F1A22) : const Color(0xFFF9FBFC),
                       ),
                       items: [
-                        'নদীর মিষ্টি পানি ও গভীর নলকূপ',
-                        'গভীর সাবমারসিবল নলকূপ',
-                        'জোয়ার-ভাটার লবণাক্ত খাঁড়ি গেট',
-                        'বৃষ্টি ও প্রাকৃতিক ক্যানেল',
-                        'ফিল্টার্ড আরএএস রিসার্কুলেশন প্ল্যান্ট',
-                      ].map((w) => DropdownMenuItem(value: w, child: Text(w, style: GoogleFonts.hindSiliguri(fontSize: 12.5)))).toList(),
+                        {'bn': 'নদীর মিষ্টি পানি ও গভীর নলকূপ', 'en': 'River Fresh Water & Deep Tubewell'},
+                        {'bn': 'গভীর সাবমারসিবল নলকূপ', 'en': 'Deep Submersible Tubewell'},
+                        {'bn': 'জোয়ার-ভাটার লবণাক্ত খাঁড়ি গেট', 'en': 'Tidal Brackish Canal Sluice'},
+                        {'bn': 'বৃষ্টি ও প্রাকৃতিক ক্যানেল', 'en': 'Rainfall & Natural Canal'},
+                        {'bn': 'ফিল্টার্ড আরএএস রিসার্কুলেশন প্ল্যান্ট', 'en': 'Filtered RAS Recirculation Plant'},
+                      ].map((wMap) => DropdownMenuItem(
+                        value: wMap['bn']!, 
+                        child: Text(isBn ? wMap['bn']! : wMap['en']!, style: GoogleFonts.hindSiliguri(fontSize: 12)),
+                      )).toList(),
                       onChanged: (val) {
                         if (val != null) setState(() => _selectedWaterSource = val);
                       },
                     ),
                     const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      value: _selectedBioSecurity,
-                      decoration: InputDecoration(
-                        labelText: 'বায়োসিকিউরিটি রেটিং',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        prefixIcon: const Icon(Icons.verified_user, color: Colors.green),
-                      ),
-                      items: [
-                        'Grade A+ (শতভাগ রোগমুক্ত ও অর্গানিক)',
-                        'ইইউ এক্সপোর্ট কোয়ালিটি সার্টিফাইড',
-                        'হাইজিনিক ইনডোর বায়োফ্লক সিস্টেম',
-                        'স্ট্যান্ডার্ড কমার্শিয়াল ফার্ম গ্রেড',
-                      ].map((b) => DropdownMenuItem(value: b, child: Text(b, style: GoogleFonts.hindSiliguri(fontSize: 12.5)))).toList(),
-                      onChanged: (val) {
-                        if (val != null) setState(() => _selectedBioSecurity = val);
-                      },
-                    ),
-                    const SizedBox(height: 12),
                     _buildTextField(
                       controller: _locationController,
-                      label: 'খামার অবস্থান (উপজেলা, জেলা)',
+                      label: isBn ? 'খামার অবস্থান (উপজেলা, জেলা)' : 'Location (Upazila, District)',
                       icon: Icons.location_on,
                       isDark: isDark,
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildTextField(
-                            controller: _managerNameController,
-                            label: 'ফার্ম ম্যানেজার',
-                            icon: Icons.person,
-                            isDark: isDark,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _buildTextField(
-                            controller: _managerPhoneController,
-                            label: 'ফোন নম্বর',
-                            icon: Icons.phone,
-                            keyboardType: TextInputType.phone,
-                            isDark: isDark,
-                          ),
-                        ),
-                      ],
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 16),
 
-              // SECTION 4: FISH STOCK & TARGETS
+              // SECTION 4: FISH STOCK & BIOMASS TARGETS
               _buildSectionCard(
                 isDark,
-                title: '৪. মাছের পোনা মজুত ও ফিডিং শিডিউল',
+                title: isBn ? '৪. মাছের পোনা মজুত ও টার্গেট' : '4. Stocking & Targets',
                 icon: Icons.set_meal,
                 child: Column(
                   children: [
                     _buildTextField(
                       controller: _speciesController,
-                      label: 'মাছের প্রজাতি ও জাত *',
+                      label: isBn ? 'মাছের প্রজাতি ও জাত *' : 'Fish Species & Variety *',
                       icon: Icons.phishing,
-                      validator: (v) => v!.isEmpty ? 'প্রজাতি আবশ্যক' : null,
+                      validator: (v) => (v == null || v.trim().isEmpty) ? (isBn ? 'প্রজাতি আবশ্যক' : 'Species is required') : null,
                       isDark: isDark,
                     ),
                     const SizedBox(height: 12),
@@ -605,10 +578,10 @@ class _EditPondScreenState extends State<EditPondScreen> {
                         Expanded(
                           child: _buildTextField(
                             controller: _fishCountController,
-                            label: 'মোট পোনা সংখ্যা *',
+                            label: isBn ? 'মোট পোনা সংখ্যা *' : 'Total Fish Stock *',
                             icon: Icons.format_list_numbered,
                             keyboardType: TextInputType.number,
-                            validator: (v) => v!.isEmpty ? 'সংখ্যা আবশ্যক' : null,
+                            validator: (v) => (v == null || v.trim().isEmpty) ? (isBn ? 'সংখ্যা আবশ্যক' : 'Count is required') : null,
                             isDark: isDark,
                           ),
                         ),
@@ -616,7 +589,7 @@ class _EditPondScreenState extends State<EditPondScreen> {
                         Expanded(
                           child: _buildTextField(
                             controller: _initialWeightController,
-                            label: 'বর্তমান গড় ওজন (গ্রাম)',
+                            label: isBn ? 'বর্তমান ওজন (গ্রাম)' : 'Current Weight (g)',
                             icon: Icons.scale,
                             keyboardType: TextInputType.number,
                             isDark: isDark,
@@ -630,7 +603,7 @@ class _EditPondScreenState extends State<EditPondScreen> {
                         Expanded(
                           child: _buildTextField(
                             controller: _targetWeightController,
-                            label: 'টার্গেট ওজন (গ্রাম)',
+                            label: isBn ? 'টার্গেট ওজন (গ্রাম)' : 'Target Weight (g)',
                             icon: Icons.fitness_center,
                             keyboardType: TextInputType.number,
                             isDark: isDark,
@@ -639,9 +612,9 @@ class _EditPondScreenState extends State<EditPondScreen> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: _buildTextField(
-                            controller: _priceController,
-                            label: 'বাজার দর (৳/কেজি)',
-                            icon: Icons.trending_up,
+                            controller: _cycleDaysController,
+                            label: isBn ? 'মোট সাইকেল দিন' : 'Total Cycle Days',
+                            icon: Icons.calendar_month,
                             keyboardType: TextInputType.number,
                             isDark: isDark,
                           ),
@@ -653,9 +626,9 @@ class _EditPondScreenState extends State<EditPondScreen> {
                       children: [
                         Expanded(
                           child: _buildTextField(
-                            controller: _dailyFeedController,
-                            label: 'দৈনিক ফিড (কেজি)',
-                            icon: Icons.inventory_2,
+                            controller: _priceController,
+                            label: isBn ? 'প্রত্যাশিত দর (৳/কেজি)' : 'Expected Price (৳/kg)',
+                            icon: Icons.trending_up,
                             keyboardType: TextInputType.number,
                             isDark: isDark,
                           ),
@@ -663,9 +636,10 @@ class _EditPondScreenState extends State<EditPondScreen> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: _buildTextField(
-                            controller: _feedBrandController,
-                            label: 'ফিড ব্র্যান্ড ও প্রোটিন %',
-                            icon: Icons.local_dining,
+                            controller: _dailyFeedController,
+                            label: isBn ? 'দৈনিক ফিড (কেজি)' : 'Daily Feed (kg)',
+                            icon: Icons.inventory_2,
+                            keyboardType: TextInputType.number,
                             isDark: isDark,
                           ),
                         ),
@@ -676,17 +650,27 @@ class _EditPondScreenState extends State<EditPondScreen> {
               ),
               const SizedBox(height: 24),
 
-              // UPDATE BUTTON
+              // SUBMIT BUTTON
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: _isSubmitting ? null : _submitUpdate,
+                  onPressed: _isSubmitting ? null : () => _submitUpdate(isBn),
                   icon: _isSubmitting
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
-                      : const Icon(Icons.check_circle_outline_rounded, color: Colors.white, size: 22),
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                        )
+                      : const Icon(Icons.check_circle_rounded, color: Colors.white, size: 22),
                   label: Text(
-                    _isSubmitting ? 'ফায়ারবেসে আপডেট হচ্ছে...' : 'আপডেট সম্পন্ন ও সেভ করুন',
-                    style: GoogleFonts.hindSiliguri(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                    _isSubmitting 
+                        ? (isBn ? 'হালনাগাদ হচ্ছে...' : 'Updating...')
+                        : (isBn ? 'পুকুরের তথ্য আপডেট করুন' : 'Update Pond Details'),
+                    style: GoogleFonts.hindSiliguri(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: deepAqua,
@@ -726,12 +710,14 @@ class _EditPondScreenState extends State<EditPondScreen> {
             children: [
               Icon(icon, color: const Color(0xFF006064), size: 20),
               const SizedBox(width: 8),
-              Text(
-                title,
-                style: GoogleFonts.hindSiliguri(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.black87,
+              Expanded(
+                child: Text(
+                  title,
+                  style: GoogleFonts.hindSiliguri(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
                 ),
               ),
             ],
@@ -763,7 +749,7 @@ class _EditPondScreenState extends State<EditPondScreen> {
         labelText: label,
         hintText: hint,
         labelStyle: GoogleFonts.hindSiliguri(color: isDark ? Colors.grey.shade400 : Colors.grey.shade700, fontSize: 13),
-        hintStyle: GoogleFonts.hindSiliguri(color: Colors.grey.shade400, fontSize: 12),
+        hintStyle: GoogleFonts.hindSiliguri(color: isDark ? Colors.white38 : Colors.grey.shade400, fontSize: 12),
         prefixIcon: Icon(icon, color: const Color(0xFF006064), size: 20),
         filled: true,
         fillColor: isDark ? const Color(0xFF0F1A22) : const Color(0xFFF9FBFC),

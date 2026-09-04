@@ -36,9 +36,9 @@ class RouteGuard {
       case UserType.hatchery:
         return '/company/dashboard';
       case UserType.fishFarmer:
-        return '/farmer/dashboard';
+        return '/fisheries/fish_farmer/dashboard';
       case UserType.fishBuyer:
-        return '/buyer/dashboard';
+        return '/fisheries/fish_buyer/dashboard';
       case UserType.fishDriver:
         return '/driver/dashboard';
     }
@@ -102,16 +102,7 @@ class RouteGuard {
           '/service-provider/availability',
         };
       case UserType.company:
-        return {
-          '/company/dashboard',
-          '/company/catalog',
-          '/company/sales',
-          '/company/orders',
-          '/company/customers',
-          '/company/analytics',
-        };
       case UserType.seller:
-      case UserType.company:
       case UserType.fishCompany:
       case UserType.hatchery:
         return {
@@ -124,6 +115,7 @@ class RouteGuard {
         };
       case UserType.fishFarmer:
         return {
+          '/fisheries/fish_farmer/dashboard',
           '/farmer/dashboard',
           '/farmer/add-product',
           '/farmer/my-products',
@@ -134,6 +126,7 @@ class RouteGuard {
         };
       case UserType.fishBuyer:
         return {
+          '/fisheries/fish_buyer/dashboard',
           '/buyer/dashboard',
           '/buyer/browse',
           '/buyer/cart',

@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'package:agrolinkbd/core/providers/user_provider.dart';
-import 'package:agrolinkbd/core/models/fish_auction_model.dart';
 import 'package:agrolinkbd/core/services/fish_auction_service.dart';
 
 class FishBuyerBidScreen extends StatefulWidget {
@@ -24,7 +23,7 @@ class _FishBuyerBidScreenState extends State<FishBuyerBidScreen> {
     super.dispose();
   }
 
-  void _submitBid(double amountPerKg) {
+  Future<void> _submitBid(double amountPerKg) async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final user = userProvider.currentUser;
 
@@ -32,7 +31,7 @@ class _FishBuyerBidScreenState extends State<FishBuyerBidScreen> {
         ? Get.find<FishAuctionService>()
         : Get.put(FishAuctionService());
 
-    final success = auctionService.placeBid(
+    final success = await auctionService.placeBid(
       auctionId: widget.auctionId,
       bidderId: user?.id ?? 'buyer_demo_${DateTime.now().millisecondsSinceEpoch}',
       bidderName: user?.name ?? 'মেসার্স ভাই ভাই মৎস্য আড়ত',
@@ -120,7 +119,7 @@ class _FishBuyerBidScreenState extends State<FishBuyerBidScreen> {
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
-                          colors: [Colors.transparent, Colors.black.withOpacity(0.8)],
+                          colors: [Colors.transparent, Colors.black.withValues(alpha: 0.8)],
                         ),
                       ),
                     ),
@@ -161,7 +160,7 @@ class _FishBuyerBidScreenState extends State<FishBuyerBidScreen> {
                   border: Border.all(color: Colors.amber.shade600, width: 2),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.amber.withOpacity(0.12),
+                      color: Colors.amber.withValues(alpha: 0.12),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),

@@ -5,10 +5,11 @@ import 'package:agrolinkbd/core/models/user_model.dart';
 import 'package:agrolinkbd/core/providers/user_provider.dart';
 import 'package:agrolinkbd/core/controllers/user_controller.dart';
 import 'package:agrolinkbd/core/services/auth_service.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:agrolinkbd/presentation/screens/auth/login_screen.dart';
 import 'package:agrolinkbd/core/constants/bd_location_data.dart';
 import 'package:agrolinkbd/presentation/widgets/searchable_dropdown.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 
 class RegisterScreen extends StatefulWidget {
   final String userId;
@@ -67,24 +68,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void initState() {
     super.initState();
     
-    // Check if role was passed via arguments
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (Get.arguments != null && Get.arguments['role'] != null) {
-        final role = Get.arguments['role'] as String;
+    // Check if role was passed via arguments or saved preferences
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      String? role = Get.arguments?['role'] as String?;
+      if (role == null) {
+        final prefs = await SharedPreferences.getInstance();
+        role = prefs.getString('selected_role');
+      }
+
+      if (role != null) {
         setState(() {
-          switch (role) {
+          final clean = role!.replaceAll('UserType.', '').replaceAll('_', '').toLowerCase();
+          switch (clean) {
             case 'farmer': _selectedUserType = UserType.farmer; break;
             case 'buyer': _selectedUserType = UserType.buyer; break;
             case 'driver': _selectedUserType = UserType.driver; break;
-            case 'service_provider': _selectedUserType = UserType.serviceProvider; break;
+            case 'serviceprovider': _selectedUserType = UserType.serviceProvider; break;
             case 'company': _selectedUserType = UserType.company; break;
             // Fisheries
-            case 'fish_farmer': _selectedUserType = UserType.fishFarmer; break;
-            case 'fish_buyer': _selectedUserType = UserType.fishBuyer; break;
-            case 'fish_driver': _selectedUserType = UserType.fishDriver; break;
-            case 'fish_service_provider': _selectedUserType = UserType.fishServiceProvider; break;
-            case 'fish_company': _selectedUserType = UserType.fishCompany; break;
-            case 'fish_expert': _selectedUserType = UserType.fishExpert; break;
+            case 'fishfarmer': _selectedUserType = UserType.fishFarmer; break;
+            case 'fishbuyer': _selectedUserType = UserType.fishBuyer; break;
+            case 'fishdriver': _selectedUserType = UserType.fishDriver; break;
+            case 'fishserviceprovider': _selectedUserType = UserType.fishServiceProvider; break;
+            case 'fishcompany': _selectedUserType = UserType.fishCompany; break;
+            case 'fishexpert': _selectedUserType = UserType.fishExpert; break;
             case 'hatchery': _selectedUserType = UserType.hatchery; break;
             case 'expert': _selectedUserType = UserType.expert; break;
           }
@@ -144,7 +151,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
         case UserType.buyer:
           userRole = UserRole.buyer;
           break;
+        case UserType.driver:
+          userRole = UserRole.driver;
+          break;
         case UserType.serviceProvider:
+          userRole = UserRole.serviceProvider;
+          break;
+        case UserType.company:
+          userRole = UserRole.company;
+          break;
+        case UserType.seller:
+          userRole = UserRole.seller;
+          break;
+        case UserType.expert:
           userRole = UserRole.expert;
           break;
         case UserType.fishFarmer:
@@ -168,11 +187,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
         case UserType.hatchery:
           userRole = UserRole.hatchery;
           break;
-        case UserType.expert:
-          userRole = UserRole.expert;
-          break;
-        default:
-          userRole = UserRole.farmer;
       }
 
       // Create user profile in Firestore
@@ -244,6 +258,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
         role: userRole,
       );
       debugPrint('✅ User role and data set in controller');
+
+      // Save preferences to preserve role across sessions
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('selected_domain', userDomain);
+        await prefs.setString('selected_role', _selectedUserType.name);
+      } catch (_) {}
 
       // Load user in provider
       debugPrint('📝 Loading user in provider...');
@@ -416,13 +437,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isBn = LanguageProvider.isBn(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryColor = Theme.of(context).primaryColor;
+    final cardColor = isDark ? const Color(0xFF1E1E2C) : Colors.white;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final subTextColor = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
+
     final bgGradient = isDark
         ? const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF1E1E2C), Color(0xFF12121A)],
+            colors: [Color(0xFF12121A), Color(0xFF1E1E2C)],
           )
         : LinearGradient(
             begin: Alignment.topLeft,
@@ -430,13 +456,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
             colors: [Colors.green.shade50, Colors.white],
           );
 
-    final cardColor = isDark ? const Color(0xFF2A2A3C) : Colors.white;
-    final textColor = isDark ? Colors.white : Colors.black87;
-    final subTextColor = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
-
     final inputDecoration = InputDecoration(
       filled: true,
-      fillColor: isDark ? const Color(0xFF1E1E2C) : Colors.grey.shade100,
+      fillColor: isDark ? const Color(0xFF2A2A3C) : Colors.grey.shade100,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
         borderSide: BorderSide.none,
@@ -463,7 +485,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Register', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(isBn ? 'নিবন্ধন' : 'Register', style: const TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
@@ -474,12 +496,53 @@ class _RegisterScreenState extends State<RegisterScreen> {
           fontWeight: FontWeight.bold,
         ),
         actions: [
+          // Language Switcher (বাংলা / ENG)
+          Consumer<LanguageProvider>(
+            builder: (context, langProvider, _) {
+              final isBangla = langProvider.isBangla;
+              return Container(
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white12 : Colors.black.withOpacity(0.06),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(20),
+                  onTap: () => langProvider.toggleLanguage(),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.language,
+                          size: 18,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          isBangla ? 'বাংলা' : 'English',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            color: isDark ? Colors.white : Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: 8),
           IconButton(
             icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode, color: isDark ? Colors.white : Colors.black87),
             onPressed: () {
               Get.changeThemeMode(isDark ? ThemeMode.light : ThemeMode.dark);
             },
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: Container(
@@ -492,312 +555,333 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 constraints: const BoxConstraints(maxWidth: 650),
                 child: Container(
                   padding: const EdgeInsets.all(28),
-                decoration: BoxDecoration(
-                  color: cardColor,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(isDark ? 0.4 : 0.05),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        'Create Account',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.w800,
-                              color: textColor,
-                            ),
-                        textAlign: TextAlign.center,
+                  decoration: BoxDecoration(
+                    color: cardColor,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(isDark ? 0.4 : 0.05),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Enter your details below to get started',
-                        style: TextStyle(
-                          color: subTextColor,
-                          fontSize: 14,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 32),
-
-                      // Name
-                      TextFormField(
-                        controller: _nameController,
-                        style: TextStyle(color: textColor),
-                        decoration: inputDecoration.copyWith(
-                          labelText: 'পূর্ণ নাম',
-                          prefixIcon: Icon(Icons.person_outline, color: primaryColor),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'আপনার নাম লিখুন';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 20),
-
-                      if (widget.userId.isEmpty) ...[
-                        // Email
-                        TextFormField(
-                          controller: _emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          style: TextStyle(color: textColor),
-                          decoration: inputDecoration.copyWith(
-                            labelText: 'ইমেইল *',
-                            prefixIcon: Icon(Icons.email_outlined, color: primaryColor),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'ইমেইল দিন';
-                            }
-                            if (!value.contains('@')) {
-                              return 'সঠিক ইমেইল দিন';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 20),
-
-                        // Password
-                        TextFormField(
-                          controller: _passwordController,
-                          obscureText: true,
-                          style: TextStyle(color: textColor),
-                          decoration: inputDecoration.copyWith(
-                            labelText: 'পাসওয়ার্ড *',
-                            prefixIcon: Icon(Icons.lock_outline, color: primaryColor),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'পাসওয়ার্ড লিখুন';
-                            }
-                            if (value.length < 6) {
-                              return 'পাসওয়ার্ড কমপক্ষে ৬ সংখ্যার হতে হবে';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 20),
-
-                        // Confirm Password
-                        TextFormField(
-                          controller: _confirmPasswordController,
-                          obscureText: true,
-                          style: TextStyle(color: textColor),
-                          decoration: inputDecoration.copyWith(
-                            labelText: 'পাসওয়ার্ড নিশ্চিত করুন *',
-                            prefixIcon: Icon(Icons.lock_outline, color: primaryColor),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'পাসওয়ার্ড নিশ্চিত করুন';
-                            }
-                            if (value != _passwordController.text) {
-                              return 'পাসওয়ার্ড মেলেনি';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 20),
-
-                        // Phone (Optional for Email flow)
-                        TextFormField(
-                          controller: _phoneController,
-                          keyboardType: TextInputType.text,
-                          style: TextStyle(color: textColor),
-                          decoration: inputDecoration.copyWith(
-                            labelText: 'মোবাইল নাম্বার (Optional)',
-                            hintText: '17XXXXXXXX',
-                            prefixIcon: Icon(Icons.phone_outlined, color: primaryColor),
-                            prefixText: '+880 ',
-                            prefixStyle: TextStyle(color: textColor, fontSize: 16),
-                          ),
-                        ),
-                      ] else ...[
-                        // Phone (Readonly for Phone Auth flow)
-                        TextFormField(
-                          initialValue: widget.phone,
-                          readOnly: true,
-                          style: TextStyle(color: Colors.grey.shade600),
-                          decoration: inputDecoration.copyWith(
-                            labelText: 'মোবাইল নাম্বার (Verified)',
-                            prefixIcon: Icon(Icons.verified_outlined, color: Colors.green),
-                            prefixText: '', // It already includes the prefix from Firebase Auth
-                            prefixStyle: TextStyle(color: Colors.grey.shade600, fontSize: 16),
-                            filled: true,
-                            fillColor: isDark ? Colors.grey.shade900 : Colors.grey.shade200,
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 24),
-
-                      // User Type (Only show if not pre-selected via arguments)
-                      if (Get.arguments?['role'] == null)
-                        DropdownButtonFormField<UserType>(
-                          value: _selectedUserType,
-                          dropdownColor: cardColor,
-                          style: TextStyle(color: textColor, fontSize: 16),
-                          decoration: inputDecoration.copyWith(
-                            labelText: 'Who are you?',
-                            prefixIcon: Icon(Icons.person_pin_outlined, color: primaryColor),
-                          ),
-                          items: const [
-                            DropdownMenuItem(value: UserType.farmer, child: Text('Farmer (Agriculture)')),
-                            DropdownMenuItem(value: UserType.buyer, child: Text('Buyer (Agriculture)')),
-                            DropdownMenuItem(value: UserType.driver, child: Text('Driver (Agriculture)')),
-                            DropdownMenuItem(value: UserType.serviceProvider, child: Text('Service Provider')),
-                            DropdownMenuItem(value: UserType.company, child: Text('Company')),
-                            DropdownMenuItem(value: UserType.fishFarmer, child: Text('Fish Farmer')),
-                            DropdownMenuItem(value: UserType.fishBuyer, child: Text('Fish Buyer')),
-                            DropdownMenuItem(value: UserType.hatchery, child: Text('Hatchery Owner')),
-                            DropdownMenuItem(value: UserType.fishExpert, child: Text('Fisheries Expert')),
-                          ],
-                          onChanged: (value) {
-                            if (value != null) {
-                              setState(() => _selectedUserType = value);
-                            }
-                          },
-                        ),
-                      if (Get.arguments?['role'] == null)
-                        const SizedBox(height: 24),
-
-                      // Division
-                      SearchableDropdown(
-                        hint: 'Select Division',
-                        value: _selectedDivision,
-                        items: BDLocationData.divisions,
-                        icon: Icons.map_outlined,
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedDivision = value;
-                            _selectedDistrict = null; // Reset dependent fields
-                            _selectedUpazila = null;
-                            _selectedUnion = null;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
-                      // District
-                      SearchableDropdown(
-                        hint: 'Select District',
-                        value: _selectedDistrict,
-                        items: _districts,
-                        icon: Icons.location_city_outlined,
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedDistrict = value;
-                            _selectedUpazila = null; // Reset dependent field
-                            _selectedUnion = null;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Upazila
-                      SearchableDropdown(
-                        hint: 'Select Upazila',
-                        value: _selectedUpazila,
-                        items: _upazilas,
-                        icon: Icons.location_on_outlined,
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedUpazila = value;
-                            _selectedUnion = null;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Union
-                      SearchableDropdown(
-                        hint: 'Select Union',
-                        value: _selectedUnion,
-                        items: _unions,
-                        icon: Icons.holiday_village_outlined,
-                        onChanged: (value) {
-                          setState(() => _selectedUnion = value);
-                        },
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Address (Village / Road)
-                      TextFormField(
-                        controller: _addressController,
-                        maxLines: 2,
-                        style: TextStyle(color: textColor),
-                        decoration: inputDecoration.copyWith(
-                          labelText: 'Village / Road / House',
-                          prefixIcon: Padding(
-                            padding: const EdgeInsets.only(bottom: 24.0),
-                            child: Icon(Icons.home_outlined, color: primaryColor),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-
-                      // Register button
-                      ElevatedButton(
-                        onPressed: _isLoading ? null : _register,
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 18),
-                          backgroundColor: primaryColor,
-                          foregroundColor: Colors.white,
-                          elevation: 2,
-                          shadowColor: primaryColor.withOpacity(0.5),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        child: _isLoading
-                            ? const SizedBox(
-                                height: 24,
-                                width: 24,
-                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                              )
-                            : const Text(
-                                'Create Account',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 0.5,
-                                ),
+                    ],
+                  ),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          isBn ? 'নতুন অ্যাকাউন্ট তৈরি করুন' : 'Create Account',
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                color: textColor,
                               ),
-                      ),
-                      const SizedBox(height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text('Already have an account? ', style: TextStyle(color: subTextColor)),
-                          TextButton(
-                            onPressed: () {
-                              Get.offAll(() => const LoginScreen());
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          isBn ? 'নিচের তথ্যগুলো পূরণ করে শুরু করুন' : 'Enter your details below to get started',
+                          style: TextStyle(
+                            color: subTextColor,
+                            fontSize: 14,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 32),
+
+                        // Name
+                        TextFormField(
+                          controller: _nameController,
+                          style: TextStyle(color: textColor),
+                          decoration: inputDecoration.copyWith(
+                            labelText: isBn ? 'পূর্ণ নাম *' : 'Full Name *',
+                            hintText: isBn ? 'আপনার নাম লিখুন' : 'Enter your name',
+                            prefixIcon: Icon(Icons.person_outline, color: primaryColor),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return isBn ? 'আপনার নাম লিখুন' : 'Please enter your name';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 20),
+
+                        if (widget.userId.isEmpty) ...[
+                          // Email
+                          TextFormField(
+                            controller: _emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            style: TextStyle(color: textColor),
+                            decoration: inputDecoration.copyWith(
+                              labelText: isBn ? 'ইমেইল *' : 'Email Address *',
+                              hintText: 'user@example.com',
+                              prefixIcon: Icon(Icons.email_outlined, color: primaryColor),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return isBn ? 'ইমেইল দিন' : 'Please enter email';
+                              }
+                              if (!value.contains('@')) {
+                                return isBn ? 'সঠিক ইমেইল দিন' : 'Please enter valid email';
+                              }
+                              return null;
                             },
-                            child: const Text(
-                              'Login',
-                              style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Password
+                          TextFormField(
+                            controller: _passwordController,
+                            obscureText: true,
+                            style: TextStyle(color: textColor),
+                            decoration: inputDecoration.copyWith(
+                              labelText: isBn ? 'পাসওয়ার্ড *' : 'Password *',
+                              hintText: isBn ? 'কমপক্ষে ৬ ডিজিট দিন' : 'At least 6 characters',
+                              prefixIcon: Icon(Icons.lock_outline, color: primaryColor),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return isBn ? 'পাসওয়ার্ড লিখুন' : 'Please enter password';
+                              }
+                              if (value.length < 6) {
+                                return isBn ? 'পাসওয়ার্ড কমপক্ষে ৬ সংখ্যার হতে হবে' : 'Password must be at least 6 characters';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Confirm Password
+                          TextFormField(
+                            controller: _confirmPasswordController,
+                            obscureText: true,
+                            style: TextStyle(color: textColor),
+                            decoration: inputDecoration.copyWith(
+                              labelText: isBn ? 'পাসওয়ার্ড নিশ্চিত করুন *' : 'Confirm Password *',
+                              prefixIcon: Icon(Icons.lock_outline, color: primaryColor),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return isBn ? 'পাসওয়ার্ড নিশ্চিত করুন' : 'Please confirm password';
+                              }
+                              if (value != _passwordController.text) {
+                                return isBn ? 'পাসওয়ার্ড মেলেনি' : 'Passwords do not match';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Phone (Optional for Email flow)
+                          TextFormField(
+                            controller: _phoneController,
+                            keyboardType: TextInputType.text,
+                            style: TextStyle(color: textColor),
+                            decoration: inputDecoration.copyWith(
+                              labelText: isBn ? 'মোবাইল নাম্বার (ঐচ্ছিক)' : 'Mobile Number (Optional)',
+                              hintText: '17XXXXXXXX',
+                              prefixIcon: Icon(Icons.phone_outlined, color: primaryColor),
+                              prefixText: '+880 ',
+                              prefixStyle: TextStyle(color: textColor, fontSize: 16),
+                            ),
+                          ),
+                        ] else ...[
+                          // Phone (Readonly for Phone Auth flow)
+                          TextFormField(
+                            initialValue: widget.phone,
+                            readOnly: true,
+                            style: TextStyle(color: Colors.grey.shade600),
+                            decoration: inputDecoration.copyWith(
+                              labelText: isBn ? 'মোবাইল নাম্বার (যাচাইকৃত)' : 'Mobile Number (Verified)',
+                              prefixIcon: const Icon(Icons.verified_outlined, color: Colors.green),
+                              prefixText: '',
+                              prefixStyle: TextStyle(color: Colors.grey.shade600, fontSize: 16),
+                              filled: true,
+                              fillColor: isDark ? Colors.grey.shade900 : Colors.grey.shade200,
                             ),
                           ),
                         ],
-                      ),
-                    ],
+                        const SizedBox(height: 24),
+
+                        // User Type (Only show if not pre-selected via arguments)
+                        if (Get.arguments?['role'] == null)
+                          DropdownButtonFormField<UserType>(
+                            value: _selectedUserType,
+                            dropdownColor: cardColor,
+                            isExpanded: true,
+                            style: TextStyle(color: textColor, fontSize: 15),
+                            decoration: inputDecoration.copyWith(
+                              labelText: isBn ? 'আপনার ভূমিকা নির্বাচন করুন' : 'Who are you? (Role)',
+                              prefixIcon: Icon(Icons.person_pin_outlined, color: primaryColor),
+                            ),
+                            items: [
+                              DropdownMenuItem(value: UserType.farmer, child: Text(isBn ? '🌾 কৃষক (Farmer)' : '🌾 Farmer (Agriculture)')),
+                              DropdownMenuItem(value: UserType.buyer, child: Text(isBn ? '🛍️ পাইকারি ক্রেতা (Buyer)' : '🛍️ Buyer (Agriculture)')),
+                              DropdownMenuItem(value: UserType.driver, child: Text(isBn ? '🚚 পরিবহন চালক (Driver)' : '🚚 Driver (Agriculture)')),
+                              DropdownMenuItem(value: UserType.serviceProvider, child: Text(isBn ? '🚜 কৃষি সেবা প্রদানকারী' : '🚜 Service Provider')),
+                              DropdownMenuItem(value: UserType.company, child: Text(isBn ? '🏢 কোম্পানি (Company)' : '🏢 Company')),
+                              DropdownMenuItem(value: UserType.fishFarmer, child: Text(isBn ? '🐟 মৎস্য চাষী (Fish Farmer)' : '🐟 Fish Farmer')),
+                              DropdownMenuItem(value: UserType.fishBuyer, child: Text(isBn ? '🛒 মৎস্য ক্রেতা (Fish Buyer)' : '🛒 Fish Buyer')),
+                              DropdownMenuItem(value: UserType.hatchery, child: Text(isBn ? '🔬 হ্যাচারি মালিক' : '🔬 Hatchery Owner')),
+                              DropdownMenuItem(value: UserType.fishExpert, child: Text(isBn ? '🩺 মৎস্য বিশেষজ্ঞ' : '🩺 Fisheries Expert')),
+                            ],
+                            onChanged: (value) {
+                              if (value != null) {
+                                setState(() => _selectedUserType = value);
+                              }
+                            },
+                          ),
+                        if (Get.arguments?['role'] == null)
+                          const SizedBox(height: 24),
+
+                        // Division
+                        SearchableDropdown(
+                          hint: isBn ? 'বিভাগ নির্বাচন করুন' : 'Select Division',
+                          value: _selectedDivision,
+                          items: BDLocationData.divisions,
+                          icon: Icons.map_outlined,
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedDivision = value;
+                              _selectedDistrict = null;
+                              _selectedUpazila = null;
+                              _selectedUnion = null;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 16),
+
+                        // District
+                        SearchableDropdown(
+                          hint: isBn ? 'জেলা নির্বাচন করুন' : 'Select District',
+                          value: _selectedDistrict,
+                          items: _districts,
+                          icon: Icons.location_city_outlined,
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedDistrict = value;
+                              _selectedUpazila = null;
+                              _selectedUnion = null;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Upazila
+                        SearchableDropdown(
+                          hint: isBn ? 'উপজেলা নির্বাচন করুন' : 'Select Upazila',
+                          value: _selectedUpazila,
+                          items: _upazilas,
+                          icon: Icons.location_on_outlined,
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedUpazila = value;
+                              _selectedUnion = null;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Union
+                        SearchableDropdown(
+                          hint: isBn ? 'ইউনিয়ন নির্বাচন করুন' : 'Select Union',
+                          value: _selectedUnion,
+                          items: _unions,
+                          icon: Icons.holiday_village_outlined,
+                          onChanged: (value) {
+                            setState(() => _selectedUnion = value);
+                          },
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Address (Village / Road)
+                        TextFormField(
+                          controller: _addressController,
+                          maxLines: 2,
+                          style: TextStyle(color: textColor),
+                          decoration: inputDecoration.copyWith(
+                            labelText: isBn ? 'গ্রাম / রোড / ঠিকানা' : 'Village / Road / House',
+                            prefixIcon: Padding(
+                              padding: const EdgeInsets.only(bottom: 24.0),
+                              child: Icon(Icons.home_outlined, color: primaryColor),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+
+                        // Register button (Full Width, 52px height)
+                        SizedBox(
+                          width: double.infinity,
+                          height: 52,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _register,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: primaryColor,
+                              foregroundColor: Colors.white,
+                              elevation: 3,
+                              shadowColor: primaryColor.withOpacity(0.4),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    height: 22,
+                                    width: 22,
+                                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.2),
+                                  )
+                                : Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.how_to_reg_rounded, size: 20),
+                                      const SizedBox(width: 8),
+                                      Flexible(
+                                        child: Text(
+                                          isBn ? 'অ্যাকাউন্ট তৈরি করুন' : 'Create Account',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            letterSpacing: 0.3,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              isBn ? 'ইতিমধ্যে অ্যাকাউন্ট আছে? ' : 'Already have an account? ',
+                              style: TextStyle(color: subTextColor),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                Get.offAll(() => const LoginScreen());
+                              },
+                              child: Text(
+                                isBn ? 'লগইন করুন' : 'Sign In',
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-          ),
         ),
       ),
     );
   }
-
 }

@@ -1,4 +1,6 @@
 import 'package:get/get.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/fish_auction_model.dart';
 import '../models/fish_harvest_contract_model.dart';
 import '../models/fish_rfq_model.dart';
@@ -12,6 +14,11 @@ class FishAuctionService extends GetxController {
   final RxList<FishRfqModel> rfqs = <FishRfqModel>[].obs;
   final RxList<FishTransportBookingModel> transportBookings = <FishTransportBookingModel>[].obs;
 
+  // VIP Auction Access for Buyers
+  final RxBool hasVipAuctionAccess = false.obs;
+  final Rx<DateTime?> vipExpiryDate = Rx<DateTime?>(null);
+  final RxString vipPlanName = ''.obs;
+
   @override
   void onInit() {
     super.onInit();
@@ -19,144 +26,301 @@ class FishAuctionService extends GetxController {
     _loadSampleContracts();
     _loadSampleRfqs();
     _loadSampleTransport();
+    _initFirestoreAuctionStream();
+    checkCurrentUserVipStatus();
   }
 
+  void _initFirestoreAuctionStream() {
+    try {
+      FirebaseFirestore.instance
+          .collection('fish_auctions')
+          .orderBy('createdAt', descending: true)
+          .snapshots()
+          .listen((snapshot) {
+        if (snapshot.docs.isNotEmpty) {
+          final List<FishAuctionModel> firestoreAuctions = [];
+          for (var doc in snapshot.docs) {
+            try {
+              final data = doc.data();
+              data['id'] = doc.id;
+              firestoreAuctions.add(FishAuctionModel.fromJson(data));
+            } catch (e) {
+              // Parse fallback
+            }
+          }
+
+          // Merge with sample auctions (avoiding duplicate IDs)
+          final existingIds = firestoreAuctions.map((a) => a.id).toSet();
+          final remainingSamples = _sampleAuctions.where((a) => !existingIds.contains(a.id)).toList();
+          auctions.assignAll([...firestoreAuctions, ...remainingSamples]);
+        }
+      }, onError: (err) {
+        // Fallback to sample data
+      });
+    } catch (_) {}
+  }
+
+  Future<bool> checkCurrentUserVipStatus() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      hasVipAuctionAccess.value = false;
+      return false;
+    }
+    return checkUserVipStatus(user.uid);
+  }
+
+  Future<bool> checkUserVipStatus(String uid) async {
+    try {
+      final doc = await FirebaseFirestore.instance.collection('auction_memberships').doc(uid).get();
+      if (doc.exists && doc.data() != null) {
+        final data = doc.data()!;
+        final expiresAtStr = data['expiresAt'] as String?;
+        if (expiresAtStr != null) {
+          final expiry = DateTime.tryParse(expiresAtStr);
+          if (expiry != null && expiry.isAfter(DateTime.now())) {
+            hasVipAuctionAccess.value = true;
+            vipExpiryDate.value = expiry;
+            vipPlanName.value = (data['planName'] as String?) ?? 'VIP Auction Pass';
+            return true;
+          }
+        }
+      }
+
+      // Check user document flag as well
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      if (userDoc.exists && userDoc.data() != null) {
+        final userData = userDoc.data()!;
+        if (userData['hasLiveAuctionAccess'] == true) {
+          hasVipAuctionAccess.value = true;
+          vipPlanName.value = 'VIP Wholesale Bidder';
+          return true;
+        }
+      }
+
+      hasVipAuctionAccess.value = false;
+      return false;
+    } catch (_) {
+      return hasVipAuctionAccess.value;
+    }
+  }
+
+  Future<bool> activateVipMembership({
+    required String uid,
+    required String userName,
+    required String userPhone,
+    required String userEmail,
+    required String planId,
+    required String planName,
+    required double price,
+    required int durationDays,
+  }) async {
+    try {
+      final now = DateTime.now();
+      final expiresAt = now.add(Duration(days: durationDays));
+
+      await FirebaseFirestore.instance.collection('auction_memberships').doc(uid).set({
+        'userId': uid,
+        'userName': userName,
+        'userPhone': userPhone,
+        'userEmail': userEmail,
+        'planId': planId,
+        'planName': planName,
+        'amountPaid': price,
+        'paymentGateway': 'SSLCommerz',
+        'status': 'active',
+        'activatedAt': now.toIso8601String(),
+        'expiresAt': expiresAt.toIso8601String(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      await FirebaseFirestore.instance.collection('users').doc(uid).set({
+        'hasLiveAuctionAccess': true,
+        'auctionMembershipTier': planName,
+        'auctionMembershipExpiresAt': expiresAt.toIso8601String(),
+      }, SetOptions(merge: true));
+
+      hasVipAuctionAccess.value = true;
+      vipExpiryDate.value = expiresAt;
+      vipPlanName.value = planName;
+      return true;
+    } catch (e) {
+      // Local activation fallback
+      hasVipAuctionAccess.value = true;
+      vipExpiryDate.value = DateTime.now().add(Duration(days: durationDays));
+      vipPlanName.value = planName;
+      return true;
+    }
+  }
+
+  final List<FishAuctionModel> _sampleAuctions = [
+    FishAuctionModel(
+      id: 'AUC-FISH-101',
+      farmerId: 'farmer_01',
+      farmerName: 'মোঃ আব্দুল কুদ্দুস',
+      farmerPhone: '01711223344',
+      farmLocation: 'চলনবিল অ্যাগ্রো ফিশারিজ, নাটোর',
+      district: 'নাটোর',
+      upazila: 'সিংড়া',
+      fishSpecies: 'দেশি রুই ও কাতলা (মিক্সড)',
+      lotTitle: 'পুকুর-১ এর ৮০০ কেজি জ্যান্ত রুই ও কাতলা লট',
+      estimatedTotalKg: 800.0,
+      avgWeightGram: 1800.0,
+      condition: FishCondition.liveInWater,
+      grade: 'Grade A+ (তাজা জ্যান্ত)',
+      images: [
+        'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1788505454/images_jzjue9.jpg',
+        'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1788505305/images_l53fvw.jpg',
+      ],
+      startingPricePerKg: 320.0,
+      reservePricePerKg: 360.0,
+      minBidIncrement: 5.0,
+      currentHighestBidPerKg: 355.0,
+      highestBidderId: 'buyer_01',
+      highestBidderName: 'মেসার্স ভাই ভাই মৎস্য আড়ত, যাত্রাবাড়ী',
+      startTime: DateTime.now().subtract(const Duration(hours: 4)),
+      endTime: DateTime.now().add(const Duration(hours: 18)),
+      status: FishAuctionStatus.live,
+      providesOxygenTransport: true,
+      description: '১০০% প্রাকৃতিক খাদ্য ও খৈল দিয়ে বড় করা। সরাসরি পুকুর সেচে জ্যান্ত ড্রামে সরবরাহ করা হবে।',
+      createdAt: DateTime.now().subtract(const Duration(hours: 4)),
+      bids: [
+        FishBid(
+          id: 'BID-01',
+          bidderId: 'buyer_02',
+          bidderName: 'আল-মদিনা ফিশ মার্ট, মিরপুর',
+          bidderPhone: '01819001122',
+          bidAmountPerKg: 330.0,
+          totalBidAmount: 330.0 * 800,
+          timestamp: DateTime.now().subtract(const Duration(hours: 3)),
+        ),
+        FishBid(
+          id: 'BID-02',
+          bidderId: 'buyer_03',
+          bidderName: 'কাওরান বাজার মেগা পাইকার',
+          bidderPhone: '01912345678',
+          bidAmountPerKg: 345.0,
+          totalBidAmount: 345.0 * 800,
+          timestamp: DateTime.now().subtract(const Duration(hours: 1)),
+        ),
+        FishBid(
+          id: 'BID-03',
+          bidderId: 'buyer_01',
+          bidderName: 'মেসার্স ভাই ভাই মৎস্য আড়ত, যাত্রাবাড়ী',
+          bidderPhone: '01715998877',
+          bidAmountPerKg: 355.0,
+          totalBidAmount: 355.0 * 800,
+          timestamp: DateTime.now().subtract(const Duration(minutes: 25)),
+          isWinning: true,
+        ),
+      ],
+    ),
+    FishAuctionModel(
+      id: 'AUC-FISH-102',
+      farmerId: 'farmer_02',
+      farmerName: 'হাজী রফিকুল ইসলাম',
+      farmerPhone: '01988776655',
+      farmLocation: 'শ্যামনগর বাগদা ঘের, সাতক্ষীরা',
+      district: 'সাতক্ষীরা',
+      upazila: 'শ্যামনগর',
+      fishSpecies: 'রপ্তানি গ্রেড বাগদা চিংড়ি',
+      lotTitle: 'সাতক্ষীরার তাজা বাগদা চিংড়ি (৩০০ কেজি লট)',
+      estimatedTotalKg: 300.0,
+      avgWeightGram: 45.0,
+      condition: FishCondition.icedFresh,
+      grade: 'Export Grade 1',
+      images: [
+        'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1788505088/images_yhiizh.jpg',
+      ],
+      startingPricePerKg: 850.0,
+      reservePricePerKg: 920.0,
+      minBidIncrement: 10.0,
+      currentHighestBidPerKg: 910.0,
+      highestBidderId: 'buyer_exp_01',
+      highestBidderName: 'বেঙ্গল সি-ফুড প্রসেসিং লিমিটেড',
+      startTime: DateTime.now().subtract(const Duration(hours: 8)),
+      endTime: DateTime.now().add(const Duration(hours: 14)),
+      status: FishAuctionStatus.live,
+      providesOxygenTransport: false,
+      description: 'ঘের থেকে ভোরে আহরিত আন্তর্জাতিক মানসম্পন্ন বাগদা চিংড়ি। বরফ ঢাকা অবস্থায় ডেলিভারি।',
+      createdAt: DateTime.now().subtract(const Duration(hours: 8)),
+      bids: [
+        FishBid(
+          id: 'BID-04',
+          bidderId: 'buyer_exp_01',
+          bidderName: 'বেঙ্গল সি-ফুড প্রসেসিং লিমিটেড',
+          bidderPhone: '01711000000',
+          bidAmountPerKg: 910.0,
+          totalBidAmount: 910.0 * 300,
+          timestamp: DateTime.now().subtract(const Duration(minutes: 50)),
+          isWinning: true,
+        ),
+      ],
+    ),
+    FishAuctionModel(
+      id: 'AUC-FISH-103',
+      farmerId: 'farmer_03',
+      farmerName: 'কামাল হোসেন বায়োফ্লক',
+      farmerPhone: '01677889900',
+      farmLocation: 'ত্রিশাল অ্যাকোয়া হাব, ময়মনসিংহ',
+      district: 'ময়মনসিংহ',
+      upazila: 'ত্রিশাল',
+      fishSpecies: 'বায়োফ্লক তাজা শিং ও পাবদা',
+      lotTitle: '৪৫০ কেজি জ্যান্ত দেশি শিং ও পাবদা মাছ',
+      estimatedTotalKg: 450.0,
+      avgWeightGram: 120.0,
+      condition: FishCondition.liveInWater,
+      grade: 'Grade A',
+      images: [
+        'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1788505500/images_f9axtg.jpg',
+      ],
+      startingPricePerKg: 420.0,
+      reservePricePerKg: 460.0,
+      minBidIncrement: 5.0,
+      currentHighestBidPerKg: 440.0,
+      highestBidderId: 'buyer_05',
+      highestBidderName: 'ঢাকা প্রিমিয়াম ফিশ বাজার',
+      startTime: DateTime.now().subtract(const Duration(hours: 1)),
+      endTime: DateTime.now().add(const Duration(hours: 22)),
+      status: FishAuctionStatus.live,
+      providesOxygenTransport: true,
+      description: '১০০% জীবন্ত শিং ও পাবদা মাছ। অক্সিজেন ট্যাংকে অক্ষত অবস্থায় ঢাকা পৌঁছে দেওয়া হবে।',
+      createdAt: DateTime.now().subtract(const Duration(hours: 1)),
+    ),
+    FishAuctionModel(
+      id: 'AUC-FISH-104',
+      farmerId: 'farmer_04',
+      farmerName: 'চাঁদপুর রিভার ক্যাচ কো-অপারেটিভ',
+      farmerPhone: '01711002233',
+      farmLocation: 'চাঁদপুর মোহনা ফিশারি ঘাট',
+      district: 'চাঁদপুর',
+      upazila: 'চাঁদপুর সদর',
+      fishSpecies: 'পদ্মার তাজা রূপালী ইলিশ',
+      lotTitle: 'চাঁদপুর মোহনার পদ্মার ইলিশ (৫০০ কেজি লট ১.৩-১.৫ কেজি সাইজ)',
+      estimatedTotalKg: 500.0,
+      avgWeightGram: 1400.0,
+      condition: FishCondition.icedFresh,
+      grade: 'Grade A+ Padma Fresh',
+      images: [
+        'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1788504670/images_qbleou.jpg',
+        'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1788505394/images_yr8obg.jpg',
+      ],
+      startingPricePerKg: 1350.0,
+      reservePricePerKg: 1450.0,
+      minBidIncrement: 20.0,
+      currentHighestBidPerKg: 1420.0,
+      highestBidderId: 'buyer_mega_01',
+      highestBidderName: 'কারওয়ান বাজার সেন্ট্রাল ফিশ মার্কেট',
+      startTime: DateTime.now().subtract(const Duration(hours: 2)),
+      endTime: DateTime.now().add(const Duration(hours: 10)),
+      status: FishAuctionStatus.live,
+      providesOxygenTransport: false,
+      description: 'আজ ভোরে চাঁদপুর মোহনা থেকে আহরিত ১০০% ফরমালিনমুক্ত টাটকা চকচকে রূপালী ইলিশের পাইকারি লট।',
+      createdAt: DateTime.now().subtract(const Duration(hours: 2)),
+    ),
+  ];
+
   void _loadSampleAuctions() {
-    auctions.assignAll([
-      FishAuctionModel(
-        id: 'AUC-FISH-101',
-        farmerId: 'farmer_01',
-        farmerName: 'মোঃ আব্দুল কুদ্দুস',
-        farmerPhone: '01711223344',
-        farmLocation: 'চলনবিল অ্যাগ্রো ফিশারিজ, নাটোর',
-        district: 'নাটোর',
-        upazila: 'সিংড়া',
-        fishSpecies: 'দেশি রুই ও কাতলা (মিক্সড)',
-        lotTitle: 'পুকুর-১ এর ৮০০ কেজি জ্যান্ত রুই ও কাতলা লট',
-        estimatedTotalKg: 800.0,
-        avgWeightGram: 1800.0,
-        condition: FishCondition.liveInWater,
-        grade: 'Grade A+ (তাজা জ্যান্ত)',
-        images: [
-          'https://images.unsplash.com/photo-1534483509719-3feaee7c30da?w=600&auto=format&fit=crop&q=80',
-          'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=600&auto=format&fit=crop&q=80',
-        ],
-        startingPricePerKg: 320.0,
-        reservePricePerKg: 360.0,
-        minBidIncrement: 5.0,
-        currentHighestBidPerKg: 355.0,
-        highestBidderId: 'buyer_01',
-        highestBidderName: 'মেসার্স ভাই ভাই মৎস্য আড়ত, যাত্রাবাড়ী',
-        startTime: DateTime.now().subtract(const Duration(hours: 4)),
-        endTime: DateTime.now().add(const Duration(hours: 18)),
-        status: FishAuctionStatus.live,
-        providesOxygenTransport: true,
-        description: '১০০% প্রাকৃতিক খাদ্য ও খৈল দিয়ে বড় করা। সরাসরি পুকুর সেচে জ্যান্ত ড্রামে সরবরাহ করা হবে।',
-        createdAt: DateTime.now().subtract(const Duration(hours: 4)),
-        bids: [
-          FishBid(
-            id: 'BID-01',
-            bidderId: 'buyer_02',
-            bidderName: 'আল-মদিনা ফিশ মার্ট, মিরপুর',
-            bidderPhone: '01819001122',
-            bidAmountPerKg: 330.0,
-            totalBidAmount: 330.0 * 800,
-            timestamp: DateTime.now().subtract(const Duration(hours: 3)),
-          ),
-          FishBid(
-            id: 'BID-02',
-            bidderId: 'buyer_03',
-            bidderName: 'কাওরান বাজার মেগা পাইকার',
-            bidderPhone: '01912345678',
-            bidAmountPerKg: 345.0,
-            totalBidAmount: 345.0 * 800,
-            timestamp: DateTime.now().subtract(const Duration(hours: 1)),
-          ),
-          FishBid(
-            id: 'BID-03',
-            bidderId: 'buyer_01',
-            bidderName: 'মেসার্স ভাই ভাই মৎস্য আড়ত, যাত্রাবাড়ী',
-            bidderPhone: '01715998877',
-            bidAmountPerKg: 355.0,
-            totalBidAmount: 355.0 * 800,
-            timestamp: DateTime.now().subtract(const Duration(minutes: 25)),
-            isWinning: true,
-          ),
-        ],
-      ),
-      FishAuctionModel(
-        id: 'AUC-FISH-102',
-        farmerId: 'farmer_02',
-        farmerName: 'হাজী রফিকুল ইসলাম',
-        farmerPhone: '01988776655',
-        farmLocation: 'শ্যামনগর বাগদা ঘের, সাতক্ষীরা',
-        district: 'সাতক্ষীরা',
-        upazila: 'শ্যামনগর',
-        fishSpecies: 'রপ্তানি গ্রেড বাগদা চিংড়ি',
-        lotTitle: 'সাতক্ষীরার তাজা বাগদা চিংড়ি (৩০০ কেজি লট)',
-        estimatedTotalKg: 300.0,
-        avgWeightGram: 45.0, // ~22-25 pcs per kg
-        condition: FishCondition.icedFresh,
-        grade: 'Export Grade 1',
-        images: [
-          'https://images.unsplash.com/photo-1565680018434-b513d5e5fd47?w=600&auto=format&fit=crop&q=80',
-        ],
-        startingPricePerKg: 850.0,
-        reservePricePerKg: 920.0,
-        minBidIncrement: 10.0,
-        currentHighestBidPerKg: 910.0,
-        highestBidderId: 'buyer_exp_01',
-        highestBidderName: 'বেঙ্গল সি-ফুড প্রসেসিং লিমিটেড',
-        startTime: DateTime.now().subtract(const Duration(hours: 8)),
-        endTime: DateTime.now().add(const Duration(hours: 14)),
-        status: FishAuctionStatus.live,
-        providesOxygenTransport: false,
-        description: 'ঘের থেকে ভোরে আহরিত আন্তর্জাতিক মানসম্পন্ন বাগদা চিংড়ি। বরফ ঢাকা অবস্থায় ডেলিভারি।',
-        createdAt: DateTime.now().subtract(const Duration(hours: 8)),
-        bids: [
-          FishBid(
-            id: 'BID-04',
-            bidderId: 'buyer_exp_01',
-            bidderName: 'বেঙ্গল সি-ফুড প্রসেসিং লিমিটেড',
-            bidderPhone: '01711000000',
-            bidAmountPerKg: 910.0,
-            totalBidAmount: 910.0 * 300,
-            timestamp: DateTime.now().subtract(const Duration(minutes: 50)),
-            isWinning: true,
-          ),
-        ],
-      ),
-      FishAuctionModel(
-        id: 'AUC-FISH-103',
-        farmerId: 'farmer_03',
-        farmerName: 'কামাল হোসেন বায়োফ্লক',
-        farmerPhone: '01677889900',
-        farmLocation: 'ত্রিশাল অ্যাকোয়া হাব, ময়মনসিংহ',
-        district: 'ময়মনসিংহ',
-        upazila: 'ত্রিশাল',
-        fishSpecies: 'বায়োফ্লক তাজা শিং ও পাবদা',
-        lotTitle: '৪৫০ কেজি জ্যান্ত দেশি শিং ও পাবদা মাছ',
-        estimatedTotalKg: 450.0,
-        avgWeightGram: 120.0,
-        condition: FishCondition.liveInWater,
-        grade: 'Grade A',
-        images: [
-          'https://images.unsplash.com/photo-1524704654690-b56c05c78a00?w=600&auto=format&fit=crop&q=80',
-        ],
-        startingPricePerKg: 420.0,
-        reservePricePerKg: 460.0,
-        minBidIncrement: 5.0,
-        currentHighestBidPerKg: 440.0,
-        highestBidderId: 'buyer_05',
-        highestBidderName: 'ঢাকা প্রিমিয়াম ফিশ বাজার',
-        startTime: DateTime.now().subtract(const Duration(hours: 1)),
-        endTime: DateTime.now().add(const Duration(hours: 22)),
-        status: FishAuctionStatus.live,
-        providesOxygenTransport: true,
-        description: '১০০% জীবন্ত শিং ও পাবদা মাছ। অক্সিজেন ট্যাংকে অক্ষত অবস্থায় ঢাকা পৌঁছে দেওয়া হবে।',
-        createdAt: DateTime.now().subtract(const Duration(hours: 1)),
-      ),
-    ]);
+    auctions.assignAll(_sampleAuctions);
   }
 
   void _loadSampleContracts() {
@@ -199,7 +363,7 @@ class FishAuctionService extends GetxController {
         buyerId: 'buyer_exp_01',
         buyerName: 'বেঙ্গল সি-ফুড লিমিটেড',
         buyerPhone: '01711000000',
-        advancePaidAmount: 171000.0, // 30% of 570,000
+        advancePaidAmount: 171000.0,
         status: FishContractStatus.depositPaid,
         waterQualityReport: 'লবণাক্ততা ১৫ ppt, দ্রবীভূত অক্সিজেন ৭.২ ppm',
         feedingProtocol: 'সিপি প্রিমিয়াম চিংড়ি ফিড',
@@ -294,18 +458,24 @@ class FishAuctionService extends GetxController {
 
   // --- ACTIONS ---
 
-  void addAuction(FishAuctionModel auction) {
+  Future<void> addAuction(FishAuctionModel auction) async {
     auctions.insert(0, auction);
+    try {
+      await FirebaseFirestore.instance
+          .collection('fish_auctions')
+          .doc(auction.id)
+          .set(auction.toJson());
+    } catch (_) {}
   }
 
-  bool placeBid({
+  Future<bool> placeBid({
     required String auctionId,
     required String bidderId,
     required String bidderName,
     required String bidderPhone,
     String? bidderOrganization,
     required double bidAmountPerKg,
-  }) {
+  }) async {
     final index = auctions.indexWhere((a) => a.id == auctionId);
     if (index == -1) return false;
 
@@ -379,6 +549,17 @@ class FishAuctionService extends GetxController {
     );
 
     auctions.refresh();
+
+    // Async sync to Firestore
+    try {
+      await FirebaseFirestore.instance.collection('fish_auctions').doc(auctionId).set({
+        'currentHighestBidPerKg': bidAmountPerKg,
+        'highestBidderId': bidderId,
+        'highestBidderName': bidderName,
+        'bids': updatedBids.map((b) => b.toJson()).toList(),
+      }, SetOptions(merge: true));
+    } catch (_) {}
+
     return true;
   }
 

@@ -1,3 +1,5 @@
+import 'package:agrolinkbd/core/models/user_model.dart';
+
 class HourlyWeather {
   final String time;
   final double temperature;
@@ -104,8 +106,23 @@ class WeatherModel {
     return _getConditionTextByCode(weatherCode, isBn);
   }
 
-  String getAgriAdviceText(bool isBn) {
-    return _generateAgriAdvice(weatherCode, rainMm, windSpeedKmH, temperature, rainProbability, isBn);
+  String getAgriAdviceText(
+    bool isBn, {
+    bool isFisheries = false,
+    bool isBuyer = false,
+    UserType? userType,
+  }) {
+    return _generateAgriAdvice(
+      weatherCode,
+      rainMm,
+      windSpeedKmH,
+      temperature,
+      rainProbability,
+      isBn,
+      isFisheries: isFisheries,
+      isBuyer: isBuyer,
+      userType: userType,
+    );
   }
 
   String getWindDirection(bool isBn) {
@@ -298,7 +315,100 @@ class WeatherModel {
     }
   }
 
-  static String _generateAgriAdvice(int code, double rain, double wind, double temp, int rainProb, bool isBn) {
+  static String _generateAgriAdvice(
+    int code,
+    double rain,
+    double wind,
+    double temp,
+    int rainProb,
+    bool isBn, {
+    bool isFisheries = false,
+    bool isBuyer = false,
+    UserType? userType,
+  }) {
+    final bool isFishBuyerRole = userType == UserType.fishBuyer ||
+        (isBuyer && (isFisheries || (userType?.name.contains('fish') ?? false)));
+    final bool isFishFarmerRole = userType == UserType.fishFarmer ||
+        userType == UserType.hatchery ||
+        (isFisheries && !isFishBuyerRole && userType != UserType.buyer);
+    final bool isGeneralBuyerRole = userType == UserType.buyer || isBuyer;
+
+    // 1. Fish Buyer Advisory (Logistics, Cold-chain, Wholesale fish transport)
+    if (isFishBuyerRole) {
+      if (code >= 95) {
+        return isBn
+            ? '⚡ বজ্রঝড়ের ঝুঁকি ($rainProb%)! দূরপাল্লার তাজা মাছ পরিবহন ও লাইভ ডেলিভারি সতর্কতার সাথে পরিচালনা করুন।'
+            : '⚡ Thunderstorm Risk ($rainProb%)! Exercise caution during long-distance live fish transit.';
+      } else if (rain > 5.0 || code >= 61 || rainProb > 70) {
+        return isBn
+            ? '🌧️ বৃষ্টির সম্ভাবনা $rainProb%! তাজা মাছের কোল্ড-চেইন সংরক্ষণ ও বরফ প্যাকেজিংয়ে বিশেষ নজর রাখুন।'
+            : '🌧️ Rain Probability $rainProb%! Ensure proper ice insulation and cold-chain protection for fish cargo.';
+      } else if (wind > 25.0) {
+        return isBn
+            ? '💨 বাতাসে উচ্চ গতিবেগ (${wind.toStringAsFixed(1)} km/h)! জলপথে মাছ পরিবহন ও আড়ত থেকে লোডিংয়ে সতর্কতা বজায় রাখুন।'
+            : '💨 High Wind Speed (${wind.toStringAsFixed(1)} km/h)! Take caution during waterway fish transit and dock loading.';
+      } else if (temp > 35.0) {
+        return isBn
+            ? '☀️ তীব্র তাপপ্রবাহ! পরিবহনকালে মাছ সতেজ রাখতে পর্যাপ্ত বরফ ও অক্সিজেন ট্যাংক সচল রাখুন।'
+            : '☀️ Heatwave Alert! Use adequate ice packing and maintain live-tank aeration during fish transit.';
+      } else if (temp < 15.0) {
+        return isBn
+            ? '❄️ ঠাণ্ডা আবহাওয়া! জ্যান্ত মাছের তাপমাত্রা নিয়ন্ত্রণ ও পাইকারি বাজারে দ্রুত সরবরাহ নিশ্চিত করুন।'
+            : '❄️ Cold Weather! Maintain appropriate transport temperature and ensure prompt wholesale dispatch.';
+      } else {
+        return isBn
+            ? '🐟 তাজা মাছ সংগ্রহ, কোল্ড-চেইন পরিবহন ও পাইকারি বাণিজ্যের জন্য আজকের আবহাওয়া সম্পূর্ণ অনুকূল!'
+            : '🐟 Weather conditions are optimal for fish procurement, cold-chain logistics, and wholesale trade!';
+      }
+    }
+
+    // 2. Fish Farmer Advisory (Ponds, Water quality, Aeration, Feeding)
+    if (isFishFarmerRole) {
+      if (code >= 95) {
+        return isBn
+            ? '⚡ বজ্রঝড়ের সম্ভাবনা ($rainProb%)! পুকুরে মাছ ধরা ও বৈদ্যুতিক কাজ স্থগিত রেখে নিরাপদ আশ্রয়ে থাকুন।'
+            : '⚡ Thunderstorm Risk ($rainProb%)! Suspend pond netting and electrical checks; stay indoors.';
+      } else if (rain > 5.0 || code >= 61 || rainProb > 70) {
+        return isBn
+            ? '🌧️ বৃষ্টির সম্ভাবনা $rainProb%! পুকুরের পাড় ও জাল সুরক্ষিত রাখুন এবং অতিরিক্ত খাবার প্রয়োগ পরিহার করুন।'
+            : '🌧️ Rain Probability $rainProb%! Secure pond dykes, nets, and avoid overfeeding during heavy rain.';
+      } else if (wind > 25.0) {
+        return isBn
+            ? '💨 বাতাসে উচ্চ গতিবেগ (${wind.toStringAsFixed(1)} km/h)! পুকুরের স্বাভাবিক অক্সিজেন পর্যবেক্ষণ করুন ও জাল টানা সাবধানে করুন।'
+            : '💨 High Wind Speed (${wind.toStringAsFixed(1)} km/h)! Monitor pond dissolved oxygen and avoid risky netting.';
+      } else if (temp > 35.0) {
+        return isBn
+            ? '☀️ তীব্র তাপপ্রবাহ! পুকুরে পানির গভীরতা বজায় রাখুন এবং প্রয়োজনে অতিরিক্ত অক্সিজেন/এরেটর চালু করুন।'
+            : '☀️ Heatwave Alert! Maintain adequate pond water depth and activate aerators if needed.';
+      } else if (temp < 15.0) {
+        return isBn
+            ? '❄️ ঠাণ্ডা আবহাওয়া! মাছের রোগবালাই প্রতিরোধে পুকুরের তলদেশ ও পানির গুণমান পর্যবেক্ষণ করুন।'
+            : '❄️ Cold Weather! Monitor pond water quality to prevent winter fungal/bacterial fish diseases.';
+      } else {
+        return isBn
+            ? '🐟 মাছের খাদ্য প্রদান, পুকুর পরিচর্যা ও মাছ আহরণের জন্য আজকের আবহাওয়া চমৎকার অনুকূল!'
+            : '🐟 Excellent weather conditions for fish feeding, pond maintenance, and netting operations!';
+      }
+    }
+
+    // 3. General Agri Buyer
+    if (isGeneralBuyerRole) {
+      if (code >= 95) {
+        return isBn
+            ? '⚡ বজ্রঝড়ের ঝুঁকি ($rainProb%)! খোলা ট্রাকে পণ্য পরিবহন স্থগিত রেখে নিরাপদ শেডে সংরক্ষণ করুন।'
+            : '⚡ Thunderstorm Risk ($rainProb%)! Suspend open truck cargo transit and store under shelter.';
+      } else if (rain > 5.0 || code >= 61 || rainProb > 70) {
+        return isBn
+            ? '🌧️ বৃষ্টির সম্ভাবনা $rainProb%! পণ্য পরিবহনে ত্রিপল ব্যবহার ও গুদামে আর্দ্রতা নিয়ন্ত্রণ করুন।'
+            : '🌧️ Rain Probability $rainProb%! Use waterproof tarpaulins for cargo transit and keep warehouses dry.';
+      } else {
+        return isBn
+            ? '🛍️ কৃষি পণ্য ক্রয়, লোডিং ও পরিবহনের জন্য আজকের আবহাওয়া অত্যন্ত অনুকূল!'
+            : '🛍️ Weather conditions are optimal for agricultural procurement, loading, and transit!';
+      }
+    }
+
+    // 4. General Agriculture Farmer Advisory
     if (code >= 95) {
       return isBn
           ? '⚡ বজ্রঝড়ের সম্ভাবনা ($rainProb%)! মাঠের কাজ স্থগিত রেখে নিরাপদ আশ্রয়ে থাকুন।'
@@ -313,8 +423,8 @@ class WeatherModel {
           : '💨 High Wind Speed (${wind.toStringAsFixed(1)} km/h)! Avoid crop spraying or surface irrigation.';
     } else if (temp > 35.0) {
       return isBn
-          ? '☀️ তীব্র তাপপ্রবাহ! ফসল ও মাছের পুকুরে বিকেলে পানি সেচের ব্যবস্থা করুন।'
-          : '☀️ Heatwave Alert! Provide extra aeration and irrigation for crops and fish.';
+          ? '☀️ তীব্র তাপপ্রবাহ! ফসলের জমিতে বিকেলে পানি সেচের ব্যবস্থা করুন।'
+          : '☀️ Heatwave Alert! Provide extra afternoon irrigation to protect crops from heat stress.';
     } else if (temp < 15.0) {
       return isBn
           ? '❄️ ঠাণ্ডা আবহাওয়া! শস্যের রোগবালাই ও চারা গাছের যত্ন নিন।'

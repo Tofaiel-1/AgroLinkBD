@@ -11,6 +11,7 @@ import 'role_selection_screen.dart';
 import 'package:agrolinkbd/presentation/screens/auth/domain_selection_screen.dart';
 import 'package:agrolinkbd/presentation/screens/auth/login_screen.dart';
 import 'package:agrolinkbd/presentation/screens/auth/register_screen.dart';
+import 'package:agrolinkbd/presentation/screens/app_router.dart';
 
 /// Auth Routing Controller - Manages navigation across all role-based auth flows
 class AuthRoutingController extends GetxController {
@@ -67,9 +68,9 @@ class AuthRoutingController extends GetxController {
     _currentRole.value = role;
     
     // Check if it's a fisheries role
-    if (role.startsWith('fish_') || role == 'hatchery' || role == 'expert') {
+    if (role.startsWith('fish_') || role == 'hatchery') {
       // Create a unified route for fisheries
-      Get.offNamed('/auth/fisheries/login', arguments: {'role': role});
+      Get.offNamed('/auth/fisheries/login', arguments: {'role': role, 'domain': 'fisheries'});
       return;
     }
     
@@ -91,8 +92,8 @@ class AuthRoutingController extends GetxController {
     _currentRole.value = role;
     
     // Check if it's a fisheries role
-    if (role.startsWith('fish_') || role == 'hatchery' || role == 'expert') {
-      Get.offNamed('/auth/fisheries/register', arguments: {'role': role});
+    if (role.startsWith('fish_') || role == 'hatchery') {
+      Get.offNamed('/auth/fisheries/register', arguments: {'role': role, 'domain': 'fisheries'});
       return;
     }
 
@@ -112,25 +113,7 @@ class AuthRoutingController extends GetxController {
   /// Navigate to role-specific dashboard after successful login
   void goToDashboard(String role) {
     _currentRole.value = role;
-    
-    // Check if it's a fisheries role
-    if (role.startsWith('fish_') || role == 'hatchery') {
-      Get.offAllNamed('/fisheries/$role/dashboard');
-      return;
-    }
-
-    final dashboardRoutes = {
-      'farmer': '/farmer/dashboard',
-      'buyer': '/buyer/dashboard',
-      'driver': '/driver/dashboard',
-      'service_provider': '/service_provider/dashboard',
-      'company': '/company/dashboard',
-      'expert': '/expert/dashboard',
-    };
-    final route = dashboardRoutes[role];
-    if (route != null) {
-      Get.offAllNamed(route);
-    }
+    Get.offAll(() => const AppRouter());
   }
 
   /// Logout and return to role selection
@@ -200,6 +183,16 @@ List<GetPage> get authPages => [
       GetPage(
         name: '/auth/fisheries/register',
         page: () => const RegisterScreen(userId: '', phone: ''), // Uses generic
+        transition: Transition.rightToLeft,
+      ),
+      GetPage(
+        name: '/auth/fish_farmer/login',
+        page: () => const LoginScreen(),
+        transition: Transition.rightToLeft,
+      ),
+      GetPage(
+        name: '/auth/fish_farmer/register',
+        page: () => const RegisterScreen(userId: '', phone: ''),
         transition: Transition.rightToLeft,
       ),
       // Agriculture Routes

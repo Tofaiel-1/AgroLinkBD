@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'auth_routing_controller.dart';
 import 'shared/auth_constants.dart';
 
 /// Role Selection Screen - First screen users see
@@ -250,8 +251,9 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
   }
 
   void _navigateToAuth(String roleKey) {
-    // Navigate to role-specific login screen
-    // This will be implemented in the next step
-    Get.toNamed('/auth/$roleKey/login', arguments: {'role': roleKey});
+    final authRouting = Get.isRegistered<AuthRoutingController>()
+        ? Get.find<AuthRoutingController>()
+        : Get.put(AuthRoutingController());
+    authRouting.goToRoleLogin(roleKey);
   }
 }

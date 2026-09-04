@@ -3,16 +3,20 @@ import 'package:get/get.dart';
 enum UserRole {
   farmer, // কৃষক
   buyer, // ক্রেতা/ব্যবসায়ী
+  driver, // কৃষি পরিবহন চালক
+  serviceProvider, // কৃষি সেবা প্রদানকারী
+  company, // কৃষি কোম্পানি
+  seller, // বিক্রেতা
   expert, // বিশেষজ্ঞ
   guest, // অতিথি
   // Fisheries roles
-  fishFarmer,
-  fishBuyer,
-  fishDriver,
-  fishServiceProvider,
-  fishCompany,
-  fishExpert,
-  hatchery,
+  fishFarmer, // মৎস্য চাষী
+  fishBuyer, // মৎস্য ক্রেতা
+  fishDriver, // মৎস্য পরিবহন চালক
+  fishServiceProvider, // মৎস্য সেবা প্রদানকারী
+  fishCompany, // মৎস্য কোম্পানি
+  fishExpert, // মৎস্য বিশেষজ্ঞ
+  hatchery, // হ্যাচারি মালিক
 }
 
 class UserData {
@@ -194,12 +198,25 @@ class UserController extends GetxController {
         return 'Farmer Dashboard';
       case UserRole.buyer:
         return 'Buyer Dashboard';
+      case UserRole.driver:
+        return 'Driver Dashboard';
+      case UserRole.serviceProvider:
+        return 'Service Provider Dashboard';
+      case UserRole.company:
+      case UserRole.seller:
+        return 'Company Dashboard';
       case UserRole.expert:
         return 'Expert Dashboard';
       case UserRole.fishFarmer:
         return 'Fish Farmer Dashboard';
       case UserRole.fishBuyer:
         return 'Fish Buyer Dashboard';
+      case UserRole.fishDriver:
+        return 'Fish Transport Driver Dashboard';
+      case UserRole.fishServiceProvider:
+        return 'Fisheries Service Provider Dashboard';
+      case UserRole.fishCompany:
+        return 'Fisheries Company Dashboard';
       case UserRole.fishExpert:
         return 'Fisheries Expert Dashboard';
       case UserRole.hatchery:

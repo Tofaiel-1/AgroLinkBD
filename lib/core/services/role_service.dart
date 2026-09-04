@@ -57,7 +57,6 @@ class RoleService {
   static List<Map<String, dynamic>> getNavigationItems(UserType userType) {
     switch (userType) {
       case UserType.farmer:
-      case UserType.fishFarmer:
         return [
           {'label': 'Home', 'labelBN': 'হোম', 'icon': Icons.home},
           {'label': 'Farms', 'labelBN': 'খামার', 'icon': Icons.agriculture},
@@ -73,13 +72,52 @@ class RoleService {
             'icon': Icons.settings
           },
         ];
+      case UserType.fishFarmer:
+        return [
+          {'label': 'Home', 'labelBN': 'হোম', 'icon': Icons.home},
+          {'label': 'Ponds', 'labelBN': 'পুকুর', 'icon': Icons.water},
+          {
+            'label': 'Analytics',
+            'labelBN': 'বিশ্লেষণ',
+            'icon': Icons.analytics
+          },
+          {'label': 'Marketplace', 'labelBN': 'মৎস্য বাজার', 'icon': Icons.storefront},
+          {
+            'label': 'Settings',
+            'labelBN': 'সেটিংস',
+            'icon': Icons.settings
+          },
+        ];
       case UserType.buyer:
-      case UserType.fishBuyer:
         return [
           {'label': 'Home', 'labelBN': 'হোম', 'icon': Icons.home},
           {
             'label': 'Marketplace',
             'labelBN': 'বাজার',
+            'icon': Icons.storefront
+          },
+          {
+            'label': 'Cart',
+            'labelBN': 'কার্ট',
+            'icon': Icons.shopping_cart
+          },
+          {
+            'label': 'Orders',
+            'labelBN': 'অর্ডার',
+            'icon': Icons.receipt_long
+          },
+          {
+            'label': 'Settings',
+            'labelBN': 'সেটিংস',
+            'icon': Icons.settings
+          },
+        ];
+      case UserType.fishBuyer:
+        return [
+          {'label': 'Home', 'labelBN': 'হোম', 'icon': Icons.home},
+          {
+            'label': 'Fish Market',
+            'labelBN': 'মৎস্য বাজার',
             'icon': Icons.storefront
           },
           {

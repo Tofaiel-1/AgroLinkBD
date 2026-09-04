@@ -90,22 +90,22 @@ class AuthConstants {
       'fish_driver': {
         'color': Color(0xFFF57C00), // Orange
         'icon': '🚚',
-        'label': 'চালক',
-        'label_en': 'Driver',
+        'label': 'মৎস্য পরিবহন চালক',
+        'label_en': 'Fish Transport Driver',
         'description': 'মাছ পরিবহন সেবা',
       },
       'fish_service_provider': {
         'color': Color(0xFF00796B), // Teal
         'icon': '🔧',
-        'label': 'সেবা প্রদানকারী',
-        'label_en': 'Service Provider',
+        'label': 'মৎস্য সেবা প্রদানকারী',
+        'label_en': 'Fisheries Service Provider',
         'description': 'পুকুর পরিষ্কার, পানি পরীক্ষা ইত্যাদি',
       },
       'fish_company': {
         'color': Color(0xFF303F9F), // Indigo
         'icon': '🏢',
-        'label': 'কোম্পানি',
-        'label_en': 'Company',
+        'label': 'মৎস্য কোম্পানি',
+        'label_en': 'Fisheries Company',
         'description': 'মৎস্য ফিড ও মেডিসিন কোম্পানি',
       },
       'fish_expert': {

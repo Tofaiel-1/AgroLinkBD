@@ -435,10 +435,20 @@ class AuthService {
       await _auth.signOut();
       debugPrint('✅ Firebase Auth signout complete');
 
-      // Clear SharedPreferences
+      // Clear auth-specific session keys while preserving user preferences (domain, role, theme, language)
       final prefs = await SharedPreferences.getInstance();
+      final preservedDomain = prefs.getString('selected_domain') ?? prefs.getString('preferred_domain');
+      final preservedRole = prefs.getString('selected_role') ?? prefs.getString('last_role');
+      final preservedLang = prefs.getString('language');
+      final preservedDark = prefs.getBool('darkMode');
+
       await prefs.clear();
-      debugPrint('✅ SharedPreferences cleared');
+
+      if (preservedDomain != null) await prefs.setString('selected_domain', preservedDomain);
+      if (preservedRole != null) await prefs.setString('selected_role', preservedRole);
+      if (preservedLang != null) await prefs.setString('language', preservedLang);
+      if (preservedDark != null) await prefs.setBool('darkMode', preservedDark);
+      debugPrint('✅ SharedPreferences cleared (preferences preserved: domain=$preservedDomain, role=$preservedRole)');
 
       debugPrint('✅ Logout successful');
     } catch (e) {

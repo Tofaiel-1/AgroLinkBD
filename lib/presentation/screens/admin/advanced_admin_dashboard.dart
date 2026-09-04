@@ -264,7 +264,12 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
     );
 
     if (shouldSignOut == true) {
-      await FirebaseAuth.instance.signOut();
+      if (context.mounted) {
+        final adminProvider = Provider.of<AdminProvider>(context, listen: false);
+        await adminProvider.adminSignOut();
+      } else {
+        await FirebaseAuth.instance.signOut();
+      }
       Get.offAll(() => const LoginScreen());
     }
   }

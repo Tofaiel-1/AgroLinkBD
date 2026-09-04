@@ -28,7 +28,7 @@ class ScreenAccessControl {
       case UserType.hatchery:
         return _getCompanyScreens();
       case UserType.fishFarmer:
-        return _getFarmerScreens();
+        return _getFishFarmerScreens();
       case UserType.fishBuyer:
         return _getBuyerScreens();
       case UserType.fishDriver:
@@ -53,6 +53,24 @@ class ScreenAccessControl {
   static Set<String> _getFarmerScreens() {
     return {
       ..._getCommonScreens(),
+      '/farmer/add-product',
+      '/farmer/my-products',
+      '/farmer/orders',
+      '/farmer/analytics',
+      '/farmer/inputs',
+      '/farmer/kyc',
+      '/farmer/sales',
+      '/farmer/wallet',
+      '/farmer/chat',
+    };
+  }
+
+  /// Fish Farmer-specific screens
+  static Set<String> _getFishFarmerScreens() {
+    return {
+      ..._getCommonScreens(),
+      '/fisheries/fish_farmer/dashboard',
+      '/fisheries/farmer/dashboard',
       '/farmer/add-product',
       '/farmer/my-products',
       '/farmer/orders',
@@ -144,7 +162,7 @@ class ScreenAccessControl {
       case UserType.hatchery:
         return '/company/catalog';
       case UserType.fishFarmer:
-        return '/farmer/my-products';
+        return '/fisheries/fish_farmer/dashboard';
       case UserType.fishBuyer:
         return '/buyer/browse';
       case UserType.fishDriver:

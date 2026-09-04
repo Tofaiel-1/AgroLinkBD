@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'package:agrolinkbd/core/models/user_model.dart';
 import 'package:agrolinkbd/core/providers/user_provider.dart';
+import 'package:agrolinkbd/presentation/screens/app_router.dart';
 import '../shared/auth_constants.dart';
 import '../shared/auth_text_field.dart';
 import '../shared/auth_button.dart';
@@ -169,7 +170,7 @@ class _FarmerLoginScreenState extends State<FarmerLoginScreen> {
           await userProvider.loadUser(_controller.authService.currentUser!.uid);
         }
 
-        Get.offAllNamed('/farmer/dashboard');
+        Get.offAll(() => const AppRouter());
       }
     } catch (e) {
       Get.snackbar(

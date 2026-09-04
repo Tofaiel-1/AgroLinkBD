@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:agrolinkbd/core/models/weather_model.dart';
+import 'package:agrolinkbd/core/models/user_model.dart';
 import 'package:agrolinkbd/core/services/weather_service.dart';
 import 'package:agrolinkbd/core/providers/user_provider.dart';
 import 'package:agrolinkbd/core/constants/bd_location_data.dart';
@@ -520,7 +521,15 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              weather.getAgriAdviceText(LanguageProvider.isBn(context)),
+                              () {
+                                final user = Provider.of<UserProvider>(context, listen: false).currentUser;
+                                return weather.getAgriAdviceText(
+                                  LanguageProvider.isBn(context),
+                                  isFisheries: widget.isFisheriesTheme || user?.domain == 'fisheries' || user?.userType == UserType.fishBuyer || user?.userType == UserType.fishFarmer,
+                                  isBuyer: user?.userType == UserType.buyer || user?.userType == UserType.fishBuyer,
+                                  userType: user?.userType,
+                                );
+                              }(),
                               style: GoogleFonts.hindSiliguri(
                                 fontSize: 13,
                                 height: 1.5,
@@ -795,7 +804,15 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                 children: [
                   Expanded(
                     child: Text(
-                      weather.getAgriAdviceText(isBn),
+                      () {
+                        final user = Provider.of<UserProvider>(context, listen: false).currentUser;
+                        return weather.getAgriAdviceText(
+                          isBn,
+                          isFisheries: widget.isFisheriesTheme || user?.domain == 'fisheries' || user?.userType == UserType.fishBuyer || user?.userType == UserType.fishFarmer,
+                          isBuyer: user?.userType == UserType.buyer || user?.userType == UserType.fishBuyer,
+                          userType: user?.userType,
+                        );
+                      }(),
                       style: GoogleFonts.hindSiliguri(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,

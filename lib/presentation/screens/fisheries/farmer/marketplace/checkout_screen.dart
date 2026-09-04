@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 import 'package:agrolinkbd/presentation/screens/fisheries/farmer/marketplace/ssl_payment_mock_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
@@ -17,6 +18,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isBn = LanguageProvider.isBn(context);
     const Color oceanBlue = Color(0xFF0288D1);
     final double subtotal = widget.product['price'] * _quantity;
     const double deliveryFee = 150.0;
@@ -26,7 +28,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         title: Text(
-          'চেকআউট',
+          isBn ? 'চেকআউট' : 'Checkout',
           style: GoogleFonts.hindSiliguri(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -41,7 +43,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('অর্ডারের বিবরণ', style: GoogleFonts.hindSiliguri(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              isBn ? 'অর্ডারের বিবরণ' : 'Order Details',
+              style: GoogleFonts.hindSiliguri(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 16),
             Card(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -60,7 +65,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             style: GoogleFonts.hindSiliguri(fontSize: 16, fontWeight: FontWeight.bold),
                           ),
                           Text(
-                            '৳${widget.product['price'].toStringAsFixed(0)} / ইউনিট',
+                            '৳${widget.product['price'].toStringAsFixed(0)} ${isBn ? "/ ইউনিট" : "/ unit"}',
                             style: GoogleFonts.poppins(color: Colors.grey.shade700),
                           ),
                         ],
@@ -71,7 +76,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            Text('পরিমাণ নির্ধারণ করুন', style: GoogleFonts.hindSiliguri(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              isBn ? 'পরিমাণ নির্ধারণ করুন' : 'Select Quantity',
+              style: GoogleFonts.hindSiliguri(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -101,7 +109,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               ],
             ),
             const SizedBox(height: 30),
-            Text('পেমেন্ট বিবরণী', style: GoogleFonts.hindSiliguri(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              isBn ? 'পেমেন্ট বিবরণী' : 'Payment Summary',
+              style: GoogleFonts.hindSiliguri(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(16),
@@ -115,7 +126,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('সাবটোটাল', style: GoogleFonts.hindSiliguri(fontSize: 16)),
+                      Text(isBn ? 'সাবটোটাল' : 'Subtotal', style: GoogleFonts.hindSiliguri(fontSize: 16)),
                       Text('৳${subtotal.toStringAsFixed(0)}', style: GoogleFonts.poppins(fontSize: 16)),
                     ],
                   ),
@@ -123,7 +134,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('ডেলিভারি ফি', style: GoogleFonts.hindSiliguri(fontSize: 16)),
+                      Text(isBn ? 'ডেলিভারি ফি' : 'Delivery Fee', style: GoogleFonts.hindSiliguri(fontSize: 16)),
                       Text('৳${deliveryFee.toStringAsFixed(0)}', style: GoogleFonts.poppins(fontSize: 16)),
                     ],
                   ),
@@ -131,7 +142,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('সর্বমোট', style: GoogleFonts.hindSiliguri(fontSize: 18, fontWeight: FontWeight.bold)),
+                      Text(isBn ? 'সর্বমোট' : 'Total', style: GoogleFonts.hindSiliguri(fontSize: 18, fontWeight: FontWeight.bold)),
                       Text(
                         '৳${total.toStringAsFixed(0)}',
                         style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.bold, color: oceanBlue),
@@ -157,7 +168,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 child: Text(
-                  'পেমেন্ট করুন (SSL Commerz)',
+                  isBn ? 'পেমেন্ট করুন (SSL Commerz)' : 'Pay Now (SSL Commerz)',
                   style: GoogleFonts.hindSiliguri(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
               ),
@@ -168,3 +179,4 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 }
+

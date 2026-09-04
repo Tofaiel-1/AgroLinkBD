@@ -5,7 +5,6 @@ import 'package:agrolinkbd/core/providers/user_provider.dart';
 import 'package:agrolinkbd/core/models/user_model.dart';
 import 'package:agrolinkbd/core/services/role_service.dart';
 import 'package:agrolinkbd/core/services/route_guard.dart';
-import 'package:agrolinkbd/core/utils/responsive_helper.dart';
 import 'package:agrolinkbd/presentation/widgets/responsive_web_wrapper.dart';
 import 'dart:async';
 import 'package:agrolinkbd/core/providers/language_provider.dart';
@@ -17,21 +16,22 @@ import 'package:agrolinkbd/presentation/screens/farmer/farmer_dashboard.dart';
 import 'package:agrolinkbd/presentation/screens/fisheries/farmer/fish_farmer_dashboard.dart';
 import 'package:agrolinkbd/presentation/screens/fisheries/farmer/marketplace/fish_marketplace_tab.dart';
 import 'package:agrolinkbd/presentation/screens/fisheries/farmer/analytics/fisheries_analytics_tab.dart';
-import 'package:agrolinkbd/presentation/screens/fisheries/farmer/orders/fish_orders_tab.dart';
 import 'package:agrolinkbd/presentation/screens/fisheries/farmer/pond_management/pond_management_screen.dart';
 import 'package:agrolinkbd/presentation/screens/service_provider/service_provider_dashboard.dart';
 import 'package:agrolinkbd/presentation/screens/card/card_preview_screen.dart' as agrolinkbd;
+import 'package:agrolinkbd/presentation/screens/agri_info/emergency_weather_services_screen.dart';
 import 'package:agrolinkbd/presentation/screens/dashboard/buyer_dashboard_screen.dart';
 import 'package:agrolinkbd/presentation/screens/driver/driver_dashboard.dart';
 import 'package:agrolinkbd/presentation/screens/driver/load_board/load_board_screen.dart';
-import 'package:agrolinkbd/presentation/screens/service_provider/service_provider_dashboard.dart';
+import 'package:agrolinkbd/presentation/screens/fisheries/driver/fish_driver_dashboard.dart';
+import 'package:agrolinkbd/presentation/screens/fisheries/driver/fish_driver_deliveries_screen.dart';
+import 'package:agrolinkbd/presentation/screens/fisheries/driver/fish_driver_analytics_screen.dart';
+import 'package:agrolinkbd/presentation/screens/fisheries/driver/fish_driver_job_board_screen.dart';
 import 'package:agrolinkbd/presentation/screens/company/company_dashboard.dart';
 import 'package:agrolinkbd/presentation/screens/company/company_orders_screen.dart';
 import 'package:agrolinkbd/presentation/screens/company/company_contracts_screen.dart';
 
 // Generic screens (available to all roles)
-import 'package:agrolinkbd/presentation/screens/agri_info/emergency_weather_services_screen.dart';
-import 'package:agrolinkbd/presentation/screens/notifications/notification_center.dart';
 import 'package:agrolinkbd/presentation/screens/bazaar/bazaar_home.dart';
 import 'package:agrolinkbd/presentation/screens/profile/profile_settings.dart';
 
@@ -46,13 +46,10 @@ import 'package:agrolinkbd/presentation/screens/marketplace/fish_marketplace_scr
 
 // Phase 2 Screens - Maps
 import 'package:agrolinkbd/presentation/screens/maps/driver_delivery_map.dart';
-import 'package:agrolinkbd/presentation/screens/maps/buyer_order_tracking_map.dart';
 
 // Phase 2 Screens - Analytics
 import 'package:agrolinkbd/presentation/screens/analytics/farmer_analytics.dart';
-import 'package:agrolinkbd/presentation/screens/analytics/buyer_analytics.dart';
 import 'package:agrolinkbd/presentation/screens/analytics/driver_analytics.dart';
-import 'package:agrolinkbd/presentation/screens/analytics/service_provider_analytics.dart';
 import 'package:agrolinkbd/presentation/screens/analytics/company_analytics.dart';
 
 // Phase 2 Screens - Management
@@ -100,7 +97,7 @@ class _RoleBasedNavigationContainerState
   }
 
   void _setupFarmerOrderListener() {
-    if (widget.user.userType == UserType.farmer) {
+    if (widget.user.userType == UserType.farmer || widget.user.userType == UserType.fishFarmer) {
       _orderSubscription = OrderService().listenToNewFarmerOrders(widget.user.id).listen((order) {
         // Show local notification
         NotificationService().showNotification(
@@ -141,12 +138,18 @@ class _RoleBasedNavigationContainerState
   }
 
   Widget _buildDrawer(BuildContext context, UserModel user) {
-    final roleString = user.userType.toString().split('.').last;
+    final roleString = user.userType.toString().split('.').last.toLowerCase();
     String roleDisplay = 'ব্যবহারকারী';
-    if (roleString.toLowerCase() == 'farmer') roleDisplay = 'কৃষক';
-    if (roleString.toLowerCase() == 'buyer') roleDisplay = 'ক্রেতা';
-    if (roleString.toLowerCase() == 'driver') roleDisplay = 'চালক';
-    if (roleString.toLowerCase() == 'serviceprovider') roleDisplay = 'সেবা প্রদানকারী';
+    if (roleString == 'farmer') roleDisplay = 'কৃষক';
+    if (roleString == 'buyer') roleDisplay = 'ক্রেতা';
+    if (roleString == 'driver') roleDisplay = 'চালক';
+    if (roleString == 'serviceprovider') roleDisplay = 'সেবা প্রদানকারী';
+    if (roleString == 'company') roleDisplay = 'কোম্পানি';
+    if (roleString == 'fishfarmer') roleDisplay = 'মৎস্য চাষী';
+    if (roleString == 'fishbuyer') roleDisplay = 'মৎস্য ক্রেতা';
+    if (roleString == 'fishdriver') roleDisplay = 'মৎস্য পরিবহন';
+    if (roleString == 'hatchery') roleDisplay = 'হ্যাচারি মালিক';
+    if (roleString == 'fishexpert') roleDisplay = 'মৎস্য বিশেষজ্ঞ';
 
     final roleColor = RoleService.getRoleColor(user.userType);
     final darkRoleColor = HSLColor.fromColor(roleColor)
@@ -363,6 +366,13 @@ class _RoleBasedNavigationContainerState
           const ProfileSettings(),
         ];
       case UserType.fishDriver:
+        return [
+          const FishDriverDashboard(),
+          const FishDriverDeliveriesScreen(),
+          const FishDriverAnalyticsScreen(),
+          const FishDriverJobBoardScreen(),
+          const ProfileSettings(),
+        ];
       case UserType.fishServiceProvider:
       case UserType.fishCompany:
       case UserType.fishExpert:
@@ -373,14 +383,6 @@ class _RoleBasedNavigationContainerState
           const Scaffold(body: Center(child: Text('Marketplace/Catalog'))),
           const Scaffold(body: Center(child: Text('Analytics'))),
           const Scaffold(body: Center(child: Text('Orders/Bookings'))),
-          const ProfileSettings(),
-        ];
-      default:
-        return [
-          const Scaffold(body: Center(child: Text('Dashboard'))),
-          const Scaffold(body: Center(child: Text('Feature 1'))),
-          const Scaffold(body: Center(child: Text('Feature 2'))),
-          const Scaffold(body: Center(child: Text('Feature 3'))),
           const ProfileSettings(),
         ];
     }

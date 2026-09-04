@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:agrolinkbd/core/utils/number_converter.dart';
 
 DateTime _parsePondDate(dynamic value) {
   if (value == null) return DateTime.now();
@@ -10,17 +11,11 @@ DateTime _parsePondDate(dynamic value) {
 }
 
 double _parsePondDouble(dynamic value, [double defaultValue = 0.0]) {
-  if (value == null) return defaultValue;
-  if (value is num) return value.toDouble();
-  if (value is String) return double.tryParse(value) ?? defaultValue;
-  return defaultValue;
+  return BanglaEnglishNumberHelper.toDouble(value, defaultValue);
 }
 
 int _parsePondInt(dynamic value, [int defaultValue = 0]) {
-  if (value == null) return defaultValue;
-  if (value is num) return value.toInt();
-  if (value is String) return int.tryParse(value) ?? defaultValue;
-  return defaultValue;
+  return BanglaEnglishNumberHelper.toInt(value, defaultValue);
 }
 
 class PondActivityModel {
@@ -46,13 +41,13 @@ class PondActivityModel {
     this.invoiceOrReceiptUrl = '',
   });
 
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toMap({bool forLocalCache = false}) {
     return {
       'id': id,
       'title': title,
       'description': description,
       'amount': amount,
-      'date': Timestamp.fromDate(date),
+      'date': forLocalCache ? date.toIso8601String() : Timestamp.fromDate(date),
       'type': type,
       'isIncome': isIncome,
       'performedBy': performedBy,
@@ -197,14 +192,14 @@ class PondModel {
     return projectedValuation + totalIncome - totalCost;
   }
 
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toMap({bool forLocalCache = false}) {
     return {
       'id': id,
       'userId': userId,
       'name': name,
       'area': area,
       'fishSpecies': fishSpecies,
-      'stockedDate': Timestamp.fromDate(stockedDate),
+      'stockedDate': forLocalCache ? stockedDate.toIso8601String() : Timestamp.fromDate(stockedDate),
       'totalFishCount': totalFishCount,
       'status': status,
       'ph': ph,
@@ -235,8 +230,8 @@ class PondModel {
       'location': location,
       'farmManagerName': farmManagerName,
       'managerPhone': managerPhone,
-      'activities': activities.map((a) => a.toMap()).toList(),
-      'updatedAt': FieldValue.serverTimestamp(),
+      'activities': activities.map((a) => a.toMap(forLocalCache: forLocalCache)).toList(),
+      'updatedAt': forLocalCache ? DateTime.now().toIso8601String() : FieldValue.serverTimestamp(),
     };
   }
 

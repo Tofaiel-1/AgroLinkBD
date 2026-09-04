@@ -16,9 +16,13 @@ class AdminProvider with ChangeNotifier {
   AdminModel? get currentAdmin => _currentAdmin;
   bool get isLoading => _isLoading;
   String? get error => _error;
-  bool get isAdminLoggedIn => _currentAdmin != null;
+  bool get isAdminLoggedIn =>
+      _currentAdmin != null &&
+      _auth.currentUser != null &&
+      _currentAdmin?.id == _auth.currentUser?.uid;
   bool get isPinVerified => _isPinVerified;
-  bool get isSuperAdmin => _currentAdmin?.role == 'super_admin';
+  bool get isSuperAdmin =>
+      isAdminLoggedIn && _currentAdmin?.role == 'super_admin';
   List<AdminModel> get allAdmins => _allAdmins;
 
   /// Admin Sign In
@@ -115,11 +119,25 @@ class AdminProvider with ChangeNotifier {
   Future<void> adminSignOut() async {
     // Log logout before clearing current admin
     if (_currentAdmin != null) {
-      await logAdminAction('ADMIN_LOGOUT', 'Admin logged out: ${_currentAdmin?.name}');
+      try {
+        await logAdminAction('ADMIN_LOGOUT', 'Admin logged out: ${_currentAdmin?.name}');
+      } catch (e) {
+        debugPrint('⚠️ Error logging admin logout: $e');
+      }
     }
     await _auth.signOut();
     _currentAdmin = null;
     _isPinVerified = false;
+    _allAdmins = [];
+    _error = null;
+    notifyListeners();
+  }
+
+  /// Synchronously clear all in-memory admin state
+  void clearAdminState() {
+    _currentAdmin = null;
+    _isPinVerified = false;
+    _allAdmins = [];
     _error = null;
     notifyListeners();
   }

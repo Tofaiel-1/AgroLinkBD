@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:agrolinkbd/core/controllers/pond_controller.dart';
 import 'package:agrolinkbd/core/models/pond_model.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 import 'package:agrolinkbd/presentation/screens/fisheries/farmer/pond_management/add_pond_screen.dart';
 import 'package:agrolinkbd/presentation/screens/fisheries/farmer/pond_management/edit_pond_screen.dart';
 import 'package:agrolinkbd/presentation/screens/fisheries/farmer/pond_management/pond_detail_screen.dart';
@@ -50,7 +51,7 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
     super.dispose();
   }
 
-  void _showInstantMarketSellDialog(PondModel pond) {
+  void _showInstantMarketSellDialog(PondModel pond, bool isBn) {
     final quantityController = TextEditingController(
       text: (pond.currentTotalBiomassKg * 0.8).round().toString(),
     );
@@ -104,7 +105,7 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'সরাসরি বড় মাছ বাজারে বিক্রি',
+                          isBn ? 'সরাসরি বড় মাছ বাজারে বিক্রি' : 'Sell Directly to Fish Market',
                           style: GoogleFonts.hindSiliguri(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -137,43 +138,61 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                   children: [
                     Column(
                       children: [
-                        Text('পুকুরের মোট বায়োমাস', style: GoogleFonts.hindSiliguri(fontSize: 12, color: Colors.grey.shade700)),
-                        Text('${pond.currentTotalBiomassKg.toStringAsFixed(0)} কেজি', style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.bold, color: const Color(0xFF006064))),
+                        Text(
+                          isBn ? 'পুকুরের মোট বায়োমাস' : 'Total Biomass',
+                          style: GoogleFonts.hindSiliguri(fontSize: 12, color: Colors.grey.shade700),
+                        ),
+                        Text(
+                          isBn ? '${pond.currentTotalBiomassKg.toStringAsFixed(0)} কেজি' : '${pond.currentTotalBiomassKg.toStringAsFixed(0)} kg',
+                          style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.bold, color: const Color(0xFF006064)),
+                        ),
                       ],
                     ),
                     Container(width: 1, height: 32, color: Colors.teal.shade200),
                     Column(
                       children: [
-                        Text('গড় একক ওজন', style: GoogleFonts.hindSiliguri(fontSize: 12, color: Colors.grey.shade700)),
-                        Text('${pond.avgWeightGrams.toStringAsFixed(0)} গ্রাম', style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.teal.shade900)),
+                        Text(
+                          isBn ? 'গড় একক ওজন' : 'Avg. Unit Weight',
+                          style: GoogleFonts.hindSiliguri(fontSize: 12, color: Colors.grey.shade700),
+                        ),
+                        Text(
+                          isBn ? '${pond.avgWeightGrams.toStringAsFixed(0)} গ্রাম' : '${pond.avgWeightGrams.toStringAsFixed(0)} g',
+                          style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.teal.shade900),
+                        ),
                       ],
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 18),
-              Text('বিক্রয়যোগ্য লটের পরিমাণ (কেজি):', style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.w600, fontSize: 14)),
+              Text(
+                isBn ? 'বিক্রয়যোগ্য লটের পরিমাণ (কেজি):' : 'Saleable Lot Quantity (kg):',
+                style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.w600, fontSize: 14),
+              ),
               const SizedBox(height: 6),
               TextField(
                 controller: quantityController,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
                   prefixIcon: const Icon(Icons.scale, color: Color(0xFF006064)),
-                  suffixText: 'কেজি',
+                  suffixText: isBn ? 'কেজি' : 'kg',
                   filled: true,
                   fillColor: Theme.of(context).cardColor,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
                 ),
               ),
               const SizedBox(height: 14),
-              Text('প্রতি কেজি পাইকারি দর (৳):', style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.w600, fontSize: 14)),
+              Text(
+                isBn ? 'প্রতি কেজি পাইকারি দর (৳):' : 'Wholesale Price per kg (৳):',
+                style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.w600, fontSize: 14),
+              ),
               const SizedBox(height: 6),
               TextField(
                 controller: priceController,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
                   prefixIcon: const Icon(Icons.monetization_on, color: Colors.teal),
-                  suffixText: '৳/কেজি',
+                  suffixText: '৳/kg',
                   filled: true,
                   fillColor: Theme.of(context).cardColor,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
@@ -189,7 +208,10 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                         Get.to(() => const CreateFishAuctionScreen());
                       },
                       icon: const Icon(Icons.gavel, size: 18),
-                      label: Text('লাইভ ডাক (নিলাম)', style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold)),
+                      label: Text(
+                        isBn ? 'লাইভ ডাক (নিলাম)' : 'Live Auction',
+                        style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold),
+                      ),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -203,8 +225,10 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                       onPressed: () {
                         Get.back();
                         Get.snackbar(
-                          'সফলভাবে বাজারে তালিকাভুক্ত!',
-                          'আপনার ${pond.name} এর মাছ সফলভাবে বিগ ফিশ মার্কেটে আপলোড হয়েছে। পাইকারি ক্রেতারা সরাসরি অর্ডার দিতে পারবে।',
+                          isBn ? 'সফলভাবে বাজারে তালিকাভুক্ত!' : 'Listed Successfully!',
+                          isBn
+                              ? 'আপনার ${pond.name} এর মাছ সফলভাবে বিগ ফিশ মার্কেটে আপলোড হয়েছে।'
+                              : '${pond.name} fish listed on Big Fish Market. Buyers can now order directly.',
                           backgroundColor: const Color(0xFF006064),
                           colorText: Colors.white,
                           icon: const Icon(Icons.verified, color: Colors.white),
@@ -213,7 +237,10 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                         Get.to(() => const FishMarketplaceScreen());
                       },
                       icon: const Icon(Icons.check_circle, color: Colors.white, size: 18),
-                      label: Text('বাজারে প্রকাশ করুন', style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, color: Colors.white)),
+                      label: Text(
+                        isBn ? 'বাজারে প্রকাশ করুন' : 'Publish to Market',
+                        style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF006064),
                         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -235,16 +262,19 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
 
   @override
   Widget build(BuildContext context) {
+    final isBn = LanguageProvider.isBn(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     const Color deepAqua = Color(0xFF006064);
     const Color cyanGlow = Color(0xFF00E5FF);
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF0B141B) : const Color(0xFFF2F6F9),
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          // Premium Header Sliver
+      body: RefreshIndicator(
+        onRefresh: () async => await _pondController.refreshPonds(),
+        color: deepAqua,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+          slivers: [
           SliverAppBar(
             expandedHeight: 120.0,
             floating: false,
@@ -258,7 +288,7 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                   Icon(Icons.water, color: cyanGlow, size: 22),
                   const SizedBox(width: 8),
                   Text(
-                    'স্মার্ট ফিশ ফার্ম হাব',
+                    isBn ? 'স্মার্ট ফিশ ফার্ম হাব' : 'Smart Fish Farm Hub',
                     style: GoogleFonts.hindSiliguri(
                       fontWeight: FontWeight.bold,
                       fontSize: 19,
@@ -280,42 +310,38 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
             actions: [
               IconButton(
                 icon: const Icon(Icons.store_mall_directory_rounded, color: Colors.white),
-                tooltip: 'বিগ ফিশ মার্কেটপ্লেস',
+                tooltip: isBn ? 'বিগ ফিশ মার্কেটপ্লেস' : 'Fish Marketplace',
                 onPressed: () => Get.to(() => const FishMarketplaceScreen()),
               ),
               IconButton(
                 icon: const Icon(Icons.satellite_alt, color: Colors.white),
-                tooltip: 'স্যাটেলাইট রেডার',
+                tooltip: isBn ? 'স্যাটেলাইট রেডার' : 'Satellite Radar',
                 onPressed: () => Get.to(() => const SatellitePondRadarScreen()),
               ),
             ],
           ),
 
-          // Executive Farm Telemetry & Valuation Hero Banner
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Obx(() => _buildExecutiveSummaryBanner(context, isDark)),
+              child: Obx(() => _buildExecutiveSummaryBanner(context, isDark, isBn)),
             ),
           ),
 
-          // Pro Max Quick Tools Strip
           SliverToBoxAdapter(
-            child: _buildQuickToolsStrip(context, isDark),
+            child: _buildQuickToolsStrip(context, isDark, isBn),
           ),
 
-          // Interactive Status Filter Tabs
           SliverToBoxAdapter(
-            child: _buildFilterChips(),
+            child: _buildFilterChips(isBn),
           ),
 
-          // Ponds List / Grid
           Obx(() {
             final pondsList = _pondController.filteredPonds;
             if (pondsList.isEmpty) {
               return SliverFillRemaining(
                 hasScrollBody: false,
-                child: _buildEmptyState(),
+                child: _buildEmptyState(isBn),
               );
             }
             return SliverPadding(
@@ -323,7 +349,7 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
-                    return _buildProMaxPondCard(context, pondsList[index], isDark);
+                    return _buildProMaxPondCard(context, pondsList[index], isDark, isBn);
                   },
                   childCount: pondsList.length,
                 ),
@@ -336,13 +362,14 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
           ),
         ],
       ),
+    ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Get.to(() => const AddPondScreen()),
         backgroundColor: deepAqua,
         elevation: 6,
         icon: const Icon(Icons.add, color: Colors.white),
         label: Text(
-          'নতুন পুকুর / ট্যাংক',
+          isBn ? 'নতুন পুকুর / ট্যাংক' : 'New Pond / Tank',
           style: GoogleFonts.hindSiliguri(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -353,7 +380,7 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
     );
   }
 
-  Widget _buildExecutiveSummaryBanner(BuildContext context, bool isDark) {
+  Widget _buildExecutiveSummaryBanner(BuildContext context, bool isDark, bool isBn) {
     final totalBiomass = _pondController.totalFarmBiomassKg;
     final totalValuation = _pondController.totalFarmValuation;
     final avgDO = _pondController.averageDissolvedOxygen;
@@ -406,7 +433,7 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                         ),
                         const SizedBox(width: 10),
                         Text(
-                          'ফার্ম এক্সিকিউটিভ ড্যাশবোর্ড',
+                          isBn ? 'ফার্ম এক্সিকিউটিভ ড্যাশবোর্ড' : 'Farm Executive Dashboard',
                           style: GoogleFonts.hindSiliguri(
                             color: Colors.white,
                             fontSize: 16,
@@ -437,7 +464,7 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            'লাইভ সেন্সর সক্রিয়',
+                            isBn ? 'লাইভ সেন্সর সক্রিয়' : 'Live Sensors Active',
                             style: GoogleFonts.hindSiliguri(
                               color: Colors.white,
                               fontSize: 11,
@@ -457,7 +484,7 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'প্রত্যাশিত বাজার মূল্য (Valuation)',
+                            isBn ? 'প্রত্যাশিত বাজার মূল্য (Valuation)' : 'Expected Market Valuation',
                             style: GoogleFonts.hindSiliguri(
                               color: Colors.white.withOpacity(0.85),
                               fontSize: 12,
@@ -480,7 +507,7 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'মোট বায়োমাস (Biomass)',
+                            isBn ? 'মোট বায়োমাস (Biomass)' : 'Total Biomass',
                             style: GoogleFonts.hindSiliguri(
                               color: Colors.white.withOpacity(0.85),
                               fontSize: 12,
@@ -488,7 +515,7 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            '${totalBiomass.toStringAsFixed(0)} কেজি',
+                            isBn ? '${totalBiomass.toStringAsFixed(0)} কেজি' : '${totalBiomass.toStringAsFixed(0)} kg',
                             style: GoogleFonts.poppins(
                               color: const Color(0xFF80DEEA),
                               fontSize: 22,
@@ -506,9 +533,9 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _buildMiniBadge(Icons.pool, '$totalPonds টি সক্রিয় ইউনিট'),
-                    _buildMiniBadge(Icons.air, 'গড় DO: ${avgDO.toStringAsFixed(1)} mg/L'),
-                    _buildMiniBadge(Icons.health_and_safety, '৯৬% ওয়াটার হেলথ'),
+                    _buildMiniBadge(Icons.pool, isBn ? '$totalPonds টি সক্রিয় ইউনিট' : '$totalPonds Active Units'),
+                    _buildMiniBadge(Icons.air, 'DO: ${avgDO.toStringAsFixed(1)} mg/L'),
+                    _buildMiniBadge(Icons.health_and_safety, isBn ? '৯৬% ওয়াটার হেলথ' : '96% Water Health'),
                   ],
                 ),
               ],
@@ -536,46 +563,46 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
     );
   }
 
-  Widget _buildQuickToolsStrip(BuildContext context, bool isDark) {
+  Widget _buildQuickToolsStrip(BuildContext context, bool isDark, bool isBn) {
     final tools = [
       {
-        'title': 'বিগ ফিশ মার্কেট',
-        'sub': 'সরাসরি বিক্রয়',
+        'title': isBn ? 'বিগ ফিশ মার্কেট' : 'Big Fish Market',
+        'sub': isBn ? 'সরাসরি বিক্রয়' : 'Direct Sale',
         'icon': Icons.storefront_rounded,
         'color': const Color(0xFF00897B),
         'onTap': () => Get.to(() => const FishMarketplaceScreen()),
       },
       {
-        'title': 'লাইভ নিলাম ডাক',
-        'sub': 'আড়তদার নিলাম',
+        'title': isBn ? 'লাইভ নিলাম ডাক' : 'Live Auction',
+        'sub': isBn ? 'আড়তদার নিলাম' : 'Wholesale Auction',
         'icon': Icons.gavel_rounded,
         'color': const Color(0xFFD81B60),
         'onTap': () => Get.to(() => const CreateFishAuctionScreen()),
       },
       {
-        'title': 'AI ফিশ ডক্টর',
-        'sub': 'রোগ ও ওয়াটার স্ক্যান',
+        'title': isBn ? 'AI ফিশ ডক্টর' : 'AI Fish Doctor',
+        'sub': isBn ? 'রোগ ও ওয়াটার স্ক্যান' : 'Disease & Water Scan',
         'icon': Icons.medical_services_rounded,
         'color': const Color(0xFF0288D1),
         'onTap': () => Get.to(() => const AIFishDoctorScreen()),
       },
       {
-        'title': 'FCR ও গ্রোথ',
-        'sub': 'বৃদ্ধি সিমুলেটর',
+        'title': isBn ? 'FCR ও গ্রোথ' : 'FCR & Growth',
+        'sub': isBn ? 'বৃদ্ধি সিমুলেটর' : 'Growth Simulator',
         'icon': Icons.auto_graph_rounded,
         'color': const Color(0xFF7B1FA2),
         'onTap': () => Get.to(() => const FishGrowthFcrSimulatorScreen()),
       },
       {
-        'title': 'টেলিমেট্রি সেন্সর',
-        'sub': 'রিয়েল-টাইম ডেটা',
+        'title': isBn ? 'টেলিমেট্রি সেন্সর' : 'Telemetry Sensor',
+        'sub': isBn ? 'রিয়েল-টাইম ডেটা' : 'Real-time Data',
         'icon': Icons.sensors_rounded,
         'color': const Color(0xFFF57C00),
         'onTap': () => Get.to(() => const FishWaterTelemetryScreen()),
       },
       {
-        'title': 'ব্যাংক রিপোর্ট',
-        'sub': 'ঋণ ও প্রজেক্ট ফাইল',
+        'title': isBn ? 'ব্যাংক রিপোর্ট' : 'Bank Report',
+        'sub': isBn ? 'ঋণ ও প্রজেক্ট ফাইল' : 'Loan & Project',
         'icon': Icons.description_rounded,
         'color': const Color(0xFF388E3C),
         'onTap': () => Get.to(() => const BankProjectReportScreen()),
@@ -661,7 +688,7 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
     );
   }
 
-  Widget _buildFilterChips() {
+  Widget _buildFilterChips(bool isBn) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Obx(() {
@@ -671,10 +698,10 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
           physics: const BouncingScrollPhysics(),
           child: Row(
             children: [
-              _buildFilterChip('all', 'সব পুকুর (${_pondController.ponds.length})', current),
-              _buildFilterChip('optimal', '🟢 সর্বোত্তম ও স্বাভাবিক', current),
-              _buildFilterChip('ready', '🔵 হারভেস্ট প্রস্তুত', current),
-              _buildFilterChip('warning', '🟡 বিশেষ পর্যবেক্ষণ', current),
+              _buildFilterChip('all', isBn ? 'সব পুকুর (${_pondController.ponds.length})' : 'All (${_pondController.ponds.length})', current),
+              _buildFilterChip('optimal', isBn ? '🟢 সর্বোত্তম ও স্বাভাবিক' : '🟢 Optimal', current),
+              _buildFilterChip('ready', isBn ? '🔵 হারভেস্ট প্রস্তুত' : '🔵 Harvest Ready', current),
+              _buildFilterChip('warning', isBn ? '🟡 বিশেষ পর্যবেক্ষণ' : '🟡 Watch List', current),
             ],
           ),
         );
@@ -712,7 +739,7 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
     );
   }
 
-  Widget _buildProMaxPondCard(BuildContext context, PondModel pond, bool isDark) {
+  Widget _buildProMaxPondCard(BuildContext context, PondModel pond, bool isDark, bool isBn) {
     final bool isReady = pond.status == 'হারভেস্ট প্রস্তুত';
     final bool isWarning = pond.status == 'সতর্কতা' || pond.status == 'ঝুঁকিপূর্ণ';
 
@@ -745,7 +772,6 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Top Banner with Image & Glass Badges
               Stack(
                 children: [
                   ClipRRect(
@@ -767,7 +793,6 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                       ),
                     ),
                   ),
-                  // Dark Overlay Gradient
                   Positioned.fill(
                     child: Container(
                       decoration: BoxDecoration(
@@ -784,7 +809,6 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                       ),
                     ),
                   ),
-                  // Status Badge & Location
                   Positioned(
                     top: 12,
                     left: 14,
@@ -860,12 +884,14 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                                 Get.to(() => EditPondScreen(pond: pond));
                               } else if (val == 'delete') {
                                 Get.defaultDialog(
-                                  title: 'পুকুর / ট্যাংক মুছে ফেলুন',
+                                  title: isBn ? 'পুকুর / ট্যাংক মুছে ফেলুন' : 'Delete Pond / Tank',
                                   titleStyle: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.red.shade700),
                                   content: Padding(
                                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                     child: Text(
-                                      'আপনি কি নিশ্চিত যে "${pond.name}" স্থায়ীভাবে ফায়ারবেস থেকে মুছে ফেলতে চান?',
+                                      isBn
+                                          ? 'আপনি কি নিশ্চিত যে "${pond.name}" স্থায়ীভাবে ফায়ারবেস থেকে মুছে ফেলতে চান?'
+                                          : 'Are you sure you want to permanently delete "${pond.name}"?',
                                       textAlign: TextAlign.center,
                                       style: GoogleFonts.hindSiliguri(fontSize: 13.5),
                                     ),
@@ -879,17 +905,17 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                                       Get.back();
                                       await _pondController.deletePond(pond.id);
                                       Get.snackbar(
-                                        'মুছে ফেলা হয়েছে',
-                                        '${pond.name} সফলভাবে মুছে ফেলা হয়েছে।',
+                                        isBn ? 'মুছে ফেলা হয়েছে' : 'Deleted',
+                                        isBn ? '${pond.name} সফলভাবে মুছে ফেলা হয়েছে।' : '${pond.name} has been deleted.',
                                         backgroundColor: Colors.red.shade700,
                                         colorText: Colors.white,
                                       );
                                     },
-                                    child: Text('মুছে ফেলুন', style: GoogleFonts.hindSiliguri(color: Colors.white, fontWeight: FontWeight.bold)),
+                                    child: Text(isBn ? 'মুছে ফেলুন' : 'Delete', style: GoogleFonts.hindSiliguri(color: Colors.white, fontWeight: FontWeight.bold)),
                                   ),
                                   cancel: OutlinedButton(
                                     onPressed: () => Get.back(),
-                                    child: Text('বাতিল', style: GoogleFonts.hindSiliguri()),
+                                    child: Text(isBn ? 'বাতিল' : 'Cancel', style: GoogleFonts.hindSiliguri()),
                                   ),
                                 );
                               }
@@ -901,7 +927,7 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                                   children: [
                                     const Icon(Icons.edit, size: 18, color: Colors.teal),
                                     const SizedBox(width: 8),
-                                    Text('সম্পাদনা করুন', style: GoogleFonts.hindSiliguri()),
+                                    Text(isBn ? 'সম্পাদনা করুন' : 'Edit', style: GoogleFonts.hindSiliguri()),
                                   ],
                                 ),
                               ),
@@ -911,7 +937,7 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                                   children: [
                                     const Icon(Icons.delete_forever, size: 18, color: Colors.red),
                                     const SizedBox(width: 8),
-                                    Text('মুছে ফেলুন', style: GoogleFonts.hindSiliguri(color: Colors.red)),
+                                    Text(isBn ? 'মুছে ফেলুন' : 'Delete', style: GoogleFonts.hindSiliguri(color: Colors.red)),
                                   ],
                                 ),
                               ),
@@ -921,7 +947,6 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                       ],
                     ),
                   ),
-                  // Bottom Title & Species
                   Positioned(
                     bottom: 12,
                     left: 14,
@@ -939,7 +964,9 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                           ),
                         ),
                         Text(
-                          '${pond.fishSpecies} • ${pond.area} • ${pond.totalFishCount} টি মাছ',
+                          isBn
+                              ? '${pond.fishSpecies} • ${pond.area} • ${pond.totalFishCount} টি মাছ'
+                              : '${pond.fishSpecies} • ${pond.area} • ${pond.totalFishCount} fish',
                           style: GoogleFonts.hindSiliguri(
                             color: const Color(0xFF80DEEA),
                             fontSize: 12.5,
@@ -952,8 +979,6 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                   ),
                 ],
               ),
-
-              // Category & Bio-Security Badge Bar
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
                 child: Row(
@@ -1006,8 +1031,6 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                   ],
                 ),
               ),
-
-              // Telemetry Sensor HUD Grid (4 Metrics)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
                 child: Container(
@@ -1024,7 +1047,7 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                     children: [
                       _buildTelemetryItem(
                         context,
-                        'অক্সিজেন (DO)',
+                        isBn ? 'অক্সিজেন (DO)' : 'Oxygen (DO)',
                         '${pond.dissolvedOxygen.toStringAsFixed(1)} mg/L',
                         Icons.air,
                         pond.dissolvedOxygen >= 5.5 ? Colors.teal : Colors.red,
@@ -1032,7 +1055,7 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                       Container(width: 1, height: 30, color: Colors.grey.shade300),
                       _buildTelemetryItem(
                         context,
-                        'pH মাত্রা',
+                        isBn ? 'pH মাত্রা' : 'pH Level',
                         pond.ph.toStringAsFixed(1),
                         Icons.science,
                         pond.ph >= 7.0 && pond.ph <= 8.5 ? Colors.blue.shade700 : Colors.orange,
@@ -1040,7 +1063,7 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                       Container(width: 1, height: 30, color: Colors.grey.shade300),
                       _buildTelemetryItem(
                         context,
-                        'তাপমাত্রা',
+                        isBn ? 'তাপমাত্রা' : 'Temperature',
                         '${pond.temperature.toStringAsFixed(1)}°C',
                         Icons.thermostat,
                         Colors.deepOrange,
@@ -1048,7 +1071,7 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                       Container(width: 1, height: 30, color: Colors.grey.shade300),
                       _buildTelemetryItem(
                         context,
-                        'অ্যামোনিয়া',
+                        isBn ? 'অ্যামোনিয়া' : 'Ammonia',
                         '${pond.ammonia.toStringAsFixed(3)}',
                         Icons.bubble_chart,
                         pond.ammonia <= 0.02 ? Colors.green : Colors.red,
@@ -1057,8 +1080,6 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                   ),
                 ),
               ),
-
-              // Lifecycle Progress & Hardware Switches
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4),
                 child: Column(
@@ -1072,7 +1093,7 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                             const Icon(Icons.timelapse, size: 14, color: Colors.teal),
                             const SizedBox(width: 4),
                             Text(
-                              'পর্যায়: ${pond.growthStage}',
+                              isBn ? 'পর্যায়: ${pond.growthStage}' : 'Stage: ${pond.growthStage}',
                               style: GoogleFonts.hindSiliguri(
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.bold,
@@ -1082,7 +1103,9 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                           ],
                         ),
                         Text(
-                          isReady ? 'হারভেস্ট এর উপযুক্ত' : '${pond.daysRemainingForHarvest} দিন পর হারভেস্ট',
+                          isReady
+                              ? (isBn ? 'হারভেস্ট এর উপযুক্ত' : 'Ready for Harvest')
+                              : (isBn ? '${pond.daysRemainingForHarvest} দিন পর হারভেস্ট' : '${pond.daysRemainingForHarvest} days to harvest'),
                           style: GoogleFonts.hindSiliguri(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
@@ -1104,38 +1127,53 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                       ),
                     ),
                     const SizedBox(height: 8),
-
-                    // FCR and Feeding Summary
                     Row(
                       children: [
-                        Text(
-                          'FCR: ${pond.fcr} • সারভাইভাল: ${pond.survivalRatePercent}% • ফিড: ${pond.dailyFeedingKg} কেজি/দিন',
-                          style: GoogleFonts.hindSiliguri(
-                            fontSize: 11,
-                            color: Colors.blueGrey.shade700,
-                            fontWeight: FontWeight.w600,
+                        Flexible(
+                          child: Text(
+                            isBn
+                                ? 'FCR: ${pond.fcr} • সারভাইভাল: ${pond.survivalRatePercent}% • ফিড: ${pond.dailyFeedingKg} কেজি/দিন'
+                                : 'FCR: ${pond.fcr} • Survival: ${pond.survivalRatePercent}% • Feed: ${pond.dailyFeedingKg} kg/day',
+                            style: GoogleFonts.hindSiliguri(
+                              fontSize: 11,
+                              color: Colors.blueGrey.shade700,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
-
-                    // Biomass and Valuation Highlights
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('বর্তমান বায়োমাস', style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.grey.shade600)),
-                            Text('${pond.currentTotalBiomassKg.toStringAsFixed(0)} কেজি (${pond.avgWeightGrams.toStringAsFixed(0)} গ্রাম/পিস)', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold)),
+                            Text(
+                              isBn ? 'বর্তমান বায়োমাস' : 'Current Biomass',
+                              style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.grey.shade600),
+                            ),
+                            Text(
+                              isBn
+                                  ? '${pond.currentTotalBiomassKg.toStringAsFixed(0)} কেজি (${pond.avgWeightGrams.toStringAsFixed(0)} গ্রাম/পিস)'
+                                  : '${pond.currentTotalBiomassKg.toStringAsFixed(0)} kg (${pond.avgWeightGrams.toStringAsFixed(0)} g/fish)',
+                              style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold),
+                            ),
                           ],
                         ),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            Text('প্রত্যাশিত বিক্রয়মূল্য', style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.grey.shade600)),
-                            Text('৳${pond.projectedValuation.toStringAsFixed(0)}', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF006064))),
+                            Text(
+                              isBn ? 'প্রত্যাশিত বিক্রয়মূল্য' : 'Projected Valuation',
+                              style: GoogleFonts.hindSiliguri(fontSize: 11, color: Colors.grey.shade600),
+                            ),
+                            Text(
+                              '৳${pond.projectedValuation.toStringAsFixed(0)}',
+                              style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF006064)),
+                            ),
                           ],
                         ),
                       ],
@@ -1143,16 +1181,12 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                   ],
                 ),
               ),
-
               const SizedBox(height: 8),
               const Divider(height: 1),
-
-              // Action Toolbar: Aerator Switch & Direct Sell
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 child: Row(
                   children: [
-                    // Aerator Toggle Pill
                     InkWell(
                       onTap: () => _pondController.toggleAerator(pond.id),
                       borderRadius: BorderRadius.circular(12),
@@ -1174,7 +1208,9 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                             ),
                             const SizedBox(width: 5),
                             Text(
-                              pond.aeratorOn ? 'অ্যারেটর চালু' : 'অ্যারেটর বন্ধ',
+                              pond.aeratorOn
+                                  ? (isBn ? 'অ্যারেটর চালু' : 'Aerator ON')
+                                  : (isBn ? 'অ্যারেটর বন্ধ' : 'Aerator OFF'),
                               style: GoogleFonts.hindSiliguri(
                                 fontSize: 11.5,
                                 fontWeight: FontWeight.bold,
@@ -1186,12 +1222,11 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                       ),
                     ),
                     const Spacer(),
-                    // 1-Tap Sell to Big Fish Market
                     ElevatedButton.icon(
-                      onPressed: () => _showInstantMarketSellDialog(pond),
+                      onPressed: () => _showInstantMarketSellDialog(pond, isBn),
                       icon: const Icon(Icons.storefront, size: 15, color: Colors.white),
                       label: Text(
-                        'বাজারে বিক্রি',
+                        isBn ? 'বাজারে বিক্রি' : 'Sell Now',
                         style: GoogleFonts.hindSiliguri(
                           fontSize: 12.5,
                           fontWeight: FontWeight.bold,
@@ -1206,7 +1241,6 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                       ),
                     ),
                     const SizedBox(width: 8),
-                    // Details Button
                     OutlinedButton(
                       onPressed: () => Get.to(() => PondDetailScreen(pond: pond)),
                       style: OutlinedButton.styleFrom(
@@ -1215,7 +1249,7 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                         side: const BorderSide(color: Color(0xFF0288D1)),
                       ),
                       child: Text(
-                        'বিশ্লেষণ',
+                        isBn ? 'বিশ্লেষণ' : 'Analytics',
                         style: GoogleFonts.hindSiliguri(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -1262,7 +1296,7 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(bool isBn) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     const Color deepAqua = Color(0xFF006064);
 
@@ -1270,7 +1304,6 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
       child: Column(
         children: [
-          // Glassmorphic Hero Visual
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(24),
@@ -1312,7 +1345,7 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'স্বাগতম! আপনার ফার্মে কোনো পুকুর বা ট্যাংক নেই',
+                  isBn ? 'স্বাগতম! আপনার ফার্মে কোনো পুকুর বা ট্যাংক নেই' : 'Welcome! You have no ponds or tanks.',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.hindSiliguri(
                     fontSize: 19,
@@ -1322,7 +1355,9 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'আপনার অ্যাকুয়াকালচার ফার্মকে আধুনিক ও স্মার্ট করতে প্রথম বাণিজ্যিক পুকুর বা বায়োফ্লক ট্যাংক যুক্ত করুন।',
+                  isBn
+                      ? 'আপনার অ্যাকুয়াকালচার ফার্মকে আধুনিক ও স্মার্ট করতে প্রথম বাণিজ্যিক পুকুর বা বায়োফ্লক ট্যাংক যুক্ত করুন।'
+                      : 'Add your first commercial pond or biofloc tank to modernize your aquaculture farm.',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.hindSiliguri(
                     fontSize: 13,
@@ -1330,15 +1365,13 @@ class _PondManagementScreenState extends State<PondManagementScreen> with Single
                   ),
                 ),
                 const SizedBox(height: 20),
-
-                // Primary Add Pond CTA
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     onPressed: () => Get.to(() => const AddPondScreen()),
                     icon: const Icon(Icons.add_circle, color: Colors.white, size: 22),
                     label: Text(
-                      '➕ আপনার প্রথম পুকুর / ট্যাংক যুক্ত করুন',
+                      isBn ? '➕ আপনার প্রথম পুকুর / ট্যাংক যুক্ত করুন' : '➕ Add your first pond / tank',
                       style: GoogleFonts.hindSiliguri(
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
