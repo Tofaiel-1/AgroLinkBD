@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LanguageProvider with ChangeNotifier {
   static const String keyLanguage = 'language';
 
-  // Default to বাংলা for Farmer app
+  // Default to বাংলা for AgroLinkBD
   String _currentLanguage = 'বাংলা';
 
   String get currentLanguage => _currentLanguage;
@@ -43,6 +44,7 @@ class LanguageProvider with ChangeNotifier {
       } else {
         _currentLanguage = 'বাংলা';
       }
+      _syncGetXLocale();
       notifyListeners();
     } catch (e) {
       debugPrint('⚠️ Error loading language preference: $e');
@@ -53,6 +55,7 @@ class LanguageProvider with ChangeNotifier {
   Future<void> setLanguage(String lang) async {
     if (_currentLanguage == lang) return;
     _currentLanguage = lang;
+    _syncGetXLocale();
     notifyListeners();
 
     try {
@@ -69,6 +72,19 @@ class LanguageProvider with ChangeNotifier {
       await setLanguage('English');
     } else {
       await setLanguage('বাংলা');
+    }
+  }
+
+  void _syncGetXLocale() {
+    try {
+      final targetLocale = isBangla
+          ? const Locale('bn', 'BD')
+          : const Locale('en', 'US');
+      if (Get.locale != targetLocale) {
+        Get.updateLocale(targetLocale);
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error syncing GetX locale: $e');
     }
   }
 }

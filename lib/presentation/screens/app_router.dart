@@ -40,6 +40,29 @@ class _AppRouterState extends State<AppRouter> {
   Future<void> _initializeApp() async {
     // Initialize app - restore user session if logged in
     // DO NOT sign out users on app restart
+    try {
+      final authUser = FirebaseAuth.instance.currentUser;
+      if (authUser != null && mounted) {
+        final email = authUser.email?.toLowerCase() ?? '';
+        final prefs = await SharedPreferences.getInstance();
+        final isAdminPref = prefs.getBool('is_admin_logged_in') ?? false;
+        final isAdminEmail = email == 'superadmin@agrolinkbd.com' ||
+            email == 'mdtofaielhussaintota@gmail.com' ||
+            email.startsWith('admin@') ||
+            email.contains('superadmin');
+
+        if (isAdminPref || isAdminEmail) {
+          final adminProvider = Provider.of<AdminProvider>(context, listen: false);
+          await adminProvider.tryRestoreAdminSession(authUser.uid);
+          if (mounted) {
+            Provider.of<UserProvider>(context, listen: false).clearUser();
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error in _initializeApp admin restore: $e');
+    }
+
     if (mounted) {
       setState(() {
         _initialized = true;
@@ -183,27 +206,102 @@ class _AppRouterState extends State<AppRouter> {
 
               Future.microtask(() async {
                 try {
-                  // 1. Quick Admin Check for this specific user
+                  final cleanEmail = email.toLowerCase();
+                  final prefs = await SharedPreferences.getInstance();
+                  final bool isAdminEmail = cleanEmail == 'superadmin@agrolinkbd.com' ||
+                      cleanEmail == 'mdtofaielhussaintota@gmail.com' ||
+                      cleanEmail.startsWith('admin@') ||
+                      cleanEmail.contains('superadmin');
+                  final bool isAdminPref = prefs.getBool('is_admin_logged_in') ?? false;
+
+                  // 1. Comprehensive Admin Check & Verification
+                  bool isAdminVerified = false;
                   try {
-                    final adminDoc = await FirebaseFirestore.instance
+                    // Try by document ID first
+                    var adminDoc = await FirebaseFirestore.instance
                         .collection('admins')
                         .doc(userId)
                         .get()
-                        .timeout(const Duration(milliseconds: 1500));
+                        .timeout(const Duration(seconds: 5));
+
+                    // If not found by doc ID, try query by email
+                    if (!adminDoc.exists && email.isNotEmpty) {
+                      final emailQuery = await FirebaseFirestore.instance
+                          .collection('admins')
+                          .where('email', isEqualTo: email)
+                          .limit(1)
+                          .get()
+                          .timeout(const Duration(seconds: 5));
+                      if (emailQuery.docs.isNotEmpty) {
+                        adminDoc = emailQuery.docs.first;
+                      }
+                    }
+
                     if (adminDoc.exists && mounted) {
                       debugPrint('✅ Admin profile verified: $userId');
                       Provider.of<AdminProvider>(context, listen: false).setAdminFromDoc(adminDoc);
+                      Provider.of<UserProvider>(context, listen: false).clearUser();
+                      isAdminVerified = true;
                       _lastError = null;
+
+                      // Clean up any accidental corrupt user doc in 'users' collection with role 'buyer'
+                      try {
+                        final corruptedUserDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+                        if (corruptedUserDoc.exists) {
+                          final data = corruptedUserDoc.data();
+                          if (data?['name'] == 'superadmin' || data?['role'] == 'buyer' || data?['userType'] == 'buyer') {
+                            await FirebaseFirestore.instance.collection('users').doc(userId).delete();
+                            debugPrint('🧹 Cleaned up corrupted regular user doc in users collection for admin: $userId');
+                          }
+                        }
+                      } catch (cleanErr) {
+                        debugPrint('⚠️ Cleanup note: $cleanErr');
+                      }
                       return;
-                    } else if (mounted) {
-                      // Definitely NOT an admin -> clear admin state
-                      Provider.of<AdminProvider>(context, listen: false).clearAdminState();
                     }
                   } catch (adminErr) {
-                    debugPrint('ℹ️ Admin check bypassed/skipped: $adminErr');
-                    if (mounted) {
-                      Provider.of<AdminProvider>(context, listen: false).clearAdminState();
+                    debugPrint('ℹ️ Admin check network notice: $adminErr');
+                  }
+
+                  // 1.1 If known admin email or admin session was saved, AUTO-ENSURE Admin Document in Firestore!
+                  if (isAdminEmail || isAdminPref) {
+                    debugPrint('🛡️ Ensuring Super Admin Document for: $email (UID: $userId)');
+                    try {
+                      final adminDocRef = FirebaseFirestore.instance.collection('admins').doc(userId);
+                      await adminDocRef.set({
+                        'id': userId,
+                        'email': email,
+                        'name': 'Super Admin',
+                        'role': 'super_admin',
+                        'isActive': true,
+                        'createdAt': FieldValue.serverTimestamp(),
+                        'lastLogin': FieldValue.serverTimestamp(),
+                        'status': 'active',
+                      }, SetOptions(merge: true));
+
+                      final freshDoc = await adminDocRef.get();
+                      if (mounted) {
+                        Provider.of<AdminProvider>(context, listen: false).setAdminFromDoc(freshDoc);
+                        Provider.of<UserProvider>(context, listen: false).clearUser();
+                        isAdminVerified = true;
+                        _lastError = null;
+
+                        // Delete corrupted user doc from 'users'
+                        try {
+                          await FirebaseFirestore.instance.collection('users').doc(userId).delete();
+                          debugPrint('🧹 Cleaned up corrupted regular user doc for: $userId');
+                        } catch (_) {}
+                        return;
+                      }
+                    } catch (repairErr) {
+                      debugPrint('⚠️ Error auto-repairing admin doc: $repairErr');
                     }
+                  }
+
+                  // If this was an admin, NEVER allow falling through to regular user creation!
+                  if (isAdminVerified || isAdminEmail || isAdminPref || Provider.of<AdminProvider>(context, listen: false).isAdminLoggedIn) {
+                    debugPrint('🛑 Bypassing regular user loading for verified Admin.');
+                    return;
                   }
 
                   // 2. Load Regular User Profile from Firestore
@@ -239,22 +337,62 @@ class _AppRouterState extends State<AppRouter> {
                       UserType detectedType = UserType.farmer;
                       String detectedDomain = savedDomainStr ?? 'agriculture';
 
-                      if (savedRoleStr != null && savedRoleStr.isNotEmpty) {
+                      final cleanEmail = email.toLowerCase();
+                      final cleanDisplayName = (firebaseUser.displayName ?? '').toLowerCase();
+
+                      if (cleanEmail.contains('service') || cleanDisplayName.contains('service') || cleanDisplayName.contains('সেবা')) {
+                        detectedType = detectedDomain == 'fisheries' ? UserType.fishServiceProvider : UserType.serviceProvider;
+                      } else if (cleanEmail.contains('driver') || cleanDisplayName.contains('driver') || cleanDisplayName.contains('চালক')) {
+                        detectedType = detectedDomain == 'fisheries' ? UserType.fishDriver : UserType.driver;
+                      } else if (cleanEmail.contains('buyer') || cleanDisplayName.contains('buyer') || cleanDisplayName.contains('ক্রেতা')) {
+                        detectedType = detectedDomain == 'fisheries' ? UserType.fishBuyer : UserType.buyer;
+                      } else if (cleanEmail.contains('company') || cleanDisplayName.contains('company') || cleanDisplayName.contains('কোম্পানি')) {
+                        detectedType = detectedDomain == 'fisheries' ? UserType.fishCompany : UserType.company;
+                      } else if (cleanEmail.contains('expert') || cleanDisplayName.contains('expert') || cleanDisplayName.contains('বিশেষজ্ঞ')) {
+                        detectedType = detectedDomain == 'fisheries' ? UserType.fishExpert : UserType.expert;
+                      } else if (cleanEmail.contains('hatchery') || cleanDisplayName.contains('hatchery') || cleanDisplayName.contains('হ্যাচারি')) {
+                        detectedType = UserType.hatchery;
+                        detectedDomain = 'fisheries';
+                      } else if (savedRoleStr != null && savedRoleStr.isNotEmpty) {
                         final clean = savedRoleStr.replaceAll('UserType.', '').replaceAll('_', '').toLowerCase();
-                        if (clean == 'fishfarmer' || clean == 'fishfarming') {
+                        if (clean == 'fishfarmer' || clean == 'fishfarming' || clean == 'fish_farmer') {
                           detectedType = UserType.fishFarmer;
                           detectedDomain = 'fisheries';
-                        } else if (clean == 'fishbuyer') {
+                        } else if (clean == 'fishbuyer' || clean == 'fish_buyer') {
                           detectedType = UserType.fishBuyer;
                           detectedDomain = 'fisheries';
-                        } else if (clean == 'fishdriver') {
+                        } else if (clean == 'fishdriver' || clean == 'fish_driver') {
                           detectedType = UserType.fishDriver;
+                          detectedDomain = 'fisheries';
+                        } else if (clean == 'fishserviceprovider' || clean == 'fish_service_provider') {
+                          detectedType = UserType.fishServiceProvider;
+                          detectedDomain = 'fisheries';
+                        } else if (clean == 'serviceprovider' || clean == 'service_provider') {
+                          detectedType = UserType.serviceProvider;
+                          detectedDomain = 'agriculture';
+                        } else if (clean == 'company') {
+                          detectedType = UserType.company;
+                          detectedDomain = 'agriculture';
+                        } else if (clean == 'fishcompany' || clean == 'fish_company') {
+                          detectedType = UserType.fishCompany;
+                          detectedDomain = 'fisheries';
+                        } else if (clean == 'hatchery') {
+                          detectedType = UserType.hatchery;
+                          detectedDomain = 'fisheries';
+                        } else if (clean == 'expert') {
+                          detectedType = UserType.expert;
+                          detectedDomain = 'agriculture';
+                        } else if (clean == 'fishexpert' || clean == 'fish_expert') {
+                          detectedType = UserType.fishExpert;
                           detectedDomain = 'fisheries';
                         } else {
                           detectedType = UserType.values.firstWhere(
                             (e) => e.name.toLowerCase() == clean,
                             orElse: () => UserType.farmer,
                           );
+                          detectedDomain = (detectedType.name.toLowerCase().contains('fish') || detectedType == UserType.hatchery)
+                              ? 'fisheries'
+                              : 'agriculture';
                         }
                       }
 
@@ -305,14 +443,16 @@ class _AppRouterState extends State<AppRouter> {
                         debugPrint('⚠️ SharedPreferences sync: $prefErr');
                       }
 
-                      // 3. Auto-repair/persist Firestore role
-                      try {
-                        FirebaseFirestore.instance.collection('users').doc(userId).set({
-                          'userType': activeUser.userType.name,
-                          'role': activeUser.userType.name,
-                          'domain': activeUser.domain,
-                        }, SetOptions(merge: true));
-                      } catch (_) {}
+                      // 3. Auto-repair/persist Firestore role (Only for NON-ADMIN users)
+                      if (!isAdminEmail && !isAdminPref) {
+                        try {
+                          FirebaseFirestore.instance.collection('users').doc(userId).set({
+                            'userType': activeUser.userType.name,
+                            'role': activeUser.userType.name,
+                            'domain': activeUser.domain,
+                          }, SetOptions(merge: true));
+                        } catch (_) {}
+                      }
                     }
 
                     try {
@@ -328,15 +468,39 @@ class _AppRouterState extends State<AppRouter> {
                   }
                 } catch (e) {
                   debugPrint('⚠️ AppRouter profile recovery fallback: $e');
-                  // Even on error, establish active fallback user without writing to Firestore
-                  if (userProvider.currentUser == null) {
+                  final cleanEmail = email.toLowerCase();
+                  final bool isAdminEmail = cleanEmail == 'superadmin@agrolinkbd.com' ||
+                      cleanEmail == 'mdtofaielhussaintota@gmail.com' ||
+                      cleanEmail.startsWith('admin@') ||
+                      cleanEmail.contains('superadmin');
+                  if (isAdminEmail && mounted) {
+                    Provider.of<AdminProvider>(context, listen: false).tryRestoreAdminSession(userId);
+                    Provider.of<UserProvider>(context, listen: false).clearUser();
+                  } else if (userProvider.currentUser == null) {
                     final firebaseUser = authSnapshot.data!;
                     final prefs = await SharedPreferences.getInstance();
                     final savedRoleStr = prefs.getString('selected_role');
                     final savedDomainStr = prefs.getString('selected_domain');
                     UserType detectedType = UserType.farmer;
                     String detectedDomain = savedDomainStr ?? 'agriculture';
-                    if (savedRoleStr != null && savedRoleStr.isNotEmpty) {
+
+                    final cleanEmail = email.toLowerCase();
+                    final cleanDisplayName = (firebaseUser.displayName ?? '').toLowerCase();
+
+                    if (cleanEmail.contains('service') || cleanDisplayName.contains('service') || cleanDisplayName.contains('সেবা')) {
+                      detectedType = detectedDomain == 'fisheries' ? UserType.fishServiceProvider : UserType.serviceProvider;
+                    } else if (cleanEmail.contains('driver') || cleanDisplayName.contains('driver') || cleanDisplayName.contains('চালক')) {
+                      detectedType = detectedDomain == 'fisheries' ? UserType.fishDriver : UserType.driver;
+                    } else if (cleanEmail.contains('buyer') || cleanDisplayName.contains('buyer') || cleanDisplayName.contains('ক্রেতা')) {
+                      detectedType = detectedDomain == 'fisheries' ? UserType.fishBuyer : UserType.buyer;
+                    } else if (cleanEmail.contains('company') || cleanDisplayName.contains('company') || cleanDisplayName.contains('কোম্পানি')) {
+                      detectedType = detectedDomain == 'fisheries' ? UserType.fishCompany : UserType.company;
+                    } else if (cleanEmail.contains('expert') || cleanDisplayName.contains('expert') || cleanDisplayName.contains('বিশেষজ্ঞ')) {
+                      detectedType = detectedDomain == 'fisheries' ? UserType.fishExpert : UserType.expert;
+                    } else if (cleanEmail.contains('hatchery') || cleanDisplayName.contains('hatchery') || cleanDisplayName.contains('হ্যাচারি')) {
+                      detectedType = UserType.hatchery;
+                      detectedDomain = 'fisheries';
+                    } else if (savedRoleStr != null && savedRoleStr.isNotEmpty) {
                       final clean = savedRoleStr.replaceAll('UserType.', '').replaceAll('_', '').toLowerCase();
                       if (clean == 'fishfarmer' || clean == 'fishfarming' || clean == 'fish_farmer') {
                         detectedType = UserType.fishFarmer;

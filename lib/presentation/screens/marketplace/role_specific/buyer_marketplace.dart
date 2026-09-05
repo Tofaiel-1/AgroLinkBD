@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:get/get.dart';
 import 'package:agrolinkbd/presentation/widgets/quick_buy_bottom_sheet.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
+import 'package:agrolinkbd/core/utils/number_converter.dart';
+import 'package:agrolinkbd/core/utils/masked_identity_helper.dart';
 
 /// Buyer Marketplace - Browse and Buy Products
 /// Browse farmers' products, compare prices, add to cart
 class BuyerMarketplace extends StatefulWidget {
-  const BuyerMarketplace({super.key});
+  final String? initialCategory;
+  const BuyerMarketplace({super.key, this.initialCategory});
 
   @override
   State<BuyerMarketplace> createState() => _BuyerMarketplaceState();
@@ -14,67 +17,136 @@ class BuyerMarketplace extends StatefulWidget {
 
 class _BuyerMarketplaceState extends State<BuyerMarketplace> {
   final TextEditingController _searchController = TextEditingController();
-  String _selectedCategory = 'all';
+  late String _selectedCategory;
   String _sortBy = 'latest';
+  String _searchQuery = '';
+
+  final List<Map<String, dynamic>> _categories = [
+    {'bn': 'সকল পণ্য', 'en': 'All', 'key': 'all'},
+    {'bn': 'শাকসবজি', 'en': 'Vegetables', 'key': 'vegetables'},
+    {'bn': 'ফলমূল', 'en': 'Fruits', 'key': 'fruits'},
+    {'bn': 'চাল ও শস্য', 'en': 'Grains', 'key': 'grains'},
+    {'bn': 'মসলা', 'en': 'Spices', 'key': 'spices'},
+    {'bn': 'তাজা মাছ', 'en': 'Fresh Fish', 'key': 'fish'},
+    {'bn': 'মাংস ও ডিম', 'en': 'Meat & Eggs', 'key': 'meat'},
+  ];
 
   final List<Map<String, dynamic>> products = [
     {
       'id': 'mango_101',
-      'name': 'তাজা আম (হিমসাগর)',
-      'farmer': 'রহিম ফার্ম',
+      'nameBn': 'তাজা আম (হিমসাগর)',
+      'nameEn': 'Fresh Mango (Himsagar)',
+      'farmerBn': 'রহিম ফ্রুট গার্ডেন',
+      'farmerEn': 'Rahim Fruit Garden',
       'farmerId': 'farmer_rahim_01',
-      'price': '৳ ৮০/কেজি',
-      'rawPrice': 80.0,
-      'unit': 'কেজি',
+      'price': 80.0,
+      'unitBn': 'কেজি',
+      'unitEn': 'kg',
       'rating': 4.8,
-      'quantity': '১০ কেজি',
+      'quantityBn': '১০ কেজি',
+      'quantityEn': '10 kg',
       'image': 'https://images.unsplash.com/photo-1553279768-865429fa0078?w=400&q=80',
-      'badge': 'নতুন',
+      'badgeBn': 'প্রিমিয়াম',
+      'badgeEn': 'Premium',
       'category': 'fruits',
     },
     {
       'id': 'spinach_102',
-      'name': 'জৈব পালং শাক',
-      'farmer': 'সবুজ বাগান',
+      'nameBn': 'অর্গানিক পালং শাক',
+      'nameEn': 'Organic Spinach',
+      'farmerBn': 'সবুজ পল্লী এগ্রো',
+      'farmerEn': 'Sabuj Polli Agro',
       'farmerId': 'farmer_green_02',
-      'price': '৳ ৪৫/বান্ডেল',
-      'rawPrice': 45.0,
-      'unit': 'বান্ডেল',
+      'price': 45.0,
+      'unitBn': 'আঁটি',
+      'unitEn': 'bundle',
       'rating': 4.6,
-      'quantity': '১ বান্ডেল',
+      'quantityBn': '১ আঁটি',
+      'quantityEn': '1 bundle',
       'image': 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=400&q=80',
-      'badge': 'জৈব',
+      'badgeBn': 'জৈব সার',
+      'badgeEn': 'Organic',
       'category': 'vegetables',
     },
     {
-      'id': 'chicken_103',
-      'name': 'দেশি মুরগি',
-      'farmer': 'করিম পোল্ট্রি ফার্ম',
-      'farmerId': 'farmer_karim_03',
-      'price': '৳ ৫৫০/টি',
-      'rawPrice': 550.0,
-      'unit': 'টি',
+      'id': 'rice_103',
+      'nameBn': 'মিনিকেট চাল (নতুন ধান)',
+      'nameEn': 'Miniket Premium Rice',
+      'farmerBn': 'দিনাজপুর গ্রেইন রাইস মিল',
+      'farmerEn': 'Dinajpur Grain Rice Mill',
+      'farmerId': 'farmer_rice_03',
+      'price': 72.0,
+      'unitBn': 'কেজি',
+      'unitEn': 'kg',
       'rating': 4.9,
-      'quantity': '১টি',
-      'image': 'https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=400&q=80',
-      'badge': 'জনপ্রিয়',
-      'category': 'meat',
+      'quantityBn': '৫০ কেজি বস্তা',
+      'quantityEn': '50 kg sack',
+      'image': 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&q=80',
+      'badgeBn': 'সেরা মান',
+      'badgeEn': 'Top Quality',
+      'category': 'grains',
     },
     {
-      'id': 'milk_104',
-      'name': 'খাঁটি তরল দুধ',
-      'farmer': 'দেশীয় দুগ্ধ খামার',
-      'farmerId': 'farmer_dairy_04',
-      'price': '৳ ৮০/লিটার',
-      'rawPrice': 80.0,
-      'unit': 'লিটার',
+      'id': 'spices_104',
+      'nameBn': 'খাঁটি হলুদ গুঁড়া ও কাঁচা মরিচ',
+      'nameEn': 'Pure Turmeric & Green Chili',
+      'farmerBn': 'নাটোর স্পাইস হাব',
+      'farmerEn': 'Natore Spice Hub',
+      'farmerId': 'farmer_spice_04',
+      'price': 220.0,
+      'unitBn': 'কেজি',
+      'unitEn': 'kg',
       'rating': 4.7,
-      'quantity': '১ লিটার',
-      'image': 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=400&q=80',
-      'badge': 'প্রতিদিন',
-      'category': 'dairy',
+      'quantityBn': '১ কেজি',
+      'quantityEn': '1 kg',
+      'image': 'https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=400&q=80',
+      'badgeBn': 'কেমিক্যালমুক্ত',
+      'badgeEn': 'Pure',
+      'category': 'spices',
+    },
+    {
+      'id': 'fish_105',
+      'nameBn': 'পদ্মার তাজা রুই ও কাতলা',
+      'nameEn': 'Fresh Padma Rui & Katla',
+      'farmerBn': 'পদ্মা রিভার ফিশারিজ',
+      'farmerEn': 'Padma River Fisheries',
+      'farmerId': 'farmer_fish_05',
+      'price': 420.0,
+      'unitBn': 'কেজি',
+      'unitEn': 'kg',
+      'rating': 4.9,
+      'quantityBn': '৫ কেজি',
+      'quantityEn': '5 kg',
+      'image': 'https://images.unsplash.com/photo-1534043464124-3be32fe00099?w=400&q=80',
+      'badgeBn': 'লাইভ ফিশ',
+      'badgeEn': 'Live Fish',
+      'category': 'fish',
+    },
+    {
+      'id': 'chicken_106',
+      'nameBn': 'দেশি মুরগি ও তাজা ডিম',
+      'nameEn': 'Country Chicken & Farm Eggs',
+      'farmerBn': 'করিম অর্গানিক পোল্ট্রি',
+      'farmerEn': 'Karim Organic Poultry',
+      'farmerId': 'farmer_karim_06',
+      'price': 580.0,
+      'unitBn': 'জোড়া',
+      'unitEn': 'pair',
+      'rating': 4.8,
+      'quantityBn': '১ জোড়া',
+      'quantityEn': '1 pair',
+      'image': 'https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=400&q=80',
+      'badgeBn': '১০০% দেশি',
+      'badgeEn': 'Country Bred',
+      'category': 'meat',
     },
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedCategory = widget.initialCategory ?? 'all';
+  }
 
   @override
   void dispose() {
@@ -82,7 +154,7 @@ class _BuyerMarketplaceState extends State<BuyerMarketplace> {
     super.dispose();
   }
 
-  void _openQuickBuy(Map<String, dynamic> product) {
+  void _openQuickBuy(Map<String, dynamic> product, bool isBn) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -91,13 +163,15 @@ class _BuyerMarketplaceState extends State<BuyerMarketplace> {
         padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
         child: QuickBuyBottomSheet(product: {
           'id': product['id'] ?? 'product_item',
-          'name': product['name'] ?? 'কৃষি পণ্য',
-          'price': product['rawPrice'] ?? 100.0,
-          'unit': product['unit'] ?? 'কেজি',
-          'farmer': product['farmer'] ?? 'কৃষক',
+          'name': isBn ? product['nameBn'] : product['nameEn'],
+          'price': product['price'] ?? 100.0,
+          'unit': isBn ? product['unitBn'] : product['unitEn'],
+          'farmer': isBn ? product['farmerBn'] : product['farmerEn'],
           'farmerId': product['farmerId'] ?? 'farmer_id',
+          'location': isBn ? 'এগ্রোলিংক সার্টিফাইড হাব' : 'AgroLink Certified Hub',
           'image': product['image'],
-          'qualityGrade': 'Premium A Grade',
+          'qualityGrade': isBn ? 'Grade A+ (সুপার প্রিমিয়াম)' : 'Grade A+ (Super Premium)',
+          'batchCode': MaskedIdentityHelper.generateBatchCode(),
         }),
       ),
     );
@@ -105,13 +179,43 @@ class _BuyerMarketplaceState extends State<BuyerMarketplace> {
 
   @override
   Widget build(BuildContext context) {
+    final isBn = LanguageProvider.isBn(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
+    final cardBg = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final textPrimary = isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A);
+    final textSecondary = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
+    var filteredProducts = _selectedCategory == 'all'
+        ? List<Map<String, dynamic>>.from(products)
+        : products.where((p) => p['category'] == _selectedCategory).toList();
+
+    if (_searchQuery.isNotEmpty) {
+      final q = _searchQuery.toLowerCase();
+      filteredProducts = filteredProducts.where((p) {
+        final nameBn = (p['nameBn'] ?? '').toString().toLowerCase();
+        final nameEn = (p['nameEn'] ?? '').toString().toLowerCase();
+        final farmerBn = (p['farmerBn'] ?? '').toString().toLowerCase();
+        final farmerEn = (p['farmerEn'] ?? '').toString().toLowerCase();
+        return nameBn.contains(q) || nameEn.contains(q) || farmerBn.contains(q) || farmerEn.contains(q);
+      }).toList();
+    }
+
+    if (_sortBy == 'price_low') {
+      filteredProducts.sort((a, b) => (a['price'] as num).compareTo(b['price'] as num));
+    } else if (_sortBy == 'price_high') {
+      filteredProducts.sort((a, b) => (b['price'] as num).compareTo(a['price'] as num));
+    }
+
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
+      backgroundColor: bgColor,
       appBar: AppBar(
         backgroundColor: const Color(0xFF1976D2),
         elevation: 0,
         title: Text(
-          'কৃষি বাজার',
+          isBn ? 'কৃষি মার্কেটপ্লেস' : 'Agri Marketplace',
           style: GoogleFonts.hindSiliguri(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -121,94 +225,124 @@ class _BuyerMarketplaceState extends State<BuyerMarketplace> {
       ),
       body: Column(
         children: [
-          // Search and Filter bar
+          // Search bar
           Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    style: GoogleFonts.hindSiliguri(),
-                    decoration: InputDecoration(
-                      hintText: 'পণ্য খুঁজুন...',
-                      hintStyle: GoogleFonts.hindSiliguri(color: Colors.grey.shade400),
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                          vertical: 12, horizontal: 16),
-                    ),
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+            child: Container(
+              decoration: BoxDecoration(
+                color: cardBg,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: borderColor),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
                   ),
+                ],
+              ),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (val) => setState(() => _searchQuery = val.trim()),
+                style: GoogleFonts.hindSiliguri(color: textPrimary, fontSize: 14),
+                decoration: InputDecoration(
+                  hintText: isBn ? 'কী খুঁজছেন? (যেমন: আম, চাল, মাছ)...' : 'Search products...',
+                  hintStyle: GoogleFonts.hindSiliguri(color: textSecondary, fontSize: 13),
+                  prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF1976D2), size: 22),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: Icon(Icons.clear_rounded, color: textSecondary, size: 18),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _searchQuery = '');
+                          },
+                        )
+                      : null,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
                 ),
-                const SizedBox(width: 8),
-                Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1976D2),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: IconButton(
-                    icon: const Icon(Icons.tune, color: Colors.white),
-                    onPressed: () {},
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
 
-          // Categories Horizontal List
+          // 6 Categories Horizontal List
           SizedBox(
-            height: 45,
-            child: ListView(
+            height: 44,
+            child: ListView.builder(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: [
-                _buildCategoryChip('সকল পণ্য', 'all'),
-                _buildCategoryChip('শাক-সবজি', 'vegetables'),
-                _buildCategoryChip('ফলমূল', 'fruits'),
-                _buildCategoryChip('দুগ্ধজাত', 'dairy'),
-                _buildCategoryChip('মাংস ও হাঁস-মুরগি', 'meat'),
-              ],
+              itemCount: _categories.length,
+              itemBuilder: (context, index) {
+                final cat = _categories[index];
+                final key = cat['key'] as String;
+                final isSelected = _selectedCategory == key;
+                final label = isBn ? cat['bn'] : cat['en'];
+
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: FilterChip(
+                    label: Text(
+                      label,
+                      style: GoogleFonts.hindSiliguri(
+                        fontSize: 12,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                        color: isSelected ? Colors.white : textPrimary,
+                      ),
+                    ),
+                    selected: isSelected,
+                    backgroundColor: cardBg,
+                    selectedColor: const Color(0xFF1976D2),
+                    side: BorderSide(
+                      color: isSelected ? const Color(0xFF1976D2) : borderColor,
+                    ),
+                    onSelected: (selected) {
+                      setState(() => _selectedCategory = key);
+                    },
+                  ),
+                );
+              },
             ),
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
 
-          // Sort & Filter Bar
+          // Sort & Filter Header
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 18),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'পণ্য তালিকা (${products.length}টি পণ্য)',
+                  isBn
+                      ? '${BanglaEnglishNumberHelper.toBanglaDigits(filteredProducts.length)} টি পণ্য পাওয়া গেছে'
+                      : '${filteredProducts.length} items found',
                   style: GoogleFonts.hindSiliguri(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF1A1A1A),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: textSecondary,
                   ),
                 ),
                 DropdownButton<String>(
                   value: _sortBy,
                   underline: const SizedBox(),
+                  dropdownColor: cardBg,
                   style: GoogleFonts.hindSiliguri(
-                    fontSize: 13,
+                    fontSize: 12,
                     color: const Color(0xFF1976D2),
                     fontWeight: FontWeight.bold,
                   ),
-                  items: const [
+                  items: [
                     DropdownMenuItem(
                       value: 'latest',
-                      child: Text('সর্বশেষ'),
+                      child: Text(isBn ? 'সর্বশেষ' : 'Latest'),
                     ),
                     DropdownMenuItem(
                       value: 'price_low',
-                      child: Text('দাম: কম থেকে বেশি'),
+                      child: Text(isBn ? 'দাম: কম → বেশি' : 'Price: Low → High'),
                     ),
                     DropdownMenuItem(
                       value: 'price_high',
-                      child: Text('দাম: বেশি থেকে কম'),
+                      child: Text(isBn ? 'দাম: বেশি → কম' : 'Price: High → Low'),
                     ),
                   ],
                   onChanged: (value) {
@@ -219,99 +353,94 @@ class _BuyerMarketplaceState extends State<BuyerMarketplace> {
             ),
           ),
 
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
 
           // Products List
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              itemCount: products.length,
-              itemBuilder: (context, index) {
-                final product = products[index];
-                return GestureDetector(
-                  onTap: () => _openQuickBuy(product),
-                  child: _buildProductCard(
-                    id: product['id'] as String,
-                    name: product['name'] as String,
-                    farmer: product['farmer'] as String,
-                    price: product['price'] as String,
-                    rating: product['rating'] as double,
-                    quantity: product['quantity'] as String,
-                    imageUrl: product['image'] as String,
-                    badge: product['badge'] as String,
-                    productMap: product,
+            child: filteredProducts.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.search_off_rounded, size: 56, color: textSecondary.withOpacity(0.5)),
+                        const SizedBox(height: 10),
+                        Text(
+                          isBn ? 'কোনো পণ্য পাওয়া যায়নি' : 'No products found',
+                          style: GoogleFonts.hindSiliguri(
+                            color: textPrimary,
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    itemCount: filteredProducts.length,
+                    itemBuilder: (context, index) {
+                      final product = filteredProducts[index];
+                      return _buildProductCard(
+                        product: product,
+                        isBn: isBn,
+                        isDark: isDark,
+                        cardBg: cardBg,
+                        borderColor: borderColor,
+                        textPrimary: textPrimary,
+                        textSecondary: textSecondary,
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildCategoryChip(String label, String value) {
-    final isSelected = _selectedCategory == value;
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: FilterChip(
-        label: Text(
-          label,
-          style: GoogleFonts.hindSiliguri(
-            fontSize: 13,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            color: isSelected ? Colors.white : Colors.black87,
-          ),
-        ),
-        selected: isSelected,
-        backgroundColor: Colors.white,
-        selectedColor: const Color(0xFF1976D2),
-        side: BorderSide(
-          color: isSelected ? const Color(0xFF1976D2) : Colors.grey.shade300,
-        ),
-        onSelected: (selected) {
-          setState(() => _selectedCategory = value);
-        },
       ),
     );
   }
 
   Widget _buildProductCard({
-    required String id,
-    required String name,
-    required String farmer,
-    required String price,
-    required double rating,
-    required String quantity,
-    required String imageUrl,
-    required String badge,
-    required Map<String, dynamic> productMap,
+    required Map<String, dynamic> product,
+    required bool isBn,
+    required bool isDark,
+    required Color cardBg,
+    required Color borderColor,
+    required Color textPrimary,
+    required Color textSecondary,
   }) {
+    final String name = isBn ? product['nameBn'] : product['nameEn'];
+    final String farmer = isBn ? product['farmerBn'] : product['farmerEn'];
+    final String quantity = isBn ? product['quantityBn'] : product['quantityEn'];
+    final String unit = isBn ? product['unitBn'] : product['unitEn'];
+    final String badge = isBn ? product['badgeBn'] : product['badgeEn'];
+    final double price = (product['price'] as num).toDouble();
+    final double rating = (product['rating'] as num).toDouble();
+    final String imageUrl = product['image'] as String;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFEEEEEE)),
+        color: cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withOpacity(isDark ? 0.25 : 0.04),
             blurRadius: 8,
-            offset: const Offset(0, 2),
+            offset: const Offset(0, 3),
           ),
         ],
       ),
       child: Row(
         children: [
-          // Product Image
+          // Product Image with Badge
           Stack(
             children: [
               Container(
-                width: 80,
-                height: 80,
+                width: 84,
+                height: 84,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(12),
+                  color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
                   image: DecorationImage(
                     image: NetworkImage(imageUrl),
                     fit: BoxFit.cover,
@@ -320,21 +449,20 @@ class _BuyerMarketplaceState extends State<BuyerMarketplace> {
               ),
               Positioned(
                 top: 0,
-                right: 0,
+                left: 0,
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: const BoxDecoration(
                     color: Color(0xFF1976D2),
                     borderRadius: BorderRadius.only(
-                      topRight: Radius.circular(8),
-                      bottomLeft: Radius.circular(6),
+                      topLeft: Radius.circular(12),
+                      bottomRight: Radius.circular(8),
                     ),
                   ),
                   child: Text(
                     badge,
                     style: GoogleFonts.hindSiliguri(
-                      fontSize: 10,
+                      fontSize: 9,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
@@ -344,6 +472,7 @@ class _BuyerMarketplaceState extends State<BuyerMarketplace> {
             ],
           ),
           const SizedBox(width: 14),
+          // Product Details
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -353,36 +482,41 @@ class _BuyerMarketplaceState extends State<BuyerMarketplace> {
                   style: GoogleFonts.hindSiliguri(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFF1A1A1A),
+                    color: textPrimary,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
                 Text(
                   farmer,
                   style: GoogleFonts.hindSiliguri(
-                    fontSize: 12,
-                    color: const Color(0xFF757575),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  quantity,
-                  style: GoogleFonts.hindSiliguri(
                     fontSize: 11,
-                    color: const Color(0xFF9E9E9E),
+                    color: textSecondary,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
                 Row(
                   children: [
-                    const Icon(Icons.star, size: 14, color: Color(0xFFF39C12)),
+                    Text(
+                      quantity,
+                      style: GoogleFonts.hindSiliguri(
+                        fontSize: 11,
+                        color: textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.star_rounded, size: 14, color: Color(0xFFF59E0B)),
                     const SizedBox(width: 2),
                     Text(
-                      '$rating',
+                      isBn ? BanglaEnglishNumberHelper.toBanglaDigits(rating.toStringAsFixed(1)) : rating.toStringAsFixed(1),
                       style: GoogleFonts.poppins(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
-                        color: const Color(0xFFF39C12),
+                        color: const Color(0xFFF59E0B),
                       ),
                     ),
                   ],
@@ -390,23 +524,23 @@ class _BuyerMarketplaceState extends State<BuyerMarketplace> {
               ],
             ),
           ),
+          // Price and Order Now CTA Button
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                price,
+                '৳${isBn ? BanglaEnglishNumberHelper.toBanglaDigits(price.toStringAsFixed(0)) : price.toStringAsFixed(0)} / $unit',
                 style: GoogleFonts.hindSiliguri(
-                  fontSize: 15,
+                  fontSize: 13,
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xFF1976D2),
+                  color: const Color(0xFF15803D),
                 ),
               ),
               const SizedBox(height: 8),
               GestureDetector(
-                onTap: () => _openQuickBuy(productMap),
+                onTap: () => _openQuickBuy(product, isBn),
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: const Color(0xFF1976D2),
                     borderRadius: BorderRadius.circular(8),
@@ -414,10 +548,10 @@ class _BuyerMarketplaceState extends State<BuyerMarketplace> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.flash_on, color: Colors.amberAccent, size: 14),
+                      const Icon(Icons.flash_on_rounded, color: Colors.amberAccent, size: 14),
                       const SizedBox(width: 4),
                       Text(
-                        'কিনুন',
+                        isBn ? 'কিনুন' : 'Buy',
                         style: GoogleFonts.hindSiliguri(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,

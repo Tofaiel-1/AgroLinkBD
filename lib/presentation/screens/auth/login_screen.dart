@@ -242,6 +242,50 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  UserType _resolveUserType({
+    required UserType existingType,
+    required String domain,
+    required String name,
+    required String email,
+    required UserType selectedRole,
+  }) {
+    final cleanName = name.toLowerCase();
+    final cleanEmail = email.toLowerCase();
+    final isFisheries = domain == 'fisheries' ||
+        cleanName.contains('fish') ||
+        cleanEmail.contains('fish') ||
+        cleanName.contains('মৎস্য') ||
+        cleanName.contains('মাছ');
+
+    if (cleanName.contains('driver') || cleanName.contains('চালক') || cleanName.contains('পরিবহন') || cleanEmail.contains('driver')) {
+      return isFisheries ? UserType.fishDriver : UserType.driver;
+    }
+    if (cleanName.contains('service') || cleanEmail.contains('service') || cleanName.contains('সেবা')) {
+      return isFisheries ? UserType.fishServiceProvider : UserType.serviceProvider;
+    }
+    if (cleanName.contains('buyer') || cleanEmail.contains('buyer') || cleanName.contains('ক্রেতা') || cleanName.contains('পাইকারি')) {
+      return isFisheries ? UserType.fishBuyer : UserType.buyer;
+    }
+    if (cleanName.contains('company') || cleanEmail.contains('company') || cleanName.contains('কোম্পানি')) {
+      return isFisheries ? UserType.fishCompany : UserType.company;
+    }
+    if (cleanName.contains('expert') || cleanEmail.contains('expert') || cleanName.contains('বিশেষজ্ঞ')) {
+      return isFisheries ? UserType.fishExpert : UserType.expert;
+    }
+    if (cleanName.contains('hatchery') || cleanEmail.contains('hatchery') || cleanName.contains('হ্যাচারি')) {
+      return UserType.hatchery;
+    }
+    if (cleanName.contains('farmer') || cleanEmail.contains('farmer') || cleanName.contains('খামারি') || cleanName.contains('চাষী')) {
+      return isFisheries ? UserType.fishFarmer : UserType.farmer;
+    }
+
+    if (selectedRole != UserType.farmer && selectedRole != UserType.fishFarmer && selectedRole != existingType) {
+      return selectedRole;
+    }
+
+    return existingType;
+  }
+
   Future<void> _forgotPassword() async {
     if (_emailController.text.trim().isEmpty) {
       Get.snackbar(
@@ -325,23 +369,22 @@ class _LoginScreenState extends State<LoginScreen> {
       UserModel? userData = await _authService.getUserData(userId);
 
       if (userData != null) {
-        UserType effectiveRole = userData.userType;
+        UserType effectiveRole = _resolveUserType(
+          existingType: userData.userType,
+          domain: userData.domain,
+          name: userData.name,
+          email: userData.email ?? email,
+          selectedRole: _selectedRole,
+        );
         String effectiveDomain = userData.domain;
-
-        final cleanName = userData.name.toLowerCase();
-        final cleanEmail = (userData.email ?? '').toLowerCase();
-        if (cleanName.contains('driver') || cleanName.contains('চালক') || cleanName.contains('পরিবহন') || cleanEmail.contains('driver')) {
-          if (effectiveDomain == 'fisheries' || cleanName.contains('fish') || cleanName.contains('মৎস্য') || cleanName.contains('মাছ')) {
-            effectiveRole = UserType.fishDriver;
-            effectiveDomain = 'fisheries';
-          } else {
-            effectiveRole = UserType.driver;
-            effectiveDomain = 'agriculture';
-          }
-        } else if (_selectedRole != UserType.farmer && _selectedRole != UserType.fishFarmer && _selectedRole != userData.userType) {
-          // Explicit user role choice on login screen
-          effectiveRole = _selectedRole;
-          effectiveDomain = _selectedDomain;
+        if (effectiveRole == UserType.fishServiceProvider ||
+            effectiveRole == UserType.fishDriver ||
+            effectiveRole == UserType.fishBuyer ||
+            effectiveRole == UserType.fishFarmer ||
+            effectiveRole == UserType.fishCompany ||
+            effectiveRole == UserType.fishExpert ||
+            effectiveRole == UserType.hatchery) {
+          effectiveDomain = 'fisheries';
         }
 
         if (effectiveRole != userData.userType || effectiveDomain != userData.domain) {
@@ -379,19 +422,39 @@ class _LoginScreenState extends State<LoginScreen> {
         Get.offAll(() => const AppRouter());
       } else {
         // User authenticated in Auth, but profile document missing in Firestore
-        // Create profile using the user-defined role from this screen
+        // Auto-detect role from email or selected role
+        UserType initialRole = _resolveUserType(
+          existingType: _selectedRole,
+          domain: _selectedDomain,
+          name: email.split('@').first,
+          email: email,
+          selectedRole: _selectedRole,
+        );
+        String initialDomain = _selectedDomain;
+        if (initialRole == UserType.fishServiceProvider ||
+            initialRole == UserType.fishDriver ||
+            initialRole == UserType.fishBuyer ||
+            initialRole == UserType.fishFarmer ||
+            initialRole == UserType.fishCompany ||
+            initialRole == UserType.fishExpert ||
+            initialRole == UserType.hatchery) {
+          initialDomain = 'fisheries';
+        }
+
         final user = UserModel(
           id: userId,
           name: email.split('@').first,
           phone: _phoneController.text.isNotEmpty ? '+880${_phoneController.text.trim()}' : '',
           email: email,
-          userType: _selectedRole,
-          domain: _selectedDomain,
+          userType: initialRole,
+          domain: initialDomain,
           status: UserStatus.active,
           createdAt: DateTime.now(),
         );
         await _authService.createOrUpdateUser(user);
         await userProvider.loadUser(userId);
+        _selectedDomain = initialDomain;
+        _selectedRole = initialRole;
         await _savePreferences();
 
         if (mounted) setState(() => _isLoading = false);
@@ -462,23 +525,22 @@ class _LoginScreenState extends State<LoginScreen> {
       UserModel? userData = await _authService.getUserData(userId);
 
       if (userData != null) {
-        UserType effectiveRole = userData.userType;
+        UserType effectiveRole = _resolveUserType(
+          existingType: userData.userType,
+          domain: userData.domain,
+          name: userData.name,
+          email: userData.email ?? '',
+          selectedRole: _selectedRole,
+        );
         String effectiveDomain = userData.domain;
-
-        final cleanName = userData.name.toLowerCase();
-        final cleanEmail = (userData.email ?? '').toLowerCase();
-        if (cleanName.contains('driver') || cleanName.contains('চালক') || cleanName.contains('পরিবহন') || cleanEmail.contains('driver')) {
-          if (effectiveDomain == 'fisheries' || cleanName.contains('fish') || cleanName.contains('মৎস্য') || cleanName.contains('মাছ')) {
-            effectiveRole = UserType.fishDriver;
-            effectiveDomain = 'fisheries';
-          } else {
-            effectiveRole = UserType.driver;
-            effectiveDomain = 'agriculture';
-          }
-        } else if (_selectedRole != UserType.farmer && _selectedRole != UserType.fishFarmer && _selectedRole != userData.userType) {
-          // Explicit user role choice on login screen
-          effectiveRole = _selectedRole;
-          effectiveDomain = _selectedDomain;
+        if (effectiveRole == UserType.fishServiceProvider ||
+            effectiveRole == UserType.fishDriver ||
+            effectiveRole == UserType.fishBuyer ||
+            effectiveRole == UserType.fishFarmer ||
+            effectiveRole == UserType.fishCompany ||
+            effectiveRole == UserType.fishExpert ||
+            effectiveRole == UserType.hatchery) {
+          effectiveDomain = 'fisheries';
         }
 
         if (effectiveRole != userData.userType || effectiveDomain != userData.domain) {

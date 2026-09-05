@@ -3,19 +3,22 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 import 'package:agrolinkbd/core/providers/service_provider_providers.dart';
-import 'package:agrolinkbd/core/models/service_model.dart';
+import 'package:agrolinkbd/core/models/service_provider_models.dart';
 import 'package:agrolinkbd/presentation/screens/service_provider/manage_services_screen.dart';
 import 'package:agrolinkbd/presentation/screens/service_provider/portfolio_gallery_screen.dart';
+import 'package:agrolinkbd/presentation/screens/service_provider/service_provider_products_screen.dart';
+import 'package:agrolinkbd/presentation/screens/service_provider/add_service_product_screen.dart';
+import 'package:agrolinkbd/presentation/screens/service_provider/service_provider_earnings_screen.dart';
 import 'package:agrolinkbd/presentation/screens/service_provider/premium_features/booking_calendar_screen.dart';
 import 'package:agrolinkbd/presentation/screens/service_provider/premium_features/ai_assistant_screen.dart';
 import 'package:agrolinkbd/presentation/screens/service_provider/premium_features/client_crm_screen.dart';
 import 'package:agrolinkbd/presentation/screens/service_provider/premium_features/tele_consultation_prescription_screen.dart';
 import 'package:agrolinkbd/presentation/screens/service_provider/premium_features/service_provider_lead_engine_screen.dart';
 import 'package:agrolinkbd/presentation/screens/subscription/vip_subscription_paywall_screen.dart';
-import 'package:agrolinkbd/core/services/transaction_service.dart';
-import 'package:agrolinkbd/core/controllers/user_controller.dart';
-import 'dart:ui';
+import 'package:agrolinkbd/presentation/screens/profile/profile_settings.dart';
+import 'package:agrolinkbd/presentation/screens/card/card_preview_screen.dart' as agrolinkbd;
 
 class ServiceProviderDashboard extends ConsumerStatefulWidget {
   const ServiceProviderDashboard({super.key});
@@ -28,34 +31,18 @@ class _ServiceProviderDashboardState extends ConsumerState<ServiceProviderDashbo
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
-  final TransactionService _transactionService = TransactionService();
-  double _balance = 0.0;
 
   @override
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 600),
       vsync: this,
     );
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
     );
     _animationController.forward();
-    _fetchBalance();
-  }
-
-  Future<void> _fetchBalance() async {
-    final userController = Get.isRegistered<UserController>()
-        ? Get.find<UserController>()
-        : Get.put(UserController());
-    String uid = userController.userId.isNotEmpty ? userController.userId : 'service_provider_demo';
-    final balance = await _transactionService.getWalletBalance(uid);
-    if (mounted) {
-      setState(() {
-        _balance = balance;
-      });
-    }
   }
 
   @override
@@ -64,28 +51,40 @@ class _ServiceProviderDashboardState extends ConsumerState<ServiceProviderDashbo
     super.dispose();
   }
 
-  void _showLogoutDialog(BuildContext context) {
+  void _showLogoutDialog(BuildContext context, bool isBn) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('লগ আউট', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
-        content: Text('আপনি কি নিশ্চিত যে আপনি লগ আউট করতে চান?', style: GoogleFonts.poppins()),
+        title: Text(
+          isBn ? 'লগ আউট' : 'Logout',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          isBn ? 'আপনি কি নিশ্চিত যে আপনি লগ আউট করতে চান?' : 'Are you sure you want to log out?',
+          style: GoogleFonts.poppins(),
+        ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context), 
-            child: Text('না', style: GoogleFonts.poppins(color: Colors.grey.shade700))
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(
+              isBn ? 'না' : 'No',
+              style: GoogleFonts.poppins(color: Colors.grey.shade700),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
               Get.offAllNamed('/auth/login');
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.redAccent,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
-            child: Text('হ্যাঁ', style: GoogleFonts.poppins(color: Colors.white)),
+            child: Text(
+              isBn ? 'হ্যাঁ' : 'Yes',
+              style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -94,354 +93,382 @@ class _ServiceProviderDashboardState extends ConsumerState<ServiceProviderDashbo
 
   @override
   Widget build(BuildContext context) {
-    final servicesAsyncValue = ref.watch(providerServicesStreamProvider);
+    final isBn = LanguageProvider.isBn(context);
+    final allProducts = ref.watch(serviceProductProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F4F8),
+      backgroundColor: const Color(0xFFF5F7FB),
       body: FadeTransition(
         opacity: _fadeAnimation,
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
             // ============================================
-            // PREMIUM HEADER
+            // COMPACT HEADER (No wallet/stats cards)
             // ============================================
             SliverAppBar(
-              expandedHeight: 280,
+              expandedHeight: 85,
               pinned: true,
-              stretch: true,
+              stretch: false,
               backgroundColor: const Color(0xFF2B32B2),
               elevation: 0,
               actions: [
                 Container(
-                  margin: const EdgeInsets.only(right: 8),
+                  margin: const EdgeInsets.only(right: 6),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     shape: BoxShape.circle,
                   ),
                   child: IconButton(
-                    icon: const Icon(Icons.settings_rounded, color: Colors.white),
-                    onPressed: () {
-                      // Navigate to settings
-                    },
+                    icon: const Icon(Icons.settings_rounded, color: Colors.white, size: 18),
+                    padding: const EdgeInsets.all(6),
+                    constraints: const BoxConstraints(),
+                    onPressed: () => Get.to(() => const ProfileSettings()),
                   ),
                 ),
                 Container(
-                  margin: const EdgeInsets.only(right: 16),
+                  margin: const EdgeInsets.only(right: 12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     shape: BoxShape.circle,
                   ),
                   child: PopupMenuButton<String>(
                     onSelected: (value) {
-                      if (value == 'logout') _showLogoutDialog(context);
+                      if (value == 'logout') _showLogoutDialog(context, isBn);
+                      if (value == 'card') Get.to(() => const agrolinkbd.CardPreviewScreen());
                     },
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     itemBuilder: (context) => [
-                      PopupMenuItem(value: 'logout', child: Row(
-                        children: [
-                          const Icon(Icons.logout, size: 20, color: Colors.redAccent), 
-                          const SizedBox(width: 12), 
-                          Text('লগ আউট', style: GoogleFonts.poppins(color: Colors.redAccent, fontWeight: FontWeight.bold))
-                        ],
-                      )),
+                      PopupMenuItem(
+                        value: 'card',
+                        child: Row(
+                          children: [
+                            const Icon(Icons.credit_card_rounded, size: 18, color: Color(0xFF2B32B2)),
+                            const SizedBox(width: 10),
+                            Text(isBn ? 'ডিজিটাল কার্ড' : 'Digital ID Card',
+                                style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13)),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'logout',
+                        child: Row(
+                          children: [
+                            const Icon(Icons.logout, size: 18, color: Colors.redAccent),
+                            const SizedBox(width: 10),
+                            Text(isBn ? 'লগ আউট' : 'Logout',
+                                style: GoogleFonts.poppins(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 13)),
+                          ],
+                        ),
+                      ),
                     ],
                     child: const Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: Icon(Icons.more_vert, color: Colors.white),
+                      padding: EdgeInsets.all(6.0),
+                      child: Icon(Icons.more_vert, color: Colors.white, size: 18),
                     ),
                   ),
                 ),
               ],
               flexibleSpace: FlexibleSpaceBar(
-                stretchModes: const [StretchMode.zoomBackground, StretchMode.blurBackground],
-                background: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    // Dynamic Gradient Background
-                    Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Color(0xFF2B32B2), // Deep Blue
-                            Color(0xFF1488CC), // Light Blue
-                          ],
-                        ),
-                      ),
+                background: Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFF2B32B2),
+                        Color(0xFF1488CC),
+                      ],
                     ),
-                    // Decorative Circles
-                    Positioned(
-                      top: -50,
-                      right: -30,
-                      child: Container(
-                        width: 200,
-                        height: 200,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.1),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: -80,
-                      left: -50,
-                      child: Container(
-                        width: 250,
-                        height: 250,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.05),
-                        ),
-                      ),
-                    ),
-                    // Content
-                    SafeArea(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 60, 24, 20),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  width: 65,
-                                  height: 65,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: Colors.white, width: 3),
-                                    boxShadow: [
-                                      BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 5))
-                                    ],
-                                    image: const DecorationImage(
-                                      image: NetworkImage('https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=150'),
-                                      fit: BoxFit.cover,
-                                    ),
+                  ),
+                  child: SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          GestureDetector(
+                            onTap: () => Get.to(() => const agrolinkbd.CardPreviewScreen()),
+                            child: Container(
+                              width: 42,
+                              height: 42,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 2),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.2),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
                                   ),
+                                ],
+                                image: const DecorationImage(
+                                  image: NetworkImage(
+                                      'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1788535890/photo_2026-09-04_21-31-17_mb01h0.jpg'),
+                                  fit: BoxFit.cover,
                                 ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  isBn ? 'স্বাগতম, সেবা প্রদানকারী' : 'Welcome, Service Provider',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    letterSpacing: 0.2,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 2),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.greenAccent.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.5)),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Text(
-                                        'স্বাগতম, সেবা প্রদানকারী',
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 22,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                          letterSpacing: 0.5,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
                                       Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: Colors.greenAccent.withOpacity(0.2),
-                                          borderRadius: BorderRadius.circular(12),
-                                          border: Border.all(color: Colors.greenAccent.withOpacity(0.5)),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Container(
-                                              width: 8, height: 8,
-                                              decoration: const BoxDecoration(color: Colors.greenAccent, shape: BoxShape.circle),
-                                            ),
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              'অনলাইনে আছেন',
-                                              style: GoogleFonts.poppins(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w500),
-                                            ),
-                                          ],
-                                        ),
+                                        width: 6,
+                                        height: 6,
+                                        decoration: const BoxDecoration(
+                                            color: Colors.greenAccent, shape: BoxShape.circle),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        isBn ? 'অনলাইনে আছেন' : 'Online',
+                                        style: GoogleFonts.poppins(
+                                            fontSize: 10, color: Colors.white, fontWeight: FontWeight.w600),
                                       ),
                                     ],
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 28),
-                            // Glassmorphism Stats Bar
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(16),
-                              child: BackdropFilter(
-                                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.15),
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(color: Colors.white.withOpacity(0.2)),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      _buildHeaderStat('ওয়ালেট ব্যালেন্স', '৳ ${_balance.toStringAsFixed(0)}', Icons.account_balance_wallet_rounded),
-                                      Container(width: 1, height: 40, color: Colors.white.withOpacity(0.3)),
-                                      _buildHeaderStat('সেবা সম্পন্ন', '১৪২ টি', Icons.task_alt_rounded),
-                                      Container(width: 1, height: 40, color: Colors.white.withOpacity(0.3)),
-                                      _buildHeaderStat('সক্রিয় বুকিং', '৮ টি', Icons.event_available_rounded),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
 
             // ============================================
-            // ANALYSIS CHART SECTION
+            // COMPACT INCOME ANALYSIS (Small in Size)
             // ============================================
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
+                padding: const EdgeInsets.fromLTRB(14, 8, 14, 2),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          'আয় বিশ্লেষণ',
-                          style: GoogleFonts.poppins(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF1E293B),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5)
-                            ],
-                          ),
-                          child: Text(
-                            'গত ৭ দিন',
-                            style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF2B32B2)),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
-                      height: 220,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF2B32B2).withOpacity(0.08),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      child: LineChart(
-                        LineChartData(
-                          gridData: FlGridData(
-                            show: true,
-                            drawVerticalLine: false,
-                            horizontalInterval: 1000,
-                            getDrawingHorizontalLine: (value) {
-                              return FlLine(
-                                color: Colors.grey.shade200,
-                                strokeWidth: 1,
-                                dashArray: [5, 5],
-                              );
-                            },
-                          ),
-                          titlesData: FlTitlesData(
-                            show: true,
-                            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                            bottomTitles: AxisTitles(
-                              sideTitles: SideTitles(
-                                showTitles: true,
-                                reservedSize: 30,
-                                interval: 1,
-                                getTitlesWidget: (value, meta) {
-                                  const days = ['শনি', 'রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহঃ', 'শুক্র'];
-                                  if (value.toInt() >= 0 && value.toInt() < days.length) {
-                                    return Padding(
-                                      padding: const EdgeInsets.only(top: 8.0),
-                                      child: Text(days[value.toInt()], style: GoogleFonts.poppins(color: Colors.grey.shade600, fontSize: 11)),
-                                    );
-                                  }
-                                  return const Text('');
-                                },
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF2B32B2).withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(6),
                               ),
+                              child: const Icon(Icons.analytics_rounded, size: 14, color: Color(0xFF2B32B2)),
                             ),
-                            leftTitles: AxisTitles(
-                              sideTitles: SideTitles(
-                                showTitles: true,
-                                interval: 2000,
-                                reservedSize: 42,
-                                getTitlesWidget: (value, meta) {
-                                  if (value == 0) return const Text('');
-                                  return Text('${(value / 1000).toStringAsFixed(0)}k', 
-                                    style: GoogleFonts.poppins(color: Colors.grey.shade500, fontSize: 11));
-                                },
-                              ),
-                            ),
-                          ),
-                          borderData: FlBorderData(show: false),
-                          minX: 0,
-                          maxX: 6,
-                          minY: 0,
-                          maxY: 6000,
-                          lineBarsData: [
-                            LineChartBarData(
-                              spots: const [
-                                FlSpot(0, 2000),
-                                FlSpot(1, 3500),
-                                FlSpot(2, 2800),
-                                FlSpot(3, 4800),
-                                FlSpot(4, 3900),
-                                FlSpot(5, 5500),
-                                FlSpot(6, 4200),
-                              ],
-                              isCurved: true,
-                              curveSmoothness: 0.35,
-                              color: const Color(0xFF2B32B2),
-                              barWidth: 4,
-                              isStrokeCapRound: true,
-                              dotData: FlDotData(
-                                show: true,
-                                getDotPainter: (spot, percent, barData, index) {
-                                  return FlDotCirclePainter(
-                                    radius: 4,
-                                    color: Colors.white,
-                                    strokeWidth: 3,
-                                    strokeColor: const Color(0xFF2B32B2),
-                                  );
-                                },
-                              ),
-                              belowBarData: BarAreaData(
-                                show: true,
-                                gradient: LinearGradient(
-                                  colors: [
-                                    const Color(0xFF2B32B2).withOpacity(0.3),
-                                    const Color(0xFF2B32B2).withOpacity(0.0),
-                                  ],
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                ),
+                            const SizedBox(width: 6),
+                            Text(
+                              isBn ? 'আয় বিশ্লেষণ' : 'Income Analysis',
+                              style: GoogleFonts.poppins(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF1E293B),
                               ),
                             ),
                           ],
                         ),
+                        GestureDetector(
+                          onTap: () => Get.to(() => const ServiceProviderEarningsScreen()),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: const Color(0xFF2B32B2).withValues(alpha: 0.2)),
+                              boxShadow: [
+                                BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 4)
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Text(
+                                  isBn ? 'গত ৭ দিন' : 'Last 7 Days',
+                                  style: GoogleFonts.poppins(
+                                      fontSize: 10, fontWeight: FontWeight.w600, color: const Color(0xFF2B32B2)),
+                                ),
+                                const SizedBox(width: 3),
+                                const Icon(Icons.arrow_forward_ios_rounded, size: 9, color: Color(0xFF2B32B2)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    // Small size chart container
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF2B32B2).withValues(alpha: 0.05),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    isBn ? 'সর্বমোট আয়' : 'Total Revenue',
+                                    style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
+                                  ),
+                                  Text(
+                                    isBn ? '৳ ২৬,৭৫০' : '৳ 26,750',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w800,
+                                      color: const Color(0xFF1E293B),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.shade50,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.trending_up_rounded, size: 12, color: Colors.green),
+                                    const SizedBox(width: 2),
+                                    Text(
+                                      isBn ? '+১৮.৫%' : '+18.5%',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.green.shade700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          // Compact Sparkline
+                          SizedBox(
+                            height: 44,
+                            child: LineChart(
+                              LineChartData(
+                                gridData: FlGridData(
+                                  show: true,
+                                  drawVerticalLine: false,
+                                  horizontalInterval: 2000,
+                                  getDrawingHorizontalLine: (value) {
+                                    return FlLine(
+                                      color: Colors.grey.shade100,
+                                      strokeWidth: 1,
+                                    );
+                                  },
+                                ),
+                                titlesData: const FlTitlesData(
+                                  show: false,
+                                ),
+                                borderData: FlBorderData(show: false),
+                                minX: 0,
+                                maxX: 6,
+                                minY: 0,
+                                maxY: 6000,
+                                lineBarsData: [
+                                  LineChartBarData(
+                                    spots: const [
+                                      FlSpot(0, 2000),
+                                      FlSpot(1, 3500),
+                                      FlSpot(2, 2800),
+                                      FlSpot(3, 4800),
+                                      FlSpot(4, 3900),
+                                      FlSpot(5, 5500),
+                                      FlSpot(6, 4200),
+                                    ],
+                                    isCurved: true,
+                                    curveSmoothness: 0.35,
+                                    color: const Color(0xFF2B32B2),
+                                    barWidth: 2.5,
+                                    isStrokeCapRound: true,
+                                    dotData: FlDotData(
+                                      show: true,
+                                      getDotPainter: (spot, percent, barData, index) {
+                                        return FlDotCirclePainter(
+                                          radius: 2.5,
+                                          color: Colors.white,
+                                          strokeWidth: 1.8,
+                                          strokeColor: const Color(0xFF2B32B2),
+                                        );
+                                      },
+                                    ),
+                                    belowBarData: BarAreaData(
+                                      show: true,
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          const Color(0xFF2B32B2).withValues(alpha: 0.22),
+                                          const Color(0xFF2B32B2).withValues(alpha: 0.0),
+                                        ],
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          // Compact Days Row
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: (isBn
+                                    ? ['শনি', 'রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহঃ', 'শুক্র']
+                                    : ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'])
+                                .map((day) => Text(
+                                      day,
+                                      style: GoogleFonts.poppins(
+                                          color: Colors.grey.shade500, fontSize: 8.5, fontWeight: FontWeight.w600),
+                                    ))
+                                .toList(),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -450,107 +477,193 @@ class _ServiceProviderDashboardState extends ConsumerState<ServiceProviderDashbo
             ),
 
             // ============================================
-            // QUICK ACTION GRID
+            // MERGED PREMIUM FEATURES (4 FEATURES IN A LINE)
             // ============================================
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
+                padding: const EdgeInsets.fromLTRB(14, 8, 14, 2),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'প্রিমিয়াম ফিটচার্স',
-                      style: GoogleFonts.poppins(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF1E293B),
-                      ),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF8E2DE2).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Icon(Icons.auto_awesome_rounded, size: 14, color: Color(0xFF8E2DE2)),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          isBn ? 'প্রিমিয়াম ফিচার্স ও গ্যালারি' : 'Premium Features & Gallery',
+                          style: GoogleFonts.poppins(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF1E293B),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 6),
+                    // Grid of 4 features per line - PORTFOLIO IS MOVED TO THE VERY TOP!
                     GridView.count(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
+                      crossAxisCount: 4,
+                      crossAxisSpacing: 6,
+                      mainAxisSpacing: 6,
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      childAspectRatio: 1.1,
+                      childAspectRatio: 0.82,
                       children: [
-                        _buildActionCard(
+                        // #1 PORTFOLIO GALLERY (Higher Up at top row position 1)
+                        _buildMergedFeatureItem(
+                          icon: Icons.photo_library_rounded,
+                          title: isBn ? 'পোর্টফোলিও' : 'Portfolio',
+                          gradient: const [Color(0xFFFF416C), Color(0xFFFF4B2B)],
+                          onTap: () => Get.to(() => const PortfolioGalleryScreen()),
+                        ),
+                        _buildMergedFeatureItem(
+                          icon: Icons.design_services_rounded,
+                          title: isBn ? 'সেবা পরিচালনা' : 'Manage',
+                          gradient: const [Color(0xFF6A11CB), Color(0xFF2575FC)],
+                          onTap: () => Get.to(() => const ManageServicesScreen()),
+                        ),
+                        _buildMergedFeatureItem(
                           icon: Icons.medical_services_rounded,
-                          title: 'ডিজিটাল প্রেসক্রিপশন',
-                          subtitle: 'ডোজ ও কনসালটেন্সি',
+                          title: isBn ? 'প্রেসক্রিপশন' : 'Digital Rx',
                           gradient: const [Color(0xFF004D40), Color(0xFF00796B)],
                           onTap: () => Get.to(() => const TeleConsultationPrescriptionScreen()),
                         ),
-                        _buildActionCard(
-                          icon: Icons.bolt_rounded,
-                          title: 'ভিআইপি লিড ইঞ্জিন',
-                          subtitle: '৩x দ্রুত কাজ ও বিড',
-                          gradient: const [Color(0xFF283593), Color(0xFF3F51B5)],
-                          onTap: () => Get.to(() => const ServiceProviderLeadEngineScreen()),
-                        ),
-                        _buildActionCard(
-                          icon: Icons.calendar_month_rounded,
-                          title: 'বুকিং ক্যালেন্ডার',
-                          subtitle: 'অর্ডার মেইনটেইন',
-                          gradient: const [Color(0xFF11998E), Color(0xFF38EF7D)],
-                          onTap: () => Get.to(() => const BookingCalendarScreen()),
-                        ),
-                        _buildActionCard(
-                          icon: Icons.smart_toy_rounded,
-                          title: 'স্মার্ট কনসালটেন্ট',
-                          subtitle: 'এআই সাপোর্ট',
-                          gradient: const [Color(0xFF8E2DE2), Color(0xFF4A00E0)],
-                          onTap: () => Get.to(() => const AiAssistantScreen()),
-                        ),
-                        _buildActionCard(
+                        _buildMergedFeatureItem(
                           icon: Icons.people_alt_rounded,
-                          title: 'ক্লায়েন্ট CRM',
-                          subtitle: 'কাস্টমার মেসেজিং',
+                          title: isBn ? 'গ্রাহক CRM' : 'Client CRM',
                           gradient: const [Color(0xFF00B4DB), Color(0xFF0083B0)],
                           onTap: () => Get.to(() => const ClientCrmScreen()),
                         ),
-                        _buildActionCard(
+                        _buildMergedFeatureItem(
+                          icon: Icons.calendar_month_rounded,
+                          title: isBn ? 'ক্যালেন্ডার' : 'Calendar',
+                          gradient: const [Color(0xFF11998E), Color(0xFF38EF7D)],
+                          onTap: () => Get.to(() => const BookingCalendarScreen()),
+                        ),
+                        _buildMergedFeatureItem(
+                          icon: Icons.smart_toy_rounded,
+                          title: isBn ? 'স্মার্ট এআই' : 'Smart AI',
+                          gradient: const [Color(0xFF8E2DE2), Color(0xFF4A00E0)],
+                          onTap: () => Get.to(() => const AiAssistantScreen()),
+                        ),
+                        _buildMergedFeatureItem(
+                          icon: Icons.bolt_rounded,
+                          title: isBn ? 'ভিআইপি লিড' : 'VIP Leads',
+                          gradient: const [Color(0xFF283593), Color(0xFF3F51B5)],
+                          onTap: () => Get.to(() => const ServiceProviderLeadEngineScreen()),
+                        ),
+                        _buildMergedFeatureItem(
                           icon: Icons.workspace_premium_rounded,
-                          title: 'AgroLink VIP Pass',
-                          subtitle: 'আপগ্রেড করুন 👑',
+                          title: isBn ? 'ভিআইপি পাস' : 'VIP Pass',
                           gradient: const [Color(0xFFF2994A), Color(0xFFF2C94C)],
                           onTap: () => Get.to(() => const VipSubscriptionPaywallScreen()),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 24),
-                    Text(
-                      'কুইক অ্যাকশন',
-                      style: GoogleFonts.poppins(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF1E293B),
-                      ),
+                  ],
+                ),
+              ),
+            ),
+
+            // ============================================
+            // MY PRODUCTS (আমার পণ্য) (1 LINE = 4 + ADD BUTTON)
+            // ============================================
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(14, 8, 14, 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF0288D1).withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Icon(Icons.inventory_2_rounded, size: 14, color: Color(0xFF0288D1)),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              isBn ? 'আমার পণ্য' : 'My Products',
+                              style: GoogleFonts.poppins(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF1E293B),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            ElevatedButton.icon(
+                              onPressed: () => Get.to(() => const AddServiceProductScreen()),
+                              icon: const Icon(Icons.add_circle_rounded, size: 13, color: Colors.white),
+                              label: Text(
+                                isBn ? '+ পণ্য যোগ' : '+ Add',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF2B32B2),
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                elevation: 1,
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            OutlinedButton.icon(
+                              onPressed: () => Get.to(() => const ServiceProviderProductsScreen()),
+                              icon: const Icon(Icons.arrow_forward_rounded, size: 11, color: Color(0xFF2B32B2)),
+                              label: Text(
+                                isBn ? 'সব দেখুন' : 'View All',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF2B32B2),
+                                ),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(color: Color(0xFF2B32B2), width: 1.2),
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 6),
+                    // 1 Line = 4 Products Grid
                     GridView.count(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
+                      crossAxisCount: 4,
+                      crossAxisSpacing: 6,
+                      mainAxisSpacing: 6,
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      childAspectRatio: 1.1,
+                      childAspectRatio: 0.65,
                       children: [
-                        _buildActionCard(
-                          icon: Icons.design_services_rounded,
-                          title: 'সেবা পরিচালনা',
-                          subtitle: 'নতুন সেবা যোগ করুন',
-                          gradient: const [Color(0xFF6A11CB), Color(0xFF2575FC)],
-                          onTap: () => Get.to(() => const ManageServicesScreen()),
-                        ),
-                        _buildActionCard(
-                          icon: Icons.photo_library_rounded,
-                          title: 'পোর্টফোলিও',
-                          subtitle: 'আপনার কাজ দেখান',
-                          gradient: const [Color(0xFFFF416C), Color(0xFFFF4B2B)],
-                          onTap: () => Get.to(() => const PortfolioGalleryScreen()),
-                        ),
+                        ...allProducts.take(3).map((p) => _buildProductItemCard(p, isBn)),
+                        // 4th slot: Add product quick action card
+                        _buildAddProductCard(isBn),
                       ],
                     ),
                   ],
@@ -558,177 +671,157 @@ class _ServiceProviderDashboardState extends ConsumerState<ServiceProviderDashbo
               ),
             ),
 
-            // ============================================
-            // ACTIVE SERVICES OVERVIEW
-            // ============================================
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'আপনার সক্রিয় সেবা',
-                      style: GoogleFonts.poppins(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF1E293B),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () => Get.to(() => const ManageServicesScreen()),
-                      style: TextButton.styleFrom(
-                        backgroundColor: const Color(0xFF2B32B2).withOpacity(0.1),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      ),
-                      child: Text('সব দেখুন', style: GoogleFonts.poppins(color: const Color(0xFF2B32B2), fontWeight: FontWeight.w600)),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            
-            SliverToBoxAdapter(
-              child: servicesAsyncValue.when(
-                data: (services) {
-                  if (services.isEmpty) {
-                    return Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 20),
-                      padding: const EdgeInsets.all(32),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 15)],
-                      ),
-                      child: Column(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF2B32B2).withOpacity(0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(Icons.add_photo_alternate_rounded, size: 48, color: Color(0xFF2B32B2)),
-                          ),
-                          const SizedBox(height: 16),
-                          Text('এখনো কোনো সেবা যোগ করেননি', style: GoogleFonts.poppins(color: Colors.grey.shade600, fontSize: 14)),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: () => Get.to(() => const ManageServicesScreen()),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF2B32B2),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                            ),
-                            child: const Text('নতুন সেবা যোগ করুন', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-
-                  return SizedBox(
-                    height: 220,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: services.length,
-                      itemBuilder: (context, index) {
-                        return _buildServicePreviewCard(services[index]);
-                      },
-                    ),
-                  );
-                },
-                loading: () => const Center(child: Padding(
-                  padding: EdgeInsets.all(20.0),
-                  child: CircularProgressIndicator(color: Color(0xFF2B32B2)),
-                )),
-                error: (e, s) => Center(child: Text('Error: $e')),
-              ),
-            ),
-
-            const SliverToBoxAdapter(child: SizedBox(height: 80)),
+            const SliverToBoxAdapter(child: SizedBox(height: 12)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeaderStat(String label, String value, IconData icon, {Color? iconColor}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Icon(icon, color: iconColor ?? Colors.white, size: 22),
-        const SizedBox(height: 6),
-        Text(value, style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-        const SizedBox(height: 2),
-        Text(label, style: GoogleFonts.poppins(fontSize: 11, color: Colors.white.withOpacity(0.8))),
-      ],
-    );
-  }
-
-  Widget _buildActionCard({
+  /// Merged 4-in-a-line feature card
+  Widget _buildMergedFeatureItem({
     required IconData icon,
     required String title,
-    required String subtitle,
     required List<Color> gradient,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: gradient.first.withOpacity(0.15),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
+              color: gradient.first.withValues(alpha: 0.1),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
-        child: Stack(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Positioned(
-              right: -15,
-              top: -15,
-              child: Container(
-                width: 70,
-                height: 70,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: gradient.first.withOpacity(0.1),
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: gradient,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: gradient.first.withValues(alpha: 0.3),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
+              child: Icon(icon, color: Colors.white, size: 16),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 9.5,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF1E293B),
+                height: 1.1,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Product Item Card for 1-line 4-grid with Real Product Image
+  Widget _buildProductItemCard(ServiceProduct product, bool isBn) {
+    final hasImage = product.images.isNotEmpty && product.images.first.isNotEmpty;
+
+    return GestureDetector(
+      onTap: () => Get.to(() => const ServiceProviderProductsScreen()),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 5,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image Container with Real Product Image
+            Container(
+              height: 52,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: const Color(0xFF2B32B2).withValues(alpha: 0.07),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
+                image: hasImage
+                    ? DecorationImage(
+                        image: NetworkImage(product.images.first),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
+              ),
+              child: !hasImage
+                  ? Center(
+                      child: Icon(
+                        _getProductCategoryIcon(product.category),
+                        color: const Color(0xFF2B32B2),
+                        size: 22,
+                      ),
+                    )
+                  : null,
             ),
             Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(4.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(colors: gradient, begin: Alignment.topLeft, end: Alignment.bottomRight),
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: [
-                        BoxShadow(color: gradient.first.withOpacity(0.4), blurRadius: 8, offset: const Offset(0, 4)),
-                      ]
+                  Text(
+                    product.getName(isBn),
+                    style: GoogleFonts.poppins(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF1E293B),
+                      height: 1.1,
                     ),
-                    child: Icon(icon, color: Colors.white, size: 26),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const Spacer(),
+                  const SizedBox(height: 1),
                   Text(
-                    title,
-                    style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.bold, color: const Color(0xFF1E293B)),
+                    '৳${product.price.toStringAsFixed(0)}',
+                    style: GoogleFonts.poppins(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF2B32B2),
+                    ),
                   ),
-                  const SizedBox(height: 4),
                   Text(
-                    subtitle,
-                    style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
+                    '${product.stockQuantity} ${isBn ? 'মজুদ' : 'Stock'}',
+                    style: GoogleFonts.poppins(
+                      fontSize: 8,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
@@ -739,85 +832,61 @@ class _ServiceProviderDashboardState extends ConsumerState<ServiceProviderDashbo
     );
   }
 
-  Widget _buildServicePreviewCard(ServiceModel service) {
-    return Container(
-      width: 170,
-      margin: const EdgeInsets.only(left: 4, right: 12, bottom: 10, top: 4),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+  /// Add product tile for the 4th slot
+  Widget _buildAddProductCard(bool isBn) {
+    return GestureDetector(
+      onTap: () => Get.to(() => const AddServiceProductScreen()),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF2B32B2).withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: const Color(0xFF2B32B2).withValues(alpha: 0.4),
+            style: BorderStyle.solid,
+            width: 1.2,
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            height: 110,
-            decoration: BoxDecoration(
-              color: const Color(0xFF2B32B2).withOpacity(0.1),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-              image: service.imageUrl != null && service.imageUrl!.isNotEmpty
-                  ? DecorationImage(
-                      image: NetworkImage(service.imageUrl!),
-                      fit: BoxFit.cover,
-                    )
-                  : null,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: const BoxDecoration(
+                color: Color(0xFF2B32B2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.add_rounded, color: Colors.white, size: 16),
             ),
-            child: service.imageUrl == null || service.imageUrl!.isEmpty
-                ? const Center(child: Icon(Icons.design_services_rounded, size: 40, color: Color(0xFF2B32B2)))
-                : null,
-          ),
-          Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  service.name,
-                  style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w700, color: const Color(0xFF1E293B)),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '৳${service.price.toStringAsFixed(0)} ${service.priceUnit}',
-                  style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF1488CC)),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    const Icon(Icons.star_rounded, size: 14, color: Colors.amber),
-                    const SizedBox(width: 4),
-                    Text('${service.rating}', style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.grey.shade700)),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: service.status == ServiceStatus.active ? Colors.green.shade50 : Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        service.status == ServiceStatus.active ? 'সক্রিয়' : 'নিষ্ক্রিয়',
-                        style: GoogleFonts.poppins(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: service.status == ServiceStatus.active ? Colors.green.shade700 : Colors.grey.shade600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+            const SizedBox(height: 4),
+            Text(
+              isBn ? '+ পণ্য যোগ' : '+ Add',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 9.5,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF2B32B2),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
+  }
+
+  IconData _getProductCategoryIcon(ServiceProductCategory category) {
+    switch (category) {
+      case ServiceProductCategory.fertilizer:
+        return Icons.eco_rounded;
+      case ServiceProductCategory.pesticide:
+        return Icons.sanitizer_rounded;
+      case ServiceProductCategory.tractor:
+        return Icons.agriculture_rounded;
+      case ServiceProductCategory.seed:
+        return Icons.grass_rounded;
+      case ServiceProductCategory.equipment:
+        return Icons.home_repair_service_rounded;
+      case ServiceProductCategory.advisory:
+        return Icons.assignment_rounded;
+    }
   }
 }

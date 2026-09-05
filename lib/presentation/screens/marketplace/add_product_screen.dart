@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
@@ -22,19 +23,27 @@ class _AddProductScreenState extends State<AddProductScreen> {
   List<MarketPriceModel> _marketPrices = [];
   MarketPriceModel? _matchedCommodity;
   final MarketPriceService _marketPriceService = MarketPriceService();
+  StreamSubscription<List<MarketPriceModel>>? _marketPriceSub;
 
   @override
   void initState() {
     super.initState();
-    _loadMarketPrices();
+    _subscribeToMarketPrices();
     _nameController.addListener(_onNameChanged);
   }
 
-  Future<void> _loadMarketPrices() async {
-    _marketPrices = await _marketPriceService.fetchCurrentMarketPrices();
+  void _subscribeToMarketPrices() {
+    _marketPriceSub = _marketPriceService.streamCurrentMarketPrices().listen((prices) {
+      if (mounted) {
+        setState(() {
+          _marketPrices = prices;
+          _updateMatch();
+        });
+      }
+    });
   }
 
-  void _onNameChanged() {
+  void _updateMatch() {
     final text = _nameController.text.trim().toLowerCase();
     if (text.isEmpty) {
       if (_matchedCommodity != null) {
@@ -42,16 +51,14 @@ class _AddProductScreenState extends State<AddProductScreen> {
       }
       return;
     }
-
     MarketPriceModel? bestMatch;
     for (var commodity in _marketPrices) {
-      if (text.contains(commodity.productName.toLowerCase()) || 
+      if (text.contains(commodity.productName.toLowerCase()) ||
           commodity.productName.toLowerCase().contains(text)) {
         bestMatch = commodity;
         break;
       }
     }
-
     if (bestMatch != _matchedCommodity) {
       setState(() {
         _matchedCommodity = bestMatch;
@@ -59,8 +66,14 @@ class _AddProductScreenState extends State<AddProductScreen> {
     }
   }
 
+  void _onNameChanged() {
+    _updateMatch();
+  }
+
   @override
   void dispose() {
+    _marketPriceSub?.cancel();
+    _nameController.removeListener(_onNameChanged);
     _nameController.dispose();
     _priceController.dispose();
     super.dispose();
@@ -192,18 +205,64 @@ class _AddProductScreenState extends State<AddProductScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                             decoration: BoxDecoration(
-                              color: Colors.blue.shade50,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.blue.shade200),
+                              color: const Color(0xFFEFF6FF),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: const Color(0xFF93C5FD)),
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.info_outline, size: 16, color: Colors.blue),
+                                Icon(
+                                  _matchedCommodity!.trend == PriceTrend.up
+                                      ? Icons.trending_up_rounded
+                                      : _matchedCommodity!.trend == PriceTrend.down
+                                          ? Icons.trending_down_rounded
+                                          : Icons.info_outline_rounded,
+                                  size: 18,
+                                  color: _matchedCommodity!.trend == PriceTrend.up
+                                      ? const Color(0xFFEF4444)
+                                      : const Color(0xFF2563EB),
+                                ),
                                 const SizedBox(width: 8),
                                 Expanded(
-                                  child: Text(
-                                    'Agrolink Base Price: ৳${_matchedCommodity!.currentPrice} / ${_matchedCommodity!.unit}',
-                                    style: GoogleFonts.poppins(fontSize: 12, color: Colors.blue.shade800, fontWeight: FontWeight.w600),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'বাজার রেট (লাইভ): ৳${_matchedCommodity!.currentPrice.toStringAsFixed(0)} / ${_matchedCommodity!.unit}',
+                                        style: GoogleFonts.hindSiliguri(
+                                          fontSize: 12.5,
+                                          color: const Color(0xFF1E3A8A),
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      Text(
+                                        'সুপার এডমিন কর্তৃক নির্ধারিত বর্তমান বেস প্রাইস',
+                                        style: GoogleFonts.hindSiliguri(
+                                          fontSize: 10,
+                                          color: const Color(0xFF3B82F6),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                GestureDetector(
+                                  onTap: () {
+                                    _priceController.text = _matchedCommodity!.currentPrice.toStringAsFixed(0);
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF2563EB),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      'দর বসান',
+                                      style: GoogleFonts.hindSiliguri(
+                                        color: Colors.white,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ],

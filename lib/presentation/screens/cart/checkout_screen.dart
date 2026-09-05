@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:agrolinkbd/core/providers/cart_provider.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
+import 'package:agrolinkbd/core/utils/number_converter.dart';
 import 'package:agrolinkbd/core/services/sslcommerz_service.dart';
 import 'package:agrolinkbd/core/services/order_service.dart';
 import 'package:agrolinkbd/core/models/order_model.dart';
@@ -190,6 +192,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isBn = LanguageProvider.isBn(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final cartProvider = Provider.of<CartProvider>(context);
     final subtotal = cartProvider.totalPrice;
     const delivery = 75;
@@ -197,7 +201,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Checkout'),
+        title: Text(isBn ? 'চেকআউট ও পেমেন্ট 💳' : 'Checkout & Payment 💳'),
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -206,12 +210,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             // Order Summary
             Container(
               padding: const EdgeInsets.all(16),
-              color: Colors.grey.shade50,
+              color: isDark ? const Color(0xFF1E293B) : Colors.grey.shade50,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Order Summary',
+                    isBn ? 'অর্ডার সারাংশ' : 'Order Summary',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -220,9 +224,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Subtotal',
+                      Text(isBn ? 'সাবটোটাল' : 'Subtotal',
                           style: Theme.of(context).textTheme.bodyMedium),
-                      Text('৳${subtotal.toStringAsFixed(0)}',
+                      Text(
+                          isBn
+                              ? '৳${BanglaEnglishNumberHelper.toBanglaDigits(subtotal.toStringAsFixed(0))}'
+                              : '৳${subtotal.toStringAsFixed(0)}',
                           style: Theme.of(context).textTheme.bodyMedium),
                     ],
                   ),
@@ -230,24 +237,30 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Delivery',
+                      Text(isBn ? 'ডেলিভারি চার্জ' : 'Delivery',
                           style: Theme.of(context).textTheme.bodyMedium),
-                      Text('৳$delivery',
+                      Text(
+                          isBn
+                              ? '৳${BanglaEnglishNumberHelper.toBanglaDigits(delivery)}'
+                              : '৳$delivery',
                           style: Theme.of(context).textTheme.bodyMedium),
                     ],
                   ),
                   const SizedBox(height: 12),
-                  Divider(color: Colors.grey.shade400),
+                  Divider(color: isDark ? const Color(0xFF334155) : Colors.grey.shade400),
                   const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Total',
+                      Text(isBn ? 'সর্বমোট প্রদেয়' : 'Total',
                           style: Theme.of(context)
                               .textTheme
                               .titleMedium
                               ?.copyWith(fontWeight: FontWeight.bold)),
-                      Text('৳${total.toStringAsFixed(0)}',
+                      Text(
+                          isBn
+                              ? '৳${BanglaEnglishNumberHelper.toBanglaDigits(total.toStringAsFixed(0))}'
+                              : '৳${total.toStringAsFixed(0)}',
                           style:
                               Theme.of(context).textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.bold,
@@ -268,7 +281,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Delivery Information',
+                      isBn ? 'ডেলিভারি ও যোগাযোগের তথ্য' : 'Delivery Information',
                       style: Theme.of(context)
                           .textTheme
                           .titleMedium
@@ -280,7 +293,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     TextFormField(
                       controller: _nameController,
                       decoration: InputDecoration(
-                        labelText: 'Full Name',
+                        labelText: isBn ? 'আপনার পুরো নাম' : 'Full Name',
                         prefixIcon: const Icon(Icons.person_outline),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
@@ -288,7 +301,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       ),
                       validator: (value) {
                         if (value?.isEmpty ?? true) {
-                          return 'Please enter your name';
+                          return isBn ? 'দয়া করে নাম লিখুন' : 'Please enter your name';
                         }
                         return null;
                       },
@@ -298,8 +311,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     // Phone
                     TextFormField(
                       controller: _phoneController,
+                      keyboardType: TextInputType.phone,
                       decoration: InputDecoration(
-                        labelText: 'Phone Number',
+                        labelText: isBn ? 'মোবাইল নম্বর' : 'Phone Number',
                         prefixIcon: const Icon(Icons.phone_outlined),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
@@ -307,7 +321,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       ),
                       validator: (value) {
                         if (value?.isEmpty ?? true) {
-                          return 'Please enter your phone';
+                          return isBn ? 'মোবাইল নম্বর লিখুন' : 'Please enter your phone';
                         }
                         return null;
                       },
@@ -319,7 +333,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       controller: _addressController,
                       maxLines: 2,
                       decoration: InputDecoration(
-                        labelText: 'Delivery Address',
+                        labelText: isBn ? 'ডেলিভারি ঠিকানা' : 'Delivery Address',
                         prefixIcon: const Icon(Icons.location_on_outlined),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
@@ -327,7 +341,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       ),
                       validator: (value) {
                         if (value?.isEmpty ?? true) {
-                          return 'Please enter your address';
+                          return isBn ? 'ডেলিভারি ঠিকানা দিন' : 'Please enter your address';
                         }
                         return null;
                       },
@@ -338,7 +352,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     TextFormField(
                       controller: _areaController,
                       decoration: InputDecoration(
-                        labelText: 'Area / District',
+                        labelText: isBn ? 'উপজেলা / জেলা' : 'Area / District',
                         prefixIcon: const Icon(Icons.location_city_outlined),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
@@ -346,7 +360,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       ),
                       validator: (value) {
                         if (value?.isEmpty ?? true) {
-                          return 'Please enter area/district';
+                          return isBn ? 'উপজেলা বা জেলা লিখুন' : 'Please enter area/district';
                         }
                         return null;
                       },
@@ -358,7 +372,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       controller: _notesController,
                       maxLines: 2,
                       decoration: InputDecoration(
-                        labelText: 'Special Instructions (Optional)',
+                        labelText: isBn ? 'বিশেষ নির্দেশনা (ঐচ্ছিক)' : 'Special Instructions (Optional)',
                         prefixIcon: const Icon(Icons.note_outlined),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
@@ -369,7 +383,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
                     // Payment Method
                     Text(
-                      'Payment Method',
+                      isBn ? 'পেমেন্ট মাধ্যম বেছে নিন' : 'Payment Method',
                       style: Theme.of(context)
                           .textTheme
                           .titleMedium
@@ -378,14 +392,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     const SizedBox(height: 12),
                     Container(
                       decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade300),
+                        border: Border.all(color: isDark ? const Color(0xFF334155) : Colors.grey.shade300),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Column(
                         children: [
                           RadioListTile<String>(
-                            title: const Text('SSLCommerz Secure Gateway ⭐'),
-                            subtitle: const Text('Cards, bKash, Nagad, Rocket, Net Banking'),
+                            title: Text(isBn ? 'SSLCommerz নিরাপদ পেমেন্ট গেটওয়ে ⭐' : 'SSLCommerz Secure Gateway ⭐'),
+                            subtitle: Text(isBn ? 'বিকাশ, নগদ, রকেট, ভিসা/মাস্টারকার্ড' : 'Cards, bKash, Nagad, Rocket, Net Banking'),
                             value: 'sslcommerz',
                             groupValue: _paymentMethod,
                             activeColor: const Color(0xFF2E7D32),
@@ -393,10 +407,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               setState(() => _paymentMethod = value ?? 'sslcommerz');
                             },
                           ),
-                          Divider(height: 0, color: Colors.grey.shade300),
+                          Divider(height: 0, color: isDark ? const Color(0xFF334155) : Colors.grey.shade300),
                           RadioListTile<String>(
-                            title: const Text('Cash on Delivery'),
-                            subtitle: const Text('Pay when product arrives'),
+                            title: Text(isBn ? 'ক্যাশ অন ডেলিভারি (হাতে পেয়ে টাকা দিন)' : 'Cash on Delivery'),
+                            subtitle: Text(isBn ? 'পণ্য হাতে পেয়ে মূল্য পরিশোধ করুন' : 'Pay when product arrives'),
                             value: 'cash',
                             groupValue: _paymentMethod,
                             activeColor: const Color(0xFF2E7D32),
@@ -417,6 +431,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF2E7D32),
                           padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                         child: _isProcessing
                             ? const SizedBox(
@@ -428,9 +445,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Text(
-                                'Place Order',
-                                style: TextStyle(
+                            : Text(
+                                isBn ? 'অর্ডার ও পেমেন্ট নিশ্চিত করুন 🚀' : 'Place Order & Pay 🚀',
+                                style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
                                   color: Colors.white,

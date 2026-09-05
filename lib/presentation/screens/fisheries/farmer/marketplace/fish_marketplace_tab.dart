@@ -11,6 +11,9 @@ import 'package:agrolinkbd/presentation/screens/fisheries/farmer/contracts/farme
 import 'package:agrolinkbd/presentation/screens/marketplace/fish_marketplace_screen.dart';
 import 'package:agrolinkbd/presentation/screens/fisheries/premium/fish_price_prediction_screen.dart';
 import 'package:agrolinkbd/presentation/screens/fisheries/premium/vip_wholesaler_directory_screen.dart';
+import 'package:agrolinkbd/presentation/widgets/farmer_market_price_advisory_card.dart';
+import 'package:agrolinkbd/core/services/market_price_advisory_service.dart';
+import 'package:agrolinkbd/core/models/market_price_model.dart';
 
 class FishMarketplaceTab extends StatefulWidget {
   const FishMarketplaceTab({super.key});
@@ -144,6 +147,13 @@ class _FishMarketplaceTabState extends State<FishMarketplaceTab> with SingleTick
 
         // 4. Dynamic Content: Active Lots or Sales History
         if (_selectedHubView == 'active') ...[
+          SliverToBoxAdapter(
+            child: FarmerMarketPriceAdvisoryCard(
+              farmerId: _marketplaceController.currentUserId,
+              isFishFarmer: true,
+              margin: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+            ),
+          ),
           SliverToBoxAdapter(
             child: _buildMarketAdvisoryBanner(context, isDark, isBn),
           ),
@@ -883,6 +893,9 @@ class _FishMarketplaceTabState extends State<FishMarketplaceTab> with SingleTick
                         ],
                       ),
 
+                      // Super Admin Benchmark Comparison & 1-tap Price Sync
+                      _buildLotMarketPriceSyncWidget(item, isDark, isBn),
+
                       const SizedBox(height: 14),
 
                       // Action Buttons: Edit, Mark Sold, Delete
@@ -1510,6 +1523,146 @@ class _FishMarketplaceTabState extends State<FishMarketplaceTab> with SingleTick
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildLotMarketPriceSyncWidget(MarketplaceItemModel item, bool isDark, bool isBn) {
+    return StreamBuilder<List<MarketPriceModel>>(
+      stream: MarketPriceAdvisoryService().streamBenchmarks(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const SizedBox.shrink();
+        final benchmarks = snapshot.data!;
+        final matched = MarketPriceAdvisoryService().findMatchingBenchmark(
+          item.fishType,
+          benchmarks,
+          category: 'fish',
+        );
+
+        if (matched == null || matched.currentPrice <= 0) return const SizedBox.shrink();
+
+        final bench = matched.currentPrice;
+        final currentRate = item.pricePerKg;
+        final diff = (currentRate - bench) / bench;
+
+        if (diff.abs() <= 0.05) {
+          return Container(
+            margin: const EdgeInsets.only(top: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.green.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.check_circle_outline, size: 14, color: Colors.green),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    isBn
+                        ? '✓ বর্তমান বাজারদর (৳${bench.toStringAsFixed(0)}/কেজি) অনুযায়ী অপটিমাল'
+                        : '✓ Optimal rate matched with market (৳${bench.toStringAsFixed(0)}/kg)',
+                    style: GoogleFonts.hindSiliguri(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.green.shade800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final isHigh = diff > 0.05;
+        final diffAmount = (currentRate - bench).abs().toStringAsFixed(0);
+        final badgeColor = isHigh ? Colors.amber.shade900 : const Color(0xFF0284C7);
+        final bgColor = isHigh
+            ? (isDark ? const Color(0xFF2A2010) : const Color(0xFFFFF8E1))
+            : (isDark ? const Color(0xFF0C2433) : const Color(0xFFE0F2FE));
+
+        return Container(
+          margin: const EdgeInsets.only(top: 8),
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: badgeColor.withValues(alpha: 0.4)),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                isHigh ? Icons.trending_down_rounded : Icons.trending_up_rounded,
+                size: 16,
+                color: badgeColor,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isHigh
+                          ? (isBn ? 'বাজারের চেয়ে ৳$diffAmount বেশি (কমানোর সুপারিশ)' : '৳$diffAmount above market (Decrease advised)')
+                          : (isBn ? 'বাজারের চেয়ে ৳$diffAmount কম (বাড়ানোর সুযোগ)' : '৳$diffAmount below market (Increase advised)'),
+                      style: GoogleFonts.hindSiliguri(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: badgeColor,
+                      ),
+                    ),
+                    Text(
+                      isBn
+                          ? 'বর্তমান বেঞ্চমার্ক রেট: ৳${bench.toStringAsFixed(0)}/কেজি'
+                          : 'Benchmark Rate: ৳${bench.toStringAsFixed(0)}/kg',
+                      style: GoogleFonts.hindSiliguri(
+                        fontSize: 10,
+                        color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 6),
+              ElevatedButton(
+                onPressed: () async {
+                  final ok = await MarketPriceAdvisoryService().applySuggestedPrice(
+                    itemId: item.id,
+                    newPrice: bench,
+                    isFishLot: true,
+                  );
+                  if (ok) {
+                    Get.snackbar(
+                      isBn ? 'দর আপডেট হয়েছে' : 'Rate Updated',
+                      isBn
+                          ? '${item.fishType}-এর দর ৳${bench.toStringAsFixed(0)}/কেজি নির্ধারণ করা হয়েছে'
+                          : 'Updated rate to ৳${bench.toStringAsFixed(0)}/kg',
+                      backgroundColor: const Color(0xFF004D40),
+                      colorText: Colors.white,
+                      snackPosition: SnackPosition.BOTTOM,
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: badgeColor,
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                ),
+                child: Text(
+                  isBn ? '৳${bench.toStringAsFixed(0)} করুন' : 'Set ৳${bench.toStringAsFixed(0)}',
+                  style: GoogleFonts.hindSiliguri(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

@@ -25,6 +25,10 @@ import 'package:agrolinkbd/presentation/screens/admin/admin_financial_requests_s
 import 'package:agrolinkbd/presentation/screens/admin/admin_reports_screen.dart';
 import 'package:agrolinkbd/presentation/screens/admin/admin_pin_reset_screen.dart';
 import 'package:agrolinkbd/presentation/screens/admin/admin_user_disputes_screen.dart';
+import 'package:agrolinkbd/presentation/screens/admin/admin_price_control_screen.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:agrolinkbd/core/services/admin_price_command_service.dart';
+import 'package:agrolinkbd/presentation/screens/admin/widgets/admin_quick_price_command_sheet.dart';
 
 class PulseEffect extends StatefulWidget {
   final Widget child;
@@ -389,6 +393,8 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildHeader(),
+            const SizedBox(height: 20),
+            _buildLivePriceControlShortcutCard(),
             const SizedBox(height: 24),
             _buildQuickActionsGrid(crossAxisCount: 4),
             const SizedBox(height: 24),
@@ -419,6 +425,8 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildHeader(),
+                  const SizedBox(height: 24),
+                  _buildLivePriceControlShortcutCard(),
                   const SizedBox(height: 32),
                   _buildQuickActionsGrid(crossAxisCount: 4),
                   const SizedBox(height: 32),
@@ -564,6 +572,8 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
       {'icon': Icons.lock_reset, 'label': 'PIN Resets', 'action': 'pin_resets'},
       {'icon': Icons.inventory_2_rounded, 'label': 'Marketplace', 'action': 'market'},
       {'icon': Icons.receipt_long_rounded, 'label': 'Transactions', 'action': 'trans'},
+      {'icon': Icons.price_change_rounded, 'label': 'Price Control', 'action': 'price_control'},
+      {'icon': Icons.bolt_rounded, 'label': 'Price Command', 'action': 'price_command'},
     ];
 
     return Column(
@@ -586,6 +596,10 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
                 Get.to(() => const AdminPinResetScreen());
               } else if (entry.value['action'] == 'trans') {
                 Get.to(() => AdminTransactionAnalyticsScreen());
+              } else if (entry.value['action'] == 'price_control') {
+                Get.to(() => const AdminPriceControlScreen());
+              } else if (entry.value['action'] == 'price_command') {
+                AdminQuickPriceCommandSheet.show(context);
               }
               // Reset selection after returning
               Future.delayed(const Duration(milliseconds: 500), () {
@@ -697,56 +711,96 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
   }
 
   Widget _buildHeader() {
+    final isCompact = MediaQuery.of(context).size.width < 600;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Command Center',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: _textColor,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.5,
-                  ),
-            ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                PulseEffect(
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF10B981),
-                      shape: BoxShape.circle,
-                      boxShadow: [BoxShadow(color: Color(0xFF10B981), blurRadius: 6)]
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Command Center',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: _textColor,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.5,
+                    ),
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  PulseEffect(
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF10B981),
+                        shape: BoxShape.circle,
+                        boxShadow: [BoxShadow(color: Color(0xFF10B981), blurRadius: 6)]
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Live & Synchronized',
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(color: const Color(0xFF10B981)),
-                ),
-              ],
-            ),
-          ],
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      'Live & Synchronized',
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(color: const Color(0xFF10B981)),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
         Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
+            if (!isCompact)
+              Padding(
+                padding: const EdgeInsets.only(right: 10),
+                child: ElevatedButton.icon(
+                  onPressed: () => AdminQuickPriceCommandSheet.show(context),
+                  icon: const Icon(Icons.bolt_rounded, size: 18, color: Colors.white),
+                  label: const Text('⚡ কমান্ড', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFD97706),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 3,
+                  ),
+                ),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: GestureDetector(
+                  onTap: () => AdminQuickPriceCommandSheet.show(context),
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD97706).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFD97706)),
+                    ),
+                    child: const Icon(Icons.bolt_rounded, color: Color(0xFFF59E0B), size: 22),
+                  ),
+                ),
+              ),
             // Theme Toggle
             _buildGlassIconButton(
               icon: _isLightMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
               onTap: () => setState(() => _isLightMode = !_isLightMode),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             _buildGlassIconButton(
               icon: Icons.refresh_rounded,
               onTap: _fetchRealData,
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             _buildGlassIconButton(
               icon: Icons.power_settings_new_rounded,
               onTap: () => _confirmSignOut(context),
@@ -1035,6 +1089,157 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
     );
   }
 
+  Widget _buildLivePriceControlShortcutCard() {
+    final isDark = !_isLightMode;
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark
+              ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
+              : [Colors.white, const Color(0xFFF8FAFC)],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? const Color(0xFFF59E0B).withOpacity(0.4) : const Color(0xFFF59E0B).withOpacity(0.6),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFF59E0B).withOpacity(isDark ? 0.12 : 0.08),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF59E0B).withOpacity(0.18),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.bolt_rounded, color: Color(0xFFF59E0B), size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'বাজার প্রাইস কমান্ড শর্টকাট (Live Market Shortcut)',
+                      style: GoogleFonts.hindSiliguri(
+                        color: _textColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    Text(
+                      'বাজার ধস বা কৃষক সুরক্ষায় এক ক্লিকে লাইভ রেট সমন্বয় ও মার্কেটপ্লেসে সিঙ্ক করুন',
+                      style: GoogleFonts.hindSiliguri(
+                        color: _textColor.withOpacity(0.7),
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              TextButton.icon(
+                onPressed: () => Get.to(() => const AdminPriceControlScreen()),
+                icon: const Icon(Icons.arrow_forward_ios, size: 12, color: Color(0xFFF59E0B)),
+                label: const Text(
+                  'কন্ট্রোল',
+                  style: TextStyle(color: Color(0xFFF59E0B), fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _buildPriceShortcutChip(
+                label: '📉 বাজার ধস (-১০%)',
+                color: const Color(0xFFEF4444),
+                onTap: () => AdminQuickPriceCommandSheet.show(
+                  context,
+                  initialScope: PriceCommandScope.all,
+                  initialAction: PriceCommandAction.decrease,
+                ),
+              ),
+              _buildPriceShortcutChip(
+                label: '📈 কৃষক সুরক্ষা (+১০%)',
+                color: const Color(0xFF10B981),
+                onTap: () => AdminQuickPriceCommandSheet.show(
+                  context,
+                  initialScope: PriceCommandScope.all,
+                  initialAction: PriceCommandAction.increase,
+                ),
+              ),
+              _buildPriceShortcutChip(
+                label: '🐟 মাছের বাজার (-৫%)',
+                color: const Color(0xFF0284C7),
+                onTap: () => AdminQuickPriceCommandSheet.show(
+                  context,
+                  initialScope: PriceCommandScope.fish,
+                  initialAction: PriceCommandAction.decrease,
+                ),
+              ),
+              _buildPriceShortcutChip(
+                label: '⚡ কমান্ড কনসোল',
+                color: const Color(0xFFD97706),
+                onTap: () => AdminQuickPriceCommandSheet.show(context),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPriceShortcutChip({
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withOpacity(0.4)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: _textColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildQuickActionsGrid({required int crossAxisCount}) {
     final adminProvider = Provider.of<AdminProvider>(context, listen: false);
     final actions = [
@@ -1044,6 +1249,8 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
       {'icon': Icons.credit_card_rounded, 'label': 'Credit Hub', 'color': const Color(0xFF10B981), 'route': 'credit_hub'},
       {'icon': Icons.gavel_rounded, 'label': 'Credit Approval', 'color': const Color(0xFFF59E0B), 'route': 'credit_approval'},
       {'icon': Icons.picture_as_pdf_rounded, 'label': 'Reports', 'color': const Color(0xFFE91E63), 'route': 'reports'},
+      {'icon': Icons.price_change_rounded, 'label': 'Price Control', 'color': const Color(0xFF0284C7), 'route': 'price_control'},
+      {'icon': Icons.bolt_rounded, 'label': 'Price Command', 'color': const Color(0xFFD97706), 'route': 'price_command'},
     ];
 
     if (adminProvider.isSuperAdmin) {
@@ -1103,6 +1310,8 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
         if (route == 'credit_hub') Get.to(() => const MicrofinanceCreditHubScreen(userRole: 'admin', userName: 'Admin',));
         if (route == 'credit_approval') Get.to(() => const MicrofinanceAdminApprovalScreen());
         if (route == 'reports') Get.to(() => const AdminReportsScreen());
+        if (route == 'price_control') Get.to(() => const AdminPriceControlScreen());
+        if (route == 'price_command') AdminQuickPriceCommandSheet.show(context);
       },
       child: _buildGlassContainer(
         padding: const EdgeInsets.all(8),

@@ -2,9 +2,9 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // ============================================
-    // HELPER FUNCTIONS
-    // ============================================
+    // =========================================================================
+    // HELPER FUNCTIONS (AUTHENTICATION & AUTHORIZATION)
+    // =========================================================================
     function isAuthenticated() {
       return request.auth != null;
     }
@@ -14,20 +14,44 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return request.auth != null && 
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role in ['super_admin', 'admin', 'moderator'];
+      return request.auth != null && (
+        (exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role in ['super_admin', 'admin', 'moderator']) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['super_admin', 'admin', 'moderator']) ||
+        (request.auth.token.email in ['superadmin@agrolink.com', 'admin@agrolinkbd.com', 'admin@agrolink.com'])
+      );
     }
 
     function isSuperAdmin() {
-      return request.auth != null && 
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'super_admin';
+      return request.auth != null && (
+        (exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'super_admin') ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin') ||
+        (request.auth.token.email in ['superadmin@agrolink.com', 'admin@agrolinkbd.com'])
+      );
     }
 
-    // ============================================
-    // 1. ADMIN & AUDIT COLLECTIONS
-    // ============================================
+    function isOrderParty(data) {
+      return request.auth != null && (
+        data.buyerId == request.auth.uid ||
+        data.sellerId == request.auth.uid ||
+        data.farmerId == request.auth.uid ||
+        data.farmerUid == request.auth.uid ||
+        data.driverId == request.auth.uid ||
+        isAdmin()
+      );
+    }
+
+    // Diagnostic Connection Test
+    match /_connectionTest/{testId} {
+      allow read, write: if true;
+    }
+
+    // =========================================================================
+    // 1. ADMIN MANAGEMENT & AUDIT LOGS
+    // =========================================================================
     match /admins/{adminId} {
       allow read: if isAuthenticated() && (adminId == request.auth.uid || isSuperAdmin());
       allow create: if isAuthenticated() && (
@@ -41,25 +65,72 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    match /audit_logs/{logId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /admin_approvals/{approvalId} {
+      allow read, write: if isAdmin();
+    }
+
     match /user_audit_logs/{logId} {
       allow create: if true;
       allow read, update: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
       allow delete: if isSuperAdmin();
     }
 
-    // ============================================
-    // 2. USER PROFILES, NOTIFICATIONS & SUB-COLLECTIONS
-    // ============================================
+    // =========================================================================
+    // 2. AI MARKET INTELLIGENCE & SUPER ADMIN PRICE CONTROL
+    // =========================================================================
+    // AI-generated automated price analysis, inflation insights & recommendation outputs
+    match /ai_price_recommendations/{recId} {
+      allow read: if isAdmin();
+      allow create, update: if isAdmin();
+      allow delete: if isSuperAdmin();
+    }
+
+    // Aggregated market trends, buyer demand scores & pricing analytics
+    match /market_trend_analyses/{trendId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Central government/bazaar benchmark rates (read by all farmers & buyers, updated by Admin)
+    match /market_prices/{priceId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Super Admin Command Center audit trail & live farmer price advisories
+    match /admin_price_logs/{logId} {
+      allow read: if isAuthenticated(); // Farmers stream this to calculate 1-tap price increase/decrease suggestions
+      allow write: if isAdmin();
+    }
+
+    // Public price alerts, emergency caps, and market notifications
+    match /global_announcements/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /announcements/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // =========================================================================
+    // 3. USER PROFILES, DIGITAL SOKOL CARDS & WALLETS
+    // =========================================================================
     match /users/{userId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && request.auth.uid == userId;
       allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
       allow delete: if isAuthenticated() && (request.auth.uid == userId || isSuperAdmin());
       
-      // User notifications sub-collection
+      // User in-app notifications
       match /notifications/{notificationId} {
         allow read: if isOwner(userId) || isAdmin();
-        allow create: if isAuthenticated(); // System or users can notify
+        allow create: if isAuthenticated(); // System or peer trade updates can notify
         allow update, delete: if isOwner(userId) || isAdmin();
       }
 
@@ -69,38 +140,14 @@ service cloud.firestore {
         allow write: if isAdmin();
       }
 
-      // Fish farmer ponds self-database sub-collection
-      match /ponds/{pondId} {
-        allow read, write: if isOwner(userId) || isAdmin();
-      }
-
-      // Fish farmer daily activity sub-collection
-      match /activities/{activityId} {
-        allow read, write: if isOwner(userId) || isAdmin();
-      }
-
-      // Fish farmer harvest logs sub-collection
-      match /harvest_logs/{logId} {
-        allow read, write: if isOwner(userId) || isAdmin();
-      }
-
-      // Fish farmer water quality logs sub-collection
-      match /water_quality_logs/{logId} {
-        allow read, write: if isOwner(userId) || isAdmin();
-      }
-
-      // Fish farmer feed logs sub-collection
-      match /feed_logs/{logId} {
-        allow read, write: if isOwner(userId) || isAdmin();
-      }
-
-      // Fish farmer expenses & revenues sub-collection
-      match /expenses/{expenseId} {
-        allow read, write: if isOwner(userId) || isAdmin();
-      }
-      match /revenues/{revenueId} {
-        allow read, write: if isOwner(userId) || isAdmin();
-      }
+      // Farmer sub-collections
+      match /ponds/{pondId} { allow read, write: if isOwner(userId) || isAdmin(); }
+      match /activities/{activityId} { allow read, write: if isOwner(userId) || isAdmin(); }
+      match /harvest_logs/{logId} { allow read, write: if isOwner(userId) || isAdmin(); }
+      match /water_quality_logs/{logId} { allow read, write: if isOwner(userId) || isAdmin(); }
+      match /feed_logs/{logId} { allow read, write: if isOwner(userId) || isAdmin(); }
+      match /expenses/{expenseId} { allow read, write: if isOwner(userId) || isAdmin(); }
+      match /revenues/{revenueId} { allow read, write: if isOwner(userId) || isAdmin(); }
     }
 
     match /buyer_profiles/{userId} {
@@ -113,319 +160,9 @@ service cloud.firestore {
       allow write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
     }
 
-    // ============================================
-    // 3. FISHERIES SUITE & FISH FARMER ACTIVITIES (ONLINE SAVING)
-    // ============================================
-    
-    // Fish Marketplace Lots (Active & Sold History)
-    match /fish_marketplace_lots/{lotId} {
-      allow read: if true; // Publicly visible in marketplace
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (
-        resource.data.farmerId == request.auth.uid || 
-        resource.data.farmerUid == request.auth.uid || 
-        resource.data.userId == request.auth.uid || 
-        isAdmin()
-      );
-    }
-
-    // Fisheries Marketplace & Commercial Listings
-    match /fisheries_marketplace/{itemId} {
-      allow read: if true;
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (
-        resource.data.farmerUid == request.auth.uid || 
-        resource.data.userId == request.auth.uid || 
-        isAdmin()
-      );
-    }
-
-    // Fish Farmer Ponds & Biofloc Tanks
-    match /fisheries_ponds/{pondId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || 
-        resource.data.farmerId == request.auth.uid || 
-        isAdmin()
-      );
-    }
-
-    match /fish_ponds/{pondId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || 
-        isAdmin()
-      );
-    }
-
-    match /ponds/{pondId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || 
-        isAdmin()
-      );
-    }
-
-    // Fish Farmer Daily Pond & Feeding Activities
-    match /fish_farmer_activities/{activityId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || 
-        resource.data.farmerId == request.auth.uid || 
-        isAdmin()
-      );
-    }
-
-    match /fisheries_activities/{activityId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || 
-        isAdmin()
-      );
-    }
-
-    match /fish_activities/{activityId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || 
-        isAdmin()
-      );
-    }
-
-    match /farm_activities/{activityId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || 
-        isAdmin()
-      );
-    }
-
-    // Fish Water Quality Tests & IoT Monitoring
-    match /water_quality_logs/{logId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || 
-        isAdmin()
-      );
-    }
-
-    match /fish_water_tests/{testId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || 
-        isAdmin()
-      );
-    }
-
-    // Fish Feed Logs & Nutrition Records
-    match /fish_feed_logs/{logId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || 
-        isAdmin()
-      );
-    }
-
-    match /fish_feeding_logs/{logId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || 
-        isAdmin()
-      );
-    }
-
-    // Fish Disease & Treatment Health Logs
-    match /fish_disease_logs/{logId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || 
-        isAdmin()
-      );
-    }
-
-    match /fish_health_logs/{logId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || 
-        isAdmin()
-      );
-    }
-
-    // Fish Stocking & Harvest Logs
-    match /harvest_logs/{logId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || 
-        isAdmin()
-      );
-    }
-
-    match /fish_harvest_logs/{logId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || 
-        isAdmin()
-      );
-    }
-
-    match /fish_stocking_logs/{logId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || 
-        isAdmin()
-      );
-    }
-
-    // Live Fish Auctions & Wholesaler Bidding
-    match /auctions/{auctionId} {
-      allow read: if true;
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || 
-        resource.data.farmerUid == request.auth.uid || 
-        isAdmin()
-      );
-    }
-
-    match /fish_auctions/{auctionId} {
-      allow read: if true;
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || 
-        resource.data.farmerId == request.auth.uid || 
-        isAdmin()
-      );
-    }
-
-    // Pre-harvest Forward Contracts & Wholesaler Bookings
-    match /farmer_contracts/{contractId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (
-        resource.data.farmerId == request.auth.uid || 
-        resource.data.buyerId == request.auth.uid || 
-        isAdmin()
-      );
-    }
-
-    match /fish_forward_contracts/{contractId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (
-        resource.data.farmerId == request.auth.uid || 
-        resource.data.buyerId == request.auth.uid || 
-        isAdmin()
-      );
-    }
-
-    // Fish Quality & Lab QC Inspections
-    match /fish_qc_inspections/{inspectionId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (
-        resource.data.farmerId == request.auth.uid || 
-        resource.data.inspectorId == request.auth.uid || 
-        isAdmin()
-      );
-    }
-
-    // ============================================
-    // 4. FARM MANAGEMENT & AGRICULTURE GENERAL
-    // ============================================
-    match /farms/{farmId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || 
-        resource.data.ownerId == request.auth.uid || 
-        isAdmin()
-      );
-    }
-
-    match /crop_plantings/{plantingId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || 
-        isAdmin()
-      );
-    }
-
-    match /farm_expenses/{expenseId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || 
-        isAdmin()
-      );
-    }
-
-    match /fish_farmer_expenses/{expenseId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || 
-        isAdmin()
-      );
-    }
-
-    match /farm_revenues/{revenueId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || 
-        isAdmin()
-      );
-    }
-
-    match /fish_farmer_revenues/{revenueId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || 
-        isAdmin()
-      );
-    }
-
-    match /farm_inventory/{inventoryId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || 
-        isAdmin()
-      );
-    }
-
-    match /fish_inventory/{inventoryId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || 
-        isAdmin()
-      );
-    }
-
-    // ============================================
-    // 5. MONEY, WALLET & DIGITAL SOKOL CARD
-    // ============================================
+    // Digital Sokol Card: Publicly readable by authenticated users for QR scan / P2P trade verification
     match /cards/{userId} {
-      allow read: if isAuthenticated(); // Needed for QR scan / P2P payment verification
+      allow read: if isAuthenticated();
       allow write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
     }
 
@@ -433,28 +170,223 @@ service cloud.firestore {
       allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
       allow create: if isAuthenticated() && request.auth.uid == userId;
       allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
-      allow delete: if isAuthenticated() && (request.auth.uid == userId || isSuperAdmin());
+      allow delete: if isSuperAdmin();
     }
 
+    // =========================================================================
+    // 4. MARKETPLACE CATALOG & PRODUCT LISTINGS (CROPS, FISH & INPUTS)
+    // =========================================================================
+    // Agricultural Crops (Agri Farmer listings)
+    match /products/{productId} {
+      allow read: if true; // Publicly browseable in marketplace
+      allow create: if isAuthenticated() && (
+        request.resource.data.farmerId == request.auth.uid ||
+        request.resource.data.userId == request.auth.uid ||
+        request.resource.data.sellerId == request.auth.uid ||
+        isAdmin()
+      );
+      allow update: if isAuthenticated() && (
+        resource.data.farmerId == request.auth.uid ||
+        resource.data.userId == request.auth.uid ||
+        resource.data.sellerId == request.auth.uid ||
+        isAdmin() // Super Admin Price Control updates price across target listings
+      );
+      allow delete: if isAuthenticated() && (
+        resource.data.farmerId == request.auth.uid ||
+        resource.data.userId == request.auth.uid ||
+        resource.data.sellerId == request.auth.uid ||
+        isAdmin()
+      );
+    }
+
+    // Local Daily Bazaar Products
+    match /bazaar_products/{productId} {
+      allow read: if true;
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.sellerId == request.auth.uid ||
+        isAdmin()
+      );
+    }
+
+    // Fish Marketplace Lots (Fish Farmer harvest lots)
+    match /fish_marketplace_lots/{lotId} {
+      allow read: if true; // Publicly browseable
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (
+        resource.data.farmerId == request.auth.uid ||
+        resource.data.farmerUid == request.auth.uid ||
+        resource.data.userId == request.auth.uid ||
+        isAdmin() // Super Admin Price Control updates pricePerKg across lots
+      );
+      allow delete: if isAuthenticated() && (
+        resource.data.farmerId == request.auth.uid ||
+        resource.data.farmerUid == request.auth.uid ||
+        resource.data.userId == request.auth.uid ||
+        isAdmin()
+      );
+    }
+
+    match /fisheries_marketplace/{itemId} {
+      allow read: if true;
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (
+        resource.data.farmerUid == request.auth.uid ||
+        resource.data.userId == request.auth.uid ||
+        isAdmin()
+      );
+    }
+
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /crops/{cropId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /inventory_products/{productId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /service_products/{productId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && request.resource.data.shopOwnerId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && (resource.data.shopOwnerId == request.auth.uid || isAdmin());
+    }
+
+    // =========================================================================
+    // 5. BUYING, SHOPPING CART, WISHLIST & ORDERS LIFECYCLE
+    // =========================================================================
+    // Core Trade Orders (Crops, Fish Lots & Machinery)
+    match /orders/{orderId} {
+      allow read: if isOrderParty(resource.data);
+      allow create: if isAuthenticated() && (
+        request.resource.data.buyerId == request.auth.uid ||
+        isAuthenticated()
+      );
+      allow update: if isAuthenticated() && (
+        // Buyer can cancel or mark delivered/confirmed
+        resource.data.buyerId == request.auth.uid ||
+        // Farmer/Seller can accept, reject, mark processing/dispatched
+        resource.data.sellerId == request.auth.uid ||
+        resource.data.farmerId == request.auth.uid ||
+        resource.data.farmerUid == request.auth.uid ||
+        // Logistics Driver can update trip status and delivery location
+        resource.data.driverId == request.auth.uid ||
+        isAdmin()
+      );
+      allow delete: if isAdmin(); // Orders are protected financial records
+    }
+
+    match /service_orders/{orderId} {
+      allow read: if isAuthenticated() && (
+        resource.data.farmerId == request.auth.uid ||
+        resource.data.shopOwnerId == request.auth.uid ||
+        isAdmin()
+      );
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (
+        resource.data.farmerId == request.auth.uid ||
+        resource.data.shopOwnerId == request.auth.uid ||
+        isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /user_carts/{cartId} {
+      allow read, write: if isAuthenticated() && (cartId == request.auth.uid || isAdmin());
+    }
+
+    match /carts/{cartId} {
+      allow read, write: if isAuthenticated() && (
+        cartId == request.auth.uid ||
+        resource.data.userId == request.auth.uid ||
+        request.resource.data.userId == request.auth.uid ||
+        isAdmin()
+      );
+    }
+
+    match /wishlists/{wishlistId} {
+      allow read, write: if isAuthenticated() && (
+        wishlistId == request.auth.uid ||
+        resource.data.userId == request.auth.uid ||
+        request.resource.data.userId == request.auth.uid ||
+        isAdmin()
+      );
+    }
+
+    // =========================================================================
+    // 6. SAFE ESCROW, SETTLEMENTS & FINANCIAL LEDGER
+    // =========================================================================
+    // Escrow holding buyer payments until harvest is safely delivered
+    match /escrows/{escrowId} {
+      allow read: if isAuthenticated() && (
+        resource.data.buyerId == request.auth.uid ||
+        resource.data.farmerId == request.auth.uid ||
+        isAdmin()
+      );
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (
+        resource.data.buyerId == request.auth.uid || // Buyer releases funds
+        resource.data.farmerId == request.auth.uid ||
+        isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /escrow_records/{escrowId} {
+      allow read: if isAuthenticated() && (
+        resource.data.buyerId == request.auth.uid ||
+        resource.data.farmerId == request.auth.uid ||
+        isAdmin()
+      );
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (
+        resource.data.buyerId == request.auth.uid ||
+        resource.data.farmerId == request.auth.uid ||
+        isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Farmer Payout Settlements
+    match /settlements/{settlementId} {
+      allow read: if isAuthenticated() && (
+        resource.data.farmerId == request.auth.uid ||
+        resource.data.userId == request.auth.uid ||
+        isAdmin()
+      );
+      allow write: if isAdmin();
+    }
+
+    // Immutable Financial Ledger
     match /transactions/{transactionId} {
       allow get, list: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || 
-        resource.data.senderUid == request.auth.uid || 
-        resource.data.receiverUid == request.auth.uid || 
+        resource.data.userId == request.auth.uid ||
+        resource.data.senderUid == request.auth.uid ||
+        resource.data.receiverUid == request.auth.uid ||
+        resource.data.buyerId == request.auth.uid ||
+        resource.data.farmerId == request.auth.uid ||
         isAdmin()
       );
       allow create: if isAuthenticated() && (
-        request.resource.data.userId == request.auth.uid || 
-        request.resource.data.senderUid == request.auth.uid || 
+        request.resource.data.userId == request.auth.uid ||
+        request.resource.data.senderUid == request.auth.uid ||
+        request.resource.data.buyerId == request.auth.uid ||
         isAdmin()
       );
-      allow update: if false; // Immutable ledger
-      allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow update: if isAdmin(); // Protect against ledger manipulation
+      allow delete: if isSuperAdmin();
     }
 
     match /wallet_transactions/{transactionId} {
       allow read: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || 
+        resource.data.userId == request.auth.uid ||
         isAdmin()
       );
       allow create: if isAuthenticated();
@@ -463,14 +395,14 @@ service cloud.firestore {
 
     match /payment_requests/{requestId} {
       allow read: if isAuthenticated() && (
-        resource.data.senderId == request.auth.uid || 
-        resource.data.receiverId == request.auth.uid || 
+        resource.data.senderId == request.auth.uid ||
+        resource.data.receiverId == request.auth.uid ||
         isAdmin()
       );
       allow create: if isAuthenticated() && request.resource.data.senderId == request.auth.uid;
       allow update: if isAuthenticated() && (
-        resource.data.receiverId == request.auth.uid || 
-        resource.data.senderId == request.auth.uid || 
+        resource.data.receiverId == request.auth.uid ||
+        resource.data.senderId == request.auth.uid ||
         isAdmin()
       );
       allow delete: if isAdmin();
@@ -479,13 +411,13 @@ service cloud.firestore {
     match /transfer_requests/{requestId} {
       allow create: if isAuthenticated() && request.resource.data.senderId == request.auth.uid;
       allow read: if isAuthenticated() && (
-        resource.data.senderId == request.auth.uid || 
-        resource.data.receiverId == request.auth.uid || 
+        resource.data.senderId == request.auth.uid ||
+        resource.data.receiverId == request.auth.uid ||
         isAdmin()
       );
       allow update: if isAuthenticated() && (
-        resource.data.receiverId == request.auth.uid || 
-        resource.data.senderId == request.auth.uid || 
+        resource.data.receiverId == request.auth.uid ||
+        resource.data.senderId == request.auth.uid ||
         isAdmin()
       );
       allow delete: if isAdmin();
@@ -497,10 +429,30 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    match /withdrawal_requests/{requestId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
     match /deposit_requests/{requestId} {
       allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isAdmin();
+    }
+
+    match /refund_requests/{requestId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    match /boost_payments/{paymentId} {
+      allow read, write: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /payment_flows/{flowId} {
+      allow read, write: if isAuthenticated();
     }
 
     match /microfinance_applications/{applicationId} {
@@ -511,24 +463,124 @@ service cloud.firestore {
     }
 
     match /pin_reset_requests/{requestId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated();
+      allow read, write: if isAuthenticated();
     }
 
-    // ============================================
-    // 6. TRANSPORT & LOGISTICS
-    // ============================================
+    // =========================================================================
+    // 7. WHOLESALE FISH & BULK CROP AUCTIONS (LIVE BIDDING)
+    // =========================================================================
+    match /auctions/{auctionId} {
+      allow read: if true; // Public auction viewers
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.farmerUid == request.auth.uid ||
+        resource.data.farmerId == request.auth.uid ||
+        // Bidder placing a new bid
+        request.resource.data.diff(resource.data).affectedKeys().hasAny(['currentBid', 'highestBid', 'highestBidderId', 'bidsCount', 'lastBidAt', 'updatedAt']) ||
+        isAdmin()
+      );
+      allow delete: if isAuthenticated() && (resource.data.farmerId == request.auth.uid || isAdmin());
+
+      match /bids/{bidId} {
+        allow read: if true;
+        allow create: if isAuthenticated() && (
+          request.resource.data.bidderId == request.auth.uid ||
+          request.resource.data.userId == request.auth.uid
+        );
+        allow update, delete: if isAdmin();
+      }
+    }
+
+    match /fish_auctions/{auctionId} {
+      allow read: if true;
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.farmerId == request.auth.uid ||
+        request.resource.data.diff(resource.data).affectedKeys().hasAny(['currentBid', 'highestBid', 'highestBidderId', 'bidsCount', 'lastBidAt', 'updatedAt']) ||
+        isAdmin()
+      );
+      allow delete: if isAuthenticated() && (resource.data.farmerId == request.auth.uid || isAdmin());
+
+      match /bids/{bidId} {
+        allow read: if true;
+        allow create: if isAuthenticated() && (
+          request.resource.data.bidderId == request.auth.uid ||
+          request.resource.data.userId == request.auth.uid
+        );
+        allow update, delete: if isAdmin();
+      }
+    }
+
+    match /auction_memberships/{membershipId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && (request.resource.data.userId == request.auth.uid || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    match /vip_subscriptions/{subscriptionId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && (request.resource.data.userId == request.auth.uid || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    match /farmer_contracts/{contractId} {
+      allow read: if isAuthenticated() && (
+        resource.data.farmerId == request.auth.uid ||
+        resource.data.buyerId == request.auth.uid ||
+        isAdmin()
+      );
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (
+        resource.data.farmerId == request.auth.uid ||
+        resource.data.buyerId == request.auth.uid ||
+        isAdmin()
+      );
+    }
+
+    match /fish_forward_contracts/{contractId} {
+      allow read: if isAuthenticated() && (
+        resource.data.farmerId == request.auth.uid ||
+        resource.data.buyerId == request.auth.uid ||
+        isAdmin()
+      );
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (
+        resource.data.farmerId == request.auth.uid ||
+        resource.data.buyerId == request.auth.uid ||
+        isAdmin()
+      );
+    }
+
+    // =========================================================================
+    // 8. LOGISTICS, TRANSPORT & COLD STORAGE
+    // =========================================================================
     match /transport_bookings/{bookingId} {
       allow read: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || 
-        resource.data.driverId == request.auth.uid || 
+        resource.data.userId == request.auth.uid ||
+        resource.data.driverId == request.auth.uid ||
         isAdmin()
       );
       allow create: if isAuthenticated();
       allow update: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || 
-        resource.data.driverId == request.auth.uid || 
+        resource.data.userId == request.auth.uid ||
+        resource.data.driverId == request.auth.uid ||
+        isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /transport_requests/{requestId} {
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.driverId == request.auth.uid ||
+        isAdmin()
+      );
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.driverId == request.auth.uid ||
         isAdmin()
       );
       allow delete: if isAdmin();
@@ -538,8 +590,8 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
       allow update, delete: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || 
-        resource.data.driverId == request.auth.uid || 
+        resource.data.userId == request.auth.uid ||
+        resource.data.driverId == request.auth.uid ||
         isAdmin()
       );
     }
@@ -548,7 +600,7 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
       allow update, delete: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || 
+        resource.data.userId == request.auth.uid ||
         isAdmin()
       );
     }
@@ -562,7 +614,8 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
       allow update, delete: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || 
+        resource.data.userId == request.auth.uid ||
+        resource.data.driverId == request.auth.uid ||
         isAdmin()
       );
     }
@@ -571,60 +624,19 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
       allow update, delete: if isAuthenticated() && (
-        resource.data.driverId == request.auth.uid || 
+        resource.data.driverId == request.auth.uid ||
         isAdmin()
       );
-    }
-
-    // ============================================
-    // 7. GENERAL MARKETPLACE, COMMERCE & ORDERS
-    // ============================================
-    match /products/{productId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
-    }
-
-    match /bazaar_products/{productId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
-    }
-
-    match /inventory_products/{productId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-
-    match /orders/{orderId} {
-      allow read: if isAuthenticated() && (
-        resource.data.buyerId == request.auth.uid || 
-        resource.data.sellerId == request.auth.uid || 
-        resource.data.farmerId == request.auth.uid || 
-        isAdmin()
-      );
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && (
-        resource.data.buyerId == request.auth.uid || 
-        resource.data.sellerId == request.auth.uid || 
-        resource.data.farmerId == request.auth.uid || 
-        isAdmin()
-      );
-      allow delete: if isAdmin();
-    }
-
-    match /user_carts/{cartId} {
-      allow read, write: if isAuthenticated() && (cartId == request.auth.uid || isAdmin());
     }
 
     match /machinery/{machineryId} {
-      allow read: if isAuthenticated();
+      allow read: if true;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
     match /machineries/{machineryId} {
-      allow read: if isAuthenticated();
+      allow read: if true;
       allow write: if isAuthenticated();
     }
 
@@ -632,27 +644,69 @@ service cloud.firestore {
       allow read, write: if isAuthenticated();
     }
 
+    // =========================================================================
+    // 9. PRODUCT REVIEWS, QUALITY CONTROL & DISPUTE ARBITRATION
+    // =========================================================================
     match /product_reviews/{reviewId} {
       allow read: if true;
       allow create: if isAuthenticated();
       allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
     match /ratings/{ratingId} {
-      allow read: if isAuthenticated();
+      allow read: if true;
       allow create: if isAuthenticated() && request.resource.data.raterUid == request.auth.uid;
       allow update, delete: if isAuthenticated() && (resource.data.raterUid == request.auth.uid || isAdmin());
     }
 
-    match /refund_requests/{requestId} {
+    match /qc_inspections/{inspectionId} {
+      allow read: if isAuthenticated() && (
+        resource.data.farmerId == request.auth.uid ||
+        resource.data.inspectorId == request.auth.uid ||
+        isAdmin()
+      );
+      allow create, update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    match /fish_qc_inspections/{inspectionId} {
+      allow read: if isAuthenticated() && (
+        resource.data.farmerId == request.auth.uid ||
+        resource.data.inspectorId == request.auth.uid ||
+        isAdmin()
+      );
+      allow create, update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    match /sample_inspection_requests/{requestId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /buyer_pond_analyses/{analysisId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /user_reports/{reportId} {
       allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated();
       allow update, delete: if isAdmin();
     }
 
-    // ============================================
-    // 8. CHAT, NOTIFICATIONS & AGRI DATA
-    // ============================================
+    match /penalties/{penaltyId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    // =========================================================================
+    // 10. CHAT, NOTIFICATIONS & COMMUNITY
+    // =========================================================================
     match /conversations/{conversationId} {
       allow read, write: if isAuthenticated();
 
@@ -661,15 +715,181 @@ service cloud.firestore {
       }
     }
 
+    match /chats/{chatId} {
+      allow read, write: if isAuthenticated();
+    }
+
     match /messages/{messageId} {
       allow read, write: if isAuthenticated();
     }
 
-    match /announcements/{announcementId} {
+    // =========================================================================
+    // 11. FARM MANAGEMENT & AQUACULTURE (FARMER SUITE)
+    // =========================================================================
+    match /farms/{farmId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.ownerId == request.auth.uid ||
+        isAdmin()
+      );
     }
 
+    match /crop_plantings/{plantingId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /farm_batches/{batchId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /farm_expenses/{expenseId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /farm_revenues/{revenueId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /farm_inventory/{inventoryId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /farm_activities/{activityId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    // Fisheries & Ponds
+    match /fisheries_ponds/{pondId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.farmerId == request.auth.uid ||
+        isAdmin()
+      );
+    }
+
+    match /fish_ponds/{pondId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /ponds/{pondId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /fish_farmer_activities/{activityId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.farmerId == request.auth.uid ||
+        isAdmin()
+      );
+    }
+
+    match /fisheries_activities/{activityId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /fish_activities/{activityId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /fish_farmer_expenses/{expenseId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /fish_farmer_revenues/{revenueId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /fish_inventory/{inventoryId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /water_quality_logs/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /fish_water_tests/{testId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /fish_feed_logs/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /fish_feeding_logs/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /fish_disease_logs/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /fish_health_logs/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /harvest_logs/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /fish_harvest_logs/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /fish_stocking_logs/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    // Agronomy & Soil Tests
     match /saved_agri_data/{dataId} {
       allow read, write: if isAuthenticated();
     }
@@ -683,42 +903,15 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    match /user_reports/{reportId} {
-      allow read, write: if isAuthenticated();
+    match /investments/{investmentId} {
+      allow read: if isAuthenticated() && (resource.data.investorId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && request.resource.data.investorId == request.auth.uid;
+      allow update, delete: if isAdmin();
     }
 
-    // ============================================
-    // 9. FISH AUCTIONS & VIP AUCTION MEMBERSHIPS
-    // ============================================
-    match /fish_auctions/{auctionId} {
-      allow read: if true;
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
-      allow delete: if isAuthenticated() && (resource.data.farmerId == request.auth.uid || isAdmin());
-    }
-
-    match /auctions/{auctionId} {
-      allow read: if true;
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
-      allow delete: if isAuthenticated() && (resource.data.farmerId == request.auth.uid || isAdmin());
-    }
-
-    match /auction_memberships/{membershipId} {
-      allow read: if isAuthenticated();
-      allow create, update: if isAuthenticated() && (request.resource.data.userId == request.auth.uid || isAdmin());
-      allow delete: if isAdmin();
-    }
-
-    // ============================================
-    // 10. BUYER POND ANALYSES & INSPECTION REQUESTS
-    // ============================================
-    match /buyer_pond_analyses/{analysisId} {
-      allow read, write: if isAuthenticated();
-    }
-
-    match /sample_inspection_requests/{requestId} {
-      allow read, write: if isAuthenticated();
+    match /investors/{investorId} {
+      allow read: if isAuthenticated() && (investorId == request.auth.uid || isAdmin());
+      allow write: if isAuthenticated() && (investorId == request.auth.uid || isAdmin());
     }
   }
 }

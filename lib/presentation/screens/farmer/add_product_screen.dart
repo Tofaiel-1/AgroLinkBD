@@ -11,6 +11,8 @@ import 'package:agrolinkbd/core/providers/user_provider.dart';
 import 'package:agrolinkbd/core/providers/language_provider.dart';
 import 'package:agrolinkbd/core/utils/masked_identity_helper.dart';
 import 'package:agrolinkbd/core/services/sslcommerz_service.dart';
+import 'package:agrolinkbd/core/models/market_price_model.dart';
+import 'package:agrolinkbd/core/services/market_price_advisory_service.dart';
 
 /// Add Product Screen - Farmers can list new crops for sale with Super Class Monetization & Boosting options
 class AddProductScreen extends StatefulWidget {
@@ -63,7 +65,20 @@ class _AddProductScreenState extends State<AddProductScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _cropController.addListener(_onFieldChanged);
+    _priceController.addListener(_onFieldChanged);
+  }
+
+  void _onFieldChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
   void dispose() {
+    _cropController.removeListener(_onFieldChanged);
+    _priceController.removeListener(_onFieldChanged);
     _cropController.dispose();
     _quantityController.dispose();
     _priceController.dispose();
@@ -240,7 +255,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
         'district': userModel?.district ?? 'বগুড়া',
         'upazila': userModel?.upazila ?? 'সদর',
         'location': '${userModel?.upazila ?? 'সদর'}, ${userModel?.district ?? 'বগুড়া'} হাব',
-        'category': _selectedCategory ?? 'vegetables',
+        'category': _selectedCategory,
         'quantity': double.tryParse(_quantityController.text) ?? 0.0,
         'unit': _selectedUnit ?? 'কেজি',
         'price': double.tryParse(_priceController.text) ?? 0.0,
@@ -586,6 +601,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 style: GoogleFonts.hindSiliguri(fontSize: 16),
                 validator: (v) => (v == null || v.isEmpty) ? (isBn ? 'মূল্য দিন' : 'Enter price') : null,
               ),
+              const SizedBox(height: 8),
+
+              // Real-time Super Admin Benchmark Advisory
+              _buildPriceAdvisoryHelper(isBn),
               const SizedBox(height: 16),
 
               // Harvest Date
@@ -1122,6 +1141,251 @@ class _AddProductScreenState extends State<AddProductScreen> {
         borderSide: const BorderSide(color: Color(0xFF2E7D32), width: 2),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    );
+  }
+
+  Widget _buildPriceAdvisoryHelper(bool isBn) {
+    final cropName = _cropController.text.trim();
+    if (cropName.isEmpty) return const SizedBox.shrink();
+
+    return StreamBuilder<List<MarketPriceModel>>(
+      stream: MarketPriceAdvisoryService().streamBenchmarks(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const SizedBox.shrink();
+        final benchmarks = snapshot.data!;
+        final matched = MarketPriceAdvisoryService().findMatchingBenchmark(
+          cropName,
+          benchmarks,
+          category: _selectedCategory,
+        );
+
+        if (matched == null || matched.currentPrice <= 0) return const SizedBox.shrink();
+
+        final bench = matched.currentPrice;
+        final unitText = matched.unit.isNotEmpty ? matched.unit : (_selectedUnit ?? 'কেজি');
+        final enteredPriceText = _priceController.text.trim();
+        final enteredPrice = double.tryParse(enteredPriceText);
+
+        // Case 1: Farmer hasn't typed price yet
+        if (enteredPrice == null || enteredPrice <= 0) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE8F5E9),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFF81C784)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline_rounded, size: 16, color: Color(0xFF2E7D32)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    isBn
+                        ? 'সুপার এডমিন নির্ধারিত বর্তমান বাজারদর: ৳${bench.toStringAsFixed(0)} / $unitText'
+                        : 'Current Super Admin market rate: ৳${bench.toStringAsFixed(0)} / $unitText',
+                    style: GoogleFonts.hindSiliguri(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF1B5E20),
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _priceController.text = bench.toStringAsFixed(0);
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2E7D32),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      isBn ? 'দর বসান' : 'Apply Rate',
+                      style: GoogleFonts.hindSiliguri(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final diff = (enteredPrice - bench) / bench;
+
+        // Case 2: Optimal price within +/- 5%
+        if (diff.abs() <= 0.05) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE8F5E9),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFF81C784)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.check_circle_outline, size: 16, color: Color(0xFF2E7D32)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    isBn
+                        ? '✓ চমৎকার! আপনার নির্ধারিত দর বাজারদরের (৳${bench.toStringAsFixed(0)}/$unitText) সাথে মানানসই।'
+                        : '✓ Excellent! Your price aligns with current market benchmark (৳${bench.toStringAsFixed(0)}/$unitText).',
+                    style: GoogleFonts.hindSiliguri(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF1B5E20),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // Case 3: Price higher than benchmark -> suggest decrease
+        if (diff > 0.05) {
+          final diffAmount = (enteredPrice - bench).toStringAsFixed(0);
+          return Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF8E1),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.amber.shade700),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.trending_down_rounded, size: 18, color: Colors.amber.shade900),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        isBn
+                            ? 'বাজারের চেয়ে ৳$diffAmount বেশি (দর কমানোর পরামর্শ)'
+                            : '৳$diffAmount above market (Decrease advised)',
+                        style: GoogleFonts.hindSiliguri(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.amber.shade900,
+                        ),
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          _priceController.text = bench.toStringAsFixed(0);
+                        });
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.amber.shade800,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                      ),
+                      child: Text(
+                        isBn ? '৳${bench.toStringAsFixed(0)} করুন' : 'Set ৳${bench.toStringAsFixed(0)}',
+                        style: GoogleFonts.hindSiliguri(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  isBn
+                      ? 'অতিরিক্ত মূল্যে পচনশীল ফসলের অবিক্রীত ঝুঁকি বাড়ে। দ্রুত পাইকারি বিক্রির জন্য বাজারদর ৳${bench.toStringAsFixed(0)} নির্ধারণ করা লাভজনক।'
+                      : 'High prices increase spoilage risk. Aligning with market rate ৳${bench.toStringAsFixed(0)} accelerates wholesale clearance.',
+                  style: GoogleFonts.hindSiliguri(
+                    fontSize: 11,
+                    color: Colors.grey.shade800,
+                    height: 1.25,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // Case 4: Price lower than benchmark -> suggest increase
+        final diffAmount = (bench - enteredPrice).toStringAsFixed(0);
+        return Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE0F2FE),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0xFF0284C7)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.trending_up_rounded, size: 18, color: Color(0xFF0284C7)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      isBn
+                          ? 'বাজারের চেয়ে ৳$diffAmount কম (দর বাড়ানোর পরামর্শ)'
+                          : '৳$diffAmount below market (Increase advised)',
+                      style: GoogleFonts.hindSiliguri(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF0284C7),
+                      ),
+                    ),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _priceController.text = bench.toStringAsFixed(0);
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0284C7),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    ),
+                    child: Text(
+                      isBn ? '৳${bench.toStringAsFixed(0)} করুন' : 'Set ৳${bench.toStringAsFixed(0)}',
+                      style: GoogleFonts.hindSiliguri(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                isBn
+                    ? 'আপনার উৎপাদন খরচ ও ন্যায্য মুনাফা রক্ষায় বর্তমান বাজার রেট ৳${bench.toStringAsFixed(0)}/$unitText নির্ধারণ করার সুযোগ রয়েছে।'
+                    : 'To ensure your fair profit margins, you can adjust price up to market rate ৳${bench.toStringAsFixed(0)}/$unitText.',
+                style: GoogleFonts.hindSiliguri(
+                  fontSize: 11,
+                  color: Colors.grey.shade800,
+                  height: 1.25,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

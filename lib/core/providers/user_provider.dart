@@ -41,6 +41,14 @@ class UserProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // Clear in-memory user state
+  void clearUser() {
+    _currentUser = null;
+    _isLoading = false;
+    _error = null;
+    notifyListeners();
+  }
+
   // Update user (both in memory and in Firestore)
   Future<void> updateUser(UserModel user) async {
     _currentUser = user;

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
@@ -7,6 +8,8 @@ import 'package:agrolinkbd/core/providers/language_provider.dart';
 import 'package:agrolinkbd/core/providers/user_provider.dart';
 import 'package:agrolinkbd/core/models/marketplace_item_model.dart';
 import 'package:agrolinkbd/core/controllers/marketplace_controller.dart';
+import 'package:agrolinkbd/core/models/market_price_model.dart';
+import 'package:agrolinkbd/core/services/market_price_service.dart';
 
 class SellFishScreen extends StatefulWidget {
   final MarketplaceItemModel? itemToEdit;
@@ -38,6 +41,11 @@ class _SellFishScreenState extends State<SellFishScreen> {
 
   bool _isLoading = false;
   bool get _isEditing => widget.itemToEdit != null;
+
+  final MarketPriceService _marketPriceService = MarketPriceService();
+  StreamSubscription<List<MarketPriceModel>>? _marketPriceSub;
+  List<MarketPriceModel> _marketPrices = [];
+  MarketPriceModel? _matchedFishPrice;
 
   final List<String> _popularSpeciesBn = [
     'রুই মাছ',
@@ -72,6 +80,9 @@ class _SellFishScreenState extends State<SellFishScreen> {
   @override
   void initState() {
     super.initState();
+    _subscribeToMarketPrices();
+    _fishTypeController.addListener(_updateFishMatch);
+    _priceController.addListener(_onPriceChanged);
     if (_isEditing) {
       final item = widget.itemToEdit!;
       _fishTypeController.text = item.fishType;
@@ -94,8 +105,57 @@ class _SellFishScreenState extends State<SellFishScreen> {
     }
   }
 
+  void _subscribeToMarketPrices() {
+    _marketPriceSub = _marketPriceService.streamCurrentMarketPrices().listen((prices) {
+      if (mounted) {
+        setState(() {
+          _marketPrices = prices;
+          _updateFishMatch();
+        });
+      }
+    });
+  }
+
+  void _updateFishMatch() {
+    final text = _fishTypeController.text.trim().toLowerCase();
+    if (text.isEmpty) {
+      if (_matchedFishPrice != null) setState(() => _matchedFishPrice = null);
+      return;
+    }
+    MarketPriceModel? match;
+    for (var p in _marketPrices) {
+      if (p.category == 'fish' || p.productName.contains('মাছ') || p.productName.toLowerCase().contains('fish')) {
+        if (text.contains(p.productName.toLowerCase()) ||
+            p.productName.toLowerCase().contains(text)) {
+          match = p;
+          break;
+        }
+      }
+    }
+    // Also try general match if not found in fish
+    if (match == null) {
+      for (var p in _marketPrices) {
+        if (text.contains(p.productName.toLowerCase()) ||
+            p.productName.toLowerCase().contains(text)) {
+          match = p;
+          break;
+        }
+      }
+    }
+    if (match != _matchedFishPrice) {
+      setState(() => _matchedFishPrice = match);
+    }
+  }
+
+  void _onPriceChanged() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
+    _marketPriceSub?.cancel();
+    _fishTypeController.removeListener(_updateFishMatch);
+    _priceController.removeListener(_onPriceChanged);
     _fishTypeController.dispose();
     _quantityController.dispose();
     _avgWeightController.dispose();
@@ -270,6 +330,80 @@ class _SellFishScreenState extends State<SellFishScreen> {
                 isBn: isBn,
               ),
 
+              if (_matchedFishPrice != null) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE0F2FE),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFF7DD3FC)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _matchedFishPrice!.trend == PriceTrend.up
+                            ? Icons.trending_up_rounded
+                            : _matchedFishPrice!.trend == PriceTrend.down
+                                ? Icons.trending_down_rounded
+                                : Icons.info_outline_rounded,
+                        size: 18,
+                        color: _matchedFishPrice!.trend == PriceTrend.up
+                            ? const Color(0xFFEF4444)
+                            : const Color(0xFF0284C7),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              isBn
+                                  ? 'বাজার রেট (লাইভ): ৳${_matchedFishPrice!.currentPrice.toStringAsFixed(0)} / ${_matchedFishPrice!.unit}'
+                                  : 'Market Rate (Live): ৳${_matchedFishPrice!.currentPrice.toStringAsFixed(0)} / ${_matchedFishPrice!.unit}',
+                              style: GoogleFonts.hindSiliguri(
+                                fontSize: 12.5,
+                                color: const Color(0xFF0369A1),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              isBn
+                                  ? 'সুপার এডমিন কর্তৃক নির্ধারিত বর্তমান বেস প্রাইস'
+                                  : 'Current market rate set by Super Admin',
+                              style: GoogleFonts.hindSiliguri(
+                                fontSize: 10,
+                                color: const Color(0xFF0284C7),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          _priceController.text = _matchedFishPrice!.currentPrice.toStringAsFixed(0);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0284C7),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            isBn ? 'দর বসান' : 'Apply Rate',
+                            style: GoogleFonts.hindSiliguri(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
               const SizedBox(height: 14),
 
               // Quantity & Avg Weight Row
@@ -331,6 +465,11 @@ class _SellFishScreenState extends State<SellFishScreen> {
                   ),
                 ],
               ),
+
+              if (_matchedFishPrice != null) ...[
+                const SizedBox(height: 8),
+                _buildFishPriceAdvisoryChip(isBn, isDark),
+              ],
 
               const SizedBox(height: 14),
 
@@ -612,5 +751,222 @@ class _SellFishScreenState extends State<SellFishScreen> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Widget _buildFishPriceAdvisoryChip(bool isBn, bool isDark) {
+    if (_matchedFishPrice == null) return const SizedBox.shrink();
+
+    final bench = _matchedFishPrice!.currentPrice;
+    final unitText = _matchedFishPrice!.unit;
+    final enteredText = _priceController.text.trim();
+    final enteredPrice = double.tryParse(enteredText);
+
+    if (enteredPrice == null || enteredPrice <= 0) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF0F2633) : const Color(0xFFE0F2FE),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFF0284C7).withValues(alpha: 0.4)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.info_outline_rounded, size: 16, color: Color(0xFF0284C7)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                isBn
+                    ? 'বর্তমান বাজার রেট: ৳${bench.toStringAsFixed(0)} / $unitText'
+                    : 'Current Market Rate: ৳${bench.toStringAsFixed(0)} / $unitText',
+                style: GoogleFonts.hindSiliguri(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0369A1),
+                ),
+              ),
+            ),
+            GestureDetector(
+              onTap: () {
+                _priceController.text = bench.toStringAsFixed(0);
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0284C7),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  isBn ? 'দর বসান' : 'Apply Rate',
+                  style: GoogleFonts.hindSiliguri(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final diff = (enteredPrice - bench) / bench;
+
+    if (diff.abs() <= 0.05) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF10281C) : const Color(0xFFE8F5E9),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.green.withValues(alpha: 0.4)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.check_circle_outline, size: 16, color: Colors.green),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                isBn
+                    ? '✓ নির্ধারিত দর বাজারদরের (৳${bench.toStringAsFixed(0)}/$unitText) সাথে মানানসই।'
+                    : '✓ Price aligns with market benchmark (৳${bench.toStringAsFixed(0)}/$unitText).',
+                style: GoogleFonts.hindSiliguri(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.greenAccent : const Color(0xFF1B5E20),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (diff > 0.05) {
+      final diffAmount = (enteredPrice - bench).toStringAsFixed(0);
+      return Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF2A1C0E) : const Color(0xFFFFF8E1),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.amber.shade700.withValues(alpha: 0.5)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.trending_down_rounded, size: 18, color: Colors.amber.shade800),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isBn
+                        ? 'বাজারের চেয়ে ৳$diffAmount বেশি (দর কমানোর সুপারিশ)'
+                        : '৳$diffAmount above market (Decrease advised)',
+                    style: GoogleFonts.hindSiliguri(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.amber.shade900,
+                    ),
+                  ),
+                  Text(
+                    isBn
+                        ? 'মাছ পচনশীল পণ্য, দ্রুত আড়তদার বিড পেতে বাজারদর ৳${bench.toStringAsFixed(0)} নির্ধারণ করুন।'
+                        : 'Fresh fish is perishable; align with ৳${bench.toStringAsFixed(0)} to sell quickly.',
+                    style: GoogleFonts.hindSiliguri(
+                      fontSize: 10.5,
+                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 6),
+            ElevatedButton(
+              onPressed: () {
+                _priceController.text = bench.toStringAsFixed(0);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.amber.shade800,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+              ),
+              child: Text(
+                isBn ? '৳${bench.toStringAsFixed(0)} করুন' : 'Set ৳${bench.toStringAsFixed(0)}',
+                style: GoogleFonts.hindSiliguri(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final diffAmount = (bench - enteredPrice).toStringAsFixed(0);
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF0F2633) : const Color(0xFFE0F2FE),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFF0284C7).withValues(alpha: 0.5)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.trending_up_rounded, size: 18, color: Color(0xFF0284C7)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isBn
+                      ? 'বাজারের চেয়ে ৳$diffAmount কম (দর বাড়ানোর সুযোগ)'
+                      : '৳$diffAmount below market (Increase advised)',
+                  style: GoogleFonts.hindSiliguri(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF0284C7),
+                  ),
+                ),
+                Text(
+                  isBn
+                      ? 'আপনার লাভ বাড়াতে বর্তমান বাজার রেট ৳${bench.toStringAsFixed(0)}/$unitText নির্ধারণ করতে পারেন।'
+                      : 'You can increase price to ৳${bench.toStringAsFixed(0)}/$unitText for fair margin.',
+                  style: GoogleFonts.hindSiliguri(
+                    fontSize: 10.5,
+                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 6),
+          ElevatedButton(
+            onPressed: () {
+              _priceController.text = bench.toStringAsFixed(0);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF0284C7),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+            ),
+            child: Text(
+              isBn ? '৳${bench.toStringAsFixed(0)} করুন' : 'Set ৳${bench.toStringAsFixed(0)}',
+              style: GoogleFonts.hindSiliguri(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

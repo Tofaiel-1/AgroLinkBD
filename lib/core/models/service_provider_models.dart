@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 /// Service Provider Product Model
 /// Represents products sold by agricultural service providers
 /// Categories: সার, কীটনাশক, ট্র্যাক্টর, বীজ, যন্ত্রপাতি, পরামর্শ
@@ -23,6 +25,17 @@ extension ServiceProductCategoryExt on ServiceProductCategory {
     }
   }
 
+  String get englishName {
+    switch (this) {
+      case ServiceProductCategory.fertilizer: return 'Fertilizer';
+      case ServiceProductCategory.pesticide: return 'Pesticide';
+      case ServiceProductCategory.tractor: return 'Tractor';
+      case ServiceProductCategory.seed: return 'Seeds';
+      case ServiceProductCategory.equipment: return 'Equipment';
+      case ServiceProductCategory.advisory: return 'Advisory';
+    }
+  }
+
   String get icon {
     switch (this) {
       case ServiceProductCategory.fertilizer: return '🧪';
@@ -39,12 +52,15 @@ class ServiceProduct {
   final String id;
   final String shopOwnerId;
   final String name;
+  final String? nameEN;
   final String description;
+  final String? descriptionEN;
   final ServiceProductCategory category;
   final double price;
   final double? discountPrice;
   final int stockQuantity;
   final String unit; // কেজি, লিটার, প্যাকেট, পিস
+  final String? unitEN; // kg, liter, packet, pcs
   final String? brand;
   final List<String> images;
   final double rating;
@@ -59,12 +75,15 @@ class ServiceProduct {
     required this.id,
     required this.shopOwnerId,
     required this.name,
+    this.nameEN,
     required this.description,
+    this.descriptionEN,
     required this.category,
     required this.price,
     this.discountPrice,
     required this.stockQuantity,
     required this.unit,
+    this.unitEN,
     this.brand,
     this.images = const [],
     this.rating = 0.0,
@@ -80,12 +99,15 @@ class ServiceProduct {
     String? id,
     String? shopOwnerId,
     String? name,
+    String? nameEN,
     String? description,
+    String? descriptionEN,
     ServiceProductCategory? category,
     double? price,
     double? discountPrice,
     int? stockQuantity,
     String? unit,
+    String? unitEN,
     String? brand,
     List<String>? images,
     double? rating,
@@ -100,12 +122,15 @@ class ServiceProduct {
       id: id ?? this.id,
       shopOwnerId: shopOwnerId ?? this.shopOwnerId,
       name: name ?? this.name,
+      nameEN: nameEN ?? this.nameEN,
       description: description ?? this.description,
+      descriptionEN: descriptionEN ?? this.descriptionEN,
       category: category ?? this.category,
       price: price ?? this.price,
       discountPrice: discountPrice ?? this.discountPrice,
       stockQuantity: stockQuantity ?? this.stockQuantity,
       unit: unit ?? this.unit,
+      unitEN: unitEN ?? this.unitEN,
       brand: brand ?? this.brand,
       images: images ?? this.images,
       rating: rating ?? this.rating,
@@ -118,11 +143,99 @@ class ServiceProduct {
     );
   }
 
+  String getName(bool isBn) => isBn ? name : (nameEN ?? name);
+  String getUnit(bool isBn) => isBn ? unit : (unitEN ?? unit);
+  String getDescription(bool isBn) => isBn ? description : (descriptionEN ?? description);
+
   bool get hasDiscount => discountPrice != null && discountPrice! < price;
   double get effectivePrice => discountPrice ?? price;
   double get discountPercentage => hasDiscount ? ((price - discountPrice!) / price * 100) : 0;
   bool get isLowStock => stockQuantity > 0 && stockQuantity <= 10;
   bool get isOutOfStock => stockQuantity <= 0;
+
+  static ServiceProductCategory categoryFromString(String? cat) {
+    if (cat == null) return ServiceProductCategory.fertilizer;
+    switch (cat.toLowerCase().trim()) {
+      case 'fertilizer':
+      case 'সার':
+        return ServiceProductCategory.fertilizer;
+      case 'pesticide':
+      case 'কীটনাশক':
+        return ServiceProductCategory.pesticide;
+      case 'tractor':
+      case 'ট্র্যাক্টর':
+        return ServiceProductCategory.tractor;
+      case 'seed':
+      case 'seeds':
+      case 'বীজ':
+        return ServiceProductCategory.seed;
+      case 'equipment':
+      case 'যন্ত্রপাতি':
+        return ServiceProductCategory.equipment;
+      case 'advisory':
+      case 'পরামর্শ':
+        return ServiceProductCategory.advisory;
+      default:
+        return ServiceProductCategory.fertilizer;
+    }
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'shopOwnerId': shopOwnerId,
+      'name': name,
+      'nameEN': nameEN,
+      'description': description,
+      'descriptionEN': descriptionEN,
+      'category': category.name,
+      'price': price,
+      'discountPrice': discountPrice,
+      'stockQuantity': stockQuantity,
+      'unit': unit,
+      'unitEN': unitEN,
+      'brand': brand,
+      'images': images,
+      'rating': rating,
+      'totalSold': totalSold,
+      'totalReviews': totalReviews,
+      'isAvailable': isAvailable,
+      'isForRent': isForRent,
+      'rentPricePerDay': rentPricePerDay,
+      'createdAt': Timestamp.fromDate(createdAt),
+    };
+  }
+
+  factory ServiceProduct.fromMap(Map<String, dynamic> map, [String? docId]) {
+    DateTime parseDate(dynamic val) {
+      if (val is Timestamp) return val.toDate();
+      if (val is String) return DateTime.tryParse(val) ?? DateTime.now();
+      return DateTime.now();
+    }
+
+    return ServiceProduct(
+      id: docId ?? map['id'] ?? '',
+      shopOwnerId: map['shopOwnerId'] ?? '',
+      name: map['name'] ?? '',
+      nameEN: map['nameEN'],
+      description: map['description'] ?? '',
+      descriptionEN: map['descriptionEN'],
+      category: categoryFromString(map['category']),
+      price: (map['price'] as num?)?.toDouble() ?? 0.0,
+      discountPrice: (map['discountPrice'] as num?)?.toDouble(),
+      stockQuantity: (map['stockQuantity'] as num?)?.toInt() ?? 0,
+      unit: map['unit'] ?? 'কেজি',
+      unitEN: map['unitEN'] ?? 'kg',
+      brand: map['brand'],
+      images: (map['images'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+      rating: (map['rating'] as num?)?.toDouble() ?? 0.0,
+      totalSold: (map['totalSold'] as num?)?.toInt() ?? 0,
+      totalReviews: (map['totalReviews'] as num?)?.toInt() ?? 0,
+      isAvailable: map['isAvailable'] ?? true,
+      isForRent: map['isForRent'] ?? false,
+      rentPricePerDay: (map['rentPricePerDay'] as num?)?.toDouble(),
+      createdAt: parseDate(map['createdAt']),
+    );
+  }
 }
 
 /// Order Item within a ServiceOrder

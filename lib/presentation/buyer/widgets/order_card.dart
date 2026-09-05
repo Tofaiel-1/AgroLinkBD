@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 
 class OrderCard extends StatelessWidget {
   final String orderId;
@@ -48,18 +49,23 @@ class OrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isBn = LanguageProvider.isBn(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 8),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDark ? const Color(0xFF1E293B) : Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(
+            color: isDark ? const Color(0xFF334155) : Colors.grey.shade200,
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.shade100,
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -75,10 +81,13 @@ class OrderCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'অর্ডার #${orderId.substring(0, 8)}',
-                      style: const TextStyle(
+                      isBn
+                          ? 'অর্ডার #${orderId.length > 8 ? orderId.substring(0, 8) : orderId}'
+                          : 'Order #${orderId.length > 8 ? orderId.substring(0, 8) : orderId}',
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : Colors.black87,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -95,11 +104,11 @@ class OrderCard extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: getStatusColor().withOpacity(0.1),
+                    color: getStatusColor().withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    statusBN,
+                    isBn ? statusBN : status.toUpperCase(),
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
@@ -125,7 +134,9 @@ class OrderCard extends StatelessWidget {
                         height: 60,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(8),
-                          color: Colors.grey.shade200,
+                          color: isDark
+                              ? const Color(0xFF334155)
+                              : Colors.grey.shade200,
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
@@ -153,14 +164,15 @@ class OrderCard extends StatelessWidget {
                   children: [
                     Text(
                       farmerName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white : Colors.black87,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '$itemCount আইটেম',
+                      isBn ? '$itemCount আইটেম' : '$itemCount items',
                       style: const TextStyle(
                         fontSize: 11,
                         color: Colors.grey,
@@ -194,9 +206,9 @@ class OrderCard extends StatelessWidget {
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: Colors.red),
                       ),
-                      child: const Text(
-                        'বাতিল করুন',
-                        style: TextStyle(fontSize: 11, color: Colors.red),
+                      child: Text(
+                        isBn ? 'বাতিল করুন' : 'Cancel',
+                        style: const TextStyle(fontSize: 11, color: Colors.red),
                       ),
                     ),
                   ),
@@ -207,9 +219,9 @@ class OrderCard extends StatelessWidget {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF1976D2),
                       ),
-                      child: const Text(
-                        'ট্র্যাক করুন',
-                        style: TextStyle(fontSize: 11, color: Colors.white),
+                      child: Text(
+                        isBn ? 'ট্র্যাক করুন' : 'Track Order',
+                        style: const TextStyle(fontSize: 11, color: Colors.white),
                       ),
                     ),
                   ),
@@ -221,9 +233,9 @@ class OrderCard extends StatelessWidget {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF1976D2),
                       ),
-                      child: const Text(
-                        'বিস্তারিত',
-                        style: TextStyle(fontSize: 11, color: Colors.white),
+                      child: Text(
+                        isBn ? 'বিস্তারিত' : 'Details',
+                        style: const TextStyle(fontSize: 11, color: Colors.white),
                       ),
                     ),
                   ),

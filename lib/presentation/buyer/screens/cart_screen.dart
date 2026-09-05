@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:agrolinkbd/presentation/buyer/providers/cart_provider.dart';
 import 'package:agrolinkbd/presentation/buyer/widgets/cart_item_widget.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 
 class CartScreen extends ConsumerWidget {
   const CartScreen({Key? key}) : super(key: key);
@@ -10,10 +11,11 @@ class CartScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final cart = ref.watch(cartProvider);
     final cartSummary = ref.watch(cartSummaryProvider);
+    final isBn = LanguageProvider.isBn(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('আমার কার্ট'),
+        title: Text(isBn ? 'আমার কার্ট' : 'My Cart'),
         elevation: 0,
       ),
       body: cart.when(
@@ -25,15 +27,15 @@ class CartScreen extends ConsumerWidget {
                     const Icon(Icons.shopping_cart_outlined,
                         size: 64, color: Colors.grey),
                     const SizedBox(height: 16),
-                    const Text(
-                      'কার্ট খালি',
+                    Text(
+                      isBn ? 'কার্ট খালি' : 'Cart is Empty',
                       style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'পণ্য যোগ করতে শুরু করুন',
-                      style: TextStyle(color: Colors.grey),
+                    Text(
+                      isBn ? 'পণ্য যোগ করতে শুরু করুন' : 'Start adding products to your cart',
+                      style: const TextStyle(color: Colors.grey),
                     ),
                     const SizedBox(height: 24),
                     ElevatedButton(
@@ -41,7 +43,7 @@ class CartScreen extends ConsumerWidget {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF1976D2),
                       ),
-                      child: const Text('শপিং চালিয়ে যান'),
+                      child: Text(isBn ? 'শপিং চালিয়ে যান' : 'Continue Shopping'),
                     ),
                   ],
                 ),

@@ -29,6 +29,7 @@ import 'package:agrolinkbd/presentation/screens/analytics/farmer_analytics.dart'
 import 'package:agrolinkbd/presentation/screens/farmer/tools/farm_smart_calculator_sheet.dart';
 import 'package:agrolinkbd/presentation/screens/hub/upazila_hub_network_screen.dart';
 import 'package:agrolinkbd/presentation/screens/hub/union_hub_network_screen.dart';
+import 'package:agrolinkbd/presentation/widgets/farmer_market_price_advisory_card.dart';
 
 class FarmerDashboard extends StatefulWidget {
   const FarmerDashboard({super.key});
@@ -521,6 +522,13 @@ class _FarmerDashboardState extends State<FarmerDashboard> with SingleTickerProv
                     ),
                     const SizedBox(height: 12),
                     _buildMarketPriceTicker(isDark),
+                    const SizedBox(height: 16),
+
+                    // Super Admin Market Command & Farmer Price Advisory
+                    FarmerMarketPriceAdvisoryCard(
+                      farmerId: _userId,
+                      isFishFarmer: false,
+                    ),
                     const SizedBox(height: 24),
                     
                     // 5. Activity Report Generation

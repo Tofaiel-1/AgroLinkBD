@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'package:agrolinkbd/core/providers/user_provider.dart';
@@ -39,8 +40,6 @@ import 'package:agrolinkbd/presentation/screens/profile/profile_settings.dart';
 import 'package:agrolinkbd/presentation/screens/marketplace/marketplace_screen.dart';
 import 'package:agrolinkbd/presentation/screens/buyer/shopping_cart_screen.dart';
 import 'package:agrolinkbd/presentation/screens/buyer/fish_buyer_orders_screen.dart';
-import 'package:agrolinkbd/presentation/buyer/screens/buyer_orders_screen.dart';
-import 'package:agrolinkbd/presentation/screens/buyer/buyer_profile_screen.dart';
 import 'package:agrolinkbd/presentation/screens/buyer/fish_buyer_dashboard.dart';
 import 'package:agrolinkbd/presentation/screens/marketplace/fish_marketplace_screen.dart';
 
@@ -54,8 +53,8 @@ import 'package:agrolinkbd/presentation/screens/analytics/company_analytics.dart
 
 // Phase 2 Screens - Management
 import 'package:agrolinkbd/presentation/screens/farmer/farm_management_screen.dart';
-import 'package:agrolinkbd/presentation/screens/service_provider/service_provider_products_screen.dart';
-import 'package:agrolinkbd/presentation/screens/service_provider/service_provider_orders_screen.dart';
+import 'package:agrolinkbd/presentation/screens/service_provider/portfolio_gallery_screen.dart';
+import 'package:agrolinkbd/presentation/screens/service_provider/service_provider_earnings_screen.dart';
 import 'package:agrolinkbd/presentation/screens/company/team_management_screen.dart';
 
 /// Role-Based Navigation Container
@@ -117,13 +116,27 @@ class _RoleBasedNavigationContainerState
 
   @override
   Widget build(BuildContext context) {
+    // Listen reactively to LanguageProvider
+    final isBn = LanguageProvider.isBn(context);
+
     // Get the appropriate navigation stack for this role
     final navigationStack = _getNavigationStack();
     final navigationItems =
         RoleService.getNavigationItems(widget.user.userType);
 
-    return WillPopScope(
-      onWillPop: _handleBackPress,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final shouldExit = await _handleBackPress();
+        if (shouldExit && context.mounted) {
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+          } else {
+            SystemNavigator.pop();
+          }
+        }
+      },
       child: Scaffold(
         drawer: _buildDrawer(context, widget.user),
         body: ResponsiveWebWrapper.content(
@@ -132,24 +145,25 @@ class _RoleBasedNavigationContainerState
             children: navigationStack,
           ),
         ),
-        bottomNavigationBar: _buildRoleSpecificBottomNav(navigationItems),
+        bottomNavigationBar: _buildRoleSpecificBottomNav(navigationItems, isBn),
       ),
     );
   }
 
   Widget _buildDrawer(BuildContext context, UserModel user) {
+    final isBn = LanguageProvider.isBn(context);
     final roleString = user.userType.toString().split('.').last.toLowerCase();
-    String roleDisplay = 'ব্যবহারকারী';
-    if (roleString == 'farmer') roleDisplay = 'কৃষক';
-    if (roleString == 'buyer') roleDisplay = 'ক্রেতা';
-    if (roleString == 'driver') roleDisplay = 'চালক';
-    if (roleString == 'serviceprovider') roleDisplay = 'সেবা প্রদানকারী';
-    if (roleString == 'company') roleDisplay = 'কোম্পানি';
-    if (roleString == 'fishfarmer') roleDisplay = 'মৎস্য চাষী';
-    if (roleString == 'fishbuyer') roleDisplay = 'মৎস্য ক্রেতা';
-    if (roleString == 'fishdriver') roleDisplay = 'মৎস্য পরিবহন';
-    if (roleString == 'hatchery') roleDisplay = 'হ্যাচারি মালিক';
-    if (roleString == 'fishexpert') roleDisplay = 'মৎস্য বিশেষজ্ঞ';
+    String roleDisplay = isBn ? 'ব্যবহারকারী' : 'User';
+    if (roleString == 'farmer') roleDisplay = isBn ? 'কৃষক' : 'Farmer';
+    if (roleString == 'buyer') roleDisplay = isBn ? 'ক্রেতা' : 'Buyer';
+    if (roleString == 'driver') roleDisplay = isBn ? 'চালক' : 'Driver';
+    if (roleString == 'serviceprovider') roleDisplay = isBn ? 'সেবা প্রদানকারী' : 'Service Provider';
+    if (roleString == 'company') roleDisplay = isBn ? 'কোম্পানি' : 'Company';
+    if (roleString == 'fishfarmer') roleDisplay = isBn ? 'মৎস্য চাষী' : 'Fish Farmer';
+    if (roleString == 'fishbuyer') roleDisplay = isBn ? 'মৎস্য ক্রেতা' : 'Fish Buyer';
+    if (roleString == 'fishdriver') roleDisplay = isBn ? 'মৎস্য পরিবহন' : 'Fish Driver';
+    if (roleString == 'hatchery') roleDisplay = isBn ? 'হ্যাচারি মালিক' : 'Hatchery Owner';
+    if (roleString == 'fishexpert') roleDisplay = isBn ? 'মৎস্য বিশেষজ্ঞ' : 'Fisheries Expert';
 
     final roleColor = RoleService.getRoleColor(user.userType);
     final darkRoleColor = HSLColor.fromColor(roleColor)
@@ -169,23 +183,21 @@ class _RoleBasedNavigationContainerState
               ),
             ),
             accountName: Text(
-              user.name ?? 'AgroLinkBD User',
+              user.name.isNotEmpty ? user.name : 'AgroLinkBD User',
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
             accountEmail: Text(
-              '$roleDisplay | ${user.phone ?? ""}',
+              '$roleDisplay | ${user.phone}',
               style: const TextStyle(fontSize: 14),
             ),
             currentAccountPicture: GestureDetector(
               onTap: () {
-                // Import if not already imported, but we can use Get.to if Get is available
-                // Let's use Navigator to be safe, but Get.to is already imported in this file
                 Get.to(() => const agrolinkbd.CardPreviewScreen());
               },
               child: CircleAvatar(
                 backgroundColor: Colors.white,
                 backgroundImage: const NetworkImage('https://randomuser.me/api/portraits/men/44.jpg'),
-                child: user.name == null || user.name!.isEmpty
+                child: user.name.isEmpty
                     ? Text(roleDisplay[0], style: TextStyle(fontSize: 24, color: roleColor))
                     : null,
               ),
@@ -194,7 +206,7 @@ class _RoleBasedNavigationContainerState
           
           ListTile(
             leading: const Icon(Icons.dark_mode),
-            title: Text(LanguageProvider.isBn(context) ? 'ডার্ক / লাইট মোড' : 'Dark / Light Mode'),
+            title: Text(isBn ? 'ডার্ক / লাইট মোড' : 'Dark / Light Mode'),
             trailing: Switch(
               value: Get.isDarkMode,
               onChanged: (value) {
@@ -207,20 +219,22 @@ class _RoleBasedNavigationContainerState
           
           ListTile(
             leading: const Icon(Icons.language),
-            title: Text(LanguageProvider.isBn(context) ? 'ভাষা' : 'Language'),
-            subtitle: Text(LanguageProvider.isBn(context) ? 'বাংলা' : 'English'),
-            onTap: () {
-              Provider.of<LanguageProvider>(context, listen: false).toggleLanguage();
+            title: Text(isBn ? 'ভাষা' : 'Language'),
+            subtitle: Text(isBn ? '🇧🇩 বাংলা' : '🇺🇸 English'),
+            onTap: () async {
+              final lang = Provider.of<LanguageProvider>(context, listen: false);
+              await lang.toggleLanguage();
+              if (mounted) setState(() {});
               Get.snackbar(
-                LanguageProvider.isBn(context) ? 'ভাষা পরিবর্তন' : 'Language Changed',
-                LanguageProvider.isBn(context) ? 'বাংলা ভাষা নির্বাচন করা হয়েছে' : 'English language selected',
+                lang.isBangla ? 'ভাষা পরিবর্তন' : 'Language Changed',
+                lang.isBangla ? 'বাংলা ভাষা নির্বাচন করা হয়েছে' : 'English language selected',
                 snackPosition: SnackPosition.BOTTOM,
               );
             },
           ),
           ListTile(
             leading: const Icon(Icons.warning_amber_rounded, color: Colors.red),
-            title: Text(LanguageProvider.isBn(context) ? 'জরুরি সেবা ও আবহাওয়া কেন্দ্র' : 'Emergency & Weather Center', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+            title: Text(isBn ? 'জরুরি সেবা ও আবহাওয়া কেন্দ্র' : 'Emergency & Weather Center', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
             onTap: () {
               Navigator.pop(context);
               Get.to(() => const EmergencyWeatherServicesScreen());
@@ -228,21 +242,21 @@ class _RoleBasedNavigationContainerState
           ),
           ListTile(
             leading: const Icon(Icons.help_outline),
-            title: Text(LanguageProvider.isBn(context) ? 'সাহায্য ও সাপোর্ট' : 'Help & Support'),
+            title: Text(isBn ? 'সাহায্য ও সাপোর্ট' : 'Help & Support'),
             onTap: () {
               Get.snackbar(
-                LanguageProvider.isBn(context) ? 'সাপোর্ট' : 'Support',
-                LanguageProvider.isBn(context) ? 'হেল্পলাইন: 16123' : 'Helpline: 16123',
+                isBn ? 'সাপোর্ট' : 'Support',
+                isBn ? 'হেল্পলাইন: 16123' : 'Helpline: 16123',
               );
             },
           ),
           ListTile(
             leading: const Icon(Icons.privacy_tip_outlined),
-            title: Text(LanguageProvider.isBn(context) ? 'গোপনীয়তা নীতি' : 'Privacy Policy'),
+            title: Text(isBn ? 'গোপনীয়তা নীতি' : 'Privacy Policy'),
             onTap: () {
               Get.snackbar(
-                LanguageProvider.isBn(context) ? 'গোপনীয়তা' : 'Privacy Policy',
-                LanguageProvider.isBn(context) ? 'গোপনীয়তা নীতি লোড হচ্ছে...' : 'Loading privacy policy...',
+                isBn ? 'গোপনীয়তা' : 'Privacy Policy',
+                isBn ? 'গোপনীয়তা নীতি লোড হচ্ছে...' : 'Loading privacy policy...',
               );
             },
           ),
@@ -250,7 +264,7 @@ class _RoleBasedNavigationContainerState
           const Divider(),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
-            title: Text(LanguageProvider.isBn(context) ? 'লগ আউট' : 'Logout', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            title: Text(isBn ? 'লগ আউট' : 'Logout', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
             onTap: () {
               Navigator.pop(context); // Close drawer
               _showLogoutDialog(context);
@@ -311,8 +325,8 @@ class _RoleBasedNavigationContainerState
           const BuyerDashboardScreen(),
           const MarketplaceScreen(),
           const ShoppingCartScreen(),
-          const BuyerOrdersScreen(),
-          const BuyerProfileScreen(),
+          const FishBuyerOrdersScreen(),
+          const ProfileSettings(),
         ];
 
       case UserType.driver:
@@ -325,23 +339,20 @@ class _RoleBasedNavigationContainerState
         ];
 
       case UserType.serviceProvider:
+      case UserType.fishServiceProvider:
+      case UserType.expert:
+      case UserType.fishExpert:
         return [
           const ServiceProviderDashboard(),
-          const ServiceProviderProductsScreen(),
-          const ServiceProviderOrdersScreen(),
-          const BazaarHome(),
+          const PortfolioGalleryScreen(),
+          const ServiceProviderEarningsScreen(),
           const ProfileSettings(),
         ];
 
       case UserType.company:
-        return [
-          const CompanyDashboard(),
-          const TeamManagementScreen(),
-          const CompanyAnalyticsScreen(),
-          const CompanyOrdersScreen(),
-          const CompanyContractsScreen(),
-        ];
       case UserType.seller:
+      case UserType.fishCompany:
+      case UserType.hatchery:
         return [
           const CompanyDashboard(),
           const TeamManagementScreen(),
@@ -373,24 +384,11 @@ class _RoleBasedNavigationContainerState
           const FishDriverJobBoardScreen(),
           const ProfileSettings(),
         ];
-      case UserType.fishServiceProvider:
-      case UserType.fishCompany:
-      case UserType.fishExpert:
-      case UserType.hatchery:
-      case UserType.expert:
-        return [
-          Scaffold(body: Center(child: Text('Fisheries Dashboard (${widget.user.userType.name})'))),
-          const Scaffold(body: Center(child: Text('Marketplace/Catalog'))),
-          const Scaffold(body: Center(child: Text('Analytics'))),
-          const Scaffold(body: Center(child: Text('Orders/Bookings'))),
-          const ProfileSettings(),
-        ];
     }
   }
 
   /// Build role-specific bottom navigation with role's color
-  Widget _buildRoleSpecificBottomNav(List<Map<String, dynamic>> navItems) {
-    final isBn = LanguageProvider.isBn(context);
+  Widget _buildRoleSpecificBottomNav(List<Map<String, dynamic>> navItems, bool isBn) {
     final roleColor = RoleService.getRoleColor(widget.user.userType);
     final items = navItems
         .map((item) => BottomNavigationBarItem(

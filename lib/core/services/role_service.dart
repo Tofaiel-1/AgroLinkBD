@@ -169,7 +169,6 @@ class RoleService {
             'labelBN': 'বিশ্লেষণ',
             'icon': Icons.analytics
           },
-          {'label': 'Marketplace', 'labelBN': 'বাজার', 'icon': Icons.shop},
           {
             'label': 'Settings',
             'labelBN': 'সেটিংস',

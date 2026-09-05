@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:agrolinkbd/core/models/service_model.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 import 'package:agrolinkbd/core/providers/service_provider_providers.dart';
 
 class ManageServicesScreen extends ConsumerStatefulWidget {
@@ -24,18 +25,27 @@ class _ManageServicesScreenState extends ConsumerState<ManageServicesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isBn = LanguageProvider.isBn(context);
     final servicesAsyncValue = ref.watch(providerServicesStreamProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5FA),
       appBar: AppBar(
         title: Text(
-          'সেবা পরিচালনা করুন',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 18),
+          isBn ? 'সেবা পরিচালনা করুন' : 'Manage Services',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white),
         ),
-        backgroundColor: const Color(0xFF4527A0),
+        backgroundColor: const Color(0xFF2B32B2),
         elevation: 0,
         centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Get.back();
+            }
+          },
+        ),
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
         ),
@@ -50,16 +60,19 @@ class _ManageServicesScreenState extends ConsumerState<ManageServicesScreen> {
                   Icon(Icons.design_services_outlined, size: 80, color: Colors.grey.shade400),
                   const SizedBox(height: 16),
                   Text(
-                    'কোনো সেবা যোগ করা হয়নি',
+                    isBn ? 'কোনো সেবা যোগ করা হয়নি' : 'No services added yet',
                     style: GoogleFonts.poppins(fontSize: 16, color: Colors.grey.shade600),
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton.icon(
                     onPressed: () => _showAddServiceBottomSheet(context),
-                    icon: const Icon(Icons.add),
-                    label: Text('নতুন সেবা যোগ করুন', style: GoogleFonts.poppins()),
+                    icon: const Icon(Icons.add, color: Colors.white),
+                    label: Text(
+                      isBn ? 'নতুন সেবা যোগ করুন' : 'Add New Service',
+                      style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF4527A0),
+                      backgroundColor: const Color(0xFF2B32B2),
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
@@ -72,27 +85,31 @@ class _ManageServicesScreenState extends ConsumerState<ManageServicesScreen> {
           return ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: services.length,
+            physics: const BouncingScrollPhysics(),
             itemBuilder: (context, index) {
               final service = services[index];
-              return _buildServiceCard(service);
+              return _buildServiceCard(service, isBn);
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFF4527A0))),
+        loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFF2B32B2))),
         error: (error, stack) => Center(
           child: Text('Error: $error', style: const TextStyle(color: Colors.red)),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: const Color(0xFF4527A0),
+        backgroundColor: const Color(0xFF2B32B2),
         onPressed: () => _showAddServiceBottomSheet(context),
-        icon: const Icon(Icons.add),
-        label: Text('নতুন সেবা', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: Text(
+          isBn ? 'নতুন সেবা' : 'New Service',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: Colors.white),
+        ),
       ),
     );
   }
 
-  Widget _buildServiceCard(ServiceModel service) {
+  Widget _buildServiceCard(ServiceModel service, bool isBn) {
     final isActive = service.status == ServiceStatus.active;
 
     return Container(
@@ -102,7 +119,7 @@ class _ManageServicesScreenState extends ConsumerState<ManageServicesScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -116,7 +133,7 @@ class _ManageServicesScreenState extends ConsumerState<ManageServicesScreen> {
             height: 120,
             decoration: BoxDecoration(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              color: const Color(0xFF4527A0).withOpacity(0.1),
+              color: const Color(0xFF2B32B2).withValues(alpha: 0.1),
               image: service.imageUrl != null && service.imageUrl!.isNotEmpty
                   ? DecorationImage(
                       image: NetworkImage(service.imageUrl!),
@@ -126,7 +143,7 @@ class _ManageServicesScreenState extends ConsumerState<ManageServicesScreen> {
             ),
             child: service.imageUrl == null || service.imageUrl!.isEmpty
                 ? Center(
-                    child: Icon(Icons.handyman_rounded, size: 50, color: const Color(0xFF4527A0).withOpacity(0.4)),
+                    child: Icon(Icons.handyman_rounded, size: 50, color: const Color(0xFF2B32B2).withValues(alpha: 0.4)),
                   )
                 : null,
           ),
@@ -153,11 +170,11 @@ class _ManageServicesScreenState extends ConsumerState<ManageServicesScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: isActive ? Colors.green.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+                        color: isActive ? Colors.green.withValues(alpha: 0.1) : Colors.grey.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
-                        isActive ? 'সক্রিয়' : 'নিষ্ক্রিয়',
+                        isBn ? (isActive ? 'সক্রিয়' : 'নিষ্ক্রিয়') : (isActive ? 'Active' : 'Inactive'),
                         style: GoogleFonts.poppins(
                           fontSize: 10,
                           color: isActive ? Colors.green.shade700 : Colors.grey.shade700,
@@ -173,7 +190,7 @@ class _ManageServicesScreenState extends ConsumerState<ManageServicesScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFF7B1FA2),
+                    color: const Color(0xFF2B32B2),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -193,7 +210,7 @@ class _ManageServicesScreenState extends ConsumerState<ManageServicesScreen> {
                         const Icon(Icons.star_rounded, size: 16, color: Colors.amber),
                         const SizedBox(width: 4),
                         Text(
-                          '${service.rating} (${service.bookingsCount} বুকিং)',
+                          isBn ? '${service.rating} (${service.bookingsCount} বুকিং)' : '${service.rating} (${service.bookingsCount} bookings)',
                           style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade700),
                         ),
                       ],
@@ -201,16 +218,16 @@ class _ManageServicesScreenState extends ConsumerState<ManageServicesScreen> {
                     Row(
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.edit_rounded, size: 20, color: Color(0xFF4527A0)),
+                          icon: const Icon(Icons.edit_rounded, size: 20, color: Color(0xFF2B32B2)),
                           onPressed: () => _showAddServiceBottomSheet(context, serviceToEdit: service),
-                          tooltip: 'সম্পাদনা',
+                          tooltip: isBn ? 'সম্পাদনা' : 'Edit',
                         ),
                         Switch(
                           value: isActive,
                           onChanged: (val) {
                             ref.read(serviceManagementProvider).toggleServiceStatus(service.id, service.status);
                           },
-                          activeColor: const Color(0xFF4527A0),
+                          activeThumbColor: const Color(0xFF2B32B2),
                         ),
                       ],
                     ),
@@ -263,7 +280,7 @@ class _AddEditServiceSheetState extends ConsumerState<AddEditServiceSheet> {
     super.dispose();
   }
 
-  Future<void> _saveService() async {
+  Future<void> _saveService(bool isBn) async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
@@ -286,14 +303,26 @@ class _AddEditServiceSheetState extends ConsumerState<AddEditServiceSheet> {
 
       if (widget.service == null) {
         await serviceService.addService(newService);
-        Get.snackbar('সফল', 'নতুন সেবা যোগ করা হয়েছে', backgroundColor: Colors.green.shade100);
+        Get.snackbar(
+          isBn ? 'সফল' : 'Success',
+          isBn ? 'নতুন সেবা যোগ করা হয়েছে' : 'New service added successfully',
+          backgroundColor: Colors.green.shade100,
+        );
       } else {
         await serviceService.updateService(newService);
-        Get.snackbar('সফল', 'সেবা আপডেট করা হয়েছে', backgroundColor: Colors.blue.shade100);
+        Get.snackbar(
+          isBn ? 'সফল' : 'Success',
+          isBn ? 'সেবা আপডেট করা হয়েছে' : 'Service updated successfully',
+          backgroundColor: Colors.blue.shade100,
+        );
       }
       if (mounted) Navigator.pop(context);
     } catch (e) {
-      Get.snackbar('ত্রুটি', 'সেবা সংরক্ষণ করতে সমস্যা হয়েছে', backgroundColor: Colors.red.shade100);
+      Get.snackbar(
+        isBn ? 'ত্রুটি' : 'Error',
+        isBn ? 'সেবা সংরক্ষণ করতে সমস্যা হয়েছে' : 'Failed to save service',
+        backgroundColor: Colors.red.shade100,
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -301,6 +330,8 @@ class _AddEditServiceSheetState extends ConsumerState<AddEditServiceSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final isBn = LanguageProvider.isBn(context);
+
     return Container(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -331,29 +362,31 @@ class _AddEditServiceSheetState extends ConsumerState<AddEditServiceSheet> {
               ),
               const SizedBox(height: 24),
               Text(
-                widget.service == null ? 'নতুন সেবা যোগ করুন' : 'সেবা সম্পাদনা করুন',
-                style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold, color: const Color(0xFF4527A0)),
+                widget.service == null
+                    ? (isBn ? 'নতুন সেবা যোগ করুন' : 'Add New Service')
+                    : (isBn ? 'সেবা সম্পাদনা করুন' : 'Edit Service'),
+                style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF2B32B2)),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
               TextFormField(
                 controller: _nameController,
                 decoration: InputDecoration(
-                  labelText: 'সেবার নাম',
+                  labelText: isBn ? 'সেবার নাম' : 'Service Name',
                   prefixIcon: const Icon(Icons.handyman_rounded),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                validator: (val) => val!.isEmpty ? 'নাম প্রয়োজন' : null,
+                validator: (val) => val!.isEmpty ? (isBn ? 'নাম প্রয়োজন' : 'Name is required') : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _descController,
                 maxLines: 3,
                 decoration: InputDecoration(
-                  labelText: 'বিবরণ',
+                  labelText: isBn ? 'বিবরণ' : 'Description',
                   prefixIcon: const Icon(Icons.description_rounded),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                validator: (val) => val!.isEmpty ? 'বিবরণ প্রয়োজন' : null,
+                validator: (val) => val!.isEmpty ? (isBn ? 'বিবরণ প্রয়োজন' : 'Description is required') : null,
               ),
               const SizedBox(height: 16),
               Row(
@@ -364,11 +397,11 @@ class _AddEditServiceSheetState extends ConsumerState<AddEditServiceSheet> {
                       controller: _priceController,
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
-                        labelText: 'মূল্য (৳)',
+                        labelText: isBn ? 'মূল্য (৳)' : 'Price (৳)',
                         prefixIcon: const Icon(Icons.attach_money_rounded),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      validator: (val) => val!.isEmpty ? 'মূল্য প্রয়োজন' : null,
+                      validator: (val) => val!.isEmpty ? (isBn ? 'মূল্য প্রয়োজন' : 'Price is required') : null,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -377,11 +410,11 @@ class _AddEditServiceSheetState extends ConsumerState<AddEditServiceSheet> {
                     child: TextFormField(
                       controller: _priceUnitController,
                       decoration: InputDecoration(
-                        labelText: 'ইউনিট',
-                        hintText: '/ঘণ্টা',
+                        labelText: isBn ? 'ইউনিট' : 'Unit',
+                        hintText: isBn ? '/ঘণ্টা' : '/hr',
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      validator: (val) => val!.isEmpty ? 'ইউনিট প্রয়োজন' : null,
+                      validator: (val) => val!.isEmpty ? (isBn ? 'ইউনিট প্রয়োজন' : 'Unit is required') : null,
                     ),
                   ),
                 ],
@@ -390,7 +423,7 @@ class _AddEditServiceSheetState extends ConsumerState<AddEditServiceSheet> {
               TextFormField(
                 controller: _imageUrlController,
                 decoration: InputDecoration(
-                  labelText: 'ছবির লিংক (URL)',
+                  labelText: isBn ? 'ছবির লিংক (URL)' : 'Image URL',
                   hintText: 'https://example.com/image.jpg',
                   prefixIcon: const Icon(Icons.image_rounded),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -400,17 +433,19 @@ class _AddEditServiceSheetState extends ConsumerState<AddEditServiceSheet> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _isLoading ? null : _saveService,
+                  onPressed: _isLoading ? null : () => _saveService(isBn),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4527A0),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    backgroundColor: const Color(0xFF2B32B2),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   child: _isLoading
                       ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                       : Text(
-                          widget.service == null ? 'সংরক্ষণ করুন' : 'আপডেট করুন',
-                          style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold),
+                          widget.service == null
+                              ? (isBn ? 'সংরক্ষণ করুন' : 'Save Service')
+                              : (isBn ? 'আপডেট করুন' : 'Update Service'),
+                          style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
                         ),
                 ),
               ),

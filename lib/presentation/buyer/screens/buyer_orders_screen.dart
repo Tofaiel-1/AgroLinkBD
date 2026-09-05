@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 import 'package:agrolinkbd/presentation/buyer/providers/order_provider.dart';
 import 'package:agrolinkbd/presentation/buyer/widgets/order_card.dart';
 
@@ -28,21 +29,22 @@ class _BuyerOrdersScreenState extends ConsumerState<BuyerOrdersScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isBn = LanguageProvider.isBn(context);
     final activeOrders = ref.watch(activeOrdersProvider);
     final completedOrders = ref.watch(completedOrdersProvider);
     final cancelledOrders = ref.watch(cancelledOrdersProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('আমার অর্ডার'),
+        title: Text(isBn ? 'আমার অর্ডার' : 'My Orders'),
         elevation: 0,
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [
-            Tab(text: 'সক্রিয়'),
-            Tab(text: 'সম্পন্ন'),
-            Tab(text: 'বাতিল'),
-            Tab(text: 'রিটার্ন'),
+          tabs: [
+            Tab(text: isBn ? 'সক্রিয়' : 'Active'),
+            Tab(text: isBn ? 'সম্পন্ন' : 'Completed'),
+            Tab(text: isBn ? 'বাতিল' : 'Cancelled'),
+            Tab(text: isBn ? 'রিটার্ন' : 'Returns'),
           ],
         ),
       ),
@@ -57,7 +59,7 @@ class _BuyerOrdersScreenState extends ConsumerState<BuyerOrdersScreen>
             // Active orders
             activeOrders.when(
               data: (orders) => orders.isEmpty
-                  ? const Center(child: Text('কোন সক্রিয় অর্ডার নেই'))
+                  ? Center(child: Text(isBn ? 'কোন সক্রিয় অর্ডার নেই' : 'No active orders'))
                   : ListView.builder(
                       padding: const EdgeInsets.all(16),
                       itemCount: orders.length,
@@ -86,7 +88,7 @@ class _BuyerOrdersScreenState extends ConsumerState<BuyerOrdersScreen>
             // Completed orders
             completedOrders.when(
               data: (orders) => orders.isEmpty
-                  ? const Center(child: Text('কোন সম্পন্ন অর্ডার নেই'))
+                  ? Center(child: Text(isBn ? 'কোন সম্পন্ন অর্ডার নেই' : 'No completed orders'))
                   : ListView.builder(
                       padding: const EdgeInsets.all(16),
                       itemCount: orders.length,
@@ -110,7 +112,7 @@ class _BuyerOrdersScreenState extends ConsumerState<BuyerOrdersScreen>
             // Cancelled orders
             cancelledOrders.when(
               data: (orders) => orders.isEmpty
-                  ? const Center(child: Text('কোন বাতিল অর্ডার নেই'))
+                  ? Center(child: Text(isBn ? 'কোন বাতিল অর্ডার নেই' : 'No cancelled orders'))
                   : ListView.builder(
                       padding: const EdgeInsets.all(16),
                       itemCount: orders.length,
@@ -132,7 +134,7 @@ class _BuyerOrdersScreenState extends ConsumerState<BuyerOrdersScreen>
               error: (error, _) => Center(child: Text('Error: $error')),
             ),
             // Return orders
-            const Center(child: Text('রিটার্ন অর্ডার স্ক্রিন')),
+            Center(child: Text(isBn ? 'কোন রিটার্ন অর্ডার নেই' : 'No return orders')),
           ],
         ),
       ),

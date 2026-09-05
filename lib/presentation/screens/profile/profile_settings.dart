@@ -23,7 +23,6 @@ class _ProfileSettingsState extends State<ProfileSettings> {
   bool _darkMode = false;
   bool _notifications = true;
   bool _locationServices = true;
-  String _language = 'English';
 
   @override
   void initState() {
@@ -38,7 +37,6 @@ class _ProfileSettingsState extends State<ProfileSettings> {
       _darkMode = prefs.getBool('darkMode') ?? false;
       _notifications = prefs.getBool('notifications') ?? true;
       _locationServices = prefs.getBool('locationServices') ?? true;
-      _language = prefs.getString('language') ?? 'English';
     });
   }
 
@@ -88,8 +86,10 @@ class _ProfileSettingsState extends State<ProfileSettings> {
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    return Consumer<UserProvider>(
-      builder: (context, userProvider, _) {
+    return Consumer2<UserProvider, LanguageProvider>(
+      builder: (context, userProvider, langProvider, _) {
+        final isBn = langProvider.isBangla;
+
         // Show profile if user is logged in
         if (userProvider.isLoggedIn && userProvider.currentUser != null) {
           return _buildProfileUI(context, isDarkMode, userProvider);
@@ -104,16 +104,16 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                 Icon(
                   Icons.person_outline,
                   size: 80,
-                  color: _getRolePrimaryColor(context).withOpacity(0.5),
+                  color: _getRolePrimaryColor(context).withValues(alpha: 0.5),
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'You are not logged in',
+                  isBn ? 'আপনি লগইন করেননি' : 'You are not logged in',
                   style: Theme.of(context).textTheme.headlineSmall,
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Please login to view your profile',
+                  isBn ? 'আপনার প্রোফাইল দেখতে লগইন করুন' : 'Please login to view your profile',
                   style: Theme.of(context).textTheme.bodyMedium,
                   textAlign: TextAlign.center,
                 ),
@@ -128,7 +128,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                       vertical: 12,
                     ),
                   ),
-                  child: const Text('Go to Login'),
+                  child: Text(isBn ? 'লগইন করুন' : 'Go to Login'),
                 ),
               ],
             ),
@@ -161,7 +161,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                     end: Alignment.bottomRight,
                     colors: [
                       primaryColor,
-                      primaryColor.withOpacity(0.8),
+                      primaryColor.withValues(alpha: 0.8),
                     ],
                   ),
                 ),
@@ -230,7 +230,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                         color: (Theme.of(context).brightness == Brightness.dark
                                 ? Colors.white
                                 : Colors.white)
-                            .withOpacity(0.9),
+                            .withValues(alpha: 0.9),
                       ),
                     ),
                   ],
@@ -249,7 +249,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -310,7 +310,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
               child: Text(
                 LanguageProvider.isBn(context) ? 'সেটিংস' : 'Settings',
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -327,7 +327,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -348,6 +348,8 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                     },
                     context,
                   ),
+                  const Divider(height: 1),
+                  _buildLanguageSelectorTile(context),
                   const Divider(height: 1),
                   _buildSwitchTile(
                     LanguageProvider.isBn(context) ? 'নোটিফিকেশন' : 'Notifications',
@@ -387,7 +389,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
               padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
               child: Text(
                 LanguageProvider.isBn(context) ? 'অ্যাকাউন্ট' : 'Account',
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -404,7 +406,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -417,14 +419,6 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                     LanguageProvider.isBn(context) ? 'আপনার তথ্য আপডেট করুন' : 'Update Your Information',
                     Icons.edit,
                     _showEditProfileDialog,
-                    context,
-                  ),
-                  const Divider(height: 1),
-                  _buildMenuTile(
-                    Provider.of<LanguageProvider>(context).isBangla ? 'ভাষা' : 'Language',
-                    Provider.of<LanguageProvider>(context).isBangla ? 'বাংলা' : 'English',
-                    Icons.language,
-                    _showLanguageDialog,
                     context,
                   ),
                   const Divider(height: 1),
@@ -454,7 +448,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
               padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
               child: Text(
                 LanguageProvider.isBn(context) ? 'সাহায্য ও সাপোর্ট' : 'Help & Support',
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -470,7 +464,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -616,7 +610,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFFFB300).withOpacity(0.15),
+            color: const Color(0xFFFFB300).withValues(alpha: 0.15),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -634,7 +628,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFB300).withOpacity(0.2),
+                      color: const Color(0xFFFFB300).withValues(alpha: 0.2),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.workspace_premium_rounded, color: Color(0xFFE65100), size: 24),
@@ -731,9 +725,9 @@ class _ProfileSettingsState extends State<ProfileSettings> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 6),
         decoration: BoxDecoration(
-          color: isDark ? Colors.white10 : Colors.white.withOpacity(0.8),
+          color: isDark ? Colors.white10 : Colors.white.withValues(alpha: 0.8),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFFFFD54F).withOpacity(0.5)),
+          border: Border.all(color: const Color(0xFFFFD54F).withValues(alpha: 0.5)),
         ),
         child: Center(
           child: Text(
@@ -758,7 +752,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
     final int totalRatings = user?.totalRatings ?? 0;
 
     final double trustScore = UserRatingService.calculateTrustScore(
-        user ?? UserModel(id: "", name: "", phone: "", email: "", userType: UserType.farmer, status: UserStatus.active, createdAt: DateTime.now()));
+        user ?? UserModel(id: '', name: '', phone: '', email: '', userType: UserType.farmer, status: UserStatus.active, createdAt: DateTime.now()));
     final int fraudReports = user?.fraudReports ?? 0;
     final int cancelledOrders = user?.cancelledOrders ?? 0;
     final int paymentDefaults = user?.paymentDefaults ?? 0;
@@ -1137,7 +1131,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: roleColor.withOpacity(0.1),
+            color: roleColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(icon, color: roleColor, size: 20),
@@ -1179,7 +1173,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: roleColor.withOpacity(0.1),
+            color: roleColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(icon, color: roleColor, size: 20),
@@ -1202,63 +1196,272 @@ class _ProfileSettingsState extends State<ProfileSettings> {
     );
   }
 
-  void _showLanguageDialog() {
-    final langProvider = Provider.of<LanguageProvider>(context, listen: false);
-    final currentLang = langProvider.isBangla ? 'বাংলা' : 'English';
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: Theme.of(dialogContext).colorScheme.surface,
+  Widget _buildLanguageSelectorTile(BuildContext context) {
+    final langProvider = Provider.of<LanguageProvider>(context);
+    final isBn = langProvider.isBangla;
+    final roleColor = _getRolePrimaryColor(context);
+
+    return Material(
+      color: Colors.transparent,
+      child: ListTile(
+        dense: false,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: roleColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(Icons.language_rounded, color: roleColor, size: 20),
+        ),
         title: Text(
-          langProvider.isBangla ? 'ভাষা নির্বাচন করুন' : 'Select Language',
-          style: Theme.of(dialogContext).textTheme.headlineSmall,
+          isBn ? 'অ্যাপের ভাষা' : 'App Language',
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            RadioListTile<String>(
-              title: const Text('বাংলা'),
-              value: 'বাংলা',
-              groupValue: currentLang,
-              onChanged: (value) {
-                langProvider.setLanguage('বাংলা');
-                setState(() => _language = 'বাংলা');
-                Navigator.pop(dialogContext);
-              },
-            ),
-            RadioListTile<String>(
-              title: const Text('English'),
-              value: 'English',
-              groupValue: currentLang,
-              onChanged: (value) {
-                langProvider.setLanguage('English');
-                setState(() => _language = 'English');
-                Navigator.pop(dialogContext);
-              },
-            ),
-          ],
+        subtitle: Text(
+          isBn ? 'বর্তমান: 🇧🇩 বাংলা' : 'Current: 🇺🇸 English',
+          style: TextStyle(
+            fontSize: 12,
+            color: Theme.of(context).textTheme.bodySmall?.color,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
+        trailing: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: roleColor.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: roleColor.withValues(alpha: 0.3), width: 1),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                isBn ? '🇧🇩 বাংলা' : '🇺🇸 English',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: roleColor,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(Icons.unfold_more_rounded, size: 16, color: roleColor),
+            ],
+          ),
+        ),
+        onTap: _showLanguageDialog,
       ),
     );
   }
 
+  void _showLanguageDialog() {
+    final roleColor = _getRolePrimaryColor(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (dialogContext) {
+        return Consumer<LanguageProvider>(
+          builder: (modalCtx, lang, _) {
+            final currentIsBn = lang.isBangla;
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade400,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: roleColor.withValues(alpha: 0.12),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.language_rounded, color: roleColor, size: 24),
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              currentIsBn ? 'ভাষা পরিবর্তন করুন' : 'Change Language',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.white : Colors.black87,
+                              ),
+                            ),
+                            Text(
+                              currentIsBn ? 'বাংলা অথবা ইংরেজি বেছে নিন' : 'Select Bangla or English',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Bangla Option
+                    InkWell(
+                      onTap: () async {
+                        Navigator.pop(dialogContext);
+                        await lang.setLanguage('বাংলা');
+                        if (mounted) {
+                          _showPreferenceSnackbar('ভাষা পরিবর্তিত হয়েছে: বাংলা');
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(14),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: currentIsBn
+                              ? roleColor.withValues(alpha: 0.12)
+                              : (isDark ? const Color(0xFF0F172A) : Colors.grey.shade50),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: currentIsBn ? roleColor : Colors.grey.shade300,
+                            width: currentIsBn ? 1.5 : 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Text('🇧🇩', style: TextStyle(fontSize: 26)),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'বাংলা (Bangla)',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                      color: isDark ? Colors.white : Colors.black87,
+                                    ),
+                                  ),
+                                  Text(
+                                    'ডিফল্ট ভাষা • সহজ ও সাবলীল',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (currentIsBn)
+                              Icon(Icons.check_circle_rounded, color: roleColor, size: 24),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // English Option
+                    InkWell(
+                      onTap: () async {
+                        Navigator.pop(dialogContext);
+                        await lang.setLanguage('English');
+                        if (mounted) {
+                          _showPreferenceSnackbar('Language changed to: English');
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(14),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: !currentIsBn
+                              ? roleColor.withValues(alpha: 0.12)
+                              : (isDark ? const Color(0xFF0F172A) : Colors.grey.shade50),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: !currentIsBn ? roleColor : Colors.grey.shade300,
+                            width: !currentIsBn ? 1.5 : 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Text('🇺🇸', style: TextStyle(fontSize: 26)),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'English',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                      color: isDark ? Colors.white : Colors.black87,
+                                    ),
+                                  ),
+                                  Text(
+                                    'International • Standard English',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (!currentIsBn)
+                              Icon(Icons.check_circle_rounded, color: roleColor, size: 24),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   void _showLogoutDialog() {
+    final isBn = LanguageProvider.isBn(context);
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: Theme.of(dialogContext).colorScheme.surface,
         title: Text(
-          LanguageProvider.isBn(context) ? 'লগ আউট' : 'Logout',
+          isBn ? 'লগ আউট' : 'Logout',
           style: Theme.of(dialogContext).textTheme.headlineSmall,
         ),
         content: Text(
-          LanguageProvider.isBn(context) ? 'আপনি কি নিশ্চিত যে আপনি লগ আউট করতে চান?' : 'Are you sure you want to logout?',
+          isBn ? 'আপনি কি নিশ্চিত যে আপনি লগ আউট করতে চান?' : 'Are you sure you want to logout?',
           style: Theme.of(dialogContext).textTheme.bodyMedium,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: Text(LanguageProvider.isBn(context) ? 'বাতিল' : 'Cancel'),
+            child: Text(isBn ? 'বাতিল' : 'Cancel'),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -1267,7 +1470,6 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                 final userProvider =
                     Provider.of<UserProvider>(dialogContext, listen: false);
                 await userProvider.signOut();
-                // AppRouter will detect auth state change and redirect to LoginScreen
               } catch (e) {
                 ScaffoldMessenger.of(dialogContext).showSnackBar(
                   SnackBar(content: Text('Logout error: $e')),
@@ -1277,7 +1479,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
             ),
-            child: Text(LanguageProvider.isBn(context) ? 'লগ আউট' : 'Logout'),
+            child: Text(isBn ? 'লগ আউট' : 'Logout'),
           ),
         ],
       ),
@@ -1288,6 +1490,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
   void _showEditProfileDialog() {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final user = userProvider.currentUser;
+    final isBn = LanguageProvider.isBn(context);
 
     final nameController = TextEditingController(text: user?.name ?? '');
     final emailController = TextEditingController(text: user?.email ?? '');
@@ -1301,7 +1504,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
         return AlertDialog(
           backgroundColor: Theme.of(dialogContext).colorScheme.surface,
           title: Text(
-            'Edit Profile',
+            isBn ? 'প্রোফাইল সম্পাদনা' : 'Edit Profile',
             style: Theme.of(dialogContext).textTheme.headlineSmall,
           ),
           content: SingleChildScrollView(
@@ -1311,7 +1514,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                 TextField(
                   controller: nameController,
                   decoration: InputDecoration(
-                    labelText: 'Full Name',
+                    labelText: isBn ? 'পুরো নাম' : 'Full Name',
                     prefixIcon: Icon(Icons.person, color: roleColor),
                   ),
                 ),
@@ -1320,7 +1523,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                   controller: emailController,
                   enabled: false,
                   decoration: InputDecoration(
-                    labelText: 'Email (Cannot change)',
+                    labelText: isBn ? 'ইমেইল (পরিবর্তনযোগ্য নয়)' : 'Email (Cannot change)',
                     prefixIcon: Icon(Icons.email, color: roleColor),
                   ),
                 ),
@@ -1328,7 +1531,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                 TextField(
                   controller: phoneController,
                   decoration: InputDecoration(
-                    labelText: 'Phone',
+                    labelText: isBn ? 'ফোন নম্বর' : 'Phone Number',
                     prefixIcon: Icon(Icons.phone, color: roleColor),
                   ),
                 ),
@@ -1336,7 +1539,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                 TextField(
                   controller: locationController,
                   decoration: InputDecoration(
-                    labelText: 'Location',
+                    labelText: isBn ? 'ঠিকানা / অবস্থান' : 'Location / Address',
                     prefixIcon: Icon(Icons.location_on, color: roleColor),
                   ),
                   maxLines: 2,
@@ -1344,35 +1547,35 @@ class _ProfileSettingsState extends State<ProfileSettings> {
               ],
             ),
           ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              // Save updated profile
-              if (user != null) {
-                final updatedUser = user.copyWith(
-                  name: nameController.text,
-                  phone: phoneController.text,
-                  address: locationController.text,
-                );
-                userProvider.updateUser(updatedUser);
-              }
-              Navigator.pop(dialogContext);
-              _showPreferenceSnackbar('Profile updated successfully');
-            },
-            child: const Text('Save Changes'),
-          ),
-        ],
-      );
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(isBn ? 'বাতিল' : 'Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (user != null) {
+                  final updatedUser = user.copyWith(
+                    name: nameController.text,
+                    phone: phoneController.text,
+                    address: locationController.text,
+                  );
+                  userProvider.updateUser(updatedUser);
+                }
+                Navigator.pop(dialogContext);
+                _showPreferenceSnackbar(isBn ? 'প্রোফাইল সফলভাবে আপডেট হয়েছে' : 'Profile updated successfully');
+              },
+              child: Text(isBn ? 'সংরক্ষণ করুন' : 'Save Changes'),
+            ),
+          ],
+        );
       },
     );
   }
 
   // Change Password Dialog
   void _showChangePasswordDialog() {
+    final isBn = LanguageProvider.isBn(context);
     showDialog(
       context: context,
       builder: (dialogContext) {
@@ -1380,7 +1583,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
         return AlertDialog(
           backgroundColor: Theme.of(dialogContext).colorScheme.surface,
           title: Text(
-            'Change Password',
+            isBn ? 'পাসওয়ার্ড পরিবর্তন' : 'Change Password',
             style: Theme.of(dialogContext).textTheme.headlineSmall,
           ),
           content: SingleChildScrollView(
@@ -1389,7 +1592,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
               children: [
                 TextField(
                   decoration: InputDecoration(
-                    labelText: 'Current Password',
+                    labelText: isBn ? 'বর্তমান পাসওয়ার্ড' : 'Current Password',
                     prefixIcon: Icon(Icons.lock, color: roleColor),
                   ),
                   obscureText: true,
@@ -1397,7 +1600,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                 const SizedBox(height: 12),
                 TextField(
                   decoration: InputDecoration(
-                    labelText: 'New Password',
+                    labelText: isBn ? 'নতুন পাসওয়ার্ড' : 'New Password',
                     prefixIcon: Icon(Icons.lock, color: roleColor),
                   ),
                   obscureText: true,
@@ -1405,7 +1608,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                 const SizedBox(height: 12),
                 TextField(
                   decoration: InputDecoration(
-                    labelText: 'Confirm New Password',
+                    labelText: isBn ? 'নতুন পাসওয়ার্ড নিশ্চিত করুন' : 'Confirm New Password',
                     prefixIcon: Icon(Icons.lock, color: roleColor),
                   ),
                   obscureText: true,
@@ -1413,50 +1616,51 @@ class _ProfileSettingsState extends State<ProfileSettings> {
               ],
             ),
           ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(dialogContext);
-              _showPreferenceSnackbar('Password changed successfully');
-            },
-            child: const Text('Change Password'),
-          ),
-        ],
-      );
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(isBn ? 'বাতিল' : 'Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                _showPreferenceSnackbar(isBn ? 'পাসওয়ার্ড সফলভাবে পরিবর্তিত হয়েছে' : 'Password changed successfully');
+              },
+              child: Text(isBn ? 'পাসওয়ার্ড পরিবর্তন' : 'Change Password'),
+            ),
+          ],
+        );
       },
     );
   }
 
   // Payment Methods Dialog
   void _showPaymentMethodsDialog() {
+    final isBn = LanguageProvider.isBn(context);
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: Theme.of(dialogContext).colorScheme.surface,
         title: Text(
-          'Payment Methods',
+          isBn ? 'পেমেন্ট মাধ্যম' : 'Payment Methods',
           style: Theme.of(dialogContext).textTheme.headlineSmall,
         ),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildPaymentMethodTile('Credit Card', '•••• •••• •••• 4242'),
-              _buildPaymentMethodTile('Debit Card', '•••• •••• •••• 8888'),
-              _buildPaymentMethodTile('Mobile Wallet', 'Bkash: 01XXXXXXXXX'),
+              _buildPaymentMethodTile(isBn ? 'ক্রেডিট কার্ড' : 'Credit Card', '•••• •••• •••• 4242'),
+              _buildPaymentMethodTile(isBn ? 'ডেবিট কার্ড' : 'Debit Card', '•••• •••• •••• 8888'),
+              _buildPaymentMethodTile(isBn ? 'মোবাইল ওয়ালেট' : 'Mobile Wallet', 'bKash / Nagad / Rocket'),
               Divider(color: Theme.of(dialogContext).dividerColor),
               const SizedBox(height: 8),
               ListTile(
                 leading: Icon(Icons.add_circle,
                     color: _getRolePrimaryColor(dialogContext)),
-                title: const Text('Add Payment Method'),
+                title: Text(isBn ? 'নতুন পেমেন্ট মাধ্যম যোগ করুন' : 'Add Payment Method'),
                 onTap: () {
                   Navigator.pop(dialogContext);
-                  _showPreferenceSnackbar('Redirecting to payment setup');
+                  _showPreferenceSnackbar(isBn ? 'পেমেন্ট সেটআপে নিয়ে যাওয়া হচ্ছে' : 'Redirecting to payment setup');
                 },
               ),
             ],
@@ -1465,7 +1669,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
         actions: [
           ElevatedButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Close'),
+            child: Text(isBn ? 'বন্ধ করুন' : 'Close'),
           ),
         ],
       ),
@@ -1474,12 +1678,13 @@ class _ProfileSettingsState extends State<ProfileSettings> {
 
   // FAQ Dialog
   void _showFAQDialog() {
+    final isBn = LanguageProvider.isBn(context);
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: Theme.of(dialogContext).colorScheme.surface,
         title: Text(
-          'Frequently Asked Questions',
+          isBn ? 'সচরাচর জিজ্ঞাসিত প্রশ্ন (FAQ)' : 'Frequently Asked Questions',
           style: Theme.of(dialogContext).textTheme.headlineSmall,
         ),
         content: SingleChildScrollView(
@@ -1488,23 +1693,23 @@ class _ProfileSettingsState extends State<ProfileSettings> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildFAQItem(
-                'How do I update my profile?',
-                'Go to Settings > Edit Profile to update your information.',
+                isBn ? 'কীভাবে প্রোফাইল আপডেট করব?' : 'How do I update my profile?',
+                isBn ? 'সেটিংস > প্রোফাইল সম্পাদনা এ গিয়ে আপনার তথ্য আপডেট করুন।' : 'Go to Settings > Edit Profile to update your information.',
               ),
               const SizedBox(height: 12),
               _buildFAQItem(
-                'How do I change my password?',
-                'Go to Settings > Security > Change Password to update your password.',
+                isBn ? 'কীভাবে পাসওয়ার্ড পরিবর্তন করব?' : 'How do I change my password?',
+                isBn ? 'সেটিংস > নিরাপত্তা এ গিয়ে নতুন পাসওয়ার্ড সেট করুন।' : 'Go to Settings > Security > Change Password to update your password.',
               ),
               const SizedBox(height: 12),
               _buildFAQItem(
-                'How do I report an issue?',
-                'Go to Help & Support > Report Issue to submit a problem report.',
+                isBn ? 'কীভাবে কোনো সমস্যার অভিযোগ করব?' : 'How do I report an issue?',
+                isBn ? 'সাহায্য ও সাপোর্ট > কারিগরি সমস্যা জানান অথবা রিপোর্ট করুন।' : 'Go to Help & Support > Report Issue to submit a problem report.',
               ),
               const SizedBox(height: 12),
               _buildFAQItem(
-                'How do I contact support?',
-                'Go to Help & Support > Contact Us to reach our support team.',
+                isBn ? 'সাপোর্টের সাথে কীভাবে যোগাযোগ করব?' : 'How do I contact support?',
+                isBn ? 'সাহায্য ও সাপোর্ট > যোগাযোগ করুন এ গিয়ে সরাসরি কল বা ইমেইল করুন।' : 'Go to Help & Support > Contact Us to reach our support team.',
               ),
             ],
           ),
@@ -1512,7 +1717,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
         actions: [
           ElevatedButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Close'),
+            child: Text(isBn ? 'বন্ধ করুন' : 'Close'),
           ),
         ],
       ),
@@ -1521,12 +1726,13 @@ class _ProfileSettingsState extends State<ProfileSettings> {
 
   // Contact Dialog
   void _showContactDialog() {
+    final isBn = LanguageProvider.isBn(context);
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: Theme.of(dialogContext).colorScheme.surface,
         title: Text(
-          'Contact Support',
+          isBn ? 'সাপোর্টে যোগাযোগ' : 'Contact Support',
           style: Theme.of(dialogContext).textTheme.headlineSmall,
         ),
         content: SingleChildScrollView(
@@ -1536,7 +1742,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
               ListTile(
                 leading: Icon(Icons.email,
                     color: Theme.of(dialogContext).primaryColor),
-                title: const Text('Email Support'),
+                title: Text(isBn ? 'ইমেইল সাপোর্ট' : 'Email Support'),
                 subtitle: const Text('support@agrolinkbd.com'),
                 onTap: () => _launchEmail('support@agrolinkbd.com'),
               ),
@@ -1544,15 +1750,15 @@ class _ProfileSettingsState extends State<ProfileSettings> {
               ListTile(
                 leading: Icon(Icons.phone,
                     color: Theme.of(dialogContext).primaryColor),
-                title: const Text('Phone Support'),
-                subtitle: const Text('+880 17 XXXX XXXX'),
+                title: Text(isBn ? 'ফোন সাপোর্ট' : 'Phone Support'),
+                subtitle: const Text('+880 17 0000 0000'),
                 onTap: () => _launchPhone('+8801700000000'),
               ),
               const SizedBox(height: 8),
               ListTile(
                 leading: Icon(Icons.language,
                     color: Theme.of(dialogContext).primaryColor),
-                title: const Text('Website'),
+                title: Text(isBn ? 'ওয়েবসাইট' : 'Website'),
                 subtitle: const Text('www.agrolinkbd.com'),
                 onTap: () => _launchURL('https://www.agrolinkbd.com'),
               ),
@@ -1562,7 +1768,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
         actions: [
           ElevatedButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Close'),
+            child: Text(isBn ? 'বন্ধ করুন' : 'Close'),
           ),
         ],
       ),
@@ -1610,11 +1816,15 @@ class _ProfileSettingsState extends State<ProfileSettings> {
     final currentUser = Provider.of<UserProvider>(context, listen: false).currentUser;
     if (currentUser == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('অনুগ্রহ করে প্রথমে লগইন করুন!'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text(LanguageProvider.isBn(context) ? 'অনুগ্রহ করে প্রথমে লগইন করুন!' : 'Please login first!'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
 
+    final isBn = LanguageProvider.isBn(context);
     final targetUserQueryController = TextEditingController();
     final targetNameController = TextEditingController();
     final orderRefController = TextEditingController();
@@ -1626,39 +1836,39 @@ class _ProfileSettingsState extends State<ProfileSettings> {
     final List<Map<String, dynamic>> penaltyCategories = [
       {
         'id': 1,
-        'category': 'ভুয়া ওজন বা নিম্নমানের পণ্য (Quality Fraud)',
-        'label': '🚫 ভুয়া ওজন বা নিম্নমানের পণ্য (Quality Fraud)',
-        'desc': 'প্রদত্ত মাছ/পণ্যের ওজন কম, ভেজাল বা মানহীন ছিল',
+        'category': 'Quality Fraud',
+        'label': isBn ? '🚫 ভুয়া ওজন বা নিম্নমানের পণ্য (Quality Fraud)' : '🚫 Underweight or Substandard Quality',
+        'desc': isBn ? 'প্রদত্ত মাছ/পণ্যের ওজন কম, ভেজাল বা মানহীন ছিল' : 'Delivered product was underweight, adulterated, or poor quality',
       },
       {
         'id': 2,
-        'category': 'অর্ডার বাতিল বা গ্রহণ না করা (Breach of Contract)',
-        'label': '❌ কনফার্ম করার পর অর্ডার বাতিল বা প্রত্যাখ্যান',
-        'desc': 'অর্ডার কনফার্ম করার পর কারণ ছাড়া বাতিল বা পণ্য নেয়নি',
+        'category': 'Breach of Contract',
+        'label': isBn ? '❌ কনফার্ম করার পর অর্ডার বাতিল বা প্রত্যাখ্যান' : '❌ Unjustified Order Cancellation / Rejection',
+        'desc': isBn ? 'অর্ডার কনফার্ম করার পর কারণ ছাড়া বাতিল বা পণ্য নেয়নি' : 'Cancelled order or refused goods after confirmation',
       },
       {
         'id': 3,
-        'category': 'পেমেন্ট বকেয়া বা প্রতারণা (Payment Default)',
-        'label': '💸 পেমেন্ট বকেয়া বা লেনদেনে জালিয়াতি',
-        'desc': 'বকেয়া টাকা দেয়নি বা চেক বাউন্স বা মিথ্যা পেমেন্ট দেখিয়েছে',
+        'category': 'Payment Default',
+        'label': isBn ? '💸 পেমেন্ট বকেয়া বা লেনদেনে জালিয়াতি' : '💸 Payment Default or Financial Fraud',
+        'desc': isBn ? 'বকেয়া টাকা দেয়নি বা চেক বাউন্স বা মিথ্যা পেমেন্ট দেখিয়েছে' : 'Failed to pay dues, bounced check, or showed false payment slip',
       },
       {
         'id': 4,
-        'category': 'ডেলিভারি বিলম্ব বা নো-শো (Trip Failure)',
-        'label': '⏰ নির্ধারিত সময়ে ট্রিপ ড্রপ বা নো-শো',
-        'desc': 'ড্রাইভার উপস্থিত হয়নি বা মালামাল পরিবহন করেনি',
+        'category': 'Trip Failure',
+        'label': isBn ? '⏰ নির্ধারিত সময়ে ট্রিপ ড্রপ বা নো-শো' : '⏰ Trip No-Show / Delivery Abandonment',
+        'desc': isBn ? 'ড্রাইভার উপস্থিত হয়নি বা মালামাল পরিবহন করেনি' : 'Driver failed to appear or did not transport goods',
       },
       {
         'id': 5,
-        'category': 'অসদাচরণ বা হুমকি (Harassment/Misbehavior)',
-        'label': '⚠️ অসদাচরণ, হুমকি বা মিথ্যা তথ্য প্রদান',
-        'desc': 'ফোনে বা সরাসরি দুর্ব্যবহার বা প্রতারণামূলক মিথ্যা তথ্য দিয়েছে',
+        'category': 'Harassment/Misbehavior',
+        'label': isBn ? '⚠️ অসদাচরণ, হুমকি বা মিথ্যা তথ্য প্রদান' : '⚠️ Harassment, Misconduct or False Claim',
+        'desc': isBn ? 'ফোনে বা সরাসরি দুর্ব্যবহার বা প্রতারণামূলক মিথ্যা তথ্য দিয়েছে' : 'Abusive behavior on call/in-person or fraudulent claims',
       },
       {
         'id': 6,
-        'category': 'অন্যান্য চুক্তিভঙ্গ (Other Policy Breach)',
-        'label': '📑 অন্যান্য চুক্তিভঙ্গ বা গুরুতর অনিয়ম',
-        'desc': 'প্ল্যাটফর্মের নীতিমালা ভঙ্গকারী অন্যান্য সমস্যা',
+        'category': 'Other Policy Breach',
+        'label': isBn ? '📑 অন্যান্য চুক্তিভঙ্গ বা গুরুতর অনিয়ম' : '📑 Other Policy Violation',
+        'desc': isBn ? 'প্ল্যাটফর্মের নীতিমালা ভঙ্গকারী অন্যান্য সমস্যা' : 'Any other serious breach of platform rules',
       },
     ];
 
@@ -1679,7 +1889,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    LanguageProvider.isBn(context) ? 'অভিযোগ ও রিপোর্ট দাখিল' : 'File User Dispute / Report',
+                    isBn ? 'অভিযোগ ও রিপোর্ট দাখিল' : 'File User Dispute / Report',
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.red),
                   ),
                 ),
@@ -1705,7 +1915,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              LanguageProvider.isBn(context)
+                              isBn
                                   ? 'এই রিপোর্টটি সুপার অ্যাডমিনের কাছে যাবে। সুপার অ্যাডমিন প্রমাণ যাচাই করে অভিযুক্তের বিরুদ্ধে ব্যবস্থা নিবেন।'
                                   : 'This report will be submitted to Super Admin for verification and penalty enforcement.',
                               style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
@@ -1718,7 +1928,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
 
                     // Target User Identifier (Phone / User ID)
                     Text(
-                      LanguageProvider.isBn(context) ? 'অভিযুক্ত ব্যক্তির ফোন নম্বর বা ইউজার আইডি (বাধ্যতামূলক):' : 'Accused User Phone / User ID (Required):',
+                      isBn ? 'অভিযুক্ত ব্যক্তির ফোন নম্বর বা ইউজার আইডি (বাধ্যতামূলক):' : 'Accused User Phone / User ID (Required):',
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                     ),
                     const SizedBox(height: 6),
@@ -1726,7 +1936,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                       controller: targetUserQueryController,
                       keyboardType: TextInputType.phone,
                       decoration: InputDecoration(
-                        hintText: 'যেমন: 017XXXXXXXX বা USR-901',
+                        hintText: isBn ? 'যেমন: 017XXXXXXXX বা USR-901' : 'e.g. 017XXXXXXXX or USR-901',
                         prefixIcon: const Icon(Icons.person_search_outlined, size: 20),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -1743,14 +1953,14 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                LanguageProvider.isBn(context) ? 'অভিযুক্ত ব্যক্তির নাম:' : 'Accused Name:',
+                                isBn ? 'অভিযুক্ত ব্যক্তির নাম:' : 'Accused Name:',
                                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                               ),
                               const SizedBox(height: 4),
                               TextField(
                                 controller: targetNameController,
                                 decoration: InputDecoration(
-                                  hintText: 'নাম (জানা থাকলে)',
+                                  hintText: isBn ? 'নাম (জানা থাকলে)' : 'Name (if known)',
                                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                 ),
@@ -1765,7 +1975,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                LanguageProvider.isBn(context) ? 'রোল:' : 'Role:',
+                                isBn ? 'রোল:' : 'Role:',
                                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                               ),
                               const SizedBox(height: 4),
@@ -1775,14 +1985,14 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                                 ),
-                                items: const [
-                                  DropdownMenuItem(value: 'farmer', child: Text('কৃষক', style: TextStyle(fontSize: 12))),
-                                  DropdownMenuItem(value: 'fishFarmer', child: Text('মাছ চাষী', style: TextStyle(fontSize: 12))),
-                                  DropdownMenuItem(value: 'buyer', child: Text('ক্রেতা', style: TextStyle(fontSize: 12))),
-                                  DropdownMenuItem(value: 'fishBuyer', child: Text('মাছ ক্রেতা', style: TextStyle(fontSize: 12))),
-                                  DropdownMenuItem(value: 'driver', child: Text('ড্রাইভার', style: TextStyle(fontSize: 12))),
-                                  DropdownMenuItem(value: 'serviceProvider', child: Text('সেবা প্রদানকারী', style: TextStyle(fontSize: 12))),
-                                  DropdownMenuItem(value: 'company', child: Text('কোম্পানি', style: TextStyle(fontSize: 12))),
+                                items: [
+                                  DropdownMenuItem(value: 'farmer', child: Text(isBn ? 'কৃষক' : 'Farmer', style: const TextStyle(fontSize: 12))),
+                                  DropdownMenuItem(value: 'fishFarmer', child: Text(isBn ? 'মাছ চাষী' : 'Fish Farmer', style: const TextStyle(fontSize: 12))),
+                                  DropdownMenuItem(value: 'buyer', child: Text(isBn ? 'ক্রেতা' : 'Buyer', style: const TextStyle(fontSize: 12))),
+                                  DropdownMenuItem(value: 'fishBuyer', child: Text(isBn ? 'মাছ ক্রেতা' : 'Fish Buyer', style: const TextStyle(fontSize: 12))),
+                                  DropdownMenuItem(value: 'driver', child: Text(isBn ? 'ড্রাইভার' : 'Driver', style: const TextStyle(fontSize: 12))),
+                                  DropdownMenuItem(value: 'serviceProvider', child: Text(isBn ? 'সেবা প্রদানকারী' : 'Service Provider', style: const TextStyle(fontSize: 12))),
+                                  DropdownMenuItem(value: 'company', child: Text(isBn ? 'কোম্পানি' : 'Company', style: const TextStyle(fontSize: 12))),
                                 ],
                                 onChanged: (val) {
                                   if (val != null) setState(() => selectedRole = val);
@@ -1797,7 +2007,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
 
                     // Violation Category Selection
                     Text(
-                      LanguageProvider.isBn(context) ? 'অভিযোগের সুনির্দিষ্ট কারণ (বাধ্যতামূলক):' : 'Specific Violation Reason (Required):',
+                      isBn ? 'অভিযোগের সুনির্দিষ্ট কারণ (বাধ্যতামূলক):' : 'Specific Violation Reason (Required):',
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                     ),
                     const SizedBox(height: 6),
@@ -1830,8 +2040,8 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                     TextField(
                       controller: orderRefController,
                       decoration: InputDecoration(
-                        labelText: LanguageProvider.isBn(context) ? 'অর্ডার / ট্রিপ / রেফারেন্স নম্বর (যদি থাকে)' : 'Order/Trip Reference ID (Optional)',
-                        hintText: 'যেমন: ORD-8812 / TRP-104',
+                        labelText: isBn ? 'অর্ডার / ট্রিপ / রেফারেন্স নম্বর (যদি থাকে)' : 'Order/Trip Reference ID (Optional)',
+                        hintText: isBn ? 'যেমন: ORD-8812 / TRP-104' : 'e.g. ORD-8812 / TRP-104',
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       ),
@@ -1843,8 +2053,8 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                       controller: descriptionController,
                       maxLines: 3,
                       decoration: InputDecoration(
-                        labelText: LanguageProvider.isBn(context) ? 'বিস্তারিত বিবরণ ও প্রমাণ (বাধ্যতামূলক)' : 'Detailed Description & Evidence (Required)',
-                        hintText: 'ঘটনাটি কখন ঘটেছে এবং কী অনিয়ম হয়েছে বিস্তারিত লিখুন...',
+                        labelText: isBn ? 'বিস্তারিত বিবরণ ও প্রমাণ (বাধ্যতামূলক)' : 'Detailed Description & Evidence (Required)',
+                        hintText: isBn ? 'ঘটনাটি কখন ঘটেছে এবং কী অনিয়ম হয়েছে বিস্তারিত লিখুন...' : 'Describe what happened and state evidence clearly...',
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                       ),
                     ),
@@ -1855,7 +2065,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogContext),
-                child: Text(LanguageProvider.isBn(context) ? 'বাতিল' : 'Cancel'),
+                child: Text(isBn ? 'বাতিল' : 'Cancel'),
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
@@ -1865,7 +2075,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
 
                   if (targetInput.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('অনুগ্রহ করে অভিযুক্ত ব্যক্তির ফোন বা আইডি দিন!'), backgroundColor: Colors.orange),
+                      SnackBar(content: Text(isBn ? 'অনুগ্রহ করে অভিযুক্ত ব্যক্তির ফোন বা আইডি দিন!' : 'Please enter accused user phone or ID!'), backgroundColor: Colors.orange),
                     );
                     return;
                   }
@@ -1873,8 +2083,8 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                   // Check self-reporting
                   if (targetInput == currentUser.id || targetInput == currentUser.phone || targetInput == currentUser.email) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('⚠️ আপনি নিজের বিরুদ্ধে অভিযোগ বা জরিমানা রিপোর্ট করতে পারবেন না!'),
+                      SnackBar(
+                        content: Text(isBn ? '⚠️ আপনি নিজের বিরুদ্ধে অভিযোগ বা জরিমানা রিপোর্ট করতে পারবেন না!' : '⚠️ You cannot submit a dispute against yourself!'),
                         backgroundColor: Colors.red,
                       ),
                     );
@@ -1883,7 +2093,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
 
                   if (description.isEmpty || description.length < 5) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('অনুগ্রহ করে বিস্তারিত বিবরণ লিখুন (কমপক্ষে ৫ অক্ষর)!'), backgroundColor: Colors.orange),
+                      SnackBar(content: Text(isBn ? 'অনুগ্রহ করে বিস্তারিত বিবরণ লিখুন (কমপক্ষে ৫ অক্ষর)!' : 'Please write detailed description (min 5 characters)!'), backgroundColor: Colors.orange),
                     );
                     return;
                   }
@@ -1911,21 +2121,23 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                         context: context,
                         builder: (ctx) => AlertDialog(
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          title: const Row(
+                          title: Row(
                             children: [
-                              Icon(Icons.check_circle, color: Colors.green),
-                              SizedBox(width: 8),
-                              Text('অভিযোগ দাখিল সফল'),
+                              const Icon(Icons.check_circle, color: Colors.green),
+                              const SizedBox(width: 8),
+                              Text(isBn ? 'অভিযোগ দাখিল সফল' : 'Dispute Submitted'),
                             ],
                           ),
-                          content: const Text(
-                            'আপনার অভিযোগটি সফলভাবে সুপার অ্যাডমিনের পর্যালোচনায় জমা হয়েছে। সুপার অ্যাডমিন তথ্য যাচাই করে অভিযুক্ত ব্যক্তির বিরুদ্ধে ব্যবস্থা গ্রহণ করবেন।',
-                            style: TextStyle(fontSize: 13),
+                          content: Text(
+                            isBn
+                                ? 'আপনার অভিযোগটি সফলভাবে সুপার অ্যাডমিনের পর্যালোচনায় জমা হয়েছে। সুপার অ্যাডমিন তথ্য যাচাই করে অভিযুক্ত ব্যক্তির বিরুদ্ধে ব্যবস্থা গ্রহণ করবেন।'
+                                : 'Your report has been successfully submitted for Super Admin review. Admin will inspect evidence and enforce penalties.',
+                            style: const TextStyle(fontSize: 13),
                           ),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(ctx),
-                              child: const Text('ঠিক আছে'),
+                              child: Text(isBn ? 'ঠিক আছে' : 'OK'),
                             ),
                           ],
                         ),
@@ -1934,12 +2146,12 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                   } else {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('রিপোর্ট জমা দিতে সমস্যা হয়েছে। পুনরায় চেষ্টা করুন।'), backgroundColor: Colors.red),
+                        SnackBar(content: Text(isBn ? 'রিপোর্ট জমা দিতে সমস্যা হয়েছে। পুনরায় চেষ্টা করুন।' : 'Failed to submit report. Please try again.'), backgroundColor: Colors.red),
                       );
                     }
                   }
                 },
-                child: Text(LanguageProvider.isBn(context) ? 'সুপার অ্যাডমিনে পাঠান' : 'Submit to Super Admin'),
+                child: Text(isBn ? 'সুপার অ্যাডমিনে পাঠান' : 'Submit to Super Admin'),
               ),
             ],
           );
@@ -1950,13 +2162,14 @@ class _ProfileSettingsState extends State<ProfileSettings> {
 
   // Report Issue Dialog
   void _showReportDialog() {
+    final isBn = LanguageProvider.isBn(context);
     final reportController = TextEditingController();
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: Theme.of(dialogContext).colorScheme.surface,
         title: Text(
-          'Report an Issue',
+          isBn ? 'সমস্যার অভিযোগ জানান' : 'Report an Issue',
           style: Theme.of(dialogContext).textTheme.headlineSmall,
         ),
         content: SingleChildScrollView(
@@ -1964,15 +2177,17 @@ class _ProfileSettingsState extends State<ProfileSettings> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Help us improve by reporting any issues you encounter.',
+                isBn
+                    ? 'অ্যাপ ব্যবহারে কোনো ত্রুটি বা সমস্যা দেখা দিলে বিস্তারিত লিখুন।'
+                    : 'Help us improve by reporting any issues you encounter.',
                 style: Theme.of(dialogContext).textTheme.bodyMedium,
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: reportController,
                 decoration: InputDecoration(
-                  labelText: 'Describe the issue',
-                  hintText: 'Tell us what problem you faced...',
+                  labelText: isBn ? 'সমস্যার বিবরণ' : 'Describe the issue',
+                  hintText: isBn ? 'কী সমস্যা হচ্ছে লিখুন...' : 'Tell us what problem you faced...',
                   prefixIcon: Icon(Icons.edit,
                       color: _getRolePrimaryColor(dialogContext)),
                   border: const OutlineInputBorder(),
@@ -1988,16 +2203,16 @@ class _ProfileSettingsState extends State<ProfileSettings> {
               Navigator.pop(dialogContext);
               reportController.dispose();
             },
-            child: const Text('Cancel'),
+            child: Text(isBn ? 'বাতিল' : 'Cancel'),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(dialogContext);
               _showPreferenceSnackbar(
-                  'Issue reported successfully. Thank you!');
+                  isBn ? 'অভিযোগ সফলভাবে পাঠানো হয়েছে। ধন্যবাদ!' : 'Issue reported successfully. Thank you!');
               reportController.dispose();
             },
-            child: const Text('Submit Report'),
+            child: Text(isBn ? 'জমা দিন' : 'Submit Report'),
           ),
         ],
       ),
@@ -2006,12 +2221,13 @@ class _ProfileSettingsState extends State<ProfileSettings> {
 
   // About App Dialog
   void _showAboutDialog() {
+    final isBn = LanguageProvider.isBn(context);
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: Theme.of(dialogContext).colorScheme.surface,
         title: Text(
-          'About AgroLinkBD',
+          isBn ? 'এগ্রোলিংক বিডি সম্পর্কে' : 'About AgroLinkBD',
           style: Theme.of(dialogContext).textTheme.headlineSmall,
         ),
         content: SingleChildScrollView(
@@ -2038,7 +2254,9 @@ class _ProfileSettingsState extends State<ProfileSettings> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Connecting farmers and buyers for better agricultural commerce in Bangladesh.',
+                isBn
+                    ? 'বাংলাদেশের কৃষক এবং ক্রেতাদের মধ্যে সরাসরি সংযোগ স্থাপনকারী বিশ্বস্ত ডিজিটাল কৃষি ও মৎস্য প্ল্যাটফর্ম।'
+                    : 'Connecting farmers and buyers for better agricultural commerce in Bangladesh.',
                 textAlign: TextAlign.center,
                 style: Theme.of(dialogContext).textTheme.bodySmall,
               ),
@@ -2046,14 +2264,14 @@ class _ProfileSettingsState extends State<ProfileSettings> {
               Divider(color: Theme.of(dialogContext).dividerColor),
               const SizedBox(height: 8),
               Text(
-                'Contact Information',
+                isBn ? 'যোগাযোগের তথ্য' : 'Contact Information',
                 style: Theme.of(dialogContext).textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
               ),
               const SizedBox(height: 8),
               Text(
-                'Email: info@agrolinkbd.com\nPhone: +880 XXXX XXXX XXX\nWebsite: www.agrolinkbd.com',
+                'Email: info@agrolinkbd.com\nPhone: +880 17 0000 0000\nWebsite: www.agrolinkbd.com',
                 textAlign: TextAlign.center,
                 style: Theme.of(dialogContext).textTheme.bodySmall,
               ),
@@ -2063,7 +2281,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
         actions: [
           ElevatedButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Close'),
+            child: Text(isBn ? 'বন্ধ করুন' : 'Close'),
           ),
         ],
       ),
@@ -2118,7 +2336,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
     try {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } catch (e) {
-      _showPreferenceSnackbar('Could not open link');
+      _showPreferenceSnackbar(LanguageProvider.isBn(context) ? 'লিংক খোলা সম্ভব হয়নি' : 'Could not open link');
     }
   }
 
@@ -2128,7 +2346,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
     try {
       await launchUrl(uri);
     } catch (e) {
-      _showPreferenceSnackbar('Could not open email');
+      _showPreferenceSnackbar(LanguageProvider.isBn(context) ? 'ইমেইল খোলা সম্ভব হয়নি' : 'Could not open email');
     }
   }
 
@@ -2138,7 +2356,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
     try {
       await launchUrl(uri);
     } catch (e) {
-      _showPreferenceSnackbar('Could not open phone dialer');
+      _showPreferenceSnackbar(LanguageProvider.isBn(context) ? 'ফোন ডায়াল করা সম্ভব হয়নি' : 'Could not open phone dialer');
     }
   }
 }

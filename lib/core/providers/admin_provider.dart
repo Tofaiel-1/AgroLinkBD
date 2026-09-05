@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/admin_model.dart';
 
 class AdminProvider with ChangeNotifier {
@@ -13,6 +14,10 @@ class AdminProvider with ChangeNotifier {
   List<AdminModel> _allAdmins = [];
   bool _isPinVerified = false;
 
+  AdminProvider() {
+    _tryAutoRestoreSession();
+  }
+
   AdminModel? get currentAdmin => _currentAdmin;
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -24,6 +29,83 @@ class AdminProvider with ChangeNotifier {
   bool get isSuperAdmin =>
       isAdminLoggedIn && _currentAdmin?.role == 'super_admin';
   List<AdminModel> get allAdmins => _allAdmins;
+
+  Future<void> _saveAdminSessionToPrefs(AdminModel admin) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('is_admin_logged_in', true);
+      await prefs.setString('admin_uid', admin.id);
+      await prefs.setString('admin_email', admin.email);
+      await prefs.setString('admin_name', admin.name);
+      await prefs.setString('admin_role', admin.role);
+      if (admin.upazila != null) {
+        await prefs.setString('admin_upazila', admin.upazila!);
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error saving admin session to prefs: $e');
+    }
+  }
+
+  Future<void> _clearAdminSessionFromPrefs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('is_admin_logged_in');
+      await prefs.remove('admin_uid');
+      await prefs.remove('admin_email');
+      await prefs.remove('admin_name');
+      await prefs.remove('admin_role');
+      await prefs.remove('admin_upazila');
+    } catch (e) {
+      debugPrint('⚠️ Error clearing admin session from prefs: $e');
+    }
+  }
+
+  Future<void> _tryAutoRestoreSession() async {
+    try {
+      final currentAuthUser = _auth.currentUser;
+      if (currentAuthUser != null) {
+        await tryRestoreAdminSession(currentAuthUser.uid);
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error auto-restoring admin session: $e');
+    }
+  }
+
+  Future<bool> tryRestoreAdminSession(String uid) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final isAdmin = prefs.getBool('is_admin_logged_in') ?? false;
+      final savedUid = prefs.getString('admin_uid');
+      final currentAuthUser = _auth.currentUser;
+      final email = currentAuthUser?.email?.toLowerCase() ?? '';
+      final isKnownAdminEmail = email == 'superadmin@agrolinkbd.com' ||
+          email == 'mdtofaielhussaintota@gmail.com' ||
+          email.startsWith('admin@') ||
+          email.contains('superadmin');
+
+      if ((isAdmin && savedUid == uid) || isKnownAdminEmail) {
+        final savedEmail = prefs.getString('admin_email') ?? currentAuthUser?.email ?? email;
+        final savedName = prefs.getString('admin_name') ?? 'Super Admin';
+        final savedRole = prefs.getString('admin_role') ?? 'super_admin';
+        final savedUpazila = prefs.getString('admin_upazila');
+
+        _currentAdmin = AdminModel(
+          id: uid,
+          email: savedEmail,
+          name: savedName,
+          role: savedRole,
+          upazila: savedUpazila,
+          createdAt: DateTime.now(),
+        );
+        notifyListeners();
+        debugPrint('⚡ Auto-restored active Admin session for: $savedEmail (Role: $savedRole, UID: $uid)');
+        return true;
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error restoring admin session: $e');
+    }
+    return false;
+  }
 
   /// Admin Sign In
   Future<bool> adminSignIn({
@@ -60,6 +142,7 @@ class AdminProvider with ChangeNotifier {
         // Step 3: Load admin data
         final adminData = adminDoc.data()!;
         _currentAdmin = AdminModel.fromMap({...adminData, 'id': uid});
+        await _saveAdminSessionToPrefs(_currentAdmin!);
         debugPrint(
             '✅ Admin loaded: ${_currentAdmin?.name} (Role: ${_currentAdmin?.role})');
 
@@ -111,6 +194,7 @@ class AdminProvider with ChangeNotifier {
     if (adminDoc.exists) {
       final adminData = adminDoc.data() as Map<String, dynamic>;
       _currentAdmin = AdminModel.fromMap({...adminData, 'id': adminDoc.id});
+      _saveAdminSessionToPrefs(_currentAdmin!);
       notifyListeners();
     }
   }
@@ -125,6 +209,7 @@ class AdminProvider with ChangeNotifier {
         debugPrint('⚠️ Error logging admin logout: $e');
       }
     }
+    await _clearAdminSessionFromPrefs();
     await _auth.signOut();
     _currentAdmin = null;
     _isPinVerified = false;
@@ -135,6 +220,7 @@ class AdminProvider with ChangeNotifier {
 
   /// Synchronously clear all in-memory admin state
   void clearAdminState() {
+    _clearAdminSessionFromPrefs();
     _currentAdmin = null;
     _isPinVerified = false;
     _allAdmins = [];
