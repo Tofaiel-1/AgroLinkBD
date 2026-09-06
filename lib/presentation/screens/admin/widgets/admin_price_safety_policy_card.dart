@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 
 class AdminPriceSafetyPolicyCard extends StatefulWidget {
   const AdminPriceSafetyPolicyCard({super.key});
@@ -23,6 +24,7 @@ class _AdminPriceSafetyPolicyCardState
 
   @override
   Widget build(BuildContext context) {
+    final isBn = LanguageProvider.isBn(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? const Color(0xFF1E293B) : Colors.white;
     final textPrimary = isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A);
@@ -80,7 +82,9 @@ class _AdminPriceSafetyPolicyCardState
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '🛡️ মার্কেট সেফটি গার্ড ও সার্কিট ব্রেকার',
+                            isBn
+                                ? '🛡️ মার্কেট সেফটি গার্ড ও সার্কিট ব্রেকার'
+                                : '🛡️ Market Safety Guard & Circuit Breaker',
                             style: GoogleFonts.hindSiliguri(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -88,7 +92,9 @@ class _AdminPriceSafetyPolicyCardState
                             ),
                           ),
                           Text(
-                            'বাজারের স্থিতিশীলতা ও কৃষক সুরক্ষায় স্বয়ংক্রিয় প্রতিরক্ষা ব্যবস্থা',
+                            isBn
+                                ? 'বাজারের স্থিতিশীলতা ও কৃষক সুরক্ষায় স্বয়ংক্রিয় প্রতিরক্ষা ব্যবস্থা'
+                                : 'Automated safeguard for market stability and farmer protection',
                             style: GoogleFonts.hindSiliguri(
                               fontSize: 11.5,
                               color: Colors.white70,
@@ -109,11 +115,23 @@ class _AdminPriceSafetyPolicyCardState
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildSummaryStat('সর্বোচ্চ পরিবর্তন', '±২৫% সীমা', Colors.amberAccent),
+                      _buildSummaryStat(
+                        isBn ? 'সর্বোচ্চ পরিবর্তন' : 'Max Delta Limit',
+                        isBn ? '±২৫% সীমা' : '±25% Limit',
+                        Colors.amberAccent,
+                      ),
                       Container(height: 28, width: 1, color: Colors.white24),
-                      _buildSummaryStat('কৃষি ফ্লোর রেট', 'ন্যূনতম ৳৫/কেজি', Colors.lightGreenAccent),
+                      _buildSummaryStat(
+                        isBn ? 'কৃষি ফ্লোর রেট' : 'Agri Floor Rate',
+                        isBn ? 'ন্যূনতম ৳৫/কেজি' : 'Min ৳5/kg',
+                        Colors.lightGreenAccent,
+                      ),
                       Container(height: 28, width: 1, color: Colors.white24),
-                      _buildSummaryStat('মৎস্য ফ্লোর রেট', 'ন্যূনতম ৳৪০/কেজি', Colors.cyanAccent),
+                      _buildSummaryStat(
+                        isBn ? 'মৎস্য ফ্লোর রেট' : 'Fish Floor Rate',
+                        isBn ? 'ন্যূনতম ৳৪০/কেজি' : 'Min ৳40/kg',
+                        Colors.cyanAccent,
+                      ),
                     ],
                   ),
                 ),
@@ -124,7 +142,9 @@ class _AdminPriceSafetyPolicyCardState
 
           // ─── Policy Rules List ────────────────────────────────
           Text(
-            'সক্রিয় পলিসি ও নিরাপত্তা বিধিসমূহ',
+            isBn
+                ? 'সক্রিয় পলিসি ও নিরাপত্তা বিধিসমূহ'
+                : 'Active Policies & Safety Guardrails',
             style: GoogleFonts.hindSiliguri(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -136,8 +156,12 @@ class _AdminPriceSafetyPolicyCardState
           _buildPolicyTile(
             icon: Icons.speed_rounded,
             color: const Color(0xFFEF4444),
-            title: 'সার্কিট ব্রেকার সীমা (Circuit Breaker)',
-            subtitle: 'কোনো কমান্ডে ২৫% এর বেশি মূল্য পরিবর্তন করতে গেলে অ্যাডমিনকে নিশ্চিতকরণ টগল সক্রিয় করতে হবে।',
+            title: isBn
+                ? 'সার্কিট ব্রেকার সীমা (Circuit Breaker)'
+                : 'Circuit Breaker Delta Limit (25%)',
+            subtitle: isBn
+                ? 'কোনো কমান্ডে ২৫% এর বেশি মূল্য পরিবর্তন করতে গেলে অ্যাডমিনকে নিশ্চিতকরণ টগল সক্রিয় করতে হবে।'
+                : 'Any adjustment exceeding 25% requires conscious Admin Confirmation to prevent market shock.',
             cardBg: cardBg,
             textPrimary: textPrimary,
             textSecondary: textSecondary,
@@ -146,8 +170,12 @@ class _AdminPriceSafetyPolicyCardState
           _buildPolicyTile(
             icon: Icons.grass_rounded,
             color: const Color(0xFF10B981),
-            title: 'কৃষি উৎপাদন ফ্লোর প্রাইস (Agri Minimum Floor)',
-            subtitle: 'বাজার ধসের কমান্ড প্রয়োগ করলেও কোনো কৃষিজাত ফসলের দাম কেজি প্রতি ৫ টাকার নিচে নামবে না।',
+            title: isBn
+                ? 'কৃষি উৎপাদন ফ্লোর প্রাইস (Agri Minimum Floor)'
+                : 'Agricultural Minimum Floor Rate (৳5/kg)',
+            subtitle: isBn
+                ? 'বাজার ধসের কমান্ড প্রয়োগ করলেও কোনো কৃষিজাত ফসলের দাম কেজি প্রতি ৫ টাকার নিচে নামবে না।'
+                : 'Guarantees crops never drop below ৳5/kg floor even under extreme negative price commands.',
             cardBg: cardBg,
             textPrimary: textPrimary,
             textSecondary: textSecondary,
@@ -156,8 +184,12 @@ class _AdminPriceSafetyPolicyCardState
           _buildPolicyTile(
             icon: Icons.water_rounded,
             color: const Color(0xFF0284C7),
-            title: 'মৎস্য চাষী সুরক্ষা ফ্লোর (Fish Minimum Floor)',
-            subtitle: 'জীবন্ত মাছের জন্য কেজি প্রতি ন্যূনতম ৪০ টাকা ফ্লোর নিশ্চিত করা হয়েছে যাতে মৎস্য চাষীর মূলধন রক্ষা পায়।',
+            title: isBn
+                ? 'মৎস্য চাষী সুরক্ষা ফ্লোর (Fish Minimum Floor)'
+                : 'Fisheries Capital Shield Floor (৳40/kg)',
+            subtitle: isBn
+                ? 'জীবন্ত মাছের জন্য কেজি প্রতি ন্যূনতম ৪০ টাকা ফ্লোর নিশ্চিত করা হয়েছে যাতে মৎস্য চাষীর মূলধন রক্ষা পায়।'
+                : 'Enforces a strict ৳40/kg minimum floor on all live fish lots to preserve farmer operating capital.',
             cardBg: cardBg,
             textPrimary: textPrimary,
             textSecondary: textSecondary,
@@ -166,8 +198,12 @@ class _AdminPriceSafetyPolicyCardState
           _buildPolicyTile(
             icon: Icons.notifications_active_rounded,
             color: const Color(0xFFF59E0B),
-            title: 'কৃষক সতর্কতা ব্রডকাস্ট (Farmer Notification)',
-            subtitle: 'যেকোনো কমান্ড এক্সিকিউট হওয়ার পর সংশ্লিষ্ট কৃষকদের ইন-অ্যাপ নোটিফিকেশনে কারণসহ লাইভ আপডেট পৌঁছে যায়।',
+            title: isBn
+                ? 'কৃষক সতর্কতা ব্রডকাস্ট (Farmer Notification)'
+                : 'Real-time Farmer Alert Broadcast',
+            subtitle: isBn
+                ? 'যেকোনো কমান্ড এক্সিকিউট হওয়ার পর সংশ্লিষ্ট কৃষকদের ইন-অ্যাপ নোটিফিকেশনে কারণসহ লাইভ আপডেট পৌঁছে যায়।'
+                : 'Instantly broadcasts in-app audit notifications to farmers explaining adjustment rationale.',
             cardBg: cardBg,
             textPrimary: textPrimary,
             textSecondary: textSecondary,
@@ -177,7 +213,9 @@ class _AdminPriceSafetyPolicyCardState
 
           // ─── Interactive Sandbox Simulator ────────────────────
           Text(
-            '🧪 লাইভ প্রাইস সিমুলেশন টেস্ট স্যান্ডবক্স',
+            isBn
+                ? '🧪 লাইভ প্রাইস সিমুলেশন টেস্ট স্যান্ডবক্স'
+                : '🧪 Live Price Simulation Sandbox',
             style: GoogleFonts.hindSiliguri(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -196,7 +234,9 @@ class _AdminPriceSafetyPolicyCardState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'পরীক্ষামূলক দর ইনপুট দিয়ে পরিবর্তনের প্রভাব দেখুন:',
+                  isBn
+                      ? 'পরীক্ষামূলক দর ইনপুট দিয়ে পরিবর্তনের প্রভাব দেখুন:'
+                      : 'Input a test baseline rate to simulate price delta impact:',
                   style: GoogleFonts.hindSiliguri(
                     fontSize: 12.5,
                     color: textSecondary,
@@ -215,7 +255,7 @@ class _AdminPriceSafetyPolicyCardState
                           color: textPrimary,
                         ),
                         decoration: InputDecoration(
-                          labelText: 'বর্তমান দর (টাকা)',
+                          labelText: isBn ? 'বর্তমান দর (টাকা)' : 'Current Price (BDT)',
                           labelStyle: GoogleFonts.hindSiliguri(fontSize: 12, color: textSecondary),
                           prefixText: '৳ ',
                           prefixStyle: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: const Color(0xFF0D47A1)),
@@ -234,7 +274,7 @@ class _AdminPriceSafetyPolicyCardState
                         initialValue: _isDecrease,
                         dropdownColor: cardBg,
                         decoration: InputDecoration(
-                          labelText: 'অ্যাকশন',
+                          labelText: isBn ? 'অ্যাকশন' : 'Action',
                           labelStyle: GoogleFonts.hindSiliguri(fontSize: 12, color: textSecondary),
                           filled: true,
                           fillColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
@@ -244,11 +284,17 @@ class _AdminPriceSafetyPolicyCardState
                         items: [
                           DropdownMenuItem(
                             value: true,
-                            child: Text('হ্রাস (-)', style: GoogleFonts.hindSiliguri(color: const Color(0xFFEF4444), fontWeight: FontWeight.bold)),
+                            child: Text(
+                              isBn ? 'হ্রাস (-)' : 'Decrease (-)',
+                              style: GoogleFonts.hindSiliguri(color: const Color(0xFFEF4444), fontWeight: FontWeight.bold),
+                            ),
                           ),
                           DropdownMenuItem(
                             value: false,
-                            child: Text('বৃদ্ধি (+)', style: GoogleFonts.hindSiliguri(color: const Color(0xFF10B981), fontWeight: FontWeight.bold)),
+                            child: Text(
+                              isBn ? 'বৃদ্ধি (+)' : 'Increase (+)',
+                              style: GoogleFonts.hindSiliguri(color: const Color(0xFF10B981), fontWeight: FontWeight.bold),
+                            ),
                           ),
                         ],
                         onChanged: (v) {
@@ -265,7 +311,9 @@ class _AdminPriceSafetyPolicyCardState
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'পরিবর্তনের শতকরা হার: ${_testDelta.toStringAsFixed(0)}%',
+                      isBn
+                          ? 'পরিবর্তনের শতকরা হার: ${_testDelta.toStringAsFixed(0)}%'
+                          : 'Adjustment Delta: ${_testDelta.toStringAsFixed(0)}%',
                       style: GoogleFonts.hindSiliguri(
                         fontWeight: FontWeight.w600,
                         fontSize: 13,
@@ -281,7 +329,7 @@ class _AdminPriceSafetyPolicyCardState
                           border: Border.all(color: Colors.amber),
                         ),
                         child: Text(
-                          '⚠️ সার্কিট ব্রেকার অ্যালার্ট',
+                          isBn ? '⚠️ সার্কিট ব্রেকার অ্যালার্ট' : '⚠️ Circuit Breaker Alert',
                           style: GoogleFonts.hindSiliguri(
                             fontSize: 10.5,
                             fontWeight: FontWeight.bold,
@@ -316,11 +364,13 @@ class _AdminPriceSafetyPolicyCardState
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'সমন্বিত চূড়ান্ত দর:',
+                            isBn ? 'সমন্বিত চূড়ান্ত দর:' : 'Adjusted Final Rate:',
                             style: GoogleFonts.hindSiliguri(fontSize: 11, color: textSecondary),
                           ),
                           Text(
-                            '৳${calculated.toStringAsFixed(0)} / কেজি',
+                            isBn
+                                ? '৳${calculated.toStringAsFixed(0)} / কেজি'
+                                : '৳${calculated.toStringAsFixed(0)} / kg',
                             style: GoogleFonts.poppins(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -333,7 +383,7 @@ class _AdminPriceSafetyPolicyCardState
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
-                            'নিট ব্যবধান:',
+                            isBn ? 'নিট ব্যবধান:' : 'Net Delta:',
                             style: GoogleFonts.hindSiliguri(fontSize: 11, color: textSecondary),
                           ),
                           Text(

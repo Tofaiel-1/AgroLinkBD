@@ -4,6 +4,11 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+import 'package:get/get.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
+import 'package:agrolinkbd/core/providers/admin_provider.dart';
+import 'package:agrolinkbd/presentation/screens/auth/login_screen.dart';
 import 'package:agrolinkbd/presentation/screens/admin/widgets/admin_quick_price_command_sheet.dart';
 import 'package:agrolinkbd/presentation/screens/admin/widgets/admin_price_command_history_view.dart';
 import 'package:agrolinkbd/presentation/screens/admin/widgets/admin_price_safety_policy_card.dart';
@@ -11,9 +16,9 @@ import 'package:agrolinkbd/presentation/screens/admin/widgets/admin_ai_price_ana
 import 'package:agrolinkbd/core/services/admin_price_command_service.dart';
 
 /// ============================================================
-/// ADMIN PRICE CONTROL SCREEN
-/// Super Admin can increase/decrease product prices.
-/// Changes auto-sync to marketplace via Firestore real-time.
+/// ADMIN PRICE CONTROL CENTER (BILINGUAL & FULL SETTINGS)
+/// Super Admin can manage product prices, market rates, run AI
+/// scans, and access full settings (Theme, Refresh, Logout, Lang).
 /// ============================================================
 class AdminPriceControlScreen extends StatefulWidget {
   const AdminPriceControlScreen({super.key});
@@ -38,14 +43,14 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
   static const _gradientEnd = Color(0xFF312E81);
 
   final List<Map<String, dynamic>> _categories = [
-    {'key': 'all', 'label': 'সব', 'labelEn': 'All', 'icon': Icons.grid_view_rounded},
-    {'key': 'vegetables', 'label': 'শাকসবজি', 'labelEn': 'Vegetables', 'icon': Icons.eco_rounded},
-    {'key': 'fruits', 'label': 'ফলমূল', 'labelEn': 'Fruits', 'icon': Icons.apple_rounded},
-    {'key': 'grains', 'label': 'শস্য', 'labelEn': 'Grains', 'icon': Icons.grain_rounded},
-    {'key': 'fish', 'label': 'মাছ', 'labelEn': 'Fish', 'icon': Icons.water_rounded},
-    {'key': 'meat', 'label': 'মাংস', 'labelEn': 'Meat', 'icon': Icons.set_meal_rounded},
-    {'key': 'spices', 'label': 'মসলা', 'labelEn': 'Spices', 'icon': Icons.local_fire_department_rounded},
-    {'key': 'dairy', 'label': 'দুগ্ধ', 'labelEn': 'Dairy', 'icon': Icons.egg_rounded},
+    {'key': 'all', 'labelBn': 'সব', 'labelEn': 'All', 'icon': Icons.grid_view_rounded},
+    {'key': 'vegetables', 'labelBn': 'শাকসবজি', 'labelEn': 'Vegetables', 'icon': Icons.eco_rounded},
+    {'key': 'fruits', 'labelBn': 'ফলমূল', 'labelEn': 'Fruits', 'icon': Icons.apple_rounded},
+    {'key': 'grains', 'labelBn': 'শস্য', 'labelEn': 'Grains', 'icon': Icons.grain_rounded},
+    {'key': 'fish', 'labelBn': 'মাছ', 'labelEn': 'Fish', 'icon': Icons.water_rounded},
+    {'key': 'meat', 'labelBn': 'মাংস', 'labelEn': 'Meat', 'icon': Icons.set_meal_rounded},
+    {'key': 'spices', 'labelBn': 'মসলা', 'labelEn': 'Spices', 'icon': Icons.local_fire_department_rounded},
+    {'key': 'dairy', 'labelBn': 'দুগ্ধ', 'labelEn': 'Dairy', 'icon': Icons.egg_rounded},
   ];
 
   @override
@@ -64,8 +69,566 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
     super.dispose();
   }
 
+  /// Trigger full refresh across the screen
+  void _triggerRefresh({bool showToast = true}) {
+    setState(() {});
+    if (showToast && mounted) {
+      final isBn = LanguageProvider.isBn(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.refresh_rounded, color: Colors.white, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                isBn
+                    ? 'তথ্য সফলভাবে রিফ্রেশ করা হয়েছে'
+                    : 'Data refreshed successfully',
+                style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFF10B981),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    }
+  }
+
+  /// Open comprehensive Super Admin Settings modal
+  void _showAdminSettingsSheet(BuildContext context) {
+    final isBn = LanguageProvider.isBn(context);
+    final currentUser = FirebaseAuth.instance.currentUser;
+    final adminEmail = currentUser?.email ?? 'admin@agrolinkbd.com';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          final currentIsDark = Theme.of(context).brightness == Brightness.dark;
+          final sheetBg = currentIsDark ? const Color(0xFF1E293B) : Colors.white;
+          final textPrimary = currentIsDark ? Colors.white : const Color(0xFF0F172A);
+          final textSec = currentIsDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+          final tileBg = currentIsDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
+          final borderColor = currentIsDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+
+          return Container(
+            decoration: BoxDecoration(
+              color: sheetBg,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, -4),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Drag Handle
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: currentIsDark ? Colors.white24 : Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Sheet Header with Admin Profile & Close
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [_gradientStart, _gradientEnd],
+                        ),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: _accent.withValues(alpha: 0.3),
+                            blurRadius: 8,
+                          ),
+                        ],
+                      ),
+                      child: const Icon(Icons.shield_rounded, color: Colors.amberAccent, size: 22),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                isBn ? 'এডমিন সেটিংস' : 'Admin Settings',
+                                style: GoogleFonts.hindSiliguri(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.bold,
+                                  color: textPrimary,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: Colors.amber.shade700, width: 0.8),
+                                ),
+                                child: Text(
+                                  isBn ? 'সুপার এডমিন' : 'SUPER ADMIN',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.amber.shade800,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          Text(
+                            adminEmail,
+                            style: GoogleFonts.inter(
+                              fontSize: 11.5,
+                              color: textSec,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.close_rounded, color: textSec, size: 20),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                Divider(color: borderColor, height: 1),
+                const SizedBox(height: 16),
+
+                // ─── 1. THEME SWITCHER (LIGHT / DARK) ───
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: tileBg,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: borderColor),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: currentIsDark
+                              ? const Color(0xFF38BDF8).withValues(alpha: 0.15)
+                              : Colors.amber.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          currentIsDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                          color: currentIsDark ? const Color(0xFF38BDF8) : Colors.amber.shade700,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              isBn ? 'থিম মোড' : 'Theme Mode',
+                              style: GoogleFonts.hindSiliguri(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13.5,
+                                color: textPrimary,
+                              ),
+                            ),
+                            Text(
+                              currentIsDark
+                                  ? (isBn ? '🌙 ডার্ক মোড সক্রিয়' : '🌙 Dark Mode Active')
+                                  : (isBn ? '☀️ লাইট মোড সক্রিয়' : '☀️ Light Mode Active'),
+                              style: GoogleFonts.hindSiliguri(
+                                fontSize: 11,
+                                color: textSec,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch.adaptive(
+                        value: currentIsDark,
+                        activeTrackColor: const Color(0xFF38BDF8),
+                        activeThumbColor: Colors.white,
+                        onChanged: (val) {
+                          Get.changeThemeMode(val ? ThemeMode.dark : ThemeMode.light);
+                          setSheetState(() {});
+                          setState(() {});
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                // ─── 2. LANGUAGE SELECTOR (BANGLA / ENGLISH) ───
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: tileBg,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: borderColor),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: _accent.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.language_rounded, color: _accent, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              isBn ? 'ভাষা নির্বাচন' : 'Language Selection',
+                              style: GoogleFonts.hindSiliguri(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13.5,
+                                color: textPrimary,
+                              ),
+                            ),
+                            Text(
+                              isBn ? 'বাংলা ও ইংরেজি পরিবর্তন করুন' : 'Switch Bangla & English',
+                              style: GoogleFonts.hindSiliguri(
+                                fontSize: 11,
+                                color: textSec,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Segmented Language Toggle Button
+                      Container(
+                        decoration: BoxDecoration(
+                          color: currentIsDark ? const Color(0xFF1E293B) : Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: borderColor),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            GestureDetector(
+                              onTap: () {
+                                Provider.of<LanguageProvider>(context, listen: false)
+                                    .setLanguage('বাংলা');
+                                setSheetState(() {});
+                                setState(() {});
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: isBn ? _accent : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(9),
+                                ),
+                                child: Text(
+                                  'বাংলা',
+                                  style: GoogleFonts.hindSiliguri(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: isBn ? Colors.white : textSec,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                Provider.of<LanguageProvider>(context, listen: false)
+                                    .setLanguage('English');
+                                setSheetState(() {});
+                                setState(() {});
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: !isBn ? _accent : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(9),
+                                ),
+                                child: Text(
+                                  'EN',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: !isBn ? Colors.white : textSec,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                // ─── 3. REFRESH DATA BUTTON ───
+                InkWell(
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _triggerRefresh(showToast: true);
+                  },
+                  borderRadius: BorderRadius.circular(14),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: tileBg,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: borderColor),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: _green.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.sync_rounded, color: _green, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                isBn ? 'তথ্য রিফ্রেশ করুন' : 'Refresh Data',
+                                style: GoogleFonts.hindSiliguri(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13.5,
+                                  color: textPrimary,
+                                ),
+                              ),
+                              Text(
+                                isBn
+                                    ? 'পণ্য, বাজার রেট ও লাইভ স্ট্রিম আপডেট করুন'
+                                    : 'Reload live products, rates & streams',
+                                style: GoogleFonts.hindSiliguri(
+                                  fontSize: 11,
+                                  color: textSec,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(Icons.arrow_forward_ios_rounded, size: 14, color: textSec),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                // ─── 4. SECURITY & SYSTEM STATUS ───
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: tileBg,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: borderColor),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.verified_user_rounded, color: Colors.amber, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              isBn ? 'সার্কিট ব্রেকার পলিসি' : 'Circuit Breaker Policy',
+                              style: GoogleFonts.hindSiliguri(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13.5,
+                                color: textPrimary,
+                              ),
+                            ),
+                            Text(
+                              isBn
+                                  ? '±২৫% সর্বোচ্চ পরিবর্তন সীমা সক্রিয়'
+                                  : '±25% Max Delta Guard Active',
+                              style: GoogleFonts.hindSiliguri(
+                                fontSize: 11,
+                                color: textSec,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: _green.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          isBn ? 'সক্রিয়' : 'ACTIVE',
+                          style: const TextStyle(
+                            color: _green,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // ─── 5. LOGOUT BUTTON ───
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _showLogoutConfirmDialog(context);
+                    },
+                    icon: const Icon(Icons.logout_rounded, color: Colors.white, size: 18),
+                    label: Text(
+                      isBn ? 'লগআউট (Sign Out)' : 'Sign Out',
+                      style: GoogleFonts.hindSiliguri(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _red,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Show Confirmation Dialog before Admin Sign Out
+  Future<void> _showLogoutConfirmDialog(BuildContext context) async {
+    final isBn = LanguageProvider.isBn(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final shouldSignOut = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: _red.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.logout_rounded, color: _red, size: 22),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                isBn ? 'লগআউট নিশ্চিতকরণ' : 'Confirm Sign Out',
+                style: GoogleFonts.hindSiliguri(
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          isBn
+              ? 'আপনি কি নিশ্চিত যে সুপার এডমিন কন্ট্রোল সেন্টার থেকে লগআউট করতে চান?'
+              : 'Are you sure you want to log out from the Super Admin Control Center?',
+          style: GoogleFonts.hindSiliguri(
+            fontSize: 13.5,
+            color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              isBn ? 'বাতিল' : 'Cancel',
+              style: GoogleFonts.hindSiliguri(
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white70 : Colors.black54,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: Text(
+              isBn ? 'হ্যাঁ, লগআউট' : 'Sign Out',
+              style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldSignOut == true && context.mounted) {
+      try {
+        final adminProvider = Provider.of<AdminProvider>(context, listen: false);
+        await adminProvider.adminSignOut();
+      } catch (e) {
+        debugPrint('⚠️ Error in adminProvider.adminSignOut: $e');
+      }
+      await FirebaseAuth.instance.signOut();
+      Get.offAll(() => const LoginScreen());
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isBn = LanguageProvider.isBn(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
     final cardBg = isDark ? const Color(0xFF1E293B) : Colors.white;
@@ -106,7 +669,7 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'প্রাইস কন্ট্রোল সেন্টার',
+                    isBn ? 'প্রাইস কন্ট্রোল সেন্টার' : 'Price Control Center',
                     style: GoogleFonts.hindSiliguri(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
@@ -117,10 +680,12 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
                     overflow: TextOverflow.ellipsis,
                   ),
                   Text(
-                    'AI-powered marketplace management',
+                    isBn
+                        ? 'এআই-চালিত মার্কেটপ্লেস ব্যবস্থাপনা'
+                        : 'AI-powered marketplace management',
                     style: GoogleFonts.inter(
                       fontSize: 9.5,
-                      color: Colors.white54,
+                      color: Colors.white70,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -131,38 +696,72 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
           ],
         ),
         actions: [
+          // ─── Language Quick Switch Pill ───────────────────────
+          GestureDetector(
+            onTap: () =>
+                Provider.of<LanguageProvider>(context, listen: false).toggleLanguage(),
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.g_translate_rounded, color: Colors.white, size: 13),
+                  const SizedBox(width: 4),
+                  Text(
+                    isBn ? 'EN' : 'বাং',
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // ─── Quick Command Button ─────────────────────────────
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
             child: GestureDetector(
-              onTap: () => AdminQuickPriceCommandSheet.show(context),
+              onTap: () => AdminQuickPriceCommandSheet.show(
+                context,
+                initialIsBangla: isBn,
+              ),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      Colors.amberAccent.withValues(alpha: 0.85),
+                      Colors.amberAccent.withValues(alpha: 0.9),
                       Colors.orange.shade600,
                     ],
                   ),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(9),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.amberAccent.withValues(alpha: 0.35),
                       blurRadius: 8,
-                      offset: const Offset(0, 3),
+                      offset: const Offset(0, 2),
                     ),
                   ],
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.bolt_rounded, color: Colors.white, size: 15),
-                    const SizedBox(width: 5),
+                    const Icon(Icons.bolt_rounded, color: Colors.white, size: 14),
+                    const SizedBox(width: 4),
                     Text(
-                      'কমান্ড',
+                      isBn ? 'কমান্ড' : 'Command',
                       style: GoogleFonts.hindSiliguri(
                         fontWeight: FontWeight.bold,
-                        fontSize: 12,
+                        fontSize: 11.5,
                         color: Colors.white,
                       ),
                     ),
@@ -171,6 +770,14 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
               ),
             ),
           ),
+
+          // ─── Settings Gear Button ─────────────────────────────
+          IconButton(
+            icon: const Icon(Icons.settings_rounded, color: Colors.white, size: 21),
+            tooltip: isBn ? 'এডমিন সেটিংস' : 'Admin Settings',
+            onPressed: () => _showAdminSettingsSheet(context),
+          ),
+          const SizedBox(width: 4),
         ],
         bottom: TabBar(
           controller: _tabController,
@@ -186,18 +793,18 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
             fontWeight: FontWeight.bold,
           ),
           unselectedLabelStyle: GoogleFonts.hindSiliguri(fontSize: 11),
-          tabs: const [
-            Tab(icon: Icon(Icons.inventory_2_rounded, size: 16), text: 'পণ্য ও লট'),
-            Tab(icon: Icon(Icons.price_change_rounded, size: 16), text: 'বাজার রেট'),
-            Tab(icon: Icon(Icons.auto_awesome_rounded, size: 16), text: '🤖 এআই স্ক্যান'),
-            Tab(icon: Icon(Icons.history_rounded, size: 16), text: 'কমান্ড লগ'),
-            Tab(icon: Icon(Icons.shield_rounded, size: 16), text: 'সেফটি'),
+          tabs: [
+            Tab(icon: const Icon(Icons.inventory_2_rounded, size: 16), text: isBn ? 'পণ্য ও লট' : 'Products & Lots'),
+            Tab(icon: const Icon(Icons.price_change_rounded, size: 16), text: isBn ? 'বাজার রেট' : 'Market Rates'),
+            Tab(icon: const Icon(Icons.auto_awesome_rounded, size: 16), text: isBn ? '🤖 এআই স্ক্যান' : '🤖 AI Scan'),
+            Tab(icon: const Icon(Icons.history_rounded, size: 16), text: isBn ? 'কমান্ড লগ' : 'Command Logs'),
+            Tab(icon: const Icon(Icons.shield_rounded, size: 16), text: isBn ? 'সেফটি' : 'Safety Policy'),
           ],
         ),
       ),
       body: Column(
         children: [
-          // ─── Emergency Command Shortcut Bar (Horizontally Scrollable - No Overflow) ───
+          // ─── Emergency Command Shortcut Bar (Bilingual) ─────────────
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -214,7 +821,7 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
                 children: [
                   _buildShortcutPill(
                     icon: Icons.auto_awesome_rounded,
-                    label: '🤖 এআই স্ক্যান',
+                    label: isBn ? '🤖 এআই স্ক্যান' : '🤖 AI Scan',
                     gradient: const LinearGradient(
                       colors: [Color(0xFF7C3AED), Color(0xFF2563EB)],
                     ),
@@ -223,31 +830,33 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
                   const SizedBox(width: 8),
                   _buildShortcutPill(
                     icon: Icons.trending_down_rounded,
-                    label: '📉 বাজার ধস (-১০%)',
+                    label: isBn ? '📉 বাজার ধস (-১০%)' : '📉 Market Crash (-10%)',
                     bgColor: const Color(0xFFEF4444).withValues(alpha: 0.25),
                     borderColor: const Color(0xFFEF4444).withValues(alpha: 0.6),
                     onTap: () => AdminQuickPriceCommandSheet.show(
                       context,
                       initialAction: PriceCommandAction.decrease,
                       initialScope: PriceCommandScope.all,
+                      initialIsBangla: isBn,
                     ),
                   ),
                   const SizedBox(width: 8),
                   _buildShortcutPill(
                     icon: Icons.trending_up_rounded,
-                    label: '📈 কৃষক সুরক্ষা (+১০%)',
+                    label: isBn ? '📈 কৃষক সুরক্ষা (+১০%)' : '📈 Farmer Shield (+10%)',
                     bgColor: const Color(0xFF10B981).withValues(alpha: 0.25),
                     borderColor: const Color(0xFF10B981).withValues(alpha: 0.6),
                     onTap: () => AdminQuickPriceCommandSheet.show(
                       context,
                       initialAction: PriceCommandAction.increase,
                       initialScope: PriceCommandScope.all,
+                      initialIsBangla: isBn,
                     ),
                   ),
                   const SizedBox(width: 8),
                   _buildShortcutPill(
                     icon: Icons.tune_rounded,
-                    label: '⚡ কমান্ড শর্টকাট',
+                    label: isBn ? '⚡ কমান্ড শর্টকাট' : '⚡ Command Shortcut',
                     textColor: Colors.amberAccent,
                     bgColor: Colors.white.withValues(alpha: 0.2),
                     borderColor: Colors.white.withValues(alpha: 0.35),
@@ -255,14 +864,24 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
                       context,
                       initialAction: PriceCommandAction.syncBenchmark,
                       initialScope: PriceCommandScope.all,
+                      initialIsBangla: isBn,
                     ),
+                  ),
+                  const SizedBox(width: 8),
+                  _buildShortcutPill(
+                    icon: Icons.refresh_rounded,
+                    label: isBn ? '🔄 রিফ্রেশ' : '🔄 Refresh',
+                    textColor: Colors.cyanAccent,
+                    bgColor: Colors.cyan.withValues(alpha: 0.2),
+                    borderColor: Colors.cyan.withValues(alpha: 0.4),
+                    onTap: () => _triggerRefresh(showToast: true),
                   ),
                 ],
               ),
             ),
           ),
 
-          // ─── Search Bar & Category Chips (Only for Tabs 0 & 1) ───
+          // ─── Search Bar & Category Chips (Tabs 0 & 1) ───────────
           if (_tabController.index == 0 || _tabController.index == 1) ...[
             Container(
               decoration: const BoxDecoration(
@@ -277,7 +896,9 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
                 controller: _searchController,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  hintText: 'পণ্য খুঁজুন... / Search products...',
+                  hintText: isBn
+                      ? 'পণ্য বা বিক্রেতা খুঁজুন... / Search products...'
+                      : 'Search products or sellers...',
                   hintStyle: const TextStyle(color: Colors.white54, fontSize: 13),
                   prefixIcon: const Icon(Icons.search_rounded, color: Colors.white70, size: 20),
                   suffixIcon: _searchQuery.isNotEmpty
@@ -312,6 +933,7 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
                 itemBuilder: (context, i) {
                   final cat = _categories[i];
                   final isSelected = _selectedCategory == cat['key'];
+                  final label = isBn ? cat['labelBn'] : cat['labelEn'];
                   return Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: FilterChip(
@@ -322,7 +944,7 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
                           size: 14,
                           color: isSelected ? Colors.white : _accent),
                       label: Text(
-                        cat['label'],
+                        label,
                         style: GoogleFonts.hindSiliguri(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w600,
@@ -350,8 +972,8 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
             child: TabBarView(
               controller: _tabController,
               children: [
-                _buildProductPriceList(isDark, cardBg, textPrimary, textSec),
-                _buildMarketRatesEditor(isDark, cardBg, textPrimary, textSec),
+                _buildProductPriceList(isBn, isDark, cardBg, textPrimary, textSec),
+                _buildMarketRatesEditor(isBn, isDark, cardBg, textPrimary, textSec),
                 AdminAiPriceAnalysisTab(
                   onCommandExecuted: () => setState(() {}),
                 ),
@@ -363,11 +985,14 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => AdminQuickPriceCommandSheet.show(context),
+        onPressed: () => AdminQuickPriceCommandSheet.show(
+          context,
+          initialIsBangla: isBn,
+        ),
         backgroundColor: const Color(0xFF0D47A1),
         icon: const Icon(Icons.bolt_rounded, color: Colors.amberAccent),
         label: Text(
-          '⚡ প্রাইস কমান্ড শর্টকাট',
+          isBn ? '⚡ প্রাইস কমান্ড শর্টকাট' : '⚡ Price Command',
           style: GoogleFonts.hindSiliguri(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -418,10 +1043,10 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
   }
 
   // ================================================================
-  // TAB 1: ALL PRODUCTS PRICE LIST (from `products` collection)
+  // TAB 1: ALL PRODUCTS PRICE LIST (BILINGUAL)
   // ================================================================
   Widget _buildProductPriceList(
-      bool isDark, Color cardBg, Color textPrimary, Color textSec) {
+      bool isBn, bool isDark, Color cardBg, Color textPrimary, Color textSec) {
     Query query = FirebaseFirestore.instance
         .collection('products')
         .orderBy('title');
@@ -475,9 +1100,13 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
               children: [
                 Icon(Icons.inventory_2_outlined, size: 64, color: textSec),
                 const SizedBox(height: 12),
-                Text('কোনো পণ্য পাওয়া যায়নি',
-                    style: GoogleFonts.hindSiliguri(
-                        color: textSec, fontSize: 15)),
+                Text(
+                  isBn ? 'কোনো পণ্য পাওয়া যায়নি' : 'No products found',
+                  style: GoogleFonts.hindSiliguri(
+                    color: textSec,
+                    fontSize: 15,
+                  ),
+                ),
               ],
             ),
           );
@@ -502,6 +1131,7 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
               originalPrice: price,
               effectivePrice: effectivePrice,
               isOverridden: isOverridden,
+              isBn: isBn,
               isDark: isDark,
               cardBg: cardBg,
               textPrimary: textPrimary,
@@ -520,14 +1150,15 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
     required double originalPrice,
     required double effectivePrice,
     required bool isOverridden,
+    required bool isBn,
     required bool isDark,
     required Color cardBg,
     required Color textPrimary,
     required Color textSec,
   }) {
-    final title = data['title'] as String? ?? 'Unknown Product';
-    final seller = data['sellerName'] as String? ?? 'Unknown Seller';
-    final unit = data['unit'] as String? ?? 'কেজি';
+    final title = data['title'] as String? ?? (isBn ? 'নামবিহীন পণ্য' : 'Unknown Product');
+    final seller = data['sellerName'] as String? ?? (isBn ? 'নামবিহীন বিক্রেতা' : 'Unknown Seller');
+    final unit = data['unit'] as String? ?? (isBn ? 'কেজি' : 'kg');
     final category = data['category'] as String? ?? '';
     final qty = (data['quantity'] as num?)?.toDouble() ?? 0.0;
 
@@ -611,9 +1242,9 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
                             color: _accent.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(6),
                           ),
-                          child: const Text(
-                            'ADMIN SET',
-                            style: TextStyle(
+                          child: Text(
+                            isBn ? 'এডমিন সেট' : 'ADMIN SET',
+                            style: const TextStyle(
                                 fontSize: 8,
                                 fontWeight: FontWeight.bold,
                                 color: _accent),
@@ -623,7 +1254,9 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '🧑‍🌾 $seller | Qty: ${qty.toStringAsFixed(0)} $unit',
+                    isBn
+                        ? '🧑‍🌾 $seller | পরিমাণ: ${qty.toStringAsFixed(0)} $unit'
+                        : '🧑‍🌾 $seller | Qty: ${qty.toStringAsFixed(0)} $unit',
                     style: GoogleFonts.hindSiliguri(
                         fontSize: 10.5, color: textSec),
                     maxLines: 1,
@@ -664,7 +1297,7 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
                 _buildPriceActionBtn(
                   icon: Icons.arrow_upward_rounded,
                   color: _red,
-                  tooltip: 'Increase Price',
+                  tooltip: isBn ? 'মূল্য বৃদ্ধি' : 'Increase Price',
                   onTap: () => _showPriceDialog(
                     context,
                     docId: docId,
@@ -672,13 +1305,14 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
                     currentPrice: effectivePrice,
                     unit: unit,
                     isIncrease: true,
+                    isBn: isBn,
                   ),
                 ),
                 const SizedBox(height: 6),
                 _buildPriceActionBtn(
                   icon: Icons.arrow_downward_rounded,
                   color: _green,
-                  tooltip: 'Decrease Price',
+                  tooltip: isBn ? 'মূল্য হ্রাস' : 'Decrease Price',
                   onTap: () => _showPriceDialog(
                     context,
                     docId: docId,
@@ -686,6 +1320,7 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
                     currentPrice: effectivePrice,
                     unit: unit,
                     isIncrease: false,
+                    isBn: isBn,
                   ),
                 ),
                 if (isOverridden) ...[
@@ -693,8 +1328,8 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
                   _buildPriceActionBtn(
                     icon: Icons.refresh_rounded,
                     color: Colors.grey,
-                    tooltip: 'Reset to Original',
-                    onTap: () => _resetProductPrice(docId, title),
+                    tooltip: isBn ? 'আসল মূল্যে রিসেট' : 'Reset to Original',
+                    onTap: () => _resetProductPrice(docId, title, isBn),
                   ),
                 ],
               ],
@@ -729,10 +1364,10 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
   }
 
   // ================================================================
-  // TAB 2: MARKET RATES EDITOR (from `market_prices` collection)
+  // TAB 2: MARKET RATES EDITOR (BILINGUAL)
   // ================================================================
   Widget _buildMarketRatesEditor(
-      bool isDark, Color cardBg, Color textPrimary, Color textSec) {
+      bool isBn, bool isDark, Color cardBg, Color textPrimary, Color textSec) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('market_prices')
@@ -745,7 +1380,6 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
 
         final docs = snapshot.data?.docs ?? [];
 
-        // If no market_prices docs exist, show a create-initial-rates button
         if (docs.isEmpty) {
           return Center(
             child: Column(
@@ -755,15 +1389,19 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
                     size: 64, color: Colors.grey),
                 const SizedBox(height: 16),
                 Text(
-                  'No market rates configured yet.',
+                  isBn
+                      ? 'কোনো বাজার রেট কনফিগার করা হয়নি।'
+                      : 'No market rates configured yet.',
                   style: GoogleFonts.hindSiliguri(
                       color: textSec, fontSize: 15),
                 ),
                 const SizedBox(height: 12),
                 ElevatedButton.icon(
-                  onPressed: _initializeDefaultMarketRates,
+                  onPressed: () => _initializeDefaultMarketRates(isBn),
                   icon: const Icon(Icons.add_rounded),
-                  label: const Text('Initialize Default Rates'),
+                  label: Text(
+                    isBn ? 'ডিফল্ট রেট চালু করুন' : 'Initialize Default Rates',
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _accent,
                     foregroundColor: Colors.white,
@@ -804,6 +1442,7 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
               context,
               docId: doc.id,
               data: data,
+              isBn: isBn,
               isDark: isDark,
               cardBg: cardBg,
               textPrimary: textPrimary,
@@ -819,15 +1458,16 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
     BuildContext context, {
     required String docId,
     required Map<String, dynamic> data,
+    required bool isBn,
     required bool isDark,
     required Color cardBg,
     required Color textPrimary,
     required Color textSec,
   }) {
-    final productName = data['productName'] as String? ?? 'Unknown';
+    final productName = data['productName'] as String? ?? (isBn ? 'অজানা' : 'Unknown');
     final currentPrice = (data['currentPrice'] as num?)?.toDouble() ?? 0.0;
     final previousPrice = (data['previousPrice'] as num?)?.toDouble() ?? currentPrice;
-    final unit = data['unit'] as String? ?? 'কেজি';
+    final unit = data['unit'] as String? ?? (isBn ? 'কেজি' : 'kg');
     final trendStr = data['trend'] as String? ?? 'stable';
     final imageUrl = data['imageUrl'] as String?;
 
@@ -858,7 +1498,7 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
                 borderRadius: BorderRadius.circular(12),
                 color: const Color(0xFFE2E8F0),
               ),
-              child: imageUrl != null
+              child: imageUrl != null && imageUrl.isNotEmpty
                   ? ClipRRect(
                       borderRadius: BorderRadius.circular(12),
                       child: Image.network(
@@ -931,7 +1571,9 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
                     ],
                   ),
                   Text(
-                    'Prev: ৳${previousPrice.toStringAsFixed(0)}',
+                    isBn
+                        ? 'পূর্বের দর: ৳${previousPrice.toStringAsFixed(0)}'
+                        : 'Prev: ৳${previousPrice.toStringAsFixed(0)}',
                     style: GoogleFonts.hindSiliguri(
                         fontSize: 10.5, color: textSec),
                   ),
@@ -946,7 +1588,7 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
                 _buildPriceActionBtn(
                   icon: Icons.arrow_upward_rounded,
                   color: _red,
-                  tooltip: 'Increase Rate',
+                  tooltip: isBn ? 'রেট বৃদ্ধি' : 'Increase Rate',
                   onTap: () => _showMarketRateDialog(
                     context,
                     docId: docId,
@@ -954,13 +1596,14 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
                     currentPrice: currentPrice,
                     unit: unit,
                     isIncrease: true,
+                    isBn: isBn,
                   ),
                 ),
                 const SizedBox(height: 6),
                 _buildPriceActionBtn(
                   icon: Icons.arrow_downward_rounded,
                   color: _green,
-                  tooltip: 'Decrease Rate',
+                  tooltip: isBn ? 'রেট হ্রাস' : 'Decrease Rate',
                   onTap: () => _showMarketRateDialog(
                     context,
                     docId: docId,
@@ -968,6 +1611,7 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
                     currentPrice: currentPrice,
                     unit: unit,
                     isIncrease: false,
+                    isBn: isBn,
                   ),
                 ),
               ],
@@ -979,7 +1623,7 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
   }
 
   // ================================================================
-  // PRICE ADJUSTMENT DIALOGS
+  // BILINGUAL PRICE ADJUSTMENT DIALOGS
   // ================================================================
   Future<void> _showPriceDialog(
     BuildContext context, {
@@ -988,6 +1632,7 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
     required double currentPrice,
     required String unit,
     required bool isIncrease,
+    required bool isBn,
   }) async {
     final ctrl = TextEditingController();
     bool usePercent = false;
@@ -1009,7 +1654,9 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  '${isIncrease ? "Increase" : "Decrease"} Price',
+                  isBn
+                      ? '${isIncrease ? "মূল্য বৃদ্ধি" : "মূল্য হ্রাস"}'
+                      : '${isIncrease ? "Increase" : "Decrease"} Price',
                   style: GoogleFonts.hindSiliguri(
                       fontWeight: FontWeight.bold, fontSize: 16),
                 ),
@@ -1061,7 +1708,7 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
                         ),
                         child: Center(
                           child: Text(
-                            'Fixed (৳)',
+                            isBn ? 'নির্দিষ্ট (৳)' : 'Fixed (৳)',
                             style: TextStyle(
                               color: !usePercent ? Colors.white : Colors.black,
                               fontWeight: FontWeight.bold,
@@ -1084,7 +1731,7 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
                         ),
                         child: Center(
                           child: Text(
-                            'Percent (%)',
+                            isBn ? 'শতকরা (%)' : 'Percent (%)',
                             style: TextStyle(
                               color: usePercent ? Colors.white : Colors.black,
                               fontWeight: FontWeight.bold,
@@ -1107,9 +1754,9 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
                   FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))
                 ],
                 decoration: InputDecoration(
-                  labelText: usePercent
-                      ? 'Enter percentage (%)'
-                      : 'Enter amount (৳)',
+                  labelText: isBn
+                      ? (usePercent ? 'শতকরা হার দিন (%)' : 'টাকার পরিমাণ লিখুন (৳)')
+                      : (usePercent ? 'Enter percentage (%)' : 'Enter amount (৳)'),
                   prefixText: usePercent ? '' : '৳ ',
                   suffixText: usePercent ? '%' : '',
                   border: OutlineInputBorder(
@@ -1126,7 +1773,7 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
+              child: Text(isBn ? 'বাতিল' : 'Cancel'),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -1145,7 +1792,7 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
                 if (newPrice < 1) newPrice = 1;
                 Navigator.pop(ctx);
                 await _applyProductPriceOverride(
-                    docId, productName, newPrice.roundToDouble());
+                    docId, productName, newPrice.roundToDouble(), isBn);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: isIncrease ? _red : _green,
@@ -1153,7 +1800,11 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10)),
               ),
-              child: Text(isIncrease ? 'Increase' : 'Decrease'),
+              child: Text(
+                isBn
+                    ? (isIncrease ? 'বৃদ্ধি করুন' : 'হ্রাস করুন')
+                    : (isIncrease ? 'Increase' : 'Decrease'),
+              ),
             ),
           ],
         ),
@@ -1168,6 +1819,7 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
     required double currentPrice,
     required String unit,
     required bool isIncrease,
+    required bool isBn,
   }) async {
     final ctrl = TextEditingController();
     bool usePercent = false;
@@ -1189,7 +1841,9 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Market Rate: $productName',
+                  isBn
+                      ? 'বাজার রেট: $productName'
+                      : 'Market Rate: $productName',
                   style: GoogleFonts.hindSiliguri(
                       fontWeight: FontWeight.bold, fontSize: 15),
                 ),
@@ -1200,7 +1854,9 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Current: ৳${currentPrice.toStringAsFixed(0)}/$unit',
+                isBn
+                    ? 'বর্তমান: ৳${currentPrice.toStringAsFixed(0)}/$unit'
+                    : 'Current: ৳${currentPrice.toStringAsFixed(0)}/$unit',
                 style: GoogleFonts.hindSiliguri(
                     fontSize: 14, color: _accent, fontWeight: FontWeight.w600),
               ),
@@ -1218,7 +1874,7 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
                         ),
                         child: Center(
                           child: Text(
-                            'Fixed (৳)',
+                            isBn ? 'নির্দিষ্ট (৳)' : 'Fixed (৳)',
                             style: TextStyle(
                               color: !usePercent ? Colors.white : Colors.black,
                               fontWeight: FontWeight.bold,
@@ -1241,7 +1897,7 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
                         ),
                         child: Center(
                           child: Text(
-                            'Percent (%)',
+                            isBn ? 'শতকরা (%)' : 'Percent (%)',
                             style: TextStyle(
                               color: usePercent ? Colors.white : Colors.black,
                               fontWeight: FontWeight.bold,
@@ -1263,7 +1919,9 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
                   FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))
                 ],
                 decoration: InputDecoration(
-                  labelText: usePercent ? 'Percentage (%)' : 'Amount (৳)',
+                  labelText: isBn
+                      ? (usePercent ? 'শতকরা হার (%)' : 'টাকার পরিমাণ (৳)')
+                      : (usePercent ? 'Percentage (%)' : 'Amount (৳)'),
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10)),
                   focusedBorder: OutlineInputBorder(
@@ -1278,7 +1936,7 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
+              child: Text(isBn ? 'বাতিল' : 'Cancel'),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -1297,7 +1955,7 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
                 if (newPrice < 1) newPrice = 1;
                 Navigator.pop(ctx);
                 await _updateMarketRate(
-                    docId, productName, newPrice.roundToDouble(), currentPrice);
+                    docId, productName, newPrice.roundToDouble(), currentPrice, isBn);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: isIncrease ? _red : _green,
@@ -1305,7 +1963,11 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10)),
               ),
-              child: Text(isIncrease ? 'Increase Rate' : 'Decrease Rate'),
+              child: Text(
+                isBn
+                    ? (isIncrease ? 'রেট বৃদ্ধি করুন' : 'রেট হ্রাস করুন')
+                    : (isIncrease ? 'Increase Rate' : 'Decrease Rate'),
+              ),
             ),
           ],
         ),
@@ -1314,12 +1976,11 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
   }
 
   // ================================================================
-  // FIREBASE WRITE OPERATIONS
+  // FIREBASE WRITE OPERATIONS (WITH BILINGUAL LOGS & SNACKBARS)
   // ================================================================
 
-  /// Override price on a specific product document
   Future<void> _applyProductPriceOverride(
-      String docId, String productName, double newPrice) async {
+      String docId, String productName, double newPrice, bool isBn) async {
     try {
       await FirebaseFirestore.instance
           .collection('products')
@@ -1331,7 +1992,6 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
             FirebaseAuth.instance.currentUser?.email ?? 'admin',
       });
 
-      // Log to audit trail
       await FirebaseFirestore.instance.collection('admin_price_logs').add({
         'productId': docId,
         'productName': productName,
@@ -1346,7 +2006,9 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              '✅ $productName price updated to ৳${newPrice.toStringAsFixed(0)}',
+              isBn
+                  ? '✅ $productName এর মূল্য সমন্বয়: ৳${newPrice.toStringAsFixed(0)}'
+                  : '✅ $productName price updated to ৳${newPrice.toStringAsFixed(0)}',
             ),
             backgroundColor: const Color(0xFF10B981),
             behavior: SnackBarBehavior.floating,
@@ -1367,23 +2029,25 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
     }
   }
 
-  /// Reset product price to farmer's original price
-  Future<void> _resetProductPrice(String docId, String productName) async {
+  Future<void> _resetProductPrice(String docId, String productName, bool isBn) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Reset Price?'),
+        title: Text(isBn ? 'দাম রিসেট নিশ্চিতকরণ' : 'Reset Price?'),
         content: Text(
-            'Reset "$productName" back to the farmer\'s original price?'),
+          isBn
+              ? '"$productName" এর দাম কৃষকের আসল মূল্যে ফিরিয়ে নিতে চান?'
+              : 'Reset "$productName" back to the farmer\'s original price?',
+        ),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
+              child: Text(isBn ? 'বাতিল' : 'Cancel')),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-            child: const Text('Reset', style: TextStyle(color: Colors.white)),
+            child: Text(isBn ? 'রিসেট' : 'Reset', style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -1412,7 +2076,11 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('🔄 $productName price reset to original.'),
+            content: Text(
+              isBn
+                  ? '🔄 $productName এর দাম আসল মূল্যে ফিরিয়ে নেওয়া হয়েছে।'
+                  : '🔄 $productName price reset to original.',
+            ),
             backgroundColor: Colors.orange,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -1429,9 +2097,8 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
     }
   }
 
-  /// Update a market_prices document
   Future<void> _updateMarketRate(
-      String docId, String productName, double newPrice, double prevPrice) async {
+      String docId, String productName, double newPrice, double prevPrice, bool isBn) async {
     try {
       final trend = newPrice > prevPrice ? 'PriceTrend.up' : 'PriceTrend.down';
       await FirebaseFirestore.instance
@@ -1462,7 +2129,9 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              '📊 $productName market rate → ৳${newPrice.toStringAsFixed(0)}',
+              isBn
+                  ? '📊 $productName এর বাজার রেট → ৳${newPrice.toStringAsFixed(0)}'
+                  : '📊 $productName market rate → ৳${newPrice.toStringAsFixed(0)}',
             ),
             backgroundColor: _accent,
             behavior: SnackBarBehavior.floating,
@@ -1480,8 +2149,7 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
     }
   }
 
-  /// Initialize default market rate documents in Firestore
-  Future<void> _initializeDefaultMarketRates() async {
+  Future<void> _initializeDefaultMarketRates(bool isBn) async {
     final defaults = [
       {'id': 'tomato', 'productName': 'টমেটো', 'category': 'vegetables', 'currentPrice': 80.0, 'unit': 'কেজি', 'imageUrl': 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782757091/Tomato_hcjt7o.png'},
       {'id': 'potato', 'productName': 'আলু', 'category': 'vegetables', 'currentPrice': 40.0, 'unit': 'কেজি', 'imageUrl': 'https://res.cloudinary.com/dbbvlg2dz/image/upload/v1782584736/Screenshot_2026-06-28_002524_ziwqmo.png'},
@@ -1516,9 +2184,13 @@ class _AdminPriceControlScreenState extends State<AdminPriceControlScreen>
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✅ Default market rates initialized!'),
-          backgroundColor: Color(0xFF10B981),
+        SnackBar(
+          content: Text(
+            isBn
+                ? '✅ ডিফল্ট বাজার রেট সফলভাবে চালু করা হয়েছে!'
+                : '✅ Default market rates initialized!',
+          ),
+          backgroundColor: const Color(0xFF10B981),
         ),
       );
     }

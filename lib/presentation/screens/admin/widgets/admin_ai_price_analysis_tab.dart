@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:agrolinkbd/core/services/admin_price_command_service.dart';
 import 'package:agrolinkbd/core/services/ai_price_analysis_service.dart';
 import 'package:agrolinkbd/presentation/screens/admin/widgets/admin_quick_price_command_sheet.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 
 // ─── Color Palette ────────────────────────────────────────────────────
 const _kBrand = Color(0xFF2563EB);
@@ -103,9 +104,12 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
           _isLoading = false;
         });
         _fadeCtrl.forward();
+        final isBn = LanguageProvider.isBn(context);
         Get.snackbar(
-          '✅ এআই স্ক্যান সম্পন্ন',
-          'ফায়ারবেইস থেকে লাইভ ক্রয়-বিক্রয় ডাটা বিশ্লেষণ করা হয়েছে।',
+          isBn ? '✅ এআই স্ক্যান সম্পন্ন' : '✅ AI Scan Complete',
+          isBn
+              ? 'ফায়ারবেইস থেকে লাইভ ক্রয়-বিক্রয় ডাটা বিশ্লেষণ করা হয়েছে।'
+              : 'Live buy/sell market data analyzed from Firebase.',
           backgroundColor: const Color(0xFF065F46),
           colorText: Colors.white,
           icon: const Icon(Icons.auto_awesome_rounded, color: Colors.white),
@@ -116,8 +120,9 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
       }
     } catch (e) {
       if (mounted) {
+        final isBn = LanguageProvider.isBn(context);
         setState(() {
-          _errorMessage = 'স্ক্যান ব্যর্থ হয়েছে: $e';
+          _errorMessage = isBn ? 'স্ক্যান ব্যর্থ হয়েছে: $e' : 'Scan failed: $e';
           _isLoading = false;
         });
       }
@@ -125,6 +130,7 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
   }
 
   void _applyRecommendation(AiPriceRecommendationItem rec) {
+    final isBn = LanguageProvider.isBn(context);
     AdminQuickPriceCommandSheet.show(
       context,
       initialAction: rec.action,
@@ -133,7 +139,8 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
       initialCategory: rec.targetCategory,
       initialDivision: rec.targetDivision,
       initialDistrict: rec.targetDistrict,
-      initialReason: rec.rationaleBn,
+      initialReason: isBn ? rec.rationaleBn : rec.rationaleEn,
+      initialIsBangla: isBn,
       onCommandExecuted: () {
         widget.onCommandExecuted?.call();
         _triggerFreshScan();
@@ -144,6 +151,7 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isBn = LanguageProvider.isBn(context);
 
     return Container(
       color: isDark ? const Color(0xFF070F1E) : const Color(0xFFF1F5F9),
@@ -153,27 +161,29 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeroBanner(isDark),
+            _buildHeroBanner(isDark, isBn),
             const SizedBox(height: 16),
             if (_latestReport != null) ...[
-              _buildStabilityGauge(isDark),
+              _buildStabilityGauge(isDark, isBn),
               const SizedBox(height: 16),
-              _buildKpiGrid(isDark),
+              _buildKpiGrid(isDark, isBn),
               const SizedBox(height: 20),
             ],
-            if (_isLoading) _buildScanAnimation(isDark),
-            if (_errorMessage != null) _buildErrorCard(isDark),
+            if (_isLoading) _buildScanAnimation(isDark, isBn),
+            if (_errorMessage != null) _buildErrorCard(isDark, isBn),
             if (_latestReport != null) ...[
               _buildSectionHeader(
                 icon: Icons.tips_and_updates_rounded,
-                title: 'কার্যকরী এআই সুপারিশ',
-                badge: '${_latestReport!.recommendations.length} টি সুপারিশ',
+                title: isBn ? 'কার্যকরী এআই সুপারিশ' : 'Actionable AI Recommendations',
+                badge: isBn
+                    ? '${_latestReport!.recommendations.length} টি সুপারিশ'
+                    : '${_latestReport!.recommendations.length} Recommendations',
                 badgeColor: _kPurple,
                 isDark: isDark,
               ),
               const SizedBox(height: 12),
               if (_latestReport!.recommendations.isEmpty)
-                _buildAllClearCard(isDark)
+                _buildAllClearCard(isDark, isBn)
               else
                 FadeTransition(
                   opacity: _fadeCtrl,
@@ -184,20 +194,20 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
                     separatorBuilder: (_, __) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final rec = _latestReport!.recommendations[index];
-                      return _buildProRecommendationCard(rec, isDark, index);
+                      return _buildProRecommendationCard(rec, isDark, index, isBn);
                     },
                   ),
                 ),
               const SizedBox(height: 28),
               _buildSectionHeader(
                 icon: Icons.timeline_rounded,
-                title: 'বিশ্লেষণ ইতিহাস',
-                badge: 'সর্বশেষ ৬টি',
+                title: isBn ? 'বিশ্লেষণ ইতিহাস' : 'Analysis History',
+                badge: isBn ? 'সর্বশেষ ৬টি' : 'Latest 6',
                 badgeColor: _kCyan,
                 isDark: isDark,
               ),
               const SizedBox(height: 12),
-              _buildHistoryTimeline(isDark),
+              _buildHistoryTimeline(isDark, isBn),
             ],
           ],
         ),
@@ -205,7 +215,7 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
     );
   }
 
-  Widget _buildHeroBanner(bool isDark) {
+  Widget _buildHeroBanner(bool isDark, bool isBn) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -264,7 +274,7 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'এআই মার্কেট ইন্টেলিজেন্স',
+                      isBn ? 'এআই মার্কেট ইন্টেলিজেন্স' : 'AI Market Intelligence',
                       style: GoogleFonts.hindSiliguri(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -284,7 +294,7 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
                   ],
                 ),
               ),
-              _isLoading ? _buildScanningIndicator() : _buildScanButton(),
+              _isLoading ? _buildScanningIndicator(isBn) : _buildScanButton(isBn),
             ],
           ),
           if (_latestReport != null) ...[
@@ -301,7 +311,11 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
               child: FadeTransition(
                 opacity: _fadeCtrl,
                 child: Text(
-                  _latestReport!.overviewBn,
+                  isBn
+                      ? _latestReport!.overviewBn
+                      : (_latestReport!.overviewEn.isNotEmpty
+                          ? _latestReport!.overviewEn
+                          : _latestReport!.overviewBn),
                   style: GoogleFonts.hindSiliguri(
                     fontSize: 13,
                     height: 1.5,
@@ -323,12 +337,16 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
                 ),
                 _buildMetaBadge(
                   icon: Icons.inventory_2_rounded,
-                  label: '${_latestReport!.totalProductsAnalyzed} পণ্য',
+                  label: isBn
+                      ? '${_latestReport!.totalProductsAnalyzed} পণ্য'
+                      : '${_latestReport!.totalProductsAnalyzed} Products',
                   color: _kCyan,
                 ),
                 _buildMetaBadge(
                   icon: Icons.water_rounded,
-                  label: '${_latestReport!.totalFishLotsAnalyzed} লট',
+                  label: isBn
+                      ? '${_latestReport!.totalFishLotsAnalyzed} লট'
+                      : '${_latestReport!.totalFishLotsAnalyzed} Lots',
                   color: _kGreen,
                 ),
               ],
@@ -369,7 +387,7 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
     );
   }
 
-  Widget _buildScanButton() {
+  Widget _buildScanButton(bool isBn) {
     return GestureDetector(
       onTap: _triggerFreshScan,
       child: AnimatedBuilder(
@@ -398,7 +416,7 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
               const Icon(Icons.radar_rounded, color: Colors.white, size: 15),
               const SizedBox(width: 6),
               Text(
-                'স্ক্যান',
+                isBn ? 'স্ক্যান' : 'Scan',
                 style: GoogleFonts.hindSiliguri(
                   color: Colors.white,
                   fontSize: 12,
@@ -412,7 +430,7 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
     );
   }
 
-  Widget _buildScanningIndicator() {
+  Widget _buildScanningIndicator(bool isBn) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
@@ -433,7 +451,7 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
           ),
           const SizedBox(width: 8),
           Text(
-            'স্ক্যানিং...',
+            isBn ? 'স্ক্যানিং...' : 'Scanning...',
             style: GoogleFonts.inter(
               color: _kCyan,
               fontSize: 12,
@@ -445,7 +463,7 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
     );
   }
 
-  Widget _buildStabilityGauge(bool isDark) {
+  Widget _buildStabilityGauge(bool isDark, bool isBn) {
     final score = _latestReport!.stabilityScore;
     final color = _gaugeColor(score);
 
@@ -497,7 +515,7 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'বাজার স্থিতিশীলতা সূচক',
+                  isBn ? 'বাজার স্থিতিশীলতা সূচক' : 'Market Stability Index',
                   style: GoogleFonts.hindSiliguri(
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
@@ -527,7 +545,13 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        _latestReport!.marketRiskLevel,
+                        isBn
+                            ? _latestReport!.marketRiskLevel
+                            : (score >= 75
+                                ? 'Stable & Optimal'
+                                : score >= 50
+                                    ? 'Moderate Risk'
+                                    : 'Critical Risk'),
                         style: GoogleFonts.hindSiliguri(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
@@ -577,15 +601,15 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
     );
   }
 
-  Widget _buildKpiGrid(bool isDark) {
+  Widget _buildKpiGrid(bool isDark, bool isBn) {
     final report = _latestReport!;
     return Row(
       children: [
         Expanded(
           child: _buildKpiCard(
             icon: Icons.shopping_cart_rounded,
-            label: 'ট্রেড ভলিউম',
-            value: '৳${_formatCompact(report.totalOrderVolumeBdt)}',
+            label: isBn ? 'ট্রেড ভলিউম' : 'Trade Volume',
+            value: '৳${_formatCompact(report.totalOrderVolumeBdt, isBn)}',
             color: _kBrand,
             isDark: isDark,
           ),
@@ -594,7 +618,7 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
         Expanded(
           child: _buildKpiCard(
             icon: Icons.receipt_long_rounded,
-            label: 'অর্ডার',
+            label: isBn ? 'অর্ডার' : 'Orders',
             value: '${report.recentOrdersAnalyzed}',
             color: _kCyan,
             isDark: isDark,
@@ -604,7 +628,7 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
         Expanded(
           child: _buildKpiCard(
             icon: Icons.eco_rounded,
-            label: 'কৃষি পণ্য',
+            label: isBn ? 'কৃষি পণ্য' : 'Agri Products',
             value: '${report.totalProductsAnalyzed}',
             color: _kGreen,
             isDark: isDark,
@@ -614,7 +638,7 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
         Expanded(
           child: _buildKpiCard(
             icon: Icons.water_rounded,
-            label: 'মৎস্য লট',
+            label: isBn ? 'মৎস্য লট' : 'Fish Lots',
             value: '${report.totalFishLotsAnalyzed}',
             color: const Color(0xFF0EA5E9),
             isDark: isDark,
@@ -686,7 +710,7 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
     );
   }
 
-  Widget _buildScanAnimation(bool isDark) {
+  Widget _buildScanAnimation(bool isDark, bool isBn) {
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       padding: const EdgeInsets.all(32),
@@ -746,7 +770,9 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
           ),
           const SizedBox(height: 16),
           Text(
-            'ফায়ারবেইস থেকে লাইভ ডাটা বিশ্লেষণ করা হচ্ছে',
+            isBn
+                ? 'ফায়ারবেইস থেকে লাইভ ডাটা বিশ্লেষণ করা হচ্ছে'
+                : 'Analyzing live market data from Firebase',
             style: GoogleFonts.hindSiliguri(
               fontSize: 14,
               fontWeight: FontWeight.bold,
@@ -756,7 +782,9 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
           ),
           const SizedBox(height: 6),
           Text(
-            'পণ্য, মৎস্য লট, অর্ডার ও বেঞ্চমার্ক রেট পর্যালোচনা করা হচ্ছে...',
+            isBn
+                ? 'পণ্য, মৎস্য লট, অর্ডার ও বেঞ্চমার্ক রেট পর্যালোচনা করা হচ্ছে...'
+                : 'Reviewing products, fish lots, orders and benchmark rates...',
             style: GoogleFonts.hindSiliguri(
               fontSize: 12,
               color: isDark ? Colors.white54 : Colors.black45,
@@ -768,7 +796,7 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
     );
   }
 
-  Widget _buildErrorCard(bool isDark) {
+  Widget _buildErrorCard(bool isDark, bool isBn) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -786,7 +814,7 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'স্ক্যান ব্যর্থ হয়েছে',
+                  isBn ? 'স্ক্যান ব্যর্থ হয়েছে' : 'Scan Failed',
                   style: GoogleFonts.hindSiliguri(
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
@@ -806,9 +834,9 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
           ),
           TextButton(
             onPressed: _triggerFreshScan,
-            child: const Text(
-              'পুনরায়',
-              style: TextStyle(color: _kRed, fontWeight: FontWeight.bold),
+            child: Text(
+              isBn ? 'পুনরায়' : 'Retry',
+              style: const TextStyle(color: _kRed, fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -864,7 +892,7 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
     );
   }
 
-  Widget _buildAllClearCard(bool isDark) {
+  Widget _buildAllClearCard(bool isDark, bool isBn) {
     return Container(
       padding: const EdgeInsets.all(28),
       width: double.infinity,
@@ -893,7 +921,7 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
           ),
           const SizedBox(height: 14),
           Text(
-            '✅ বাজার স্থিতিশীল',
+            isBn ? '✅ বাজার স্থিতিশীল' : '✅ Market Stable',
             style: GoogleFonts.hindSiliguri(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -902,7 +930,9 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
           ),
           const SizedBox(height: 8),
           Text(
-            'সকল পণ্য ও মৎস্য লটের গড় দর বর্তমানে সরকারি বেঞ্চমার্কের সীমার মধ্যে রয়েছে। কোনো জরুরি হস্তক্ষেপের প্রয়োজন নেই।',
+            isBn
+                ? 'সকল পণ্য ও মৎস্য লটের গড় দর বর্তমানে সরকারি বেঞ্চমার্কের সীমার মধ্যে রয়েছে। কোনো জরুরি হস্তক্ষেপের প্রয়োজন নেই।'
+                : 'All product and fish lot prices are currently within government benchmark thresholds. No emergency intervention needed.',
             textAlign: TextAlign.center,
             style: GoogleFonts.hindSiliguri(
               fontSize: 13,
@@ -919,6 +949,7 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
     AiPriceRecommendationItem rec,
     bool isDark,
     int index,
+    bool isBn,
   ) {
     final isDecrease = rec.action == PriceCommandAction.decrease;
     final isIncrease = rec.action == PriceCommandAction.increase;
@@ -929,12 +960,15 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
         isDecrease ? _kRed : isIncrease ? _kGreen : _kBrand;
     final urgencyColor = isCritical ? _kRed : isHigh ? _kOrange : _kBrand;
     final actionLabel = isDecrease
-        ? '📉 দাম কমানো'
+        ? (isBn ? '📉 দাম কমানো' : '📉 Decrease')
         : isIncrease
-            ? '📈 কৃষক সুরক্ষা'
-            : '🔄 বেঞ্চমার্ক সিঙ্ক';
-    final urgencyLabel =
-        isCritical ? '🚨 সংকট' : isHigh ? '⚡ জরুরি' : '💡 পরামর্শ';
+            ? (isBn ? '📈 কৃষক সুরক্ষা' : '📈 Farmer Shield')
+            : (isBn ? '🔄 বেঞ্চমার্ক সিঙ্ক' : '🔄 Sync Benchmark');
+    final urgencyLabel = isCritical
+        ? (isBn ? '🚨 সংকট' : '🚨 Critical')
+        : isHigh
+            ? (isBn ? '⚡ জরুরি' : '⚡ Urgent')
+            : (isBn ? '💡 পরামর্শ' : '💡 Tip');
 
     return Container(
       decoration: BoxDecoration(
@@ -1031,7 +1065,7 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  rec.title,
+                  _formatRecommendationTitle(rec, isBn),
                   style: GoogleFonts.hindSiliguri(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
@@ -1041,10 +1075,14 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
                 ),
                 const SizedBox(height: 10),
                 if (rec.currentAvgPrice > 0 || rec.benchmarkPrice > 0)
-                  _buildPriceComparison(rec, actionColor, isDark),
+                  _buildPriceComparison(rec, actionColor, isDark, isBn),
                 const SizedBox(height: 10),
                 Text(
-                  rec.rationaleBn,
+                  isBn
+                      ? rec.rationaleBn
+                      : (rec.rationaleEn.isNotEmpty
+                          ? rec.rationaleEn
+                          : rec.rationaleBn),
                   style: GoogleFonts.hindSiliguri(
                     fontSize: 12.5,
                     height: 1.5,
@@ -1104,7 +1142,9 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
                                 color: Colors.white, size: 18),
                             const SizedBox(width: 8),
                             Text(
-                              '১-ট্যাপে কার্যকর করুন  (${isDecrease ? '-' : '+'}${rec.deltaPercent.toStringAsFixed(1)}%)',
+                              isBn
+                                  ? '১-ট্যাপে কার্যকর করুন  (${isDecrease ? '-' : '+'}${rec.deltaPercent.toStringAsFixed(1)}%)'
+                                  : '1-Tap Apply  (${isDecrease ? '-' : '+'}${rec.deltaPercent.toStringAsFixed(1)}%)',
                               style: GoogleFonts.hindSiliguri(
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
@@ -1129,6 +1169,7 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
     AiPriceRecommendationItem rec,
     Color actionColor,
     bool isDark,
+    bool isBn,
   ) {
     final deviation = rec.benchmarkPrice > 0
         ? ((rec.currentAvgPrice - rec.benchmarkPrice) / rec.benchmarkPrice) *
@@ -1149,7 +1190,7 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
       child: Row(
         children: [
           _buildPriceBox(
-            label: 'বর্তমান গড়',
+            label: isBn ? 'বর্তমান গড়' : 'Current Avg',
             value: '৳${rec.currentAvgPrice.toStringAsFixed(0)}',
             color: actionColor,
             isDark: isDark,
@@ -1171,7 +1212,7 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
             ),
           ),
           _buildPriceBox(
-            label: 'বেঞ্চমার্ক',
+            label: isBn ? 'বেঞ্চমার্ক' : 'Benchmark',
             value: '৳${rec.benchmarkPrice.toStringAsFixed(0)}',
             color: _kCyan,
             isDark: isDark,
@@ -1254,7 +1295,7 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
     );
   }
 
-  Widget _buildHistoryTimeline(bool isDark) {
+  Widget _buildHistoryTimeline(bool isDark, bool isBn) {
     return StreamBuilder<List<AiMarketAnalysisReport>>(
       stream: AiPriceAnalysisService.streamHistoricalReports(limit: 6),
       builder: (context, snapshot) {
@@ -1281,7 +1322,9 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
             ),
             child: Center(
               child: Text(
-                'কোনো পূর্ববর্তী বিশ্লেষণ পাওয়া যায়নি।',
+                isBn
+                    ? 'কোনো পূর্ববর্তী বিশ্লেষণ পাওয়া যায়নি।'
+                    : 'No previous analyses found.',
                 style: GoogleFonts.hindSiliguri(
                   fontSize: 13,
                   color: isDark ? Colors.white54 : Colors.black45,
@@ -1367,7 +1410,7 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
-                                  '${report.stabilityScore}% · ${report.marketRiskLevel}',
+                                  '${report.stabilityScore}% · ${isBn ? report.marketRiskLevel : (report.stabilityScore >= 75 ? 'Stable' : report.stabilityScore >= 50 ? 'Moderate' : 'Critical')}',
                                   style: TextStyle(
                                     fontSize: 11,
                                     color: color,
@@ -1376,7 +1419,7 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
                                 ),
                               ),
                               Text(
-                                _formatTimestamp(report.timestamp),
+                                _formatTimestamp(report.timestamp, isBn),
                                 style: TextStyle(
                                   fontSize: 11,
                                   color: isDark
@@ -1388,7 +1431,11 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            report.overviewBn,
+                            isBn
+                                ? report.overviewBn
+                                : (report.overviewEn.isNotEmpty
+                                    ? report.overviewEn
+                                    : report.overviewBn),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.hindSiliguri(
@@ -1402,7 +1449,9 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
                             spacing: 6,
                             children: [
                               _buildTag(
-                                '${report.recommendations.length} সুপারিশ',
+                                isBn
+                                    ? '${report.recommendations.length} সুপারিশ'
+                                    : '${report.recommendations.length} Recs',
                                 _kPurple,
                                 isDark,
                               ),
@@ -1422,26 +1471,53 @@ class _AdminAiPriceAnalysisTabState extends State<AdminAiPriceAnalysisTab>
     );
   }
 
+  String _formatRecommendationTitle(AiPriceRecommendationItem rec, bool isBn) {
+    if (isBn) return rec.title;
+    final isAscii = RegExp(r'^[\x00-\x7F\s\d%+\-.,()]+$').hasMatch(rec.title);
+    if (isAscii && rec.title.trim().isNotEmpty) return rec.title;
+
+    final target = rec.targetCategory ?? rec.commodityOrCategory;
+    if (rec.action == PriceCommandAction.decrease) {
+      return 'Control Price Surge in $target';
+    } else if (rec.action == PriceCommandAction.increase) {
+      return 'Farmer Shield & Price Support for $target';
+    } else if (rec.action == PriceCommandAction.syncBenchmark) {
+      return 'Sync $target with Central Market Benchmark';
+    } else {
+      return 'Revert $target Price Override';
+    }
+  }
+
   Color _gaugeColor(int score) {
     if (score >= 75) return _kGreen;
     if (score >= 50) return _kAmber;
     return _kRed;
   }
 
-  String _formatCompact(double value) {
+  String _formatCompact(double value, [bool isBn = true]) {
     if (value >= 10000000) {
-      return '${(value / 10000000).toStringAsFixed(1)} কোটি';
+      return isBn
+          ? '${(value / 10000000).toStringAsFixed(1)} কোটি'
+          : '${(value / 10000000).toStringAsFixed(1)} Cr';
     }
-    if (value >= 100000) return '${(value / 100000).toStringAsFixed(1)} লাখ';
+    if (value >= 100000) {
+      return isBn
+          ? '${(value / 100000).toStringAsFixed(1)} লাখ'
+          : '${(value / 100000).toStringAsFixed(1)} Lakh';
+    }
     if (value >= 1000) return '${(value / 1000).toStringAsFixed(0)}K';
     return value.toStringAsFixed(0);
   }
 
-  String _formatTimestamp(DateTime dt) {
+  String _formatTimestamp(DateTime dt, [bool isBn = true]) {
     final now = DateTime.now();
     final diff = now.difference(dt);
-    if (diff.inMinutes < 60) return '${diff.inMinutes} মিনিট আগে';
-    if (diff.inHours < 24) return '${diff.inHours} ঘণ্টা আগে';
+    if (diff.inMinutes < 60) {
+      return isBn ? '${diff.inMinutes} মিনিট আগে' : '${diff.inMinutes}m ago';
+    }
+    if (diff.inHours < 24) {
+      return isBn ? '${diff.inHours} ঘণ্টা আগে' : '${diff.inHours}h ago';
+    }
     return '${dt.day}/${dt.month}/${dt.year}';
   }
 }

@@ -29,6 +29,7 @@ import 'package:agrolinkbd/presentation/screens/admin/admin_price_control_screen
 import 'package:google_fonts/google_fonts.dart';
 import 'package:agrolinkbd/core/services/admin_price_command_service.dart';
 import 'package:agrolinkbd/presentation/screens/admin/widgets/admin_quick_price_command_sheet.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 
 class PulseEffect extends StatefulWidget {
   final Widget child;
@@ -315,6 +316,7 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 768;
+    final isBn = LanguageProvider.isBn(context);
 
     return WillPopScope(
       onWillPop: () async {
@@ -376,7 +378,7 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
               ),
               
               // Main Content
-              isMobile ? _buildMobileLayout() : _buildDesktopLayout(),
+              isMobile ? _buildMobileLayout(isBn) : _buildDesktopLayout(isBn),
             ],
           ),
         ),
@@ -384,7 +386,7 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
     );
   }
 
-  Widget _buildMobileLayout() {
+  Widget _buildMobileLayout(bool isBn) {
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       child: Padding(
@@ -392,9 +394,9 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeader(),
+            _buildHeader(isBn),
             const SizedBox(height: 20),
-            _buildLivePriceControlShortcutCard(),
+            _buildLivePriceControlShortcutCard(isBn),
             const SizedBox(height: 24),
             _buildQuickActionsGrid(crossAxisCount: 4),
             const SizedBox(height: 24),
@@ -412,10 +414,10 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
     );
   }
 
-  Widget _buildDesktopLayout() {
+  Widget _buildDesktopLayout(bool isBn) {
     return Row(
       children: [
-        _buildSidebar(),
+        _buildSidebar(isBn),
         Expanded(
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
@@ -424,9 +426,9 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildHeader(),
+                  _buildHeader(isBn),
                   const SizedBox(height: 24),
-                  _buildLivePriceControlShortcutCard(),
+                  _buildLivePriceControlShortcutCard(isBn),
                   const SizedBox(height: 32),
                   _buildQuickActionsGrid(crossAxisCount: 4),
                   const SizedBox(height: 32),
@@ -492,7 +494,7 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
     );
   }
 
-  Widget _buildSidebar() {
+  Widget _buildSidebar(bool isBn) {
     return Container(
       width: _sidebarExpanded ? 260 : 80,
       decoration: BoxDecoration(
@@ -565,6 +567,7 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
   }
 
   Widget _buildSidebarMenu() {
+    final isBn = LanguageProvider.isBn(context);
     final menuItems = [
       {'icon': Icons.dashboard_rounded, 'label': 'Dashboard', 'action': 'dashboard'},
       {'icon': Icons.gavel_rounded, 'label': 'Disputes', 'action': 'disputes'},
@@ -599,7 +602,7 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
               } else if (entry.value['action'] == 'price_control') {
                 Get.to(() => const AdminPriceControlScreen());
               } else if (entry.value['action'] == 'price_command') {
-                AdminQuickPriceCommandSheet.show(context);
+                AdminQuickPriceCommandSheet.show(context, initialIsBangla: isBn);
               }
               // Reset selection after returning
               Future.delayed(const Duration(milliseconds: 500), () {
@@ -710,7 +713,7 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(bool isBn) {
     final isCompact = MediaQuery.of(context).size.width < 600;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -762,9 +765,15 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
               Padding(
                 padding: const EdgeInsets.only(right: 10),
                 child: ElevatedButton.icon(
-                  onPressed: () => AdminQuickPriceCommandSheet.show(context),
+                  onPressed: () => AdminQuickPriceCommandSheet.show(
+                    context,
+                    initialIsBangla: isBn,
+                  ),
                   icon: const Icon(Icons.bolt_rounded, size: 18, color: Colors.white),
-                  label: const Text('⚡ কমান্ড', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  label: Text(
+                    isBn ? '⚡ কমান্ড' : '⚡ Command',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFD97706),
                     foregroundColor: Colors.white,
@@ -778,7 +787,10 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
               Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: GestureDetector(
-                  onTap: () => AdminQuickPriceCommandSheet.show(context),
+                  onTap: () => AdminQuickPriceCommandSheet.show(
+                    context,
+                    initialIsBangla: isBn,
+                  ),
                   child: Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
@@ -1089,7 +1101,7 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
     );
   }
 
-  Widget _buildLivePriceControlShortcutCard() {
+  Widget _buildLivePriceControlShortcutCard(bool isBn) {
     final isDark = !_isLightMode;
     return Container(
       decoration: BoxDecoration(
@@ -1131,7 +1143,7 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'বাজার প্রাইস কমান্ড শর্টকাট (Live Market Shortcut)',
+                      isBn ? 'বাজার প্রাইস কমান্ড শর্টকাট' : 'Market Price Command Shortcut',
                       style: GoogleFonts.hindSiliguri(
                         color: _textColor,
                         fontWeight: FontWeight.bold,
@@ -1139,7 +1151,9 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
                       ),
                     ),
                     Text(
-                      'বাজার ধস বা কৃষক সুরক্ষায় এক ক্লিকে লাইভ রেট সমন্বয় ও মার্কেটপ্লেসে সিঙ্ক করুন',
+                      isBn
+                          ? 'বাজার ধস বা কৃষক সুরক্ষায় এক ক্লিকে লাইভ রেট সমন্বয় ও মার্কেটপ্লেসে সিঙ্ক করুন'
+                          : 'One-click live rate adjustment and marketplace sync for market drops or farmer protection',
                       style: GoogleFonts.hindSiliguri(
                         color: _textColor.withOpacity(0.7),
                         fontSize: 11,
@@ -1151,9 +1165,9 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
               TextButton.icon(
                 onPressed: () => Get.to(() => const AdminPriceControlScreen()),
                 icon: const Icon(Icons.arrow_forward_ios, size: 12, color: Color(0xFFF59E0B)),
-                label: const Text(
-                  'কন্ট্রোল',
-                  style: TextStyle(color: Color(0xFFF59E0B), fontSize: 12, fontWeight: FontWeight.bold),
+                label: Text(
+                  isBn ? 'কন্ট্রোল' : 'Control',
+                  style: const TextStyle(color: Color(0xFFF59E0B), fontSize: 12, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -1164,36 +1178,42 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
             runSpacing: 8,
             children: [
               _buildPriceShortcutChip(
-                label: '📉 বাজার ধস (-১০%)',
+                label: isBn ? '📉 বাজার ধস (-১০%)' : '📉 Market Crash (-10%)',
                 color: const Color(0xFFEF4444),
                 onTap: () => AdminQuickPriceCommandSheet.show(
                   context,
                   initialScope: PriceCommandScope.all,
                   initialAction: PriceCommandAction.decrease,
+                  initialIsBangla: isBn,
                 ),
               ),
               _buildPriceShortcutChip(
-                label: '📈 কৃষক সুরক্ষা (+১০%)',
+                label: isBn ? '📈 কৃষক সুরক্ষা (+১০%)' : '📈 Farmer Shield (+10%)',
                 color: const Color(0xFF10B981),
                 onTap: () => AdminQuickPriceCommandSheet.show(
                   context,
                   initialScope: PriceCommandScope.all,
                   initialAction: PriceCommandAction.increase,
+                  initialIsBangla: isBn,
                 ),
               ),
               _buildPriceShortcutChip(
-                label: '🐟 মাছের বাজার (-৫%)',
+                label: isBn ? '🐟 মাছের বাজার (-৫%)' : '🐟 Fish Market (-5%)',
                 color: const Color(0xFF0284C7),
                 onTap: () => AdminQuickPriceCommandSheet.show(
                   context,
                   initialScope: PriceCommandScope.fish,
                   initialAction: PriceCommandAction.decrease,
+                  initialIsBangla: isBn,
                 ),
               ),
               _buildPriceShortcutChip(
-                label: '⚡ কমান্ড কনসোল',
+                label: isBn ? '⚡ কমান্ড কনসোল' : '⚡ Command Console',
                 color: const Color(0xFFD97706),
-                onTap: () => AdminQuickPriceCommandSheet.show(context),
+                onTap: () => AdminQuickPriceCommandSheet.show(
+                  context,
+                  initialIsBangla: isBn,
+                ),
               ),
             ],
           ),
@@ -1311,7 +1331,7 @@ class _AdvancedAdminDashboardState extends State<AdvancedAdminDashboard> {
         if (route == 'credit_approval') Get.to(() => const MicrofinanceAdminApprovalScreen());
         if (route == 'reports') Get.to(() => const AdminReportsScreen());
         if (route == 'price_control') Get.to(() => const AdminPriceControlScreen());
-        if (route == 'price_command') AdminQuickPriceCommandSheet.show(context);
+        if (route == 'price_command') AdminQuickPriceCommandSheet.show(context, initialIsBangla: LanguageProvider.isBnStatic(context));
       },
       child: _buildGlassContainer(
         padding: const EdgeInsets.all(8),

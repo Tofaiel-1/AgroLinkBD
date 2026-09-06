@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:agrolinkbd/core/services/admin_price_command_service.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
+import 'package:provider/provider.dart';
 
 class AdminQuickPriceCommandSheet extends StatefulWidget {
   final PriceCommandScope initialScope;
@@ -11,6 +13,7 @@ class AdminQuickPriceCommandSheet extends StatefulWidget {
   final double? initialDelta;
   final String? initialReason;
   final VoidCallback? onCommandExecuted;
+  final bool? initialIsBangla;
 
   const AdminQuickPriceCommandSheet({
     super.key,
@@ -22,6 +25,7 @@ class AdminQuickPriceCommandSheet extends StatefulWidget {
     this.initialDelta,
     this.initialReason,
     this.onCommandExecuted,
+    this.initialIsBangla,
   });
 
   static Future<void> show(
@@ -34,7 +38,9 @@ class AdminQuickPriceCommandSheet extends StatefulWidget {
     double? initialDelta,
     String? initialReason,
     VoidCallback? onCommandExecuted,
+    bool? initialIsBangla,
   }) {
+    final isBn = initialIsBangla ?? LanguageProvider.isBnStatic(context);
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -48,6 +54,7 @@ class AdminQuickPriceCommandSheet extends StatefulWidget {
         initialDelta: initialDelta,
         initialReason: initialReason,
         onCommandExecuted: onCommandExecuted,
+        initialIsBangla: isBn,
       ),
     );
   }
@@ -72,6 +79,7 @@ class _AdminQuickPriceCommandSheetState
   String _selectedDistrict = 'natore';
   String _selectedDuration = 'permanent';
   bool _circuitBreakerConfirmed = false;
+  bool _isBangla = true; // Language toggle: true = বাংলা, false = English
 
   bool _isExecuting = false;
   int _affectedProductsCount = 0;
@@ -104,15 +112,21 @@ class _AdminQuickPriceCommandSheetState
   ];
 
   final List<Map<String, String>> _durations = [
-    {'value': 'permanent', 'label': 'স্থায়ী সমন্বয় (Permanent)'},
-    {'value': '24h', 'label': '২৪ ঘণ্টা (24 Hours)'},
-    {'value': '48h', 'label': '৪৮ ঘণ্টা (48 Hours)'},
-    {'value': '7d', 'label': '৭ দিন (7 Days)'},
+    {'value': 'permanent', 'labelBn': 'স্থায়ী সমন্বয়', 'labelEn': 'Permanent'},
+    {'value': '24h', 'labelBn': '২৪ ঘণ্টা', 'labelEn': '24 Hours'},
+    {'value': '48h', 'labelBn': '৪৮ ঘণ্টা', 'labelEn': '48 Hours'},
+    {'value': '7d', 'labelBn': '৭ দিন', 'labelEn': '7 Days'},
   ];
+
+  bool _didInitLanguage = false;
 
   @override
   void initState() {
     super.initState();
+    if (widget.initialIsBangla != null) {
+      _isBangla = widget.initialIsBangla!;
+      _didInitLanguage = true;
+    }
     _selectedScope = widget.initialScope;
     _selectedAction = widget.initialAction;
     _selectedCategory = widget.initialCategory ?? 'all';
@@ -131,6 +145,23 @@ class _AdminQuickPriceCommandSheetState
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_didInitLanguage) {
+      _didInitLanguage = true;
+      final isBn = LanguageProvider.isBn(context);
+      if (_isBangla != isBn) {
+        setState(() {
+          _isBangla = isBn;
+        });
+        if (widget.initialReason == null || widget.initialReason!.isEmpty) {
+          _applyPresetReason();
+        }
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _customDeltaController.dispose();
     _reasonController.dispose();
@@ -140,23 +171,40 @@ class _AdminQuickPriceCommandSheetState
   void _applyPresetReason() {
     final unitStr = _selectedUnit == PriceAdjustmentUnit.percent ? '%' : '৳';
     final deltaStr = _deltaValue.toStringAsFixed(0);
-    String geoContext = '';
+    String geoContextBn = '';
+    String geoContextEn = '';
     if (_selectedScope == PriceCommandScope.district) {
-      geoContext = ' ($_selectedDistrict জেলায়)';
+      final d = _districts.firstWhere(
+        (x) => x['value'] == _selectedDistrict,
+        orElse: () => {'labelBn': _selectedDistrict, 'labelEn': _selectedDistrict},
+      );
+      geoContextBn = ' (${d['labelBn']} জেলায়)';
+      geoContextEn = ' (in ${d['labelEn']} district)';
     } else if (_selectedScope == PriceCommandScope.division) {
-      geoContext = ' ($_selectedDivision বিভাগে)';
+      final div = _divisions.firstWhere(
+        (x) => x['value'] == _selectedDivision,
+        orElse: () => {'labelBn': _selectedDivision, 'labelEn': _selectedDivision},
+      );
+      geoContextBn = ' (${div['labelBn']} বিভাগে)';
+      geoContextEn = ' (in ${div['labelEn']} division)';
     }
 
     if (_selectedAction == PriceCommandAction.decrease) {
-      _reasonController.text =
-          'পাইকারি বাজারে সরবরাহ বৃদ্ধির প্রেক্ষিতে সাময়িক $deltaStr$unitStr মূল্য হ্রাস$geoContext';
+      _reasonController.text = _isBangla
+          ? 'পাইকারি বাজারে সরবরাহ বৃদ্ধির প্রেক্ষিতে সাময়িক $deltaStr$unitStr মূল্য হ্রাস$geoContextBn'
+          : 'Temporary $deltaStr$unitStr price decrease due to surplus supply$geoContextEn';
     } else if (_selectedAction == PriceCommandAction.increase) {
-      _reasonController.text =
-          'বাজারদর বৃদ্ধির প্রেক্ষিতে কৃষক সুরক্ষায় $deltaStr$unitStr মূল্য বৃদ্ধি$geoContext';
+      _reasonController.text = _isBangla
+          ? 'বাজারদর বৃদ্ধির প্রেক্ষিতে কৃষক সুরক্ষায় $deltaStr$unitStr মূল্য বৃদ্ধি$geoContextBn'
+          : 'Farmer protection price increase of $deltaStr$unitStr due to market rise$geoContextEn';
     } else if (_selectedAction == PriceCommandAction.syncBenchmark) {
-      _reasonController.text = 'সুপার এডমিন সরকারি ও কেন্দ্রীয় বাজার রেটে সমন্বিত সমতা';
+      _reasonController.text = _isBangla
+          ? 'সুপার এডমিন সরকারি ও কেন্দ্রীয় বাজার রেটে সমন্বিত সমতা'
+          : 'Super admin sync to government and central market benchmark rate';
     } else {
-      _reasonController.text = 'এডমিন ওভাররাইড প্রত্যাহার করে কৃষকের আসল মূল্যে ফেরত';
+      _reasonController.text = _isBangla
+          ? 'এডমিন ওভাররাইড প্রত্যাহার করে কৃষকের আসল মূল্যে ফেরত'
+          : 'Admin override removed — reverting to original farmer listing price';
     }
   }
 
@@ -194,7 +242,9 @@ class _AdminQuickPriceCommandSheetState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '⚠️ ২৫% এর বেশি পরিবর্তন করতে সার্কিট ব্রেকার কনফার্মেশন অন করুন।',
+            _isBangla
+                ? '⚠️ ২৫% এর বেশি পরিবর্তন করতে সার্কিট ব্রেকার কনফার্মেশন অন করুন।'
+                : '⚠️ Turn on circuit breaker confirmation for adjustments >25%.',
             style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold),
           ),
           backgroundColor: const Color(0xFFD97706),
@@ -237,7 +287,11 @@ class _AdminQuickPriceCommandSheetState
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  result.message,
+                  _isBangla
+                      ? result.message
+                      : (result.success
+                          ? 'Successfully adjusted prices for ${result.affectedProductsCount} products & ${result.affectedFishLotsCount} fish lots.'
+                          : 'Price adjustment failed: ${result.message}'),
                   style: GoogleFonts.hindSiliguri(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -325,7 +379,9 @@ class _AdminQuickPriceCommandSheetState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '⚡ সুপার এডমিন প্রাইস কমান্ড শর্টকাট',
+                        _isBangla
+                            ? '⚡ সুপার এডমিন প্রাইস কমান্ড'
+                            : '⚡ Super Admin Price Command',
                         style: GoogleFonts.hindSiliguri(
                           fontSize: 17,
                           fontWeight: FontWeight.bold,
@@ -333,7 +389,9 @@ class _AdminQuickPriceCommandSheetState
                         ),
                       ),
                       Text(
-                        'লাইভ মার্কেটপ্লেসে এগ্রি ও ফিশ ফার্মারদের পণ্যের দাম নিয়ন্ত্রণ',
+                        _isBangla
+                            ? 'লাইভ মার্কেটপ্লেসে কৃষি ও মৎস্য পণ্যের দাম নিয়ন্ত্রণ'
+                            : 'Control agri & fish farmer product prices on live marketplace',
                         style: GoogleFonts.hindSiliguri(
                           fontSize: 11.5,
                           color: textSecondary,
@@ -342,6 +400,54 @@ class _AdminQuickPriceCommandSheetState
                     ],
                   ),
                 ),
+                // Language Toggle
+                GestureDetector(
+                  onTap: () {
+                    final newLangIsBn = !_isBangla;
+                    setState(() {
+                      _isBangla = newLangIsBn;
+                      _applyPresetReason();
+                    });
+                    try {
+                      Provider.of<LanguageProvider>(context, listen: false)
+                          .setLanguage(newLangIsBn ? 'বাংলা' : 'English');
+                    } catch (_) {}
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFF2563EB).withValues(alpha: 0.35)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'বা',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: _isBangla ? FontWeight.bold : FontWeight.normal,
+                            color: _isBangla ? const Color(0xFF2563EB) : textSecondary,
+                          ),
+                        ),
+                        Text(
+                          ' / ',
+                          style: TextStyle(fontSize: 11, color: textSecondary),
+                        ),
+                        Text(
+                          'EN',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: !_isBangla ? FontWeight.bold : FontWeight.normal,
+                            color: !_isBangla ? const Color(0xFF2563EB) : textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
                 IconButton(
                   icon: Icon(Icons.close_rounded, color: textSecondary),
                   onPressed: () => Navigator.pop(context),
@@ -361,7 +467,9 @@ class _AdminQuickPriceCommandSheetState
                 children: [
                   // 1. SCENARIO PRESETS
                   Text(
-                    '১. পরিস্থিতি নির্বাচন করুন (Scenario Preset)',
+                    _isBangla
+                        ? '১. পরিস্থিতি নির্বাচন করুন'
+                        : '1. Select Scenario Preset',
                     style: GoogleFonts.hindSiliguri(
                       fontSize: 13.5,
                       fontWeight: FontWeight.bold,
@@ -373,8 +481,8 @@ class _AdminQuickPriceCommandSheetState
                     children: [
                       Expanded(
                         child: _buildScenarioCard(
-                          title: '📉 বাজার ধস (হ্রাস)',
-                          sub: 'অতিরিক্ত সরবরাহ / দাম কমানো',
+                          title: _isBangla ? '📉 বাজার ধস (হ্রাস)' : '📉 Market Crash (Decrease)',
+                          sub: _isBangla ? 'অতিরিক্ত সরবরাহ / দাম কমানো' : 'Oversupply / Lower price',
                           action: PriceCommandAction.decrease,
                           color: const Color(0xFFEF4444),
                           isDark: isDark,
@@ -383,8 +491,8 @@ class _AdminQuickPriceCommandSheetState
                       const SizedBox(width: 10),
                       Expanded(
                         child: _buildScenarioCard(
-                          title: '📈 কৃষক সুরক্ষা (বৃদ্ধি)',
-                          sub: 'বাজার ঊর্ধ্বগতি / দাম বাড়ানো',
+                          title: _isBangla ? '📈 কৃষক সুরক্ষা (বৃদ্ধি)' : '📈 Farmer Shield (Increase)',
+                          sub: _isBangla ? 'বাজার ঊর্ধ্বগতি / দাম বাড়ানো' : 'Rising market / Raise price',
                           action: PriceCommandAction.increase,
                           color: const Color(0xFF10B981),
                           isDark: isDark,
@@ -397,8 +505,8 @@ class _AdminQuickPriceCommandSheetState
                     children: [
                       Expanded(
                         child: _buildScenarioCard(
-                          title: '🎯 বেঞ্চমার্কে সিঙ্ক',
-                          sub: 'বাজারের গড় রেটে সমতা',
+                          title: _isBangla ? '🎯 বেঞ্চমার্কে সিঙ্ক' : '🎯 Sync to Benchmark',
+                          sub: _isBangla ? 'বাজারের গড় রেটে সমতা' : 'Align to avg market rate',
                           action: PriceCommandAction.syncBenchmark,
                           color: const Color(0xFF3B82F6),
                           isDark: isDark,
@@ -407,8 +515,8 @@ class _AdminQuickPriceCommandSheetState
                       const SizedBox(width: 10),
                       Expanded(
                         child: _buildScenarioCard(
-                          title: '🔄 মূল দামে রিসেট',
-                          sub: 'কৃষকের আসল রেট ফিরিয়ে নিন',
+                          title: _isBangla ? '🔄 মূল দামে রিসেট' : '🔄 Reset to Original',
+                          sub: _isBangla ? 'কৃষকের আসল রেট ফিরিয়ে নিন' : "Restore farmer's original price",
                           action: PriceCommandAction.reset,
                           color: const Color(0xFFF59E0B),
                           isDark: isDark,
@@ -421,7 +529,9 @@ class _AdminQuickPriceCommandSheetState
 
                   // 2. TARGET SCOPE & REGION
                   Text(
-                    '২. কাদের পণ্যে ও কোন অঞ্চলে প্রয়োগ হবে (Scope & Region)',
+                    _isBangla
+                        ? '২. কাদের পণ্যে ও কোন অঞ্চলে প্রয়োগ হবে'
+                        : '2. Target Scope & Region',
                     style: GoogleFonts.hindSiliguri(
                       fontSize: 13.5,
                       fontWeight: FontWeight.bold,
@@ -434,27 +544,27 @@ class _AdminQuickPriceCommandSheetState
                     runSpacing: 8,
                     children: [
                       _buildScopeChip(
-                        label: '🌐 সারা বাংলাদেশ',
+                        label: _isBangla ? '🌐 সারা বাংলাদেশ' : '🌐 All Bangladesh',
                         scope: PriceCommandScope.all,
                         isDark: isDark,
                       ),
                       _buildScopeChip(
-                        label: '🐟 মৎস্য চাষী (Fish Lots)',
+                        label: _isBangla ? '🐟 মৎস্য চাষী' : '🐟 Fish Farmers',
                         scope: PriceCommandScope.fish,
                         isDark: isDark,
                       ),
                       _buildScopeChip(
-                        label: '🌾 কৃষি খামারী (Agri Crops)',
+                        label: _isBangla ? '🌾 কৃষি খামারী' : '🌾 Agri Farmers',
                         scope: PriceCommandScope.agri,
                         isDark: isDark,
                       ),
                       _buildScopeChip(
-                        label: '🏛️ বিভাগ ভিত্তিক (Division)',
+                        label: _isBangla ? '🏛️ বিভাগ ভিত্তিক' : '🏛️ By Division',
                         scope: PriceCommandScope.division,
                         isDark: isDark,
                       ),
                       _buildScopeChip(
-                        label: '📍 জেলা ভিত্তিক (District)',
+                        label: _isBangla ? '📍 জেলা ভিত্তিক' : '📍 By District',
                         scope: PriceCommandScope.district,
                         isDark: isDark,
                       ),
@@ -468,7 +578,7 @@ class _AdminQuickPriceCommandSheetState
                       initialValue: _selectedDivision,
                       dropdownColor: cardBg,
                       decoration: InputDecoration(
-                        labelText: 'বিভাগ নির্বাচন করুন',
+                        labelText: _isBangla ? 'বিভাগ নির্বাচন করুন' : 'Select Division',
                         labelStyle: GoogleFonts.hindSiliguri(color: textSecondary, fontSize: 13),
                         filled: true,
                         fillColor: cardBg,
@@ -477,7 +587,10 @@ class _AdminQuickPriceCommandSheetState
                       ),
                       items: _divisions.map((d) => DropdownMenuItem(
                         value: d['value'],
-                        child: Text(d['labelBn']!, style: GoogleFonts.hindSiliguri(color: textPrimary, fontWeight: FontWeight.bold)),
+                        child: Text(
+                          _isBangla ? d['labelBn']! : d['labelEn']!,
+                          style: GoogleFonts.hindSiliguri(color: textPrimary, fontWeight: FontWeight.bold),
+                        ),
                       )).toList(),
                       onChanged: (val) {
                         if (val != null) {
@@ -493,7 +606,7 @@ class _AdminQuickPriceCommandSheetState
                       initialValue: _selectedDistrict,
                       dropdownColor: cardBg,
                       decoration: InputDecoration(
-                        labelText: 'জেলা নির্বাচন করুন',
+                        labelText: _isBangla ? 'জেলা নির্বাচন করুন' : 'Select District',
                         labelStyle: GoogleFonts.hindSiliguri(color: textSecondary, fontSize: 13),
                         filled: true,
                         fillColor: cardBg,
@@ -502,7 +615,10 @@ class _AdminQuickPriceCommandSheetState
                       ),
                       items: _districts.map((d) => DropdownMenuItem(
                         value: d['value'],
-                        child: Text(d['labelBn']!, style: GoogleFonts.hindSiliguri(color: textPrimary, fontWeight: FontWeight.bold)),
+                        child: Text(
+                          _isBangla ? d['labelBn']! : d['labelEn']!,
+                          style: GoogleFonts.hindSiliguri(color: textPrimary, fontWeight: FontWeight.bold),
+                        ),
                       )).toList(),
                       onChanged: (val) {
                         if (val != null) {
@@ -522,7 +638,7 @@ class _AdminQuickPriceCommandSheetState
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          '৩. পরিবর্তনের পরিমাণ (Adjustment Delta)',
+                          _isBangla ? '৩. পরিবর্তনের পরিমাণ' : '3. Adjustment Delta',
                           style: GoogleFonts.hindSiliguri(
                             fontSize: 13.5,
                             fontWeight: FontWeight.bold,
@@ -539,12 +655,12 @@ class _AdminQuickPriceCommandSheetState
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               _buildUnitToggle(
-                                label: '% শতকরা',
+                                label: _isBangla ? '% শতকরা' : '% Percent',
                                 unit: PriceAdjustmentUnit.percent,
                                 isDark: isDark,
                               ),
                               _buildUnitToggle(
-                                label: '৳ টাকা/কেজি',
+                                label: _isBangla ? '৳ টাকা/কেজি' : '৳ BDT/kg',
                                 unit: PriceAdjustmentUnit.fixedBdt,
                                 isDark: isDark,
                               ),
@@ -588,8 +704,8 @@ class _AdminQuickPriceCommandSheetState
                       ),
                       decoration: InputDecoration(
                         labelText: _selectedUnit == PriceAdjustmentUnit.percent
-                            ? 'কাস্টম শতকরা হার (%)'
-                            : 'কাস্টম টাকার পরিমাণ (৳)',
+                            ? (_isBangla ? 'কাস্টম শতকরা হার (%)' : 'Custom Percentage (%)')
+                            : (_isBangla ? 'কাস্টম টাকার পরিমাণ (৳)' : 'Custom Amount (৳ BDT)'),
                         labelStyle: GoogleFonts.hindSiliguri(
                           color: textSecondary,
                           fontSize: 12,
@@ -630,7 +746,7 @@ class _AdminQuickPriceCommandSheetState
                   // 4. DURATION & EXPIRY
                   const SizedBox(height: 16),
                   Text(
-                    '৪. কমান্ডের কার্যকারিতা মেয়াদ (Duration)',
+                    _isBangla ? '৪. কমান্ডের কার্যকারিতা মেয়াদ' : '4. Command Duration',
                     style: GoogleFonts.hindSiliguri(
                       fontSize: 13.5,
                       fontWeight: FontWeight.bold,
@@ -646,7 +762,7 @@ class _AdminQuickPriceCommandSheetState
                       return ChoiceChip(
                         selected: isSelected,
                         label: Text(
-                          d['label']!,
+                          _isBangla ? d['labelBn']! : d['labelEn']!,
                           style: GoogleFonts.hindSiliguri(
                             fontSize: 11.5,
                             fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
@@ -682,7 +798,9 @@ class _AdminQuickPriceCommandSheetState
                                     size: 18, color: Color(0xFF2563EB)),
                                 const SizedBox(width: 6),
                                 Text(
-                                  'লাইভ সিমুলেশন ও প্রভাব বিশ্লেষণ',
+                                  _isBangla
+                                      ? 'লাইভ সিমুলেশন ও প্রভাব বিশ্লেষণ'
+                                      : 'Live Simulation & Impact Analysis',
                                   style: GoogleFonts.hindSiliguri(
                                     fontSize: 13,
                                     fontWeight: FontWeight.bold,
@@ -705,7 +823,9 @@ class _AdminQuickPriceCommandSheetState
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
-                                  'মোট ${_affectedProductsCount + _affectedFishLotsCount} টি লিস্টিং',
+                                  _isBangla
+                                      ? 'মোট ${_affectedProductsCount + _affectedFishLotsCount} টি লিস্টিং'
+                                      : '${_affectedProductsCount + _affectedFishLotsCount} Total Listings',
                                   style: GoogleFonts.hindSiliguri(
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
@@ -717,7 +837,9 @@ class _AdminQuickPriceCommandSheetState
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          '🎯 লক্ষ্য: $_affectedProductsCount টি কৃষি ফসল + $_affectedFishLotsCount টি লাইভ মাছের লট',
+                          _isBangla
+                              ? '🎯 লক্ষ্য: $_affectedProductsCount টি কৃষি ফসল + $_affectedFishLotsCount টি লাইভ মাছের লট'
+                              : '🎯 Target: $_affectedProductsCount Agri Products + $_affectedFishLotsCount Fish Lots',
                           style: GoogleFonts.hindSiliguri(
                             fontSize: 12,
                             color: textSecondary,
@@ -729,11 +851,11 @@ class _AdminQuickPriceCommandSheetState
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'গড় দর পরিবর্তন:',
+                                _isBangla ? 'গড় দর পরিবর্তন:' : 'Avg Price Change:',
                                 style: GoogleFonts.hindSiliguri(fontSize: 12, color: textSecondary),
                               ),
                               Text(
-                                '৳${_simulationResult!.averageCurrentPrice.toStringAsFixed(0)} ➔ ৳${_simulationResult!.averageNewPrice.toStringAsFixed(0)} / কেজি',
+                                '৳${_simulationResult!.averageCurrentPrice.toStringAsFixed(0)} ➔ ৳${_simulationResult!.averageNewPrice.toStringAsFixed(0)}${_isBangla ? ' / কেজি' : ' / kg'}',
                                 style: GoogleFonts.poppins(
                                   fontSize: 12.5,
                                   fontWeight: FontWeight.bold,
@@ -747,7 +869,7 @@ class _AdminQuickPriceCommandSheetState
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'মোট মার্কেটপ্লেস ভ্যালু প্রভাব:',
+                                _isBangla ? 'মোট মার্কেটপ্লেস ভ্যালু প্রভাব:' : 'Total Marketplace Value Impact:',
                                 style: GoogleFonts.hindSiliguri(fontSize: 12, color: textSecondary),
                               ),
                               Text(
@@ -785,7 +907,9 @@ class _AdminQuickPriceCommandSheetState
                               const Icon(Icons.warning_amber_rounded, color: Color(0xFFF59E0B), size: 20),
                               const SizedBox(width: 8),
                               Text(
-                                '⚠️ সার্কিট ব্রেকার নিরাপত্তা অ্যালার্ট',
+                                _isBangla
+                                    ? '⚠️ সার্কিট ব্রেকার নিরাপত্তা অ্যালার্ট'
+                                    : '⚠️ Circuit Breaker Safety Alert',
                                 style: GoogleFonts.hindSiliguri(
                                   fontSize: 13,
                                   fontWeight: FontWeight.bold,
@@ -796,7 +920,9 @@ class _AdminQuickPriceCommandSheetState
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'আপনি ২৫% এর বেশি (${_deltaValue.toStringAsFixed(0)}%) বড় মূল্য পরিবর্তন করতে যাচ্ছেন। বাজারে অনাকাঙ্ক্ষিত অস্থিতিশীলতা এড়াতে নিচের নিশ্চিতকরণ টগল সক্রিয় করুন:',
+                            _isBangla
+                                ? 'আপনি ২৫% এর বেশি (${_deltaValue.toStringAsFixed(0)}%) বড় মূল্য পরিবর্তন করতে যাচ্ছেন। বাজারে অনাকাঙ্ক্ষিত অস্থিতিশীলতা এড়াতে নিচের নিশ্চিতকরণ টগল সক্রিয় করুন:'
+                                : 'You are about to apply a large price change of ${_deltaValue.toStringAsFixed(0)}% (>25%). Enable the confirmation toggle below to avoid unexpected market instability:',
                             style: GoogleFonts.hindSiliguri(
                               fontSize: 11.5,
                               color: isDark ? Colors.amber.shade100 : Colors.brown.shade800,
@@ -806,7 +932,9 @@ class _AdminQuickPriceCommandSheetState
                           SwitchListTile(
                             contentPadding: EdgeInsets.zero,
                             title: Text(
-                              'আমি সচেতনভাবে এই বড় পরিবর্তন প্রয়োগ করতে চাই',
+                              _isBangla
+                                  ? 'আমি সচেতনভাবে এই বড় পরিবর্তন প্রয়োগ করতে চাই'
+                                  : 'I confirm this large price change intentionally',
                               style: GoogleFonts.hindSiliguri(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
@@ -826,7 +954,7 @@ class _AdminQuickPriceCommandSheetState
 
                   // 7. REASON NOTE
                   Text(
-                    '৫. এডমিন নোটিশ ও কারণ (Audit Reason)',
+                    _isBangla ? '৫. এডমিন নোটিশ ও কারণ' : '5. Admin Audit Reason',
                     style: GoogleFonts.hindSiliguri(
                       fontSize: 13.5,
                       fontWeight: FontWeight.bold,
@@ -842,7 +970,9 @@ class _AdminQuickPriceCommandSheetState
                     ),
                     maxLines: 2,
                     decoration: InputDecoration(
-                      hintText: 'কারণ লিখুন (যেমন: নাটোর জেলায় আলুর বাম্পার ফলনজনিত সাময়িক দর হ্রাস)',
+                      hintText: _isBangla
+                          ? 'কারণ লিখুন (যেমন: নাটোর জেলায় আলুর বাম্পার ফলনজনিত সাময়িক দর হ্রাস)'
+                          : 'Enter reason (e.g. Temporary price drop due to potato bumper harvest in Natore)',
                       filled: true,
                       fillColor: cardBg,
                       border: OutlineInputBorder(
@@ -877,10 +1007,10 @@ class _AdminQuickPriceCommandSheetState
                         elevation: 3,
                       ),
                       child: _isExecuting
-                          ? const Row(
+                          ? Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                SizedBox(
+                                const SizedBox(
                                   width: 18,
                                   height: 18,
                                   child: CircularProgressIndicator(
@@ -888,10 +1018,10 @@ class _AdminQuickPriceCommandSheetState
                                     strokeWidth: 2,
                                   ),
                                 ),
-                                SizedBox(width: 10),
+                                const SizedBox(width: 10),
                                 Text(
-                                  'এক্সিকিউট হচ্ছে...',
-                                  style: TextStyle(
+                                  _isBangla ? 'এক্সিকিউট হচ্ছে...' : 'Executing...',
+                                  style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -905,7 +1035,9 @@ class _AdminQuickPriceCommandSheetState
                                     color: Colors.amberAccent, size: 20),
                                 const SizedBox(width: 8),
                                 Text(
-                                  '⚡ প্রাইস কমান্ড কার্যকর করুন (Execute Command)',
+                                  _isBangla
+                                      ? '⚡ প্রাইস কমান্ড কার্যকর করুন'
+                                      : '⚡ Execute Price Command',
                                   style: GoogleFonts.hindSiliguri(
                                     fontSize: 14,
                                     fontWeight: FontWeight.bold,

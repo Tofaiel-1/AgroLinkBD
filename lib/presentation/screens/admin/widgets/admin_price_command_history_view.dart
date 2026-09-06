@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:agrolinkbd/core/services/admin_price_command_service.dart';
+import 'package:agrolinkbd/core/providers/language_provider.dart';
 
 class AdminPriceCommandHistoryView extends StatefulWidget {
   const AdminPriceCommandHistoryView({super.key});
@@ -18,8 +19,8 @@ class _AdminPriceCommandHistoryViewState
   String _selectedFilter = 'all'; // 'all', 'decrease', 'increase', 'sync', 'rollback'
   bool _isRollingBack = false;
 
-  String _formatTimestamp(dynamic ts) {
-    if (ts == null) return 'এইমাত্র';
+  String _formatTimestamp(dynamic ts, bool isBn) {
+    if (ts == null) return isBn ? 'এইমাত্র' : 'Just now';
     if (ts is Timestamp) {
       final dt = ts.toDate();
       return DateFormat('dd MMM yyyy, hh:mm a').format(dt);
@@ -28,10 +29,10 @@ class _AdminPriceCommandHistoryViewState
   }
 
   Future<void> _showRollbackConfirmDialog(
-      BuildContext context, Map<String, dynamic> log) async {
+      BuildContext context, Map<String, dynamic> log, bool isBn) async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final logId = log['id'] as String;
-    final reason = log['reason'] as String? ?? 'মূল্য সমন্বয়';
+    final reason = log['reason'] as String? ?? (isBn ? 'মূল্য সমন্বয়' : 'Price Adjustment');
     final delta = (log['deltaValue'] as num?)?.toDouble() ?? 0.0;
     final unit = log['unit'] == 'percent' ? '%' : '৳';
     final action = log['action'] as String? ?? '';
@@ -56,7 +57,7 @@ class _AdminPriceCommandHistoryViewState
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                'রোলব্যাক নিশ্চিতকরণ',
+                isBn ? 'রোলব্যাক নিশ্চিতকরণ' : 'Confirm Rollback',
                 style: GoogleFonts.hindSiliguri(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -71,7 +72,9 @@ class _AdminPriceCommandHistoryViewState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'আপনি কি নিশ্চিত যে এই কমান্ডের সকল পরিবর্তন পূর্বাবস্থায় ফিরিয়ে নিতে চান?',
+              isBn
+                  ? 'আপনি কি নিশ্চিত যে এই কমান্ডের সকল পরিবর্তন পূর্বাবস্থায় ফিরিয়ে নিতে চান?'
+                  : 'Are you sure you want to revert all price changes from this command back to previous values?',
               style: GoogleFonts.hindSiliguri(
                 fontSize: 14,
                 color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155),
@@ -90,7 +93,9 @@ class _AdminPriceCommandHistoryViewState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'অ্যাকশন: ${action == "decrease" ? "বাজার ধস (-$delta$unit)" : "কৃষক সুরক্ষা (+$delta$unit)"}',
+                    isBn
+                        ? 'অ্যাকশন: ${action == "decrease" ? "বাজার ধস (-$delta$unit)" : "কৃষক সুরক্ষা (+$delta$unit)"}'
+                        : 'Action: ${action == "decrease" ? "Market Drop (-$delta$unit)" : "Farmer Shield (+$delta$unit)"}',
                     style: GoogleFonts.hindSiliguri(
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
@@ -98,14 +103,16 @@ class _AdminPriceCommandHistoryViewState
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'প্রভাবিত: $prodCount টি কৃষি পণ্য • $fishCount টি মাছের লট',
+                    isBn
+                        ? 'প্রভাবিত: $prodCount টি কৃষি পণ্য • $fishCount টি মাছের লট'
+                        : 'Target: $prodCount Agri Products • $fishCount Fish Lots',
                     style: GoogleFonts.hindSiliguri(
                         fontSize: 12,
                         color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'কারণ: $reason',
+                    isBn ? 'কারণ: $reason' : 'Reason: $reason',
                     style: GoogleFonts.hindSiliguri(
                         fontSize: 12,
                         color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
@@ -119,7 +126,7 @@ class _AdminPriceCommandHistoryViewState
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
             child: Text(
-              'বাতিল',
+              isBn ? 'বাতিল' : 'Cancel',
               style: GoogleFonts.hindSiliguri(
                 fontWeight: FontWeight.bold,
                 color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
@@ -130,7 +137,7 @@ class _AdminPriceCommandHistoryViewState
             onPressed: () => Navigator.pop(ctx, true),
             icon: const Icon(Icons.undo_rounded, size: 16, color: Colors.white),
             label: Text(
-              'হ্যাঁ, রোলব্যাক করুন',
+              isBn ? 'হ্যাঁ, রোলব্যাক করুন' : 'Yes, Rollback',
               style: GoogleFonts.hindSiliguri(
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -166,6 +173,7 @@ class _AdminPriceCommandHistoryViewState
 
   @override
   Widget build(BuildContext context) {
+    final isBn = LanguageProvider.isBn(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? const Color(0xFF1E293B) : Colors.white;
     final textPrimary = isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A);
@@ -182,15 +190,15 @@ class _AdminPriceCommandHistoryViewState
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _buildFilterChip('all', 'সকল কমান্ড', Icons.dashboard_customize_rounded, isDark),
+                _buildFilterChip('all', isBn ? 'সকল কমান্ড' : 'All Commands', Icons.dashboard_customize_rounded, isDark),
                 const SizedBox(width: 8),
-                _buildFilterChip('decrease', '📉 মূল্য হ্রাস', Icons.trending_down_rounded, isDark),
+                _buildFilterChip('decrease', isBn ? '📉 মূল্য হ্রাস' : '📉 Price Drop', Icons.trending_down_rounded, isDark),
                 const SizedBox(width: 8),
-                _buildFilterChip('increase', '📈 মূল্য বৃদ্ধি', Icons.trending_up_rounded, isDark),
+                _buildFilterChip('increase', isBn ? '📈 মূল্য বৃদ্ধি' : '📈 Price Hike', Icons.trending_up_rounded, isDark),
                 const SizedBox(width: 8),
-                _buildFilterChip('sync', '🔄 বেঞ্চমার্ক সিঙ্ক', Icons.sync_rounded, isDark),
+                _buildFilterChip('sync', isBn ? '🔄 বেঞ্চমার্ক সিঙ্ক' : '🔄 Benchmark Sync', Icons.sync_rounded, isDark),
                 const SizedBox(width: 8),
-                _buildFilterChip('rollback', '↩️ রোলব্যাক লগ', Icons.undo_rounded, isDark),
+                _buildFilterChip('rollback', isBn ? '↩️ রোলব্যাক লগ' : '↩️ Rollback Logs', Icons.undo_rounded, isDark),
               ],
             ),
           ),
@@ -217,7 +225,9 @@ class _AdminPriceCommandHistoryViewState
                         const Icon(Icons.error_outline_rounded, color: Color(0xFFEF4444), size: 42),
                         const SizedBox(height: 10),
                         Text(
-                          'হিস্টোরি লোড করতে সমস্যা হয়েছে: ${snapshot.error}',
+                          isBn
+                              ? 'হিস্টোরি লোড করতে সমস্যা হয়েছে: ${snapshot.error}'
+                              : 'Failed to load command history: ${snapshot.error}',
                           textAlign: TextAlign.center,
                           style: GoogleFonts.hindSiliguri(color: const Color(0xFFEF4444)),
                         ),
@@ -257,7 +267,9 @@ class _AdminPriceCommandHistoryViewState
                         ),
                         const SizedBox(height: 14),
                         Text(
-                          'কোনো কমান্ড হিস্টোরি পাওয়া যায়নি',
+                          isBn
+                              ? 'কোনো কমান্ড হিস্টোরি পাওয়া যায়নি'
+                              : 'No command history found',
                           style: GoogleFonts.hindSiliguri(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -266,7 +278,9 @@ class _AdminPriceCommandHistoryViewState
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'সুপার এডমিন প্যানেল থেকে কমান্ড প্রয়োগ করলে এখানে অডিট হিস্টোরি প্রদর্শিত হবে।',
+                          isBn
+                              ? 'সুপার এডমিন প্যানেল থেকে কমান্ড প্রয়োগ করলে এখানে অডিট হিস্টোরি প্রদর্শিত হবে।'
+                              : 'Commands executed from the Super Admin panel will appear here in the audit log.',
                           textAlign: TextAlign.center,
                           style: GoogleFonts.hindSiliguri(
                             fontSize: 12,
@@ -284,7 +298,7 @@ class _AdminPriceCommandHistoryViewState
                 itemCount: filteredLogs.length,
                 itemBuilder: (context, index) {
                   final log = filteredLogs[index];
-                  return _buildLogCard(context, log, isDark, cardBg, textPrimary, textSecondary, borderColor);
+                  return _buildLogCard(context, log, isBn, isDark, cardBg, textPrimary, textSecondary, borderColor);
                 },
               );
             },
@@ -322,6 +336,7 @@ class _AdminPriceCommandHistoryViewState
   Widget _buildLogCard(
     BuildContext context,
     Map<String, dynamic> log,
+    bool isBn,
     bool isDark,
     Color cardBg,
     Color textPrimary,
@@ -333,9 +348,9 @@ class _AdminPriceCommandHistoryViewState
     final action = log['action'] as String? ?? '';
     final delta = (log['deltaValue'] as num?)?.toDouble() ?? 0.0;
     final unit = log['unit'] == 'percent' ? '%' : '৳';
-    final reason = log['reason'] as String? ?? 'কোনো কারণ উল্লেখ নেই';
+    final reason = log['reason'] as String? ?? (isBn ? 'কোনো কারণ উল্লেখ নেই' : 'No reason specified');
     final adminEmail = log['adminEmail'] as String? ?? 'Super Admin';
-    final timestamp = _formatTimestamp(log['timestamp']);
+    final timestamp = _formatTimestamp(log['timestamp'], isBn);
     final productsCount = log['affectedProducts'] ?? log['restoredProducts'] ?? 0;
     final fishLotsCount = log['affectedFishLots'] ?? log['restoredFishLots'] ?? 0;
     final targetDistrict = log['targetDistrict'] as String? ?? 'all';
@@ -343,36 +358,36 @@ class _AdminPriceCommandHistoryViewState
     final duration = log['duration'] as String? ?? 'permanent';
 
     Color badgeColor = const Color(0xFF1976D2);
-    String actionLabel = 'মূল্য সমন্বয়';
+    String actionLabel = isBn ? 'মূল্য সমন্বয়' : 'Price Adjustment';
     IconData actionIcon = Icons.tune_rounded;
 
     if (isRollbackAction) {
       badgeColor = const Color(0xFFD97706);
-      actionLabel = 'রোলব্যাক সম্পন্ন';
+      actionLabel = isBn ? 'রোলব্যাক সম্পন্ন' : 'Rollback Executed';
       actionIcon = Icons.undo_rounded;
     } else if (action == 'decrease') {
       badgeColor = const Color(0xFFEF4444);
-      actionLabel = 'বাজার ধস হ্রাস (-$delta$unit)';
+      actionLabel = isBn ? 'বাজার ধস হ্রাস (-$delta$unit)' : 'Market Crash (-$delta$unit)';
       actionIcon = Icons.trending_down_rounded;
     } else if (action == 'increase') {
       badgeColor = const Color(0xFF10B981);
-      actionLabel = 'কৃষক সুরক্ষা বৃদ্ধি (+$delta$unit)';
+      actionLabel = isBn ? 'কৃষক সুরক্ষা বৃদ্ধি (+$delta$unit)' : 'Farmer Shield (+$delta$unit)';
       actionIcon = Icons.trending_up_rounded;
     } else if (action == 'syncBenchmark') {
       badgeColor = const Color(0xFF0284C7);
-      actionLabel = 'বাজার বেঞ্চমার্কে সিঙ্ক';
+      actionLabel = isBn ? 'বাজার বেঞ্চমার্কে সিঙ্ক' : 'Benchmark Synced';
       actionIcon = Icons.sync_rounded;
     } else if (action == 'reset') {
       badgeColor = const Color(0xFF6B7280);
-      actionLabel = 'কৃষকের আসল মূল্যে রিসেট';
+      actionLabel = isBn ? 'কৃষকের আসল মূল্যে রিসেট' : 'Reset to Farmer Rate';
       actionIcon = Icons.restart_alt_rounded;
     }
 
-    String geoLabel = 'সারা বাংলাদেশ';
+    String geoLabel = isBn ? 'সারা বাংলাদেশ' : 'All Bangladesh';
     if (targetDistrict != 'all') {
-      geoLabel = 'জেলা: $targetDistrict';
+      geoLabel = isBn ? 'জেলা: $targetDistrict' : 'District: $targetDistrict';
     } else if (targetDivision != 'all') {
-      geoLabel = 'বিভাগ: $targetDivision';
+      geoLabel = isBn ? 'বিভাগ: $targetDivision' : 'Division: $targetDivision';
     }
 
     return Container(
@@ -438,10 +453,22 @@ class _AdminPriceCommandHistoryViewState
               runSpacing: 6,
               children: [
                 _buildInfoPill(Icons.location_on_outlined, geoLabel, isDark),
-                _buildInfoPill(Icons.inventory_2_outlined, '$productsCount টি কৃষি পণ্য', isDark),
-                _buildInfoPill(Icons.water_drop_outlined, '$fishLotsCount টি মাছের লট', isDark),
+                _buildInfoPill(
+                  Icons.inventory_2_outlined,
+                  isBn ? '$productsCount টি কৃষি পণ্য' : '$productsCount Agri Products',
+                  isDark,
+                ),
+                _buildInfoPill(
+                  Icons.water_drop_outlined,
+                  isBn ? '$fishLotsCount টি মাছের লট' : '$fishLotsCount Fish Lots',
+                  isDark,
+                ),
                 if (duration != 'permanent')
-                  _buildInfoPill(Icons.timer_outlined, 'মেয়াদ: $duration', isDark),
+                  _buildInfoPill(
+                    Icons.timer_outlined,
+                    isBn ? 'মেয়াদ: $duration' : 'Duration: $duration',
+                    isDark,
+                  ),
               ],
             ),
             const SizedBox(height: 10),
@@ -463,7 +490,7 @@ class _AdminPriceCommandHistoryViewState
                       Icon(Icons.notes_rounded, size: 13, color: textSecondary),
                       const SizedBox(width: 4),
                       Text(
-                        'কমান্ডের কারণ ও অডিট বিবরণ:',
+                        isBn ? 'কমান্ডের কারণ ও অডিট বিবরণ:' : 'Command Audit Rationale:',
                         style: GoogleFonts.hindSiliguri(
                           fontSize: 10.5,
                           fontWeight: FontWeight.w600,
@@ -513,7 +540,7 @@ class _AdminPriceCommandHistoryViewState
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            '✓ পূর্বাবস্থায় ফিরিয়ে নেওয়া হয়েছে',
+                            isBn ? '✓ পূর্বাবস্থায় ফিরিয়ে নেওয়া হয়েছে' : '✓ Rolled Back',
                             style: GoogleFonts.hindSiliguri(
                               fontSize: 11,
                               color: Colors.grey,
@@ -524,10 +551,10 @@ class _AdminPriceCommandHistoryViewState
                       : ElevatedButton.icon(
                           onPressed: _isRollingBack
                               ? null
-                              : () => _showRollbackConfirmDialog(context, log),
+                              : () => _showRollbackConfirmDialog(context, log, isBn),
                           icon: const Icon(Icons.undo_rounded, size: 14, color: Colors.white),
                           label: Text(
-                            'রোলব্যাক করুন',
+                            isBn ? 'রোলব্যাক করুন' : 'Rollback',
                             style: GoogleFonts.hindSiliguri(
                               fontSize: 11.5,
                               fontWeight: FontWeight.bold,
